@@ -4,14 +4,12 @@ using System.IO;
 using System.Net;
 using System.Net.WebSockets;
 using System.Threading;
-using ChromeHtmlToPdf.Protocol;
-using ChromeHtmlToPdf.Settings;
-using Newtonsoft.Json.Linq;
-using WebSocket4Net;
+using ChromeHtmlToPdfLib.Protocol;
+using ChromeHtmlToPdfLib.Settings;
 using ErrorEventArgs = SuperSocket.ClientEngine.ErrorEventArgs;
 using WebSocket = WebSocket4Net.WebSocket;
 
-namespace ChromeHtmlToPdf
+namespace ChromeHtmlToPdfLib
 {
     /// <summary>
     /// Handles all the communication task with Chrome remote devtools
@@ -25,19 +23,9 @@ namespace ChromeHtmlToPdf
         private readonly WebSocket _webSocket;
 
         /// <summary>
-        /// Used as a signel that we received a message on the <see cref="_webSocket"/>
+        /// The message that we are sending to Chrome
         /// </summary>
-        private ManualResetEvent _webSocketWaitEvent;
-
-        /// <summary>
-        /// The command that we are sending to Chrome
-        /// </summary>
-        private string _request;
-
-        /// <summary>
-        /// The response from Chrome
-        /// </summary>
-        private string _response;
+        private string _message;
 
         /// <summary>
         /// The Chrome message id
@@ -68,13 +56,12 @@ namespace ChromeHtmlToPdf
                 throw new Exception("Could not retrieve remote sessions from Chrome");
 
             _webSocket = new WebSocket(sessions[0].WebSocketDebuggerUrl.Replace("ws://localhost", "ws://127.0.0.1"));
-            //_webSocket.MessageReceived += WebSocketMessageReceived;
             _webSocket.Error += WebSocketOnError;
 
-            _webSocketWaitEvent = new ManualResetEvent(false);
-            _webSocket.Opened += (sender, args) => { _webSocketWaitEvent.Set(); };
+            var waitEvent = new ManualResetEvent(false);
+            _webSocket.Opened += (sender, args) => { waitEvent.Set(); };
             _webSocket.Open();
-            _webSocketWaitEvent.WaitOne();
+            waitEvent.WaitOne();
         }
 
         ~Communicator()
@@ -83,7 +70,17 @@ namespace ChromeHtmlToPdf
         }
         #endregion
 
-        #region WebSocket events
+        #region WebSocket
+        /// <summary>
+        /// Uses the <see cref="_webSocket"/> to send a message to Chrome
+        /// </summary>
+        /// <param name="message"></param>
+        private void WebSocketSend(string message)
+        {
+            _message = message;
+            _webSocket.Send(message);
+        }
+
         /// <summary>
         /// Raised when a <see cref="_webSocket"/> error occurs
         /// </summary>
@@ -91,7 +88,7 @@ namespace ChromeHtmlToPdf
         /// <param name="errorEventArgs"></param>
         private void WebSocketOnError(object sender, ErrorEventArgs errorEventArgs)
         {
-            throw new WebSocketException($"An error occured while sending the JSON command '{_request}' to Chrome", errorEventArgs.Exception);
+            throw new WebSocketException($"An error occured while sending the JSON message '{_message}' to Chrome", errorEventArgs.Exception);
         }
         #endregion
 
@@ -153,7 +150,7 @@ namespace ChromeHtmlToPdf
         /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
         public void NavigateTo(Uri uri)
         {
-            _webSocket.Send(new Message { Id = MessageId, Method = "Page.enable" }.ToJson());
+            WebSocketSend(new Message { Id = MessageId, Method = "Page.enable" }.ToJson());
 
             var localFile = uri.Scheme == "file";
 
@@ -181,12 +178,12 @@ namespace ChromeHtmlToPdf
                     loaded = true;
             };
 
-            _webSocket.Send(message.ToJson());
+            WebSocketSend(message.ToJson());
 
             while (!loaded)
                 Thread.Sleep(1);
 
-            _webSocket.Send(new Message { Id = MessageId, Method = "Page.disable" }.ToJson());
+            WebSocketSend(new Message { Id = MessageId, Method = "Page.disable" }.ToJson());
         }
         #endregion
 
@@ -240,44 +237,12 @@ namespace ChromeHtmlToPdf
                     converted = true;
             };
 
-            _webSocket.Send(message.ToJson());
+            WebSocketSend(message.ToJson());
 
             while (!converted)
                 Thread.Sleep(1);
 
             return response;
-        }
-        #endregion
-
-        #region SetPageEnable
-        /// <summary>
-        /// Let's Chrome know that we want to receive page event notifications
-        /// </summary>
-        /// <param name="value"></param>
-        private void SetPageEnable(bool value)
-        {
-            var message = value ? new Message {Method = "Page.enable"} : new Message {Method = "Page.disable"};
-            SendCommand(message.ToJson());
-        }
-        #endregion
-
-        #region SendCommand
-        /// <summary>
-        /// Sends the given JSON <paramref name="request"/> to Chrome
-        /// </summary>
-        /// <param name="request">The JSON command</param>
-        /// <returns>The response on the <paramref name="request"/></returns>
-        /// <exception cref="WebSocketException">Thrown when an error occurs while communicating over websocket</exception>
-        private string SendCommand(string request)
-        {
-            _webSocketWaitEvent = new ManualResetEvent(false);
-            _request = request;
-            _webSocket.Send(request);
-            _webSocketWaitEvent.WaitOne();
-            var temp = _response;
-            _response = null;
-
-            return temp;
         }
         #endregion
 

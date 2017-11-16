@@ -1,7 +1,6 @@
 ﻿using System;
-using ChromeHtmlToPdf.Protocol;
 
-namespace ChromeHtmlToPdf.Settings
+namespace ChromeHtmlToPdfLib.Settings
 {
     #region PaperFormats
     /// <summary>
@@ -9,6 +8,11 @@ namespace ChromeHtmlToPdf.Settings
     /// </summary>
     public enum PaperFormats
     {
+        /// <summary>
+        /// No paper format is set
+        /// </summary>
+        None,
+
         /// <summary>
         /// Letter format
         /// </summary>

@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace ChromeHtmlToPdf.Protocol
+namespace ChromeHtmlToPdfLib.Protocol
 {
     /// <summary>
     /// The JSON structure that is returned from Chrome when an expression is evaluated
@@ -89,7 +89,7 @@ namespace ChromeHtmlToPdf.Protocol
         public long LineNumber { get; set; }
 
         /// <summary>
-        /// The script <see cref="Message.Id"/>
+        /// The script <see cref="MessageBase.Id"/>
         /// </summary>
         [JsonProperty("scriptId")]
         public string ScriptId { get; set; }

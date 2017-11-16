@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace ChromeHtmlToPdf.Protocol
+namespace ChromeHtmlToPdfLib.Protocol
 {
     /// <summary>
     /// The JSON structure that is returned from Chrome when an Error occurs

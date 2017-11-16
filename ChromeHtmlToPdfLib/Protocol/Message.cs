@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace ChromeHtmlToPdf.Protocol
+namespace ChromeHtmlToPdfLib.Protocol
 {
     /// <summary>
     /// The JSON message that is sent to Chrome

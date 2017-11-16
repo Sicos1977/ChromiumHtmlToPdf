@@ -7,9 +7,9 @@ using System.Net.NetworkInformation;
 using System.Security;
 using System.Text;
 using System.Threading;
-using ChromeHtmlToPdf.Settings;
+using ChromeHtmlToPdfLib.Settings;
 
-namespace ChromeHtmlToPdf
+namespace ChromeHtmlToPdfLib
 {
     public class Converter : IDisposable
     {
@@ -53,7 +53,10 @@ namespace ChromeHtmlToPdf
         /// </summary>
         private Communicator _communicator;
 
-        //private static readonly object StartChromeLock = new object();
+        /// <summary>
+        ///     Keeps track is we already disposed our resources
+        /// </summary>
+        private bool _disposed;
         #endregion
 
         #region Properties
@@ -112,7 +115,7 @@ namespace ChromeHtmlToPdf
                 while (true)
                 {
 
-                    Console.WriteLine("Waiting for Chrome locking mutex");
+                    Console.Write("Starting Chrome ... ");
                     bool mutexAcquired;
                     try
                     {
@@ -125,7 +128,7 @@ namespace ChromeHtmlToPdf
 
                     if (!mutexAcquired)
                     {
-                        Console.WriteLine("Could not acquire Chrome locking mutext");
+                        Console.Write("could not acquire Chrome locking mutext" + Environment.NewLine);
                         return;
                     }
 
@@ -183,7 +186,7 @@ namespace ChromeHtmlToPdf
                         }
 
                         _communicator = new Communicator(new Uri($"http://localhost:{port}"));
-                        Console.WriteLine($"Chrome started on port {port}");
+                        Console.Write($"started on port {port}" + Environment.NewLine);
                         break;
                     }
                     finally
@@ -575,26 +578,6 @@ namespace ChromeHtmlToPdf
 
         #region ConvertToPdf
         /// <summary>
-        ///     Converts the given <paramref name="inputFile" /> to PDF with Chrome
-        /// </summary>
-        /// <param name="inputFile">The inputfile to convert to PDF</param>
-        /// <param name="outputFile">The output file</param>
-        /// <param name="pageSettings"><see cref="PageSettings"/></param>
-        /// <exception cref="FileNotFoundException">Raised when the <see cref="inputFile" /> does not exists</exception>
-        /// <exception cref="DirectoryNotFoundException"></exception>
-        public void ConvertToPdf(string inputFile, string outputFile, PageSettings pageSettings)
-        {
-            var file = new FileInfo(inputFile);
-            if (!file.Exists)
-                throw new FileNotFoundException($"The file '{inputFile}' does not exists");
-
-            CheckIfOutputFolderExists(outputFile);
-            StartChromeHeadless();
-            _communicator.NavigateTo(new Uri("file://" + inputFile));
-            _communicator.PrintToPdf(pageSettings).SaveToFile(outputFile);
-        }
-
-        /// <summary>
         ///     Converts the given <paramref name="inputUri" /> to PDF
         /// </summary>
         /// <param name="inputUri">The webpage to convert</param>
@@ -604,9 +587,20 @@ namespace ChromeHtmlToPdf
         public void ConvertToPdf(Uri inputUri, string outputFile, PageSettings pageSettings)
         {
             CheckIfOutputFolderExists(outputFile);
+
+            var isFile = inputUri.Scheme == "file";
+
+            if (isFile && !File.Exists(inputUri.OriginalString))
+                throw new FileNotFoundException($"The file '{inputUri.OriginalString}' does not exists");
+
             StartChromeHeadless();
+
+            Console.Write("Loading " + (isFile ? "file" : "url") + $" {inputUri} ... ");
             _communicator.NavigateTo(inputUri);
+            Console.Write("loaded" + Environment.NewLine);
+            Console.Write("Converting to PDF ... ");            
             _communicator.PrintToPdf(pageSettings).SaveToFile(outputFile);
+            Console.Write("converted" + Environment.NewLine);
         }
         #endregion
 
@@ -647,20 +641,21 @@ namespace ChromeHtmlToPdf
         {
             try
             {
-                Console.WriteLine("Killing chrome");
+                if (_disposed) return;
+                Console.Write("Stopping Chrome ... ");
                 if (_chromeProcess == null) return;
                 _chromeProcess.Refresh();
                 if (_chromeProcess.HasExited) return;
                 _chromeProcess.Kill();
-                // Enable this line if you are running out of Chrome instances. This will slow down your code.
-                //_chromeProcess.WaitForExit();
                 _chromeProcess = null;
-                Console.WriteLine("Killed chrome");
+                Console.Write("stopped" + Environment.NewLine);
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
             }
+
+            _disposed = true;
         }
         #endregion
     }

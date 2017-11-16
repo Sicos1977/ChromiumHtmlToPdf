@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace ChromeHtmlToPdf.Protocol
+namespace ChromeHtmlToPdfLib.Protocol
 {
     /// <summary>
     /// The JSON object that is returned from Chrome when calling the <see cref="Communicator.GetAvailableSessions"/> method

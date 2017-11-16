@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Runtime.Serialization;
-using ChromeHtmlToPdf.Protocol;
+using ChromeHtmlToPdfLib.Protocol;
 
-namespace ChromeHtmlToPdf
+namespace ChromeHtmlToPdfLib
 {
     /// <summary>
     /// Raised when an error is returned from Chrome

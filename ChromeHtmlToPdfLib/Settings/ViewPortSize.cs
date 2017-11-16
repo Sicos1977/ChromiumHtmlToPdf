@@ -1,5 +1,5 @@
 ﻿// ReSharper disable InconsistentNaming
-namespace ChromeHtmlToPdf.Settings
+namespace ChromeHtmlToPdfLib.Settings
 {
     public enum ViewPortSize
     {

@@ -1,4 +1,4 @@
-﻿namespace ChromeHtmlToPdf.Settings
+﻿namespace ChromeHtmlToPdfLib.Settings
 {
     /// <summary>
     ///     The port range to use for Chrome's debugger

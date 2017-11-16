@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace ChromeHtmlToPdf.Protocol
+namespace ChromeHtmlToPdfLib.Protocol
 {
     /// <summary>
     /// The base for a <see cref="Message"/>

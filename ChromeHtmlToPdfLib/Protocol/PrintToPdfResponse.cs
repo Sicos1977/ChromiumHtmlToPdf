@@ -1,10 +1,11 @@
 ﻿using System;
 using System.IO;
 using Newtonsoft.Json;
+
 #pragma warning disable 1584,1711,1572,1581,1580
 #pragma warning disable 1574
 
-namespace ChromeHtmlToPdf.Protocol
+namespace ChromeHtmlToPdfLib.Protocol
 {
     /// <summary>
     /// The JSON object that is returned from Chrome when calling the <see cref="Converter.ConvertToPdf"/> method
