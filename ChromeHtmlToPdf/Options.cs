@@ -64,6 +64,24 @@ namespace ChromeHtmlToPdf
         public double PaperHeight { get; set; }
 
         /// <summary>
+        ///     The widowsize to use, when this option is set it will override <see cref="WindowWidth"/> and <see cref="WindowHeight"/>
+        /// </summary>
+        [Option("window-size", Required = false, Default = WindowSize.HD_1366_768, HelpText = "Window size to use, when set then this will override --window-width and --window-height")]
+        public WindowSize WindowSize { get; set; }
+
+        /// <summary>
+        ///     Window width in pixel.
+        /// </summary>
+        [Option("window-width", Default = 166, Required = false, HelpText = "Window width in pixels")]
+        public int WindowWidth { get; set; }
+
+        /// <summary>
+        ///     Window height in pixels.
+        /// </summary>
+        [Option("window-height", Default = 768, Required = false, HelpText = "Window height in pixels")]
+        public int WindowHeight { get; set; }
+
+        /// <summary>
         ///     Top margin in inches. Defaults to 1cm (~0.4 inches).
         /// </summary>
         [Option("margin-top", Default = 0.4, Required = false, HelpText = "Top margin in inches")]

@@ -70,6 +70,11 @@ namespace ChromeHtmlToPdf
 
                 using (var converter = new Converter(chrome, portRangeSettings))
                 {
+                    if (options.WindowSize != WindowSize.HD_1366_768)
+                        converter.SetWindowSize(options.WindowSize);
+                    else
+                        converter.SetWindowSize(options.WindowWidth, options.WindowHeight);
+
                     converter.ConvertToPdf(new Uri(options.Input), options.Output, pageSettings);
                 }
             }
