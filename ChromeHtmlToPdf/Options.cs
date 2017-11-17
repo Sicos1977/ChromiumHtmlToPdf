@@ -81,6 +81,13 @@ namespace ChromeHtmlToPdf
         [Option("window-height", Default = 768, Required = false, HelpText = "Window height in pixels")]
         public int WindowHeight { get; set; }
 
+
+        /// <summary>
+        ///     Use mobile screen
+        /// </summary>
+        [Option("use-mobile-screen", Default = false, Required = false, HelpText = "Let Chrome know that we want to simulate a mobile screen")]
+        public bool UseMobileScreen { get; set; }
+
         /// <summary>
         ///     Top margin in inches. Defaults to 1cm (~0.4 inches).
         /// </summary>
