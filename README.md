@@ -1,6 +1,6 @@
 ## What is ChromeHtmlToPdf?
 
-ChromeHtmlToPdf is a 100% managed C# .NET library and console application that can be used to convert a file or url to PDF format with the use of Google Chrome
+ChromeHtmlToPdf is a 100% managed C# .NET library and console application that can be used to convert a HTML to PDF format with the use of Google Chrome
 
 ## License Information
 
