@@ -1,7 +1,10 @@
 ﻿// ReSharper disable InconsistentNaming
 namespace ChromeHtmlToPdfLib.Settings
 {
-    public enum ViewPortSize
+    /// <summary>
+    /// The default Window sizes
+    /// </summary>
+    public enum WindowSize
     {
         /// <summary>
         ///     800 x 600

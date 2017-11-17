@@ -88,7 +88,7 @@
     <Compile Include="Protocol\RemoteSessions.cs" />
     <Compile Include="Settings\PageSettings.cs" />
     <Compile Include="Settings\PortRangeSettings.cs" />
-    <Compile Include="Settings\ViewPortSize.cs" />
+    <Compile Include="Settings\WindowSize.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

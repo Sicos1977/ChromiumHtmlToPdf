@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using ChromeHtmlToPdfLib;
 using ChromeHtmlToPdfLib.Settings;
 using CommandLine;
@@ -13,33 +15,50 @@ namespace ChromeHtmlToPdf
         #region Main
         static void Main(string[] args)
         {
-            var options = new Options();
-            var isValid = Parser.Default.ParseArguments(args, options);
-
-            var parser = new Parser();
-            parser.ParseArguments(args, options);
-            var helpText = HelpText.AutoBuild(options);
-            ;
-
-            //parserResult.WithNotParsed(errors =>
-            //{
-            //    // Use custom help text to ensure valid enum values are displayed
-            //    var helpText = HelpText.AutoBuild(parserResult);
-            //    helpText.AddEnumValuesToHelpText = true;
-            //    helpText.AddOptions(parserResult);
-            //    Console.Error.Write(helpText);
-            //    Environment.Exit(1);
-            //});
-
-            if (!isValid)
+            Options options = null;
+            var errors = false;
+            var parser = new Parser(settings =>
             {
-                Console.Write(HelpText.AutoBuild(options).ToString());
-                return;
-            }
+                settings.CaseInsensitiveEnumValues = true;
+                settings.CaseSensitive = true;
+                settings.HelpWriter = null;
+                settings.IgnoreUnknownArguments = false;
+                settings.ParsingCulture = CultureInfo.InvariantCulture;
+            });
 
-            var portRangeSettings = GetPortRangeSettings(options);
-            if (portRangeSettings == null)
-                return;
+            var parserResult = parser.ParseArguments<Options>(args).WithNotParsed(notParsed =>
+            {
+                errors = notParsed.Any();
+            }
+            ).WithParsed(parsed =>
+            {
+                options = parsed;
+            });
+
+            PortRangeSettings portRangeSettings = null;
+            string result = null;
+
+            if (errors || !GetPortRangeSettings(options, out result, out portRangeSettings))
+            {
+                var helpText = HelpText.AutoBuild(parserResult);
+
+                helpText.AddPreOptionsText("Example usage:");
+                helpText.AddPreOptionsText("    ChromeHtmlToPdf --input https://www.google.nl --output c:\\google.pdf");
+
+                if (!string.IsNullOrWhiteSpace(result))
+                    helpText.AddPreOptionsText(result);
+
+                helpText.AddEnumValuesToHelpText = true;
+                helpText.AdditionalNewLineAfterOption = false;
+                helpText.AddOptions(parserResult);
+                helpText.AddPostOptionsLine("Contact:");
+                helpText.AddPostOptionsLine("    If you experience bugs or want to request new features please visit");
+                helpText.AddPostOptionsLine("    https://github.com/Sicos1977/ChromeHtmlToPdf/issues");
+                helpText.AddPostOptionsLine(string.Empty);
+
+                Console.Error.Write(helpText);
+                Environment.Exit(1);
+            }
 
             var chrome = !string.IsNullOrWhiteSpace(options.ChromeLocation)
                 ? options.ChromeLocation
@@ -57,7 +76,10 @@ namespace ChromeHtmlToPdf
             catch (Exception e)
             {
                 Console.WriteLine(e);
+                Environment.Exit(1);
             }
+
+            Environment.Exit(0);
         }
         #endregion
 
@@ -66,20 +88,24 @@ namespace ChromeHtmlToPdf
         /// Parses the port(range) settings from the commandline
         /// </summary>
         /// <param name="options"><see cref="Options"/></param>
-        /// <returns></returns>
-        private static PortRangeSettings GetPortRangeSettings(Options options)
+        /// <param name="result"></param>
+        /// <param name="portRangeSettings"><see cref="PortRangeSettings"/></param>
+        /// <returns><c>true</c> when the portrange options are valid</returns>
+        private static bool GetPortRangeSettings(Options options,
+                                                 out string result, 
+                                                 out PortRangeSettings portRangeSettings)
         {
             int start;
             var end = 0;
+            result = string.Empty;
+            portRangeSettings = null;
 
             var portRangeParts = options.PortRange.Split('-');
 
-            var help = HelpText.AutoBuild(options).ToString();
-
             if (portRangeParts.Length > 2)
             {
-                Console.Write(help);
-                return null;
+                result = "Portrange should only contain 1 or 2 parts, e.g 9222 or 9222-9322";
+                return false;
             }
 
             switch (portRangeParts.Length)
@@ -87,23 +113,20 @@ namespace ChromeHtmlToPdf
                 case 2:
                     if (!int.TryParse(portRangeParts[0], out start))
                     {
-                        Console.Write(help);
-                        Console.WriteLine($"The start port {portRangeParts[0]} is not valid");
-                        return null;
+                        result = $"The start port {portRangeParts[0]} is not valid";
+                        return false;
                     }
 
                     if (!int.TryParse(portRangeParts[1], out end))
                     {
-                        Console.Write(help);
-                        Console.WriteLine($"The end port {portRangeParts[1]} is not valid");
-                        return null;
+                        result = $"The end port {portRangeParts[1]} is not valid";
+                        return false;
                     }
 
                     if (start >= end)
                     {
-                        Console.Write(help);
-                        Console.WriteLine("The end port needs to be bigger then the start port");
-                        return null;
+                        result = "The end port needs to be bigger then the start port";
+                        return false;
                     }
 
                     break;
@@ -111,19 +134,18 @@ namespace ChromeHtmlToPdf
                 case 1:
                     if (!int.TryParse(portRangeParts[0], out start))
                     {
-                        Console.Write(help);
-                        Console.WriteLine($"The port {portRangeParts[0]} is not valid");
-                        return null;
+                        result = $"The port {portRangeParts[0]} is not valid";
+                        return false;
                     }
                     break;
 
                 default:
-                    Console.Write(help);
-                    Console.WriteLine("Port(range) is blank");
-                    return null;
+                    result = "Port(range) is blank";
+                    return false;
             }
 
-            return new PortRangeSettings(start, end);
+            portRangeSettings = new PortRangeSettings(start, end);
+            return true;
         }
         #endregion
 
@@ -160,7 +182,7 @@ namespace ChromeHtmlToPdf
         {
             PageSettings pageSettings;
 
-            if (options.PaperFormat != PaperFormats.None)
+            if (options.PaperFormat != PaperFormats.Letter)
             {
                 pageSettings = new PageSettings(options.PaperFormat);
             }

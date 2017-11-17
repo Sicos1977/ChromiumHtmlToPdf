@@ -240,7 +240,7 @@ namespace ChromeHtmlToPdfLib
             SetDefaultArgument("--allow-insecure-localhost");
             SetDefaultArgument("--hide-scrollbars");
             SetDefaultArgument("--safebrowsing-disable-auto-update");
-            SetViewPortSize(ViewPortSize.HD_1366_768);
+            SetWindowSize(WindowSize.HD_1366_768);
         }
         #endregion
 
@@ -483,7 +483,7 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
 
-        #region SetViewPortSize
+        #region SetWindowSize
         /// <summary>
         ///     Sets the viewport size to use when converting
         /// </summary>
@@ -497,7 +497,7 @@ namespace ChromeHtmlToPdfLib
         ///     Raised when <paramref name="width" /> or
         ///     <paramref name="height" /> is smaller then or zero
         /// </exception>
-        public void SetViewPortSize(int width, int height)
+        public void SetWindowSize(int width, int height)
         {
             if (width <= 0)
                 throw new ArgumentOutOfRangeException(nameof(width));
@@ -509,65 +509,65 @@ namespace ChromeHtmlToPdfLib
         }
 
         /// <summary>
-        ///     Sets the viewport size to use when converting
+        ///     Sets the window size to use when converting
         /// </summary>
         /// <param name="size"></param>
-        public void SetViewPortSize(ViewPortSize size)
+        public void SetWindowSize(WindowSize size)
         {
             switch (size)
             {
-                case ViewPortSize.SVGA:
+                case WindowSize.SVGA:
                     SetDefaultArgument("--window-size", 800 + "," + 600);
                     break;
-                case ViewPortSize.WSVGA:
+                case WindowSize.WSVGA:
                     SetDefaultArgument("--window-size", 1024 + "," + 600);
                     break;
-                case ViewPortSize.XGA:
+                case WindowSize.XGA:
                     SetDefaultArgument("--window-size", 1024 + "," + 768);
                     break;
-                case ViewPortSize.XGAPLUS:
+                case WindowSize.XGAPLUS:
                     SetDefaultArgument("--window-size", 1152 + "," + 864);
                     break;
-                case ViewPortSize.WXGA_5_3:
+                case WindowSize.WXGA_5_3:
                     SetDefaultArgument("--window-size", 1280 + "," + 768);
                     break;
-                case ViewPortSize.WXGA_16_10:
+                case WindowSize.WXGA_16_10:
                     SetDefaultArgument("--window-size", 1280 + "," + 800);
                     break;
-                case ViewPortSize.SXGA:
+                case WindowSize.SXGA:
                     SetDefaultArgument("--window-size", 1280 + "," + 1024);
                     break;
-                case ViewPortSize.HD_1360_768:
+                case WindowSize.HD_1360_768:
                     SetDefaultArgument("--window-size", 1360 + "," + 768);
                     break;
-                case ViewPortSize.HD_1366_768:
+                case WindowSize.HD_1366_768:
                     SetDefaultArgument("--window-size", 1366 + "," + 768);
                     break;
-                case ViewPortSize.OTHER_1536_864:
+                case WindowSize.OTHER_1536_864:
                     SetDefaultArgument("--window-size", 1536 + "," + 864);
                     break;
-                case ViewPortSize.HD_PLUS:
+                case WindowSize.HD_PLUS:
                     SetDefaultArgument("--window-size", 1600 + "," + 900);
                     break;
-                case ViewPortSize.WSXGA_PLUS:
+                case WindowSize.WSXGA_PLUS:
                     SetDefaultArgument("--window-size", 1680 + "," + 1050);
                     break;
-                case ViewPortSize.FHD:
+                case WindowSize.FHD:
                     SetDefaultArgument("--window-size", 1920 + "," + 1080);
                     break;
-                case ViewPortSize.WUXGA:
+                case WindowSize.WUXGA:
                     SetDefaultArgument("--window-size", 1920 + "," + 1200);
                     break;
-                case ViewPortSize.OTHER_2560_1070:
+                case WindowSize.OTHER_2560_1070:
                     SetDefaultArgument("--window-size", 2560 + "," + 1070);
                     break;
-                case ViewPortSize.WQHD:
+                case WindowSize.WQHD:
                     SetDefaultArgument("--window-size", 2560 + "," + 1440);
                     break;
-                case ViewPortSize.OTHER_3440_1440:
+                case WindowSize.OTHER_3440_1440:
                     SetDefaultArgument("--window-size", 3440 + "," + 1440);
                     break;
-                case ViewPortSize._4K_UHD:
+                case WindowSize._4K_UHD:
                     SetDefaultArgument("--window-size", 3840 + "," + 2160);
                     break;
                 default:

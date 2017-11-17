@@ -9,11 +9,6 @@ namespace ChromeHtmlToPdfLib.Settings
     public enum PaperFormats
     {
         /// <summary>
-        /// No paper format is set
-        /// </summary>
-        None,
-
-        /// <summary>
         /// Letter format
         /// </summary>
         Letter,
