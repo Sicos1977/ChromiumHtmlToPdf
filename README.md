@@ -63,6 +63,6 @@ If you like my work then please consider a donation as a thank you.
 
 ## Reporting Bugs
 
-Have a bug or a feature request? [Please open a new issue](https://github.com/Sicos1977/MsgKit/issues).
+Have a bug or a feature request? [Please open a new issue](https://github.com/Sicos1977/ChromeHtmlToPdf/issues).
 
 Before opening a new issue, please search for existing issues to avoid submitting duplicates.
