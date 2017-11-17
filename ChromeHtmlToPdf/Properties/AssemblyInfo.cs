@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Magic-Sessions.com - Kees van Spelde")]
 [assembly: AssemblyProduct("ChromeHtmlToPdf")]
-[assembly: AssemblyCopyright("Copyright © 2017")]
+[assembly: AssemblyCopyright("Copyright © 2017 - Kees van Spelde")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
