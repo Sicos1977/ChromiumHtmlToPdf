@@ -72,7 +72,7 @@ namespace ChromeHtmlToPdf
         /// <summary>
         ///     Window width in pixel.
         /// </summary>
-        [Option("window-width", Default = 166, Required = false, HelpText = "Window width in pixels")]
+        [Option("window-width", Default = 1366, Required = false, HelpText = "Window width in pixels")]
         public int WindowWidth { get; set; }
 
         /// <summary>
