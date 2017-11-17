@@ -141,6 +141,43 @@ namespace ChromeHtmlToPdf
         /// </summary>
         [Option("portrange", Default = "9222-9322", Required = false, HelpText = "The port(range) to use when communicating with Chrome. For example 9222-9322 when setting a port range")]
         public string PortRange { get; set; }
+
+        /// <summary>
+        ///     This tells Chrome to use a custom proxy configuration
+        /// </summary>
+        [Option("proxy-server", Required = false, HelpText = "This tells Chrome to use a custom proxy configuration")]
+        public string ProxyServer { get; set; }
+
+        /// <summary>
+        ///     This tells chrome to bypass any specified proxy for the given semi-colon-separated list of hosts. This flag must be used (or rather, only has an effect) in 
+        ///     tandem with --proxy-server. For example "*.google.com;*foo.com;127.0.0.1:8080"
+        /// </summary>
+        [Option("proxy-bypass-list", Required = false, HelpText = "This tells chrome to bypass any specified proxy for the given semi-colon-separated list of hosts. This flag must be used (or rather, only has an effect) in tandem with --proxy-server. For example \"*.google.com;*foo.com;127.0.0.1:8080\"")]
+        public string ProxyByPassList { get; set; }
+
+        /// <summary>
+        ///     This tells Chrome to use the PAC file at the specified URL. For example "http://wpad/windows.pac"
+        /// </summary>
+        [Option("proxy-pac-url", Required = false, HelpText = "This tells Chrome to use the PAC file at the specified URL. For example \"http://wpad/windows.pac\"")]
+        public string ProxyPacUrl { get; set; }
+
+        /// <summary>
+        ///     Run Chrome under this user. This option is used in combination with --password"
+        /// </summary>
+        [Option("user", Required = false, HelpText = "Run Chrome under this user. This option is used in combination with --password")]
+        public string User { get; set; }
+
+        /// <summary>
+        ///     The password needed for --user
+        /// </summary>
+        [Option("password", Required = false, HelpText = "The password needed for --user")]
+        public string Password { get; set; }
+
+        /// <summary>
+        ///     The extra time in milliseconds to wait after the page has been loaded
+        /// </summary>
+        [Option("javascript-delay", Required = false, Default = 0, HelpText = "The extra time in milliseconds to wait after the page has has been loaded")]
+        public int JavaScriptDelay { get; set; }
         #endregion
     }
 }

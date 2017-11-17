@@ -77,7 +77,19 @@ namespace ChromeHtmlToPdf
                     else
                         converter.SetWindowSize(options.WindowWidth, options.WindowHeight);
 
-                    converter.ConvertToPdf(new Uri(options.Input), options.Output, pageSettings);
+                    if (!string.IsNullOrWhiteSpace(options.User))
+                        converter.SetUser(options.User, options.Password);
+
+                    if (!string.IsNullOrWhiteSpace(options.ProxyServer))
+                    {
+                        converter.SetProxyServer(options.ProxyServer);
+                        converter.SetProxyBypassList(options.ProxyByPassList.Split(';').ToList());
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(options.ProxyPacUrl))
+                        converter.SetProxyPacUrl(options.ProxyPacUrl);
+
+                    converter.ConvertToPdf(new Uri(options.Input), options.Output, pageSettings, options.JavaScriptDelay);
                 }
             }
             catch (Exception e)

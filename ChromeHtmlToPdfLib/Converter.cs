@@ -609,8 +609,9 @@ namespace ChromeHtmlToPdfLib
         /// <param name="inputUri">The webpage to convert</param>
         /// <param name="outputFile">The output file</param>
         /// <param name="pageSettings"><see cref="PageSettings"/></param>
+        /// <param name="javascriptDelay">The extra time in milliseconds to wait after the page has has been loaded</param>
         /// <exception cref="DirectoryNotFoundException"></exception>
-        public void ConvertToPdf(Uri inputUri, string outputFile, PageSettings pageSettings)
+        public void ConvertToPdf(Uri inputUri, string outputFile, PageSettings pageSettings, int javascriptDelay = 0)
         {
             CheckIfOutputFolderExists(outputFile);
 
@@ -624,6 +625,14 @@ namespace ChromeHtmlToPdfLib
             Console.Write("Loading " + (isFile ? "file" : "url") + $" {inputUri} ... ");
             _communicator.NavigateTo(inputUri);
             Console.Write("loaded" + Environment.NewLine);
+
+            if (javascriptDelay > 0)
+            {
+                Console.Write($"Waiting {javascriptDelay} milliseconds for javascript to finish ... ");
+                Thread.Sleep(javascriptDelay);
+                Console.Write("done" + Environment.NewLine);
+            }
+
             Console.Write("Converting to PDF ... ");            
             _communicator.PrintToPdf(pageSettings).SaveToFile(outputFile);
             Console.Write("converted" + Environment.NewLine);
