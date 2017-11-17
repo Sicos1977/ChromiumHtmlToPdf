@@ -49,7 +49,7 @@ System.Diagnostics.Process.Start(@"c:\google.pdf");
 ```csharp
 ChromeHtmlToPdf.exe --input https://www.google.nl --output c:\google.pdf
 ```
-![alt text](https://github.com/Sicos1977/ChromeHtmlToPdf/blob/master/console.jpg)
+![screenshot](https://github.com/Sicos1977/ChromeHtmlToPdf/blob/master/console.png)
 
 Core Team
 =========
