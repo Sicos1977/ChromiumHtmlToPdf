@@ -51,8 +51,7 @@ ChromeHtmlToPdf.exe --input https://www.google.nl --output c:\google.pdf
 ```
 ![screenshot](https://github.com/Sicos1977/ChromeHtmlToPdf/blob/master/console.png)
 
-Exit codes
-==========
+### Exit codes
 
 0 = successful, 1 = an error occurred
 
