@@ -1,10 +1,10 @@
 ## What is ChromeHtmlToPdf?
 
-ChromeHtmlToPdf is a 100% managed C# .NET library and console application that can be used to convert a HTML to PDF format with the use of Google Chrome
+ChromeHtmlToPdf is a 100% managed C# .NET library and console application that can be used to convert HTML to PDF format with the use of Google Chrome
 
 ## License Information
 
-MsgKit is Copyright (C)2017 Magic-Sessions and is licensed under the MIT license:
+ChromeHtmlToPdf is Copyright (C)2017 Kees van Spelde and is licensed under the MIT license:
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +30,7 @@ The easiest way to install ChromeHtmlToPdf is via NuGet.
 
 In Visual Studio's Package Manager Console, simply enter the following command:
 
-    AT THE MOMENT THERE IS NO PACKAGE YET
+    Install-Package ChromeHtmlToPdf -Version 1.0.0 
 
 ### Converting a file or url from code
 
@@ -51,6 +51,10 @@ ChromeHtmlToPdf.exe --input https://www.google.nl --output c:\google.pdf
 ```
 ![screenshot](https://github.com/Sicos1977/ChromeHtmlToPdf/blob/master/console.png)
 
+### Exit codes
+
+0 = successful, 1 = an error occurred
+
 Core Team
 =========
     Sicos1977 (Kees van Spelde)
@@ -63,6 +67,6 @@ If you like my work then please consider a donation as a thank you.
 
 ## Reporting Bugs
 
-Have a bug or a feature request? [Please open a new issue](https://github.com/Sicos1977/MsgKit/issues).
+Have a bug or a feature request? [Please open a new issue](https://github.com/Sicos1977/ChromeHtmlToPdf/issues).
 
 Before opening a new issue, please search for existing issues to avoid submitting duplicates.
