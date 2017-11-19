@@ -89,7 +89,7 @@ namespace ChromeHtmlToPdf
                     if (!string.IsNullOrWhiteSpace(options.ProxyPacUrl))
                         converter.SetProxyPacUrl(options.ProxyPacUrl);
 
-                    converter.ConvertToPdf(new Uri(options.Input), options.Output, pageSettings, options.JavaScriptDelay);
+                    converter.ConvertToPdf(new Uri(options.Input), options.Output, pageSettings, options.WaitForNetworkIdle);
                 }
             }
             catch (Exception e)

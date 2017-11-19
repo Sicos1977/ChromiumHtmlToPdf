@@ -139,7 +139,8 @@ namespace ChromeHtmlToPdfLib
                     using (var response = request.GetResponse())
                     using (var responseStream = response.GetResponseStream())
                     {
-                        var streamReader = new StreamReader(responseStream ?? throw new InvalidOperationException());
+                        if (responseStream == null) throw new InvalidOperationException();
+                        var streamReader = new StreamReader(responseStream);
                         return RemoteSessionsResponse.FromJson(streamReader.ReadToEnd());
                     }
                 }
@@ -163,6 +164,7 @@ namespace ChromeHtmlToPdfLib
         /// Instructs Chrome to navigate to the given <paramref name="uri"/>
         /// </summary>
         /// <param name="uri"></param>
+        /// <param name="waitForNetworkIdle">Wait until all external sources are loaded</param>
         /// <returns>
         ///     <code>
         ///         var uri = new Uri("http://www.google.nl");
@@ -174,7 +176,7 @@ namespace ChromeHtmlToPdfLib
         ///     </code>
         /// </returns>
         /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
-        public void NavigateTo(Uri uri)
+        public void NavigateTo(Uri uri, bool waitForNetworkIdle)
         {
             WebSocketSend(new Message { Id = MessageId, Method = "Page.enable" }.ToJson());
 
@@ -197,7 +199,12 @@ namespace ChromeHtmlToPdfLib
 
                 if (!localFile)
                 {
-                    if (page.Method == "Page.lifecycleEvent" && page.Params.Name == "DOMContentLoaded")
+                    if (waitForNetworkIdle)
+                    {
+                        if (page.Params?.Name == "networkIdle")
+                            loaded = true;
+                    }
+                    else if (page.Method == "Page.lifecycleEvent" && page.Params.Name == "DOMContentLoaded")
                         loaded = true;
                 }
                 else if (page.Method == "Page.loadEventFired")

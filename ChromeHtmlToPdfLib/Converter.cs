@@ -609,9 +609,9 @@ namespace ChromeHtmlToPdfLib
         /// <param name="inputUri">The webpage to convert</param>
         /// <param name="outputFile">The output file</param>
         /// <param name="pageSettings"><see cref="PageSettings"/></param>
-        /// <param name="javascriptDelay">The extra time in milliseconds to wait after the page has has been loaded</param>
+        /// <param name="waitForNetworkIdle">Wait until all external sources are loaded</param>
         /// <exception cref="DirectoryNotFoundException"></exception>
-        public void ConvertToPdf(Uri inputUri, string outputFile, PageSettings pageSettings, int javascriptDelay = 0)
+        public void ConvertToPdf(Uri inputUri, string outputFile, PageSettings pageSettings, bool waitForNetworkIdle)
         {
             CheckIfOutputFolderExists(outputFile);
 
@@ -622,16 +622,9 @@ namespace ChromeHtmlToPdfLib
 
             StartChromeHeadless();
 
-            Console.Write("Loading " + (isFile ? "file" : "url") + $" {inputUri} ... ");
-            _communicator.NavigateTo(inputUri);
+            Console.Write("Loading " + (isFile ? "file" : "url") + $" {inputUri} " + (waitForNetworkIdle ? "and wait until all resources are loaded" : string.Empty) + " ... ");
+            _communicator.NavigateTo(inputUri, waitForNetworkIdle);
             Console.Write("loaded" + Environment.NewLine);
-
-            if (javascriptDelay > 0)
-            {
-                Console.Write($"Waiting {javascriptDelay} milliseconds for javascript to finish ... ");
-                Thread.Sleep(javascriptDelay);
-                Console.Write("done" + Environment.NewLine);
-            }
 
             Console.Write("Converting to PDF ... ");            
             _communicator.PrintToPdf(pageSettings).SaveToFile(outputFile);
@@ -640,32 +633,32 @@ namespace ChromeHtmlToPdfLib
         #endregion
 
         #region ConvertToPng
-        /// <summary>
-        ///     Converts the given <paramref name="inputFile" /> to JPG
-        /// </summary>
-        /// <param name="inputFile">The inputfile to convert to PDF</param>
-        /// <param name="outputFile">The output file</param>
-        /// <param name="pageSettings"><see cref="PageSettings"/></param>
-        /// <exception cref="DirectoryNotFoundException"></exception>
-        public void ConvertToPng(string inputFile, string outputFile, PageSettings pageSettings)
-        {
-            CheckIfOutputFolderExists(outputFile);
-            _communicator.NavigateTo(new Uri("file://" + inputFile));
-            SetDefaultArgument("--screenshot", Path.ChangeExtension(outputFile, ".png"));
-        }
+        ///// <summary>
+        /////     Converts the given <paramref name="inputFile" /> to JPG
+        ///// </summary>
+        ///// <param name="inputFile">The inputfile to convert to PDF</param>
+        ///// <param name="outputFile">The output file</param>
+        ///// <param name="pageSettings"><see cref="PageSettings"/></param>
+        ///// <exception cref="DirectoryNotFoundException"></exception>
+        //public void ConvertToPng(string inputFile, string outputFile, PageSettings pageSettings)
+        //{
+        //    CheckIfOutputFolderExists(outputFile);
+        //    _communicator.NavigateTo(new Uri("file://" + inputFile), TODO);
+        //    SetDefaultArgument("--screenshot", Path.ChangeExtension(outputFile, ".png"));
+        //}
 
-        /// <summary>
-        ///     Converts the given <paramref name="inputUri" /> to JPG
-        /// </summary>
-        /// <param name="inputUri">The webpage to convert</param>
-        /// <param name="outputFile">The output file</param>
-        /// <exception cref="DirectoryNotFoundException"></exception>
-        public void ConvertToPng(Uri inputUri, string outputFile)
-        {
-            CheckIfOutputFolderExists(outputFile);
-            _communicator.NavigateTo(inputUri);
-            SetDefaultArgument("--screenshot", Path.ChangeExtension(outputFile, ".png"));
-        }
+        ///// <summary>
+        /////     Converts the given <paramref name="inputUri" /> to JPG
+        ///// </summary>
+        ///// <param name="inputUri">The webpage to convert</param>
+        ///// <param name="outputFile">The output file</param>
+        ///// <exception cref="DirectoryNotFoundException"></exception>
+        //public void ConvertToPng(Uri inputUri, string outputFile)
+        //{
+        //    CheckIfOutputFolderExists(outputFile);
+        //    _communicator.NavigateTo(inputUri, TODO);
+        //    SetDefaultArgument("--screenshot", Path.ChangeExtension(outputFile, ".png"));
+        //}
         #endregion
 
         #region Dispose

@@ -4,7 +4,7 @@ using CommandLine;
 namespace ChromeHtmlToPdf
 {
     /// <summary>
-    /// The parameters that can be used when calling this application
+    ///     The parameters that can be used when calling this application
     /// </summary>
     public class Options
     {
@@ -14,6 +14,16 @@ namespace ChromeHtmlToPdf
         /// </summary>
         [Option("input", Required = true, HelpText = "The input url or file")]
         public string Input { get; set; }
+
+        /// <summary>
+        ///     A file with input url's and/or files
+        /// </summary>
+        [Option("input-is-list", Required = false,
+            HelpText =
+                "Tells this app that --input is a list of input url's and/or files. Use the --output parameter to " +
+                "give a location where to write information about the converted files, e.g. c:\\myconvertedfiles.txt"
+        )]
+        public bool InputIsList { get; set; }
 
         /// <summary>
         ///     The output file
@@ -46,11 +56,13 @@ namespace ChromeHtmlToPdf
         public double Scale { get; set; }
 
         /// <summary>
-        ///     The papersize to use, when this option is set is will override <see cref="PaperWidth"/> and <see cref="PaperHeight"/>
+        ///     The papersize to use, when this option is set is will override <see cref="PaperWidth" /> and
+        ///     <see cref="PaperHeight" />
         /// </summary>
-        [Option("paper-format", Required = false, Default = PaperFormats.Letter, HelpText= "Paper format to use, when set then this will override --paper-width and --paper-height")]
+        [Option("paper-format", Required = false, Default = PaperFormats.Letter,
+            HelpText = "Paper format to use, when set then this will override --paper-width and --paper-height")]
         public PaperFormats PaperFormat { get; set; }
-        
+
         /// <summary>
         ///     Paper width in inches. Defaults to 8.5 inches.
         /// </summary>
@@ -64,9 +76,11 @@ namespace ChromeHtmlToPdf
         public double PaperHeight { get; set; }
 
         /// <summary>
-        ///     The widowsize to use, when this option is set it will override <see cref="WindowWidth"/> and <see cref="WindowHeight"/>
+        ///     The widowsize to use, when this option is set it will override <see cref="WindowWidth" /> and
+        ///     <see cref="WindowHeight" />
         /// </summary>
-        [Option("window-size", Required = false, Default = WindowSize.HD_1366_768, HelpText = "Window size to use, when set then this will override --window-width and --window-height")]
+        [Option("window-size", Required = false, Default = WindowSize.HD_1366_768,
+            HelpText = "Window size to use, when set then this will override --window-width and --window-height")]
         public WindowSize WindowSize { get; set; }
 
         /// <summary>
@@ -81,11 +95,11 @@ namespace ChromeHtmlToPdf
         [Option("window-height", Default = 768, Required = false, HelpText = "Window height in pixels")]
         public int WindowHeight { get; set; }
 
-
         /// <summary>
         ///     Use mobile screen
         /// </summary>
-        [Option("use-mobile-screen", Default = false, Required = false, HelpText = "Let Chrome know that we want to simulate a mobile screen")]
+        [Option("use-mobile-screen", Default = false, Required = false,
+            HelpText = "Let Chrome know that we want to simulate a mobile screen")]
         public bool UseMobileScreen { get; set; }
 
         /// <summary>
@@ -121,25 +135,32 @@ namespace ChromeHtmlToPdf
         /// <summary>
         ///     Whether to silently ignore invalid but successfully parsed page ranges, such as '3-2'. Defaults to false.
         /// </summary>
-        [Option("ignore-invalid-pageranges", Default = false, Required = false, HelpText = "Whether to silently ignore invalid but successfully parsed page ranges, such as '3-2'")]
+        [Option("ignore-invalid-pageranges", Default = false, Required = false,
+            HelpText = "Whether to silently ignore invalid but successfully parsed page ranges, such as '3-2'")]
         public bool IgnoreInvalidPageRanges { get; set; }
 
         /// <summary>
         ///     The location for Chrome, when not set then the registry is accessed to get the needed information
         /// </summary>
-        [Option("chrome-location", Required = false, HelpText = "The location for Chrome, when not set then the registry is accessed to get the needed information")]
+        [Option("chrome-location", Required = false,
+            HelpText =
+                "The location for Chrome, when not set then the registry is accessed to get the needed information")]
         public string ChromeLocation { get; set; }
 
         /// <summary>
         ///     The Chrome user profile location to use, when not set then the default location is used
         /// </summary>
-        [Option("chrome-userprofile", Required = false, HelpText = "The Chrome user profile location to use, when not set then the default location is used")]
+        [Option("chrome-user-profile", Required = false,
+            HelpText = "The Chrome user profile location to use, when not set then the default location is used")]
         public string ChromeUserProfile { get; set; }
 
         /// <summary>
         ///     The default port to use when communicating with Chrome
         /// </summary>
-        [Option("portrange", Default = "9222-9322", Required = false, HelpText = "The port(range) to use when communicating with Chrome. For example 9222-9322 when setting a port range")]
+        [Option("portrange", Default = "9222-9322", Required = false,
+            HelpText =
+                "The port(range) to use when communicating with Chrome. For example 9222-9322 when setting a port range"
+        )]
         public string PortRange { get; set; }
 
         /// <summary>
@@ -149,22 +170,29 @@ namespace ChromeHtmlToPdf
         public string ProxyServer { get; set; }
 
         /// <summary>
-        ///     This tells chrome to bypass any specified proxy for the given semi-colon-separated list of hosts. This flag must be used (or rather, only has an effect) in 
+        ///     This tells chrome to bypass any specified proxy for the given semi-colon-separated list of hosts. This flag must be
+        ///     used (or rather, only has an effect) in
         ///     tandem with --proxy-server. For example "*.google.com;*foo.com;127.0.0.1:8080"
         /// </summary>
-        [Option("proxy-bypass-list", Required = false, HelpText = "This tells chrome to bypass any specified proxy for the given semi-colon-separated list of hosts. This flag must be used (or rather, only has an effect) in tandem with --proxy-server. For example \"*.google.com;*foo.com;127.0.0.1:8080\"")]
+        [Option("proxy-bypass-list", Required = false,
+            HelpText =
+                "This tells chrome to bypass any specified proxy for the given semi-colon-separated list of hosts. This flag must be used (or rather, only has an effect) in tandem with --proxy-server. For example \"*.google.com;*foo.com;127.0.0.1:8080\""
+        )]
         public string ProxyByPassList { get; set; }
 
         /// <summary>
         ///     This tells Chrome to use the PAC file at the specified URL. For example "http://wpad/windows.pac"
         /// </summary>
-        [Option("proxy-pac-url", Required = false, HelpText = "This tells Chrome to use the PAC file at the specified URL. For example \"http://wpad/windows.pac\"")]
+        [Option("proxy-pac-url", Required = false,
+            HelpText =
+                "This tells Chrome to use the PAC file at the specified URL. For example \"http://wpad/windows.pac\"")]
         public string ProxyPacUrl { get; set; }
 
         /// <summary>
         ///     Run Chrome under this user. This option is used in combination with --password"
         /// </summary>
-        [Option("user", Required = false, HelpText = "Run Chrome under this user. This option is used in combination with --password")]
+        [Option("user", Required = false,
+            HelpText = "Run Chrome under this user. This option is used in combination with --password")]
         public string User { get; set; }
 
         /// <summary>
@@ -176,8 +204,25 @@ namespace ChromeHtmlToPdf
         /// <summary>
         ///     The extra time in milliseconds to wait after the page has been loaded
         /// </summary>
-        [Option("javascript-delay", Required = false, Default = 0, HelpText = "The extra time in milliseconds to wait after the page has has been loaded")]
-        public int JavaScriptDelay { get; set; }
+        [Option("wait-for-network-idle", Required = false, Default = false,
+            HelpText = "Wait until Chrome signals that all networking is done (e.g. loading external sources like javascript files). " +
+                       "Normally this app waits until the DOMLoaded event is executed.")]
+        public bool WaitForNetworkIdle { get; set; }
+
+        /// <summary>
+        ///     Use multithreading when converting. Only usefull if the parameter --inputlist is used
+        /// </summary>
+        [Option("multi-threading", Required = false, Default = false,
+            HelpText = "Use multi threading when converting. Only usefull if the parameter --input-is-list is used")]
+        public bool UseMultiThreading { get; set; }
+
+        /// <summary>
+        /// </summary>
+        [Option("max-concurrency-level", Required = false, Default = 0,
+            HelpText = "Limit the concurrency level when doing multi threading conversions. This parameter is only used when " +
+                       "--input-is-list and --multi-threading is set to true. When not set then the system decides about " +
+                       " how many threads will be used")]
+        public int MaxConcurrencyLevel { get; set; }
         #endregion
     }
 }
