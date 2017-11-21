@@ -46,6 +46,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConversionItem.cs" />
+    <Compile Include="FileManager.cs" />
     <Compile Include="LimitedConcurrencyLevel.cs" />
     <Compile Include="Options.cs" />
     <Compile Include="Program.cs" />

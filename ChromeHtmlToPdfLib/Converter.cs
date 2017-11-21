@@ -45,6 +45,11 @@ namespace ChromeHtmlToPdfLib
 
         #region Fields
         /// <summary>
+        ///     When set then logging is written to this stream
+        /// </summary>
+        private static Stream _logStream;
+
+        /// <summary>
         ///     Chrome with it's full path
         /// </summary>
         private readonly string _chromeExeFileName;
@@ -90,6 +95,67 @@ namespace ChromeHtmlToPdfLib
         ///     Returns the list with default arguments that are send to Chrome when starting
         /// </summary>
         public List<string> DefaultArguments => _defaultArguments;
+
+        /// <summary>
+        ///     An unique id that can be used to identify the logging of the converter when
+        ///     calling the code from multiple threads and writing all the logging to the same file
+        /// </summary>
+        public string InstanceId { get; set; }
+        #endregion
+
+        #region Constructor & Destructor
+        /// <summary>
+        ///     Creates this object and sets it's needed properties
+        /// </summary>
+        /// <param name="chromeExeFileName">The full path to the chrome executable</param>
+        /// <param name="portRange">
+        ///     Force the converter to pick a port from the given range. When not set then the port range 9222
+        ///     - 9322 is used
+        /// </param>
+        /// <param name="userProfile">
+        ///     If set then this directory will be used to store a user profile.
+        ///     Leave blank or set to <c>null</c> if you want to use the default Chrome userprofile location
+        /// </param>
+        /// <param name="logStream">When set then logging is written to this stream</param>
+        /// <exception cref="FileNotFoundException">Raised when <see cref="chromeExeFileName" /> does not exists</exception>
+        /// <exception cref="DirectoryNotFoundException">
+        ///     Raised when the <paramref name="userProfile" /> directory is given but
+        ///     does not exists
+        /// </exception>
+        public Converter(string chromeExeFileName, 
+                         PortRangeSettings portRange = null,
+                         string userProfile = null,
+                         Stream logStream = null)
+        {
+            _logStream = logStream;
+
+            ResetArguments();
+
+            var chrome = new FileInfo(chromeExeFileName);
+            if (!chrome.Exists)
+                throw new FileNotFoundException("Could not find chrome.exe");
+
+            _chromeExeFileName = chromeExeFileName;
+            _portRange = portRange;
+
+            if (!string.IsNullOrWhiteSpace(userProfile))
+            {
+                var userProfileDirectory = new DirectoryInfo(userProfile);
+                if (!userProfileDirectory.Exists)
+                    throw new DirectoryNotFoundException(
+                        $"The directory '{userProfileDirectory.FullName}' does not exists");
+
+                SetDefaultArgument("user-data-dir", $"\"{userProfileDirectory.FullName}\"");
+            }
+        }
+
+        /// <summary>
+        ///     Destructor
+        /// </summary>
+        ~Converter()
+        {
+            Dispose();
+        }
         #endregion
 
         #region GetUnusedPort
@@ -118,6 +184,21 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
 
+        #region IsChromeRunning
+        /// <summary>
+        /// Returns <c>true</c> when Chrome is running
+        /// </summary>
+        /// <returns></returns>
+        private bool IsChromeRunning()
+        {
+            if (_chromeProcess == null)
+                return false;
+
+            _chromeProcess.Refresh();
+            return !_chromeProcess.HasExited;
+        }
+        #endregion
+
         #region StartChromeHeadless
         /// <summary>
         ///     Start Chrome headless with the debugger set to the given port
@@ -128,12 +209,8 @@ namespace ChromeHtmlToPdfLib
         /// <exception cref="ChromeException"></exception>
         private void StartChromeHeadless()
         {
-            if (_chromeProcess != null)
-            {
-                _chromeProcess.Refresh();
-                if (!_chromeProcess.HasExited)
-                    return;
-            }
+            if (IsChromeRunning())
+                return;
 
             var i = 1;
             using (var mutex = new Mutex(false, ChromeMutexName))
@@ -141,7 +218,7 @@ namespace ChromeHtmlToPdfLib
                 while (true)
                 {
 
-                    Console.Write("Starting Chrome ... ");
+                    WriteToLog("Starting Chrome");
                     bool mutexAcquired;
                     try
                     {
@@ -154,7 +231,7 @@ namespace ChromeHtmlToPdfLib
 
                     if (!mutexAcquired)
                     {
-                        Console.Write("could not acquire Chrome locking mutext" + Environment.NewLine);
+                        WriteToLog("Could not acquire Chrome locking mutext");
                         return;
                     }
 
@@ -212,7 +289,7 @@ namespace ChromeHtmlToPdfLib
                         }
 
                         _communicator = new Communicator(new Uri($"http://localhost:{port}"));
-                        Console.Write($"started on port {port}" + Environment.NewLine);
+                        WriteToLog($"Chrome Started on port {port}");
                         break;
                     }
                     finally
@@ -275,6 +352,7 @@ namespace ChromeHtmlToPdfLib
         ///     Removes the given <paramref name="argument" /> from <see cref="_defaultArguments" />
         /// </summary>
         /// <param name="argument"></param>
+        // ReSharper disable once UnusedMember.Local
         private void RemoveArgument(string argument)
         {
             if (_defaultArguments.Contains(argument))
@@ -302,8 +380,7 @@ namespace ChromeHtmlToPdfLib
         ///     "direct://" will cause all connections to not use a proxy.
         /// </example>
         /// <remarks>
-        ///     This is a one time only default setting which can not be changed when doing multiple conversions.
-        ///     Set this before doing any conversions.
+        ///     Set this parameter before starting Chrome
         /// </remarks>
         public void SetProxyServer(string value)
         {
@@ -327,12 +404,11 @@ namespace ChromeHtmlToPdfLib
         ///     specified.
         /// </example>
         /// <remarks>
-        ///     This is a one time only default setting which can not be changed when doing multiple conversions.
-        ///     Set this before doing any conversions.
+        ///     Set this parameter before starting Chrome
         /// </remarks>
-        public void SetProxyBypassList(List<string> values)
+        public void SetProxyBypassList(string values)
         {
-            SetDefaultArgument("--proxy-bypass-list", string.Join(",", values));
+            SetDefaultArgument("--proxy-bypass-list", values);
         }
         #endregion
 
@@ -346,12 +422,25 @@ namespace ChromeHtmlToPdfLib
         ///     will tell Chrome to resolve proxy information for URL requests using the windows.pac file.
         /// </example>
         /// <remarks>
-        ///     This is a one time only default setting which can not be changed when doing multiple conversions.
-        ///     Set this before doing any conversions.
+        ///     Set this parameter before starting Chrome
         /// </remarks>
         public void SetProxyPacUrl(string value)
         {
             SetDefaultArgument("--proxy-pac-url", value);
+        }
+        #endregion
+
+        #region SetUserAgent
+        /// <summary>
+        ///     This tells Chrome to use the given user-agent string
+        /// </summary>
+        /// <param name="value"></param>
+        /// <remarks>
+        ///     Set this parameter before starting Chrome
+        /// </remarks>
+        public void SetUserAgent(string value)
+        {
+            SetDefaultArgument("--user-agent", value);
         }
         #endregion
 
@@ -363,111 +452,12 @@ namespace ChromeHtmlToPdfLib
         /// <param name="userName">The username with or without a domain name (e.g DOMAIN\USERNAME)</param>
         /// <param name="password">The password for the <paramref name="userName" /></param>
         /// <remarks>
-        ///     This is a one time only default setting which can not be changed when doing multiple conversions.
-        ///     Set this before doing any conversions.
+        ///     Set this parameter before starting Chrome
         /// </remarks>
         public void SetUser(string userName, string password)
         {
             _userName = userName;
             _password = password;
-        }
-        #endregion
-
-        #region UseMobileScreen
-        /// <summary>
-        ///     Tells Chrome to simulate a mobile screen
-        /// </summary>
-        /// <param name="value">Set to <c>false</c> to remove the mobile screen setting</param>
-        /// <remarks>
-        ///     This is a one time only default setting which can not be changed when doing multiple conversions.
-        ///     Set this before doing any conversions.
-        /// </remarks>
-        public void UseMobileScreen(bool value = true)
-        {
-            if (value)
-                SetDefaultArgument("--user-agent",
-                    "Mozilla/5.0 (Linux; U; Android 4.0.3; ko-kr; LG-L160L Build/IML74K) AppleWebkit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30");
-            else
-                RemoveArgument("--user-agent");
-        }
-        #endregion
-
-        #region KillAllChromeProcesses
-        /// <summary>
-        ///     This will kill all running Chrome processes
-        /// </summary>
-        /// <returns>
-        ///     Returns the output of this function
-        /// </returns>
-        public static string KillAllChromeProcesses()
-        {
-            var result = new StringBuilder();
-            result.AppendLine("=== START KILLING Chrome PROCESSES ===");
-
-            foreach (var process in Process.GetProcessesByName("chrome"))
-                try
-                {
-                    result.AppendLine($"Killing Chrome process with id {process.Id}");
-                    process.Kill();
-                    result.AppendLine($"Killed Chrome process with id {process.Id}");
-                }
-                catch (Exception exception)
-                {
-                    result.AppendLine($"Could not kill Chrome process with id {process.Id}, error {exception.Message}");
-                }
-
-            result.AppendLine("=== END KILLING Chrome PROCESSES ===");
-            return result.ToString();
-        }
-        #endregion
-
-        #region Constructor & Destructor
-        /// <summary>
-        ///     Creates this object and sets it's needed properties
-        /// </summary>
-        /// <param name="chromeExeFileName">The full path to the chrome executable</param>
-        /// <param name="portRange">
-        ///     Force the converter to pick a port from the given range. When not set then the port range 9222
-        ///     - 9322 is used
-        /// </param>
-        /// <param name="userProfile">
-        ///     If set then this directory will be used to store a user profile.
-        ///     Leave blank or set to <c>null</c> if you want to use the default Chrome userprofile location
-        /// </param>
-        /// <exception cref="FileNotFoundException">Raised when <see cref="chromeExeFileName" /> does not exists</exception>
-        /// <exception cref="DirectoryNotFoundException">
-        ///     Raised when the <paramref name="userProfile" /> directory is given but
-        ///     does not exists
-        /// </exception>
-        public Converter(string chromeExeFileName, PortRangeSettings portRange = null,
-            string userProfile = null)
-        {
-            ResetArguments();
-
-            var chrome = new FileInfo(chromeExeFileName);
-            if (!chrome.Exists)
-                throw new FileNotFoundException("Could not find chrome.exe");
-
-            _chromeExeFileName = chromeExeFileName;
-            _portRange = portRange;
-
-            if (!string.IsNullOrWhiteSpace(userProfile))
-            {
-                var userProfileDirectory = new DirectoryInfo(userProfile);
-                if (!userProfileDirectory.Exists)
-                    throw new DirectoryNotFoundException(
-                        $"The directory '{userProfileDirectory.FullName}' does not exists");
-
-                SetDefaultArgument("user-data-dir" , $"\"{userProfileDirectory.FullName}\"");
-            }
-        }
-
-        /// <summary>
-        ///     Destructor
-        /// </summary>
-        ~Converter()
-        {
-            Dispose();
         }
         #endregion
 
@@ -498,6 +488,10 @@ namespace ChromeHtmlToPdfLib
         /// <param name="value"></param>
         private void SetDefaultArgument(string argument, string value)
         {
+            if (IsChromeRunning())
+                throw new ChromeException($"Chrome is already running, you need to set the parameter '{argument}' before staring Chrome");
+
+
             for (var i = 0; i < _defaultArguments.Count; i++)
             {
                 if (!_defaultArguments[i].StartsWith(argument + "=")) continue;
@@ -602,6 +596,35 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
 
+        #region KillAllChromeProcesses
+        /// <summary>
+        ///     This will kill all running Chrome processes
+        /// </summary>
+        /// <returns>
+        ///     Returns the output of this function
+        /// </returns>
+        public static string KillAllChromeProcesses()
+        {
+            var result = new StringBuilder();
+            result.AppendLine("=== START KILLING Chrome PROCESSES ===");
+
+            foreach (var process in Process.GetProcessesByName("chrome"))
+                try
+                {
+                    result.AppendLine($"Killing Chrome process with id {process.Id}");
+                    process.Kill();
+                    result.AppendLine($"Killed Chrome process with id {process.Id}");
+                }
+                catch (Exception exception)
+                {
+                    result.AppendLine($"Could not kill Chrome process with id {process.Id}, error {exception.Message}");
+                }
+
+            result.AppendLine("=== END KILLING Chrome PROCESSES ===");
+            return result.ToString();
+        }
+        #endregion
+
         #region ConvertToPdf
         /// <summary>
         ///     Converts the given <paramref name="inputUri" /> to PDF
@@ -610,10 +633,11 @@ namespace ChromeHtmlToPdfLib
         /// <param name="outputFile">The output file</param>
         /// <param name="pageSettings"><see cref="PageSettings"/></param>
         /// <param name="waitForNetworkIdle">Wait until all external sources are loaded</param>
+        /// <returns>The filename with full path to the generated PDF</returns>
         /// <exception cref="DirectoryNotFoundException"></exception>
         public void ConvertToPdf(Uri inputUri, string outputFile, PageSettings pageSettings, bool waitForNetworkIdle)
         {
-            CheckIfOutputFolderExists(outputFile);
+            //CheckIfOutputFolderExists(outputFile);
 
             var isFile = inputUri.Scheme == "file";
 
@@ -622,13 +646,17 @@ namespace ChromeHtmlToPdfLib
 
             StartChromeHeadless();
 
-            Console.Write("Loading " + (isFile ? "file" : "url") + $" {inputUri} " + (waitForNetworkIdle ? "and wait until all resources are loaded" : string.Empty) + " ... ");
-            _communicator.NavigateTo(inputUri, waitForNetworkIdle);
-            Console.Write("loaded" + Environment.NewLine);
+            WriteToLog("Loading " + (isFile ? "file " + inputUri.OriginalString : "url " + inputUri) +
+                       (waitForNetworkIdle ? "and wait until all resources are loaded" : string.Empty));
 
-            Console.Write("Converting to PDF ... ");            
-            _communicator.PrintToPdf(pageSettings).SaveToFile(outputFile);
-            Console.Write("converted" + Environment.NewLine);
+            _communicator.NavigateTo(inputUri, waitForNetworkIdle);
+
+            WriteToLog((isFile ? "file" : "url") + " loaded");
+
+            WriteToLog("Converting to PDF");
+            var pdfFileName = Path.ChangeExtension(outputFile, ".pdf");
+            _communicator.PrintToPdf(pageSettings).SaveToFile(pdfFileName);
+            WriteToLog("Converted");
         }
         #endregion
 
@@ -639,6 +667,7 @@ namespace ChromeHtmlToPdfLib
         ///// <param name="inputFile">The inputfile to convert to PDF</param>
         ///// <param name="outputFile">The output file</param>
         ///// <param name="pageSettings"><see cref="PageSettings"/></param>
+        ///// <returns>The filename with full path to the generated PNG</returns>
         ///// <exception cref="DirectoryNotFoundException"></exception>
         //public void ConvertToPng(string inputFile, string outputFile, PageSettings pageSettings)
         //{
@@ -652,6 +681,7 @@ namespace ChromeHtmlToPdfLib
         ///// </summary>
         ///// <param name="inputUri">The webpage to convert</param>
         ///// <param name="outputFile">The output file</param>
+        ///// <returns>The filename with full path to the generated PNG</returns>
         ///// <exception cref="DirectoryNotFoundException"></exception>
         //public void ConvertToPng(Uri inputUri, string outputFile)
         //{
@@ -659,6 +689,22 @@ namespace ChromeHtmlToPdfLib
         //    _communicator.NavigateTo(inputUri, TODO);
         //    SetDefaultArgument("--screenshot", Path.ChangeExtension(outputFile, ".png"));
         //}
+        #endregion
+
+        #region WriteToLog
+        /// <summary>
+        ///     Writes a line and linefeed to the <see cref="_logStream" />
+        /// </summary>
+        /// <param name="message">The message to write</param>
+        private void WriteToLog(string message)
+        {
+            if (_logStream == null) return;
+            var line = DateTime.Now.ToString("s") + (InstanceId != null ? " - " + InstanceId : string.Empty) + " - " +
+                       message + Environment.NewLine;
+            var bytes = Encoding.UTF8.GetBytes(line);
+            _logStream.Write(bytes, 0, bytes.Length);
+            _logStream.Flush();
+        }
         #endregion
 
         #region Dispose
@@ -670,17 +716,17 @@ namespace ChromeHtmlToPdfLib
             try
             {
                 if (_disposed) return;
-                Console.Write("Stopping Chrome ... ");
+                WriteToLog("Stopping Chrome");
                 if (_chromeProcess == null) return;
                 _chromeProcess.Refresh();
                 if (_chromeProcess.HasExited) return;
                 _chromeProcess.Kill();
                 _chromeProcess = null;
-                Console.Write("stopped" + Environment.NewLine);
+                WriteToLog("Chrome stopped");
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
-                Console.WriteLine(e);
+                WriteToLog(exception.Message);
             }
 
             _disposed = true;

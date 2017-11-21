@@ -1,7 +1,11 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using ChromeHtmlToPdfLib;
 using ChromeHtmlToPdfLib.Settings;
 using CommandLine;
@@ -12,10 +16,127 @@ namespace ChromeHtmlToPdf
 {
     class Program
     {
+        #region Fields
+        /// <summary>
+        ///     <see cref="LimitedConcurrencyLevel" />
+        /// </summary>
+        private static TaskFactory _taskFactory;
+
+        /// <summary>
+        /// A list with <see cref="ConversionItem"/>'s to process
+        /// </summary>
+        private static ConcurrentQueue<ConversionItem> _itemsToConvert;
+
+        /// <summary>
+        /// A list with converted <see cref="ConversionItem"/>'s
+        /// </summary>
+        private static ConcurrentQueue<ConversionItem> _itemsConverted;
+
+        /// <summary>
+        ///     Used to keep track of all the worker tasks we are starting
+        /// </summary>
+        private static List<Task> _workerTasks;
+        #endregion
+
         #region Main
         static void Main(string[] args)
         {
-            Options options = null;
+            ParseCommandlineParameters(args, out var options, out var portRangeSettings);
+
+            var maxTasks = SetMaxConcurrencyLevel(options);
+
+            if (options.InputIsList)
+            {
+                if (options.UseMultiThreading)
+                {
+                    _workerTasks = new List<Task>();
+                    _itemsToConvert = new ConcurrentQueue<ConversionItem>();
+                    _itemsConverted = new ConcurrentQueue<ConversionItem>();
+
+                    WriteToLog($"Reading inputfile '{options.Input}'");
+                    var lines = File.ReadAllLines(options.Input);
+                    foreach (var line in lines)
+                    {
+                        var inputUri = new Uri(line);
+                        var outputPath = Path.GetFullPath(options.Output);
+
+                        var outputFile = inputUri.Scheme == "file"
+                            ? Path.GetFileName(inputUri.AbsolutePath)
+                            : FileManager.RemoveInvalidFileNameChars(inputUri.ToString());
+
+                        _itemsToConvert.Enqueue(new ConversionItem(inputUri, Path.Combine(outputPath, outputFile)));
+                    }
+
+                    WriteToLog($"{_itemsToConvert.Count} items read");
+
+                    WriteToLog($"Starting {maxTasks} processing tasks");
+                    for (var i = 0; i < maxTasks; i++)
+                    {
+                        var i1 = i;
+                        _workerTasks.Add(_taskFactory.StartNew(() => ConvertWithTask(options, portRangeSettings, (i1 + 1).ToString())));
+                    }
+                    WriteToLog("Started");
+
+                    // Waiting until all tasks are finished
+                    foreach (var task in _workerTasks)
+                    {
+                        task.Wait();
+                    }
+
+                    // Write conversion information to output file
+                    using (var output = File.OpenWrite(options.Output))
+                    {
+                        foreach (var itemConverted in _itemsConverted)
+                        {
+                            var bytes = new UTF8Encoding(true).GetBytes(itemConverted.OutputLine);
+                            output.Write(bytes, 0, bytes.Length);
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var uri in _itemsToConvert)
+                    {
+                        // TODO: Write code
+                        //Convert();
+                    }
+                }
+            }
+            else
+            {
+                Convert(options, portRangeSettings);                
+            }
+
+            
+            try
+            {
+
+            }
+            catch (Exception exception)
+            {
+                WriteToLog(exception.Message);
+                Environment.Exit(1);
+            }
+
+            Environment.Exit(0);
+        }
+        #endregion
+
+        #region ParseCommandlineParameters
+        /// <summary>
+        /// Parses the commandline parameters and returns these as an <paramref name="options"/> and
+        /// <paramref name="portRangeSettings"/> object
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="options"><see cref="Options"/></param>
+        /// <param name="portRangeSettings"><see cref="PortRangeSettings"/></param>
+        private static void ParseCommandlineParameters(IEnumerable<string> args, 
+            out Options options, 
+            out PortRangeSettings portRangeSettings)
+        {
+            Options tempOptions = null;
+
+            options = null;
             var errors = false;
             var parser = new Parser(settings =>
             {
@@ -27,15 +148,17 @@ namespace ChromeHtmlToPdf
             });
 
             var parserResult = parser.ParseArguments<Options>(args).WithNotParsed(notParsed =>
-            {
-                errors = notParsed.Any();
-            }
+                {
+                    errors = notParsed.Any();
+                }
             ).WithParsed(parsed =>
             {
-                options = parsed;
+                tempOptions = parsed;
             });
 
-            PortRangeSettings portRangeSettings = null;
+            options = tempOptions;
+
+            portRangeSettings = null;
             string result = null;
 
             if (errors || !GetPortRangeSettings(options, out result, out portRangeSettings))
@@ -59,46 +182,68 @@ namespace ChromeHtmlToPdf
                 Console.Error.Write(helpText);
                 Environment.Exit(1);
             }
+        }
+        #endregion
 
-            var chrome = !string.IsNullOrWhiteSpace(options.ChromeLocation)
-                ? options.ChromeLocation
-                : Path.Combine(GetChromeLocation(), "chrome.exe");
+        #region GetPageSettings
+        /// <summary>
+        /// Returns a <see cref="PageSettings"/> object
+        /// </summary>
+        /// <param name="options"><see cref="Options"/></param>
+        /// <returns></returns>
+        private static PageSettings GetPageSettings(Options options)
+        {
+            PageSettings pageSettings;
 
-            try
+            if (options.PaperFormat != PaperFormats.Letter)
             {
-                var pageSettings = GetPageSettings(options);
-
-                using (var converter = new Converter(chrome, portRangeSettings))
+                pageSettings = new PageSettings(options.PaperFormat);
+            }
+            else
+            {
+                pageSettings = new PageSettings
                 {
-                    converter.UseMobileScreen(options.UseMobileScreen);
-
-                    if (options.WindowSize != WindowSize.HD_1366_768)
-                        converter.SetWindowSize(options.WindowSize);
-                    else
-                        converter.SetWindowSize(options.WindowWidth, options.WindowHeight);
-
-                    if (!string.IsNullOrWhiteSpace(options.User))
-                        converter.SetUser(options.User, options.Password);
-
-                    if (!string.IsNullOrWhiteSpace(options.ProxyServer))
-                    {
-                        converter.SetProxyServer(options.ProxyServer);
-                        converter.SetProxyBypassList(options.ProxyByPassList.Split(';').ToList());
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(options.ProxyPacUrl))
-                        converter.SetProxyPacUrl(options.ProxyPacUrl);
-
-                    converter.ConvertToPdf(new Uri(options.Input), options.Output, pageSettings, options.WaitForNetworkIdle);
-                }
+                    PaperWidth = options.PaperWidth,
+                    PaperHeight = options.PaperHeight
+                };
             }
-            catch (Exception e)
+
+            pageSettings.Landscape = options.Landscape;
+            pageSettings.DisplayHeaderFooter = options.DisplayHeaderFooter;
+            pageSettings.PrintBackground = options.PrintBackground;
+            pageSettings.Scale = options.Scale;
+            pageSettings.MarginTop = options.MarginTop;
+            pageSettings.MarginBottom = options.MarginBottom;
+            pageSettings.MarginLeft = options.MarginLeft;
+            pageSettings.MarginRight = options.MarginRight;
+            pageSettings.PageRanges = options.PageRanges;
+            pageSettings.IgnoreInvalidPageRanges = options.IgnoreInvalidPageRanges;
+
+            return pageSettings;
+        }
+        #endregion
+
+        #region SetMaxConcurrencyLevel
+        /// <summary>
+        /// Sets the maximum concurrency level
+        /// </summary>
+        /// <param name="options"><see cref="Options"/></param>
+        /// <returns>Maximum concurrency level</returns>
+        private static int SetMaxConcurrencyLevel(Options options)
+        {
+            var maxConcurrencyLevel = Environment.ProcessorCount;
+            if (options.MaxConcurrencyLevel != 0)
             {
-                Console.WriteLine(e);
-                Environment.Exit(1);
+                if (options.MaxConcurrencyLevel < 1)
+                    throw new ArgumentException(
+                        "--max-concurrency-level needs to be a value equal to 0 (system decides how many threads to start) or a value equal or greater than 1");
+
+                maxConcurrencyLevel = options.MaxConcurrencyLevel;
             }
 
-            Environment.Exit(0);
+            var lcts = new LimitedConcurrencyLevel(maxConcurrencyLevel);
+            _taskFactory = new TaskFactory(lcts);
+            return maxConcurrencyLevel;
         }
         #endregion
 
@@ -191,41 +336,94 @@ namespace ChromeHtmlToPdf
         }
         #endregion
 
-        #region GetPageSettings
+        #region Convert
         /// <summary>
-        /// Returns a <see cref="PageSettings"/> object
+        /// Sets the converter settings
         /// </summary>
+        /// <param name="converter"><see cref="Converter"/></param>
         /// <param name="options"><see cref="Options"/></param>
-        /// <returns></returns>
-        private static PageSettings GetPageSettings(Options options)
+        private static void SetConvertedSettings(Converter converter, Options options)
         {
-            PageSettings pageSettings;
+            if (!string.IsNullOrWhiteSpace(options.UserAgent))
+                converter.SetUserAgent(options.UserAgent);
 
-            if (options.PaperFormat != PaperFormats.Letter)
-            {
-                pageSettings = new PageSettings(options.PaperFormat);
-            }
+            if (options.WindowSize != WindowSize.HD_1366_768)
+                converter.SetWindowSize(options.WindowSize);
             else
+                converter.SetWindowSize(options.WindowWidth, options.WindowHeight);
+
+            if (!string.IsNullOrWhiteSpace(options.User))
+                converter.SetUser(options.User, options.Password);
+
+            if (!string.IsNullOrWhiteSpace(options.ProxyServer))
             {
-                pageSettings = new PageSettings
-                {
-                    PaperWidth = options.PaperWidth,
-                    PaperHeight = options.PaperHeight
-                };
+                converter.SetProxyServer(options.ProxyServer);
+                converter.SetProxyBypassList(options.ProxyByPassList);
             }
 
-            pageSettings.Landscape = options.Landscape;
-            pageSettings.DisplayHeaderFooter = options.DisplayHeaderFooter;
-            pageSettings.PrintBackground = options.PrintBackground;
-            pageSettings.Scale = options.Scale;
-            pageSettings.MarginTop = options.MarginTop;
-            pageSettings.MarginBottom = options.MarginBottom;
-            pageSettings.MarginLeft = options.MarginLeft;
-            pageSettings.MarginRight = options.MarginRight;
-            pageSettings.PageRanges = options.PageRanges;
-            pageSettings.IgnoreInvalidPageRanges = options.IgnoreInvalidPageRanges;
+            if (!string.IsNullOrWhiteSpace(options.ProxyPacUrl))
+                converter.SetProxyPacUrl(options.ProxyPacUrl);
+        }
 
-            return pageSettings;
+        private static void Convert(Options options, PortRangeSettings portRangeSettings)
+        {
+            var pageSettings = GetPageSettings(options);
+
+            var chrome = !string.IsNullOrWhiteSpace(options.ChromeLocation)
+                ? options.ChromeLocation
+                : Path.Combine(GetChromeLocation(), "chrome.exe");
+
+            using (var converter = new Converter(chrome, portRangeSettings))
+            {
+                SetConvertedSettings(converter, options);
+                converter.ConvertToPdf(new Uri(options.Input), options.Output, pageSettings, options.WaitForNetworkIdle);
+            }
+        }
+
+        private static void ConvertWithTask(Options options, 
+                                            PortRangeSettings portRangeSettings,
+                                            string instanceId)
+        {
+            var pageSettings = GetPageSettings(options);
+
+            var chrome = !string.IsNullOrWhiteSpace(options.ChromeLocation)
+                ? options.ChromeLocation
+                : Path.Combine(GetChromeLocation(), "chrome.exe");
+
+            using (var converter = new Converter(chrome, portRangeSettings, null, Console.OpenStandardOutput()))
+            {
+                converter.InstanceId = instanceId;
+                SetConvertedSettings(converter, options);
+
+                while (!_itemsToConvert.IsEmpty)
+                {
+                    if (!_itemsToConvert.TryDequeue(out var itemToConvert)) continue;
+                    try
+                    {
+                        converter.ConvertToPdf(itemToConvert.InputUri, itemToConvert.OutputFile, pageSettings,
+                            options.WaitForNetworkIdle);
+
+                        itemToConvert.SetStatus(ConversionItemStatus.Success);
+                    }
+                    catch (Exception exception)
+                    {
+                        itemToConvert.SetStatus(ConversionItemStatus.Failed, exception);
+                    }
+
+                    _itemsConverted.Enqueue(itemToConvert);
+                }
+            }
+        }
+        #endregion
+
+        #region WriteToLog
+        /// <summary>
+        ///     Writes a line to the console
+        /// </summary>
+        /// <param name="message">The message to write</param>
+        private static void WriteToLog(string message)
+        {
+            Console.WriteLine(DateTime.Now.ToString("s") + " - " + message);
         }
         #endregion
     }
