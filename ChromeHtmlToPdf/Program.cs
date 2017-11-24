@@ -376,7 +376,12 @@ namespace ChromeHtmlToPdf
             using (var converter = new Converter(chrome, portRangeSettings))
             {
                 SetConvertedSettings(converter, options);
-                converter.ConvertToPdf(new Uri(options.Input), options.Output, pageSettings, options.WaitForNetworkIdle);
+                converter.ConvertToPdf(new Uri(options.Input), 
+                                       options.Output, 
+                                       pageSettings, 
+                                       options.WaitForNetworkIdle, 
+                                       options.WaitForWindowStatus,
+                                       options.WaitForWindowStatusTimeOut);
             }
         }
 

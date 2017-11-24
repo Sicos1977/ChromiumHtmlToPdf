@@ -633,11 +633,19 @@ namespace ChromeHtmlToPdfLib
         /// <param name="outputFile">The output file</param>
         /// <param name="pageSettings"><see cref="PageSettings"/></param>
         /// <param name="waitForNetworkIdle">Wait until all external sources are loaded</param>
+        /// <param name="waitForWindowStatus">Wait until the javascript window.status has this value before
+        ///     rendering the PDF</param>
+        /// <param name="waitForWindowsStatusTimeout"></param>
         /// <returns>The filename with full path to the generated PDF</returns>
         /// <exception cref="DirectoryNotFoundException"></exception>
-        public void ConvertToPdf(Uri inputUri, string outputFile, PageSettings pageSettings, bool waitForNetworkIdle)
+        public void ConvertToPdf(Uri inputUri, 
+                                string outputFile, 
+                                PageSettings pageSettings, 
+                                bool waitForNetworkIdle,
+                                string waitForWindowStatus = "",
+                                int waitForWindowsStatusTimeout = 600000)
         {
-            //CheckIfOutputFolderExists(outputFile);
+            CheckIfOutputFolderExists(outputFile);
 
             var isFile = inputUri.Scheme == "file";
 
@@ -650,6 +658,13 @@ namespace ChromeHtmlToPdfLib
                        (waitForNetworkIdle ? "and wait until all resources are loaded" : string.Empty));
 
             _communicator.NavigateTo(inputUri, waitForNetworkIdle);
+
+            if (!string.IsNullOrWhiteSpace(waitForWindowStatus))
+            {
+                WriteToLog($"Waiting for window.status '{waitForWindowStatus}' or a timeout of {waitForWindowsStatusTimeout} milliseconds");
+                var timedout = _communicator.WaitForWindowStatus(waitForWindowStatus, waitForWindowsStatusTimeout);
+                WriteToLog(timedout ? "Waiting timed out" : $"Windows status equaled {waitForWindowStatus}");
+            }
 
             WriteToLog((isFile ? "file" : "url") + " loaded");
 

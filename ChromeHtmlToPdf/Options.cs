@@ -217,12 +217,29 @@ namespace ChromeHtmlToPdf
         public bool UseMultiThreading { get; set; }
 
         /// <summary>
+        ///     Limits the concurrency level when doing multi threading conversions. This property is only used when
+        ///     --input-is-list and --multi-threading is set to <c>true</c>. When not set then the system decides about
+        ///     how many threads will be used
         /// </summary>
         [Option("max-concurrency-level", Required = false, Default = 0,
-            HelpText = "Limit the concurrency level when doing multi threading conversions. This parameter is only used when " +
+            HelpText = "Limits the concurrency level when doing multi threading conversions. This parameter is only used when " +
                        "--input-is-list and --multi-threading is set to true. When not set then the system decides about " +
                        " how many threads will be used")]
         public int MaxConcurrencyLevel { get; set; }
+
+        /// <summary>
+        ///     Wait for the javascript window.status to equal the given string before starting PDF conversion
+        /// </summary>
+        [Option("wait-for-window-status", Required = false, Default = "",
+            HelpText = "Wait for the javascript window.status to equal the given string before starting PDF conversion")]
+        public string WaitForWindowStatus { get; set; }
+        
+        /// <summary>
+        ///     The timeout when waiting for the parameter <see cref="WaitForWindowStatus"/>
+        /// </summary>
+        [Option("wait-for-window-status-timeout", Required = false, Default = 600000,
+            HelpText = "The timeout when waiting for the parameter --wait-for-windows-status")]
+        public int WaitForWindowStatusTimeOut { get; set; }
         #endregion
     }
 }

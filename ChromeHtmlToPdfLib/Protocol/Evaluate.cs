@@ -1,5 +1,7 @@
-﻿//
-// MessageBase.cs
+﻿using Newtonsoft.Json;
+
+//
+// Evaluate.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
@@ -24,27 +26,42 @@
 // THE SOFTWARE.
 //
 
-using Newtonsoft.Json;
-
 namespace ChromeHtmlToPdfLib.Protocol
 {
-    /// <summary>
-    /// The base for a <see cref="Message"/>
-    /// </summary>
-    public class MessageBase
+    public class Evaluate : MessageBase
     {
-        #region Properties
-        /// <summary>
-        /// The message id
-        /// </summary>
-        [JsonProperty("id")]
-        public long Id { get; set; }
+        [JsonProperty("result")]
+        public EvaluateResult Result { get; set; }
 
+        #region FromJson
         /// <summary>
-        /// The method that we want to execute in Chrome
+        /// Returns this object deserialized from the given <paramref name="json"/> string
         /// </summary>
-        [JsonProperty("method")]
-        public string Method { get; set; }
+        /// <param name="json"></param>
+        /// <returns></returns>
+        public static Evaluate FromJson(string json)
+        {
+            return JsonConvert.DeserializeObject<Evaluate>(json, new JsonSerializerSettings
+            {
+                MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
+                DateParseHandling = DateParseHandling.None
+            });
+        }
         #endregion
+    }
+
+    public class EvaluateResult
+    {
+        [JsonProperty("result")]
+        public EvaluateInnerResult Result { get; set; }
+    }
+
+    public class EvaluateInnerResult
+    {
+        [JsonProperty("type")]
+        public string Type { get; set; }
+
+        [JsonProperty("value")]
+        public string Value { get; set; }
     }
 }

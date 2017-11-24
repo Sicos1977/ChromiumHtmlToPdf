@@ -31,7 +31,7 @@ namespace ChromeHtmlToPdfLib.Protocol
     /// <summary>
     /// The JSON structure that is returned from Chrome when an expression is evaluated
     /// </summary>
-    public class ExpressionResponse
+    public class Expression
     {
         #region Properties
         /// <summary>
@@ -53,9 +53,9 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// </summary>
         /// <param name="json"></param>
         /// <returns></returns>
-        public static ExpressionResponse FromJson(string json)
+        public static Expression FromJson(string json)
         {
-            return JsonConvert.DeserializeObject<ExpressionResponse>(json, new JsonSerializerSettings
+            return JsonConvert.DeserializeObject<Expression>(json, new JsonSerializerSettings
             {
                 MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
                 DateParseHandling = DateParseHandling.None
@@ -80,7 +80,7 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// Returns the results for the given expression
         /// </summary>
         [JsonProperty("result")]
-        public InnerResult InnerResult { get; set; }
+        public ExpressionInnerResult InnerResult { get; set; }
         #endregion
     }
 
@@ -97,10 +97,10 @@ namespace ChromeHtmlToPdfLib.Protocol
         public long ColumnNumber { get; set; }
 
         /// <summary>
-        /// <see cref="InnerResult"/>
+        /// <see cref="ExpressionInnerResult"/>
         /// </summary>
         [JsonProperty("exception")]
-        public InnerResult Exception { get; set; }
+        public ExpressionInnerResult Exception { get; set; }
 
         /// <summary>
         /// The exception id
@@ -128,7 +128,7 @@ namespace ChromeHtmlToPdfLib.Protocol
         #endregion
     }
 
-    public class InnerResult
+    public class ExpressionInnerResult
     {
         #region Properties
         [JsonProperty("className")]

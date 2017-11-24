@@ -26,6 +26,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.WebSockets;
@@ -40,6 +41,9 @@ namespace ChromeHtmlToPdfLib
     /// <summary>
     /// Handles all the communication task with Chrome remote devtools
     /// </summary>
+    /// <remarks>
+    /// See https://chromium.googlesource.com/v8/v8/+/master/src/inspector/js_protocol.json
+    /// </remarks>
     internal class Communicator : IDisposable
     {
         #region Fields
@@ -165,16 +169,6 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="waitForNetworkIdle">Wait until all external sources are loaded</param>
-        /// <returns>
-        ///     <code>
-        ///         var uri = new Uri("http://www.google.nl");
-        ///         var result = NavigateTo(uri);
-        ///         // Succes when value contains the Uri result.InnerResult.Value 
-        ///         // contains the requested uri.
-        ///         if (result.Result.ExceptionDetails != null)
-        ///             throw new Exception("Navigation failed");
-        ///     </code>
-        /// </returns>
         /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
         public void NavigateTo(Uri uri, bool waitForNetworkIdle)
         {
@@ -217,6 +211,51 @@ namespace ChromeHtmlToPdfLib
                 Thread.Sleep(1);
 
             WebSocketSend(new Message { Id = MessageId, Method = "Page.disable" }.ToJson());
+        }
+        #endregion
+
+        #region WaitForWindowStatus
+        /// <summary>
+        /// Wait until the javascript window.status is returning the given <paramref name="status"/>
+        /// </summary>
+        /// <param name="status">The case insensitive status</param>
+        /// <param name="timeout">Continue after reaching the set timeout in milliseconds</param>
+        /// <returns><c>true</c> when window status matched, <c>false</c> when timing out</returns>
+        /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
+        public bool WaitForWindowStatus(string status, int timeout = 60000)
+        {
+            var message = new Message
+            {
+                Id = MessageId,
+                Method = "Runtime.evaluate"
+            };
+
+            message.AddParameter("expression", "window.status;");
+            message.AddParameter("silent", true);
+            message.AddParameter("returnByValue", true);
+
+            var match = false;
+
+            _webSocket.MessageReceived += (sender, args) =>
+            {
+                var evaluate = Evaluate.FromJson(args.Message);
+                if (evaluate.Result?.Result?.Value == status)
+                    match = true;
+            };
+
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
+
+            while (!match)
+            {
+                WebSocketSend(message.ToJson());
+                Thread.Sleep(10);
+                if (stopWatch.ElapsedMilliseconds >= timeout) break;
+            }
+
+            stopWatch.Stop();
+
+            return match;
         }
         #endregion
 
