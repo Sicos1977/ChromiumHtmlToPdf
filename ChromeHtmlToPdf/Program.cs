@@ -373,7 +373,7 @@ namespace ChromeHtmlToPdf
                 ? options.ChromeLocation
                 : Path.Combine(GetChromeLocation(), "chrome.exe");
 
-            using (var converter = new Converter(chrome, portRangeSettings))
+            using (var converter = new Converter(chrome, portRangeSettings, logStream: Console.OpenStandardOutput()))
             {
                 SetConvertedSettings(converter, options);
                 converter.ConvertToPdf(new Uri(options.Input), 
@@ -395,7 +395,7 @@ namespace ChromeHtmlToPdf
                 ? options.ChromeLocation
                 : Path.Combine(GetChromeLocation(), "chrome.exe");
 
-            using (var converter = new Converter(chrome, portRangeSettings, null, Console.OpenStandardOutput()))
+            using (var converter = new Converter(chrome, portRangeSettings, logStream: Console.OpenStandardOutput()))
             {
                 converter.InstanceId = instanceId;
                 SetConvertedSettings(converter, options);

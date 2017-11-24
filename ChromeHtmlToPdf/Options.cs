@@ -237,7 +237,7 @@ namespace ChromeHtmlToPdf
         /// <summary>
         ///     The timeout when waiting for the parameter <see cref="WaitForWindowStatus"/>
         /// </summary>
-        [Option("wait-for-window-status-timeout", Required = false, Default = 600000,
+        [Option("wait-for-window-status-timeout", Required = false, Default = 60000,
             HelpText = "The timeout when waiting for the parameter --wait-for-windows-status")]
         public int WaitForWindowStatusTimeOut { get; set; }
         #endregion

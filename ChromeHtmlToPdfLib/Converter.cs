@@ -643,7 +643,7 @@ namespace ChromeHtmlToPdfLib
                                 PageSettings pageSettings, 
                                 bool waitForNetworkIdle,
                                 string waitForWindowStatus = "",
-                                int waitForWindowsStatusTimeout = 600000)
+                                int waitForWindowsStatusTimeout = 60000)
         {
             CheckIfOutputFolderExists(outputFile);
 
