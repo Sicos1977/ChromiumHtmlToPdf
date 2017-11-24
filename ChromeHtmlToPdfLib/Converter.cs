@@ -662,8 +662,8 @@ namespace ChromeHtmlToPdfLib
             if (!string.IsNullOrWhiteSpace(waitForWindowStatus))
             {
                 WriteToLog($"Waiting for window.status '{waitForWindowStatus}' or a timeout of {waitForWindowsStatusTimeout} milliseconds");
-                var timedout = _communicator.WaitForWindowStatus(waitForWindowStatus, waitForWindowsStatusTimeout);
-                WriteToLog(timedout ? "Waiting timed out" : $"Window status equaled {waitForWindowStatus}");
+                var match = _communicator.WaitForWindowStatus(waitForWindowStatus, waitForWindowsStatusTimeout);
+                WriteToLog(!match ? "Waiting timed out" : $"Window status equaled {waitForWindowStatus}");
             }
 
             WriteToLog((isFile ? "File" : "URL") + " loaded");
