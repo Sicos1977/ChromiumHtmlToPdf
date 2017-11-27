@@ -102,6 +102,60 @@ namespace ChromeHtmlToPdfLib
         ///     calling the code from multiple threads and writing all the logging to the same file
         /// </summary>
         public string InstanceId { get; set; }
+
+
+        /// <summary>
+        ///     Returns the location of Chrome
+        /// </summary>
+        /// <returns></returns>
+        private string ChromeLocation
+        {
+            get
+            {
+                var currentPath =
+                    // ReSharper disable once AssignNullToNotNullAttribute
+                    new Uri(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase)).LocalPath;
+
+                // ReSharper disable once AssignNullToNotNullAttribute
+                var chrome = Path.Combine(currentPath, "chrome.exe");
+
+                if (File.Exists(chrome))
+                {
+                    WriteToLog("Using Chrome from location " + chrome);
+                    return chrome;
+                }
+
+                var key = Registry.GetValue(
+                    @"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Google Chrome",
+                    "InstallLocation", string.Empty);
+
+                if (key != null)
+                {
+                    chrome = Path.Combine(key.ToString(), "chrome.exe");
+                    if (File.Exists(chrome))
+                    {
+                        Console.WriteLine("Using chrome from location " + chrome);
+                        return chrome;
+                    }
+                }
+
+                key = Registry.GetValue(
+                    @"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\U‌​ninstall\Google Chrome",
+                    "InstallLocation", string.Empty);
+
+                if (key != null)
+                {
+                    chrome = Path.Combine(key.ToString(), "chrome.exe");
+                    if (File.Exists(chrome))
+                    {
+                        Console.WriteLine("Using chrome from location " + chrome);
+                        return chrome;
+                    }
+                }
+
+                return string.Empty;
+            }
+        }
         #endregion
 
         #region Constructor & Destructor
@@ -135,7 +189,7 @@ namespace ChromeHtmlToPdfLib
             ResetArguments();
 
             if (string.IsNullOrWhiteSpace(chromeExeFileName))
-                chromeExeFileName = GetChromeLocation();
+                chromeExeFileName = ChromeLocation;
 
             if (string.IsNullOrEmpty(chromeExeFileName))
                 throw new FileNotFoundException("Could not find chrome.exe");
@@ -678,9 +732,7 @@ namespace ChromeHtmlToPdfLib
             _communicator.PrintToPdf(pageSettings).SaveToFile(pdfFileName);
             WriteToLog("Converted");
         }
-        #endregion
 
-        #region ConvertToPng
         ///// <summary>
         /////     Converts the given <paramref name="inputFile" /> to JPG
         ///// </summary>
@@ -709,58 +761,6 @@ namespace ChromeHtmlToPdfLib
         //    _communicator.NavigateTo(inputUri, TODO);
         //    SetDefaultArgument("--screenshot", Path.ChangeExtension(outputFile, ".png"));
         //}
-        #endregion
-
-        #region GetChromeLocation
-        /// <summary>
-        /// Returns the location of Chrome
-        /// </summary>
-        /// <returns></returns>
-        private string GetChromeLocation()
-        {
-            var currentPath =
-                // ReSharper disable once AssignNullToNotNullAttribute
-                new Uri(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase)).LocalPath;
-
-            // ReSharper disable once AssignNullToNotNullAttribute
-            var chrome = Path.Combine(currentPath, "chrome.exe");
-
-            if (File.Exists(chrome))
-            {
-                WriteToLog("Using Chrome from location " + chrome);
-                return chrome;
-            }
-
-            var key = Registry.GetValue(
-                @"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Google Chrome",
-                "InstallLocation", string.Empty);
-
-            if (key != null)
-            {
-                chrome = Path.Combine(key.ToString(), "chrome.exe");
-                if (File.Exists(chrome))
-                {
-                    Console.WriteLine("Using chrome from location " + chrome);
-                    return chrome;
-                }
-            }
-
-            key = Registry.GetValue(
-                @"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\U‌​ninstall\Google Chrome",
-                "InstallLocation", string.Empty);
-
-            if (key != null)
-            {
-                chrome = Path.Combine(key.ToString(), "chrome.exe");
-                if (File.Exists(chrome))
-                {
-                    Console.WriteLine("Using chrome from location " + chrome);
-                    return chrome;
-                }
-            }
-
-            return string.Empty;
-        }
         #endregion
 
         #region WriteToLog
