@@ -41,15 +41,14 @@ namespace ChromeHtmlToPdf
         #region Main
         static void Main(string[] args)
         {
-            ParseCommandlineParameters(args, out var options, out var portRangeSettings);
-
-            var maxTasks = SetMaxConcurrencyLevel(options);
-
-            if (options.InputIsList)
+            try
             {
-                if (options.UseMultiThreading)
+                ParseCommandlineParameters(args, out var options, out var portRangeSettings);
+
+                var maxTasks = SetMaxConcurrencyLevel(options);
+
+                if (options.InputIsList)
                 {
-                    _workerTasks = new List<Task>();
                     _itemsToConvert = new ConcurrentQueue<ConversionItem>();
                     _itemsConverted = new ConcurrentQueue<ConversionItem>();
 
@@ -68,19 +67,29 @@ namespace ChromeHtmlToPdf
                     }
 
                     WriteToLog($"{_itemsToConvert.Count} items read");
-
-                    WriteToLog($"Starting {maxTasks} processing tasks");
-                    for (var i = 0; i < maxTasks; i++)
+                    
+                    if (options.UseMultiThreading)
                     {
-                        var i1 = i;
-                        _workerTasks.Add(_taskFactory.StartNew(() => ConvertWithTask(options, portRangeSettings, (i1 + 1).ToString())));
+                        _workerTasks = new List<Task>();
+
+                        WriteToLog($"Starting {maxTasks} processing tasks");
+                        for (var i = 0; i < maxTasks; i++)
+                        {
+                            var i1 = i;
+                            _workerTasks.Add(_taskFactory.StartNew(() => ConvertWithTask(options, portRangeSettings, (i1 + 1).ToString())));
+                        }
+                        WriteToLog("Started");
+
+                        // Waiting until all tasks are finished
+                        foreach (var task in _workerTasks)
+                        {
+                            task.Wait();
+                        }
+
                     }
-                    WriteToLog("Started");
-
-                    // Waiting until all tasks are finished
-                    foreach (var task in _workerTasks)
+                    else
                     {
-                        task.Wait();
+                        ConvertWithTask(options, portRangeSettings, null);
                     }
 
                     // Write conversion information to output file
@@ -95,30 +104,16 @@ namespace ChromeHtmlToPdf
                 }
                 else
                 {
-                    foreach (var uri in _itemsToConvert)
-                    {
-                        // TODO: Write code
-                        //Convert();
-                    }
+                    Convert(options, portRangeSettings);
                 }
-            }
-            else
-            {
-                Convert(options, portRangeSettings);                
-            }
 
-            
-            try
-            {
-
+                Environment.Exit(0);
             }
             catch (Exception exception)
             {
                 WriteToLog(exception.Message);
                 Environment.Exit(1);
             }
-
-            Environment.Exit(0);
         }
         #endregion
 
@@ -336,13 +331,13 @@ namespace ChromeHtmlToPdf
         }
         #endregion
 
-        #region Convert
+        #region SetConverterSettings
         /// <summary>
         /// Sets the converter settings
         /// </summary>
         /// <param name="converter"><see cref="Converter"/></param>
         /// <param name="options"><see cref="Options"/></param>
-        private static void SetConvertedSettings(Converter converter, Options options)
+        private static void SetConverterSettings(Converter converter, Options options)
         {
             if (!string.IsNullOrWhiteSpace(options.UserAgent))
                 converter.SetUserAgent(options.UserAgent);
@@ -364,7 +359,14 @@ namespace ChromeHtmlToPdf
             if (!string.IsNullOrWhiteSpace(options.ProxyPacUrl))
                 converter.SetProxyPacUrl(options.ProxyPacUrl);
         }
+        #endregion
 
+        #region Convert
+        /// <summary>
+        /// Convert a single <see cref="ConversionItem"/> to PDF
+        /// </summary>
+        /// <param name="options"></param>
+        /// <param name="portRangeSettings"></param>
         private static void Convert(Options options, PortRangeSettings portRangeSettings)
         {
             var pageSettings = GetPageSettings(options);
@@ -375,7 +377,7 @@ namespace ChromeHtmlToPdf
 
             using (var converter = new Converter(chrome, portRangeSettings, logStream: Console.OpenStandardOutput()))
             {
-                SetConvertedSettings(converter, options);
+                SetConverterSettings(converter, options);
                 converter.ConvertToPdf(new Uri(options.Input), 
                                        options.Output, 
                                        pageSettings, 
@@ -384,7 +386,16 @@ namespace ChromeHtmlToPdf
                                        options.WaitForWindowStatusTimeOut);
             }
         }
+        #endregion
 
+        #region ConvertWithTask
+        /// <summary>
+        /// This function is started from a <see cref="Task"/> and processes <see cref="ConversionItem"/>'s
+        /// that are in the <see cref="_itemsToConvert"/> queue
+        /// </summary>
+        /// <param name="options"></param>
+        /// <param name="portRangeSettings"></param>
+        /// <param name="instanceId"></param>
         private static void ConvertWithTask(Options options, 
                                             PortRangeSettings portRangeSettings,
                                             string instanceId)
@@ -398,7 +409,7 @@ namespace ChromeHtmlToPdf
             using (var converter = new Converter(chrome, portRangeSettings, logStream: Console.OpenStandardOutput()))
             {
                 converter.InstanceId = instanceId;
-                SetConvertedSettings(converter, options);
+                SetConverterSettings(converter, options);
 
                 while (!_itemsToConvert.IsEmpty)
                 {
