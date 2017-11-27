@@ -46,7 +46,7 @@ namespace ChromeHtmlToPdf
         /// <summary>
         ///     Print background graphics. Defaults to false.
         /// </summary>
-        [Option("print-background", Required = false, HelpText = "Print background graphics")]
+        [Option("print-background", Required = false, Default = false, HelpText = "Print background graphics")]
         public bool PrintBackground { get; set; }
 
         /// <summary>
