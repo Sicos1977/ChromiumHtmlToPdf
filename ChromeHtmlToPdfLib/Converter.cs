@@ -34,6 +34,7 @@ using System.Security;
 using System.Text;
 using System.Threading;
 using ChromeHtmlToPdfLib.Settings;
+using Microsoft.Win32;
 
 namespace ChromeHtmlToPdfLib
 {
@@ -107,7 +108,9 @@ namespace ChromeHtmlToPdfLib
         /// <summary>
         ///     Creates this object and sets it's needed properties
         /// </summary>
-        /// <param name="chromeExeFileName">The full path to the chrome executable</param>
+        /// <param name="chromeExeFileName">When set then this has to be tThe full path to the chrome executable.
+        ///      When not set then then the converter tries to find Chrome.exe by first looking in the path
+        ///      where this library exists. After that it tries to find it by looking into the registry</param>
         /// <param name="portRange">
         ///     Force the converter to pick a port from the given range. When not set then the port range 9222
         ///     - 9322 is used
@@ -122,7 +125,7 @@ namespace ChromeHtmlToPdfLib
         ///     Raised when the <paramref name="userProfile" /> directory is given but
         ///     does not exists
         /// </exception>
-        public Converter(string chromeExeFileName, 
+        public Converter(string chromeExeFileName = null, 
                          PortRangeSettings portRange = null,
                          string userProfile = null,
                          Stream logStream = null)
@@ -131,8 +134,10 @@ namespace ChromeHtmlToPdfLib
 
             ResetArguments();
 
-            var chrome = new FileInfo(chromeExeFileName);
-            if (!chrome.Exists)
+            if (string.IsNullOrWhiteSpace(chromeExeFileName))
+                chromeExeFileName = GetChromeLocation();
+
+            if (string.IsNullOrEmpty(chromeExeFileName))
                 throw new FileNotFoundException("Could not find chrome.exe");
 
             _chromeExeFileName = chromeExeFileName;
@@ -704,6 +709,58 @@ namespace ChromeHtmlToPdfLib
         //    _communicator.NavigateTo(inputUri, TODO);
         //    SetDefaultArgument("--screenshot", Path.ChangeExtension(outputFile, ".png"));
         //}
+        #endregion
+
+        #region GetChromeLocation
+        /// <summary>
+        /// Returns the location of Chrome
+        /// </summary>
+        /// <returns></returns>
+        private string GetChromeLocation()
+        {
+            var currentPath =
+                // ReSharper disable once AssignNullToNotNullAttribute
+                new Uri(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase)).LocalPath;
+
+            // ReSharper disable once AssignNullToNotNullAttribute
+            var chrome = Path.Combine(currentPath, "chrome.exe");
+
+            if (File.Exists(chrome))
+            {
+                WriteToLog("Using Chrome from location " + chrome);
+                return chrome;
+            }
+
+            var key = Registry.GetValue(
+                @"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Google Chrome",
+                "InstallLocation", string.Empty);
+
+            if (key != null)
+            {
+                chrome = Path.Combine(key.ToString(), "chrome.exe");
+                if (File.Exists(chrome))
+                {
+                    Console.WriteLine("Using chrome from location " + chrome);
+                    return chrome;
+                }
+            }
+
+            key = Registry.GetValue(
+                @"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\U‌​ninstall\Google Chrome",
+                "InstallLocation", string.Empty);
+
+            if (key != null)
+            {
+                chrome = Path.Combine(key.ToString(), "chrome.exe");
+                if (File.Exists(chrome))
+                {
+                    Console.WriteLine("Using chrome from location " + chrome);
+                    return chrome;
+                }
+            }
+
+            return string.Empty;
+        }
         #endregion
 
         #region WriteToLog
