@@ -37,7 +37,7 @@ In Visual Studio's Package Manager Console, simply enter the following command:
 ```csharp
 using (var converter = new Converter())
 {
-	converter.ConvertToPdf(new Uri("http://www.google.nl"), @"c:\google.pdf");
+    converter.ConvertToPdf(new Uri("http://www.google.nl"), @"c:\google.pdf");
 }
 
 // Show the PDF
