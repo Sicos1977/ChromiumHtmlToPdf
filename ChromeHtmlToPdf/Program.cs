@@ -10,7 +10,6 @@ using ChromeHtmlToPdfLib;
 using ChromeHtmlToPdfLib.Settings;
 using CommandLine;
 using CommandLine.Text;
-using Microsoft.Win32;
 
 namespace ChromeHtmlToPdf
 {
@@ -43,7 +42,10 @@ namespace ChromeHtmlToPdf
         {
             try
             {
-                ParseCommandlineParameters(args, out var options, out var portRangeSettings);
+                Options options;
+                PortRangeSettings portRangeSettings;
+
+                ParseCommandlineParameters(args, out options, out portRangeSettings);
 
                 var maxTasks = SetMaxConcurrencyLevel(options);
 
@@ -308,52 +310,6 @@ namespace ChromeHtmlToPdf
         }
         #endregion
 
-        #region GetChromeLocation
-        /// <summary>
-        /// Returns the location of Chrome
-        /// </summary>
-        /// <returns></returns>
-        private static string GetChromeLocation()
-        {
-            var currentPath =
-                // ReSharper disable once AssignNullToNotNullAttribute
-                new Uri(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase)).LocalPath;
-
-            // ReSharper disable once AssignNullToNotNullAttribute
-            var chrome = Path.Combine(currentPath, "chrome.exe");
-
-            if (File.Exists(chrome))
-            {
-                Console.WriteLine("Using Chrome from location " + chrome);
-                return chrome;
-            }
-
-            var key = Registry.GetValue(
-                @"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Google Chrome",
-                "InstallLocation", string.Empty);
-
-            if (key != null)
-            {
-                chrome = Path.Combine(key.ToString(), "chrome.exe");
-                Console.WriteLine("Using chrome from location " + chrome);
-                return chrome;
-            }
-
-            key = Registry.GetValue(
-                @"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\U‌​ninstall\Google Chrome",
-                "InstallLocation", string.Empty);
-
-            if (key != null)
-            {
-                chrome = Path.Combine(key.ToString(), "chrome.exe");
-                Console.WriteLine("Using chrome from location " + chrome);
-                return chrome;
-            }
-
-            return string.Empty;
-        }
-        #endregion
-
         #region SetConverterSettings
         /// <summary>
         /// Sets the converter settings
@@ -394,11 +350,7 @@ namespace ChromeHtmlToPdf
         {
             var pageSettings = GetPageSettings(options);
 
-            var chrome = !string.IsNullOrWhiteSpace(options.ChromeLocation)
-                ? options.ChromeLocation
-                : GetChromeLocation();
-
-            using (var converter = new Converter(chrome, portRangeSettings, logStream: Console.OpenStandardOutput()))
+            using (var converter = new Converter(options.ChromeLocation, portRangeSettings, logStream: Console.OpenStandardOutput()))
             {
                 SetConverterSettings(converter, options);
                 converter.ConvertToPdf(new Uri(options.Input), 
@@ -425,11 +377,7 @@ namespace ChromeHtmlToPdf
         {
             var pageSettings = GetPageSettings(options);
 
-            var chrome = !string.IsNullOrWhiteSpace(options.ChromeLocation)
-                ? options.ChromeLocation
-                : GetChromeLocation();
-
-            using (var converter = new Converter(chrome, portRangeSettings, logStream: Console.OpenStandardOutput()))
+            using (var converter = new Converter(options.ChromeLocation, portRangeSettings, logStream: Console.OpenStandardOutput()))
             {
                 converter.InstanceId = instanceId;
                 SetConverterSettings(converter, options);
