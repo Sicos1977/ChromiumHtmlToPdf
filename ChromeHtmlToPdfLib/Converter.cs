@@ -359,7 +359,7 @@ namespace ChromeHtmlToPdfLib
                         }
 
                         _communicator = new Communicator(new Uri($"http://localhost:{port}"));
-                        WriteToLog($"Chrome Started on port {port}");
+                        WriteToLog($"Chrome started on port {port}");
                         break;
                     }
                     finally
