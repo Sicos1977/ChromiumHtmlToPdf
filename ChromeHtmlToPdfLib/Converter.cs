@@ -737,7 +737,7 @@ namespace ChromeHtmlToPdfLib
                 WriteToLog(!match ? "Waiting timed out" : $"Window status equaled {waitForWindowStatus}");
             }
 
-            WriteToLog((isFile ? "File" : "URL") + " loaded");
+            WriteToLog((isFile ? "File" : "Url") + " loaded");
 
             WriteToLog("Converting to PDF");
             var pdfFileName = Path.ChangeExtension(outputFile, ".pdf");
