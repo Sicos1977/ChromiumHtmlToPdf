@@ -89,6 +89,11 @@ namespace ChromeHtmlToPdfLib
         ///     Keeps track is we already disposed our resources
         /// </summary>
         private bool _disposed;
+
+        /// <summary>
+        ///     Returns the location of Chrome
+        /// </summary>
+        private string _chromeLocation;
         #endregion
 
         #region Properties
@@ -102,16 +107,18 @@ namespace ChromeHtmlToPdfLib
         ///     calling the code from multiple threads and writing all the logging to the same file
         /// </summary>
         public string InstanceId { get; set; }
-
-
+        
         /// <summary>
         ///     Returns the location of Chrome
         /// </summary>
         /// <returns></returns>
-        private string ChromeLocation
+        public string ChromeLocation
         {
             get
             {
+                if (!string.IsNullOrEmpty(_chromeLocation))
+                    return _chromeLocation;
+
                 var currentPath =
                     // ReSharper disable once AssignNullToNotNullAttribute
                     new Uri(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase)).LocalPath;
@@ -122,6 +129,7 @@ namespace ChromeHtmlToPdfLib
                 if (File.Exists(chrome))
                 {
                     WriteToLog("Using Chrome from location " + chrome);
+                    _chromeLocation = chrome;
                     return chrome;
                 }
 
@@ -135,6 +143,7 @@ namespace ChromeHtmlToPdfLib
                     if (File.Exists(chrome))
                     {
                         Console.WriteLine("Using chrome from location " + chrome);
+                        _chromeLocation = chrome;
                         return chrome;
                     }
                 }
@@ -149,6 +158,7 @@ namespace ChromeHtmlToPdfLib
                     if (File.Exists(chrome))
                     {
                         Console.WriteLine("Using chrome from location " + chrome);
+                        _chromeLocation = chrome;
                         return chrome;
                     }
                 }
