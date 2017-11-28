@@ -180,7 +180,7 @@ namespace ChromeHtmlToPdfLib
         ///     Raised when the <paramref name="userProfile" /> directory is given but
         ///     does not exists
         /// </exception>
-        public Converter(string chromeExeFileName = null, 
+        public Converter(string chromeExeFileName = null,
                          PortRangeSettings portRange = null,
                          string userProfile = null,
                          Stream logStream = null)
@@ -735,9 +735,9 @@ namespace ChromeHtmlToPdfLib
         /// <param name="waitForWindowsStatusTimeout"></param>
         /// <returns>The filename with full path to the generated PDF</returns>
         /// <exception cref="DirectoryNotFoundException"></exception>
-        public void ConvertToPdf(Uri inputUri, 
-                                string outputFile, 
-                                PageSettings pageSettings, 
+        public void ConvertToPdf(Uri inputUri,
+                                string outputFile,
+                                PageSettings pageSettings,
                                 bool waitForNetworkIdle,
                                 string waitForWindowStatus = "",
                                 int waitForWindowsStatusTimeout = 60000)
@@ -830,7 +830,8 @@ namespace ChromeHtmlToPdfLib
                 if (_chromeProcess == null) return;
                 _chromeProcess.Refresh();
                 if (_chromeProcess.HasExited) return;
-                KillProcessAndChildren(_chromeProcess.Id);
+                var logs = KillProcessAndChildren(_chromeProcess.Id);
+                WriteToLog(logs);
                 _chromeProcess = null;
                 WriteToLog("Chrome stopped");
             }
