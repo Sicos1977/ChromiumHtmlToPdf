@@ -35,7 +35,7 @@ In Visual Studio's Package Manager Console, simply enter the following command:
 ### Converting a file or url from code
 
 ```csharp
-using (var converter = new Converter(<the location of Google Chrome>))
+using (var converter = new Converter())
 {
 	converter.ConvertToPdf(new Uri("http://www.google.nl"), @"c:\google.pdf");
 }
@@ -47,9 +47,18 @@ System.Diagnostics.Process.Start(@"c:\google.pdf");
 ### Converting from the command line
 
 ```csharp
-ChromeHtmlToPdf.exe --input https://www.google.nl --output c:\google.pdf
+ChromeHtmlToPdf.exe --input https://www.google.com --output c:\google.pdf
 ```
 ![screenshot](https://github.com/Sicos1977/ChromeHtmlToPdf/blob/master/console.png)
+
+### Converting from Internet Information Services (IIS)
+
+- Download Chrome portable and extract it
+- Copy the files to the same location as where your project exists on the webserver
+- Reference the ChromeHtmlToPdfLib.dll from your webproject
+- Call the converter.ConverToPdf method from code
+
+Thats it.
 
 ### Exit codes
 
