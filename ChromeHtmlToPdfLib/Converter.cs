@@ -726,7 +726,7 @@ namespace ChromeHtmlToPdfLib
             StartChromeHeadless();
 
             WriteToLog("Loading " + (isFile ? "file " + inputUri.OriginalString : "url " + inputUri) +
-                       (waitForNetworkIdle ? "and wait until all resources are loaded" : string.Empty));
+                       (waitForNetworkIdle ? " and waiting until all resources are loaded" : string.Empty));
 
             _communicator.NavigateTo(inputUri, waitForNetworkIdle);
 
