@@ -666,72 +666,35 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
 
-        #region KillAllChromeProcesses
+        #region KillProcessAndChildren
         /// <summary>
-        ///     This will kill all running Chrome processes
+        ///     Kill the process with given id and all it's children
         /// </summary>
-        /// <returns>
-        ///     Returns the output of this function
-        /// </returns>
-        public static string KillAllChromeProcesses()
+        /// <param name="processId">The process id</param>
+        private void KillProcessAndChildren(int processId)
         {
-            var result = new StringBuilder();
-            result.AppendLine("=== START KILLING Chrome PROCESSES ===");
+            if (processId == 0) return;
 
-            foreach (var process in Process.GetProcessesByName("chrome"))
-                try
-                {
-                    result.AppendLine($"Killing Chrome process with id {process.Id}");
-                    process.Kill();
-                    result.AppendLine($"Killed Chrome process with id {process.Id}");
-                }
-                catch (Exception exception)
-                {
-                    result.AppendLine($"Could not kill Chrome process with id {process.Id}, error {exception.Message}");
-                }
+            var managedObjects = new ManagementObjectSearcher($"Select * From Win32_Process Where ParentProcessID={processId}").Get();
 
-            result.AppendLine("=== END KILLING Chrome PROCESSES ===");
-            return result.ToString();
-        }
-        #endregion
-
-        #region Kill Chrome And Children Processes
-        /// <summary>
-        /// Kill the process with given id and it's children
-        /// </summary>
-        /// <param name="processId"></param>
-        /// <returns>
-        ///     Returns the log of what happened inside this function
-        /// </returns>
-        public static string KillProcessAndChildren(int processId)
-        {
-            var result = new StringBuilder();
-            result.AppendLine($"=== START KILLING Process with id {processId} and children processes ===");
-            List<Process> children = new List<Process>();
-            var objs = new ManagementObjectSearcher($"Select * From Win32_Process Where ParentProcessID={processId}")?.Get();
-
-            if (objs != null && objs.Count > 0)
+            if (managedObjects.Count > 0)
             {
-                foreach (var mo in objs)
-                {
-                    children.Add(Process.GetProcessById(Convert.ToInt32(mo["ProcessID"])));
-                }
+                foreach (var managedObject in managedObjects)
+                    KillProcessAndChildren(Convert.ToInt32(managedObject["ProcessID"]));
             }
 
-            Process.Start($"taskkill", $"/F /PID {processId}");
-
-            foreach (var child in children)
+            try
             {
-                result.AppendLine($"Killing process {child.ProcessName} with id {child.Id}");
-                Process.Start($"taskkill", $"/F /PID {child.Id}");
+                var process = Process.GetProcessById(processId);
+                process.Kill();
             }
-
-            result.AppendLine($"=== END KILLING Process with id {processId} ===");
-            return result.ToString();
+            catch (Exception exception)
+            {
+                WriteToLog(exception.Message);
+            }
         }
         #endregion
-
-
+        
         #region ConvertToPdf
         /// <summary>
         ///     Converts the given <paramref name="inputUri" /> to PDF
@@ -840,8 +803,7 @@ namespace ChromeHtmlToPdfLib
                 if (_chromeProcess == null) return;
                 _chromeProcess.Refresh();
                 if (_chromeProcess.HasExited) return;
-                var logs = KillProcessAndChildren(_chromeProcess.Id);
-                WriteToLog(logs);
+                KillProcessAndChildren(_chromeProcess.Id);
                 _chromeProcess = null;
                 WriteToLog("Chrome stopped");
             }
