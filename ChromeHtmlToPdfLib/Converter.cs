@@ -35,6 +35,7 @@ using System.Text;
 using System.Threading;
 using ChromeHtmlToPdfLib.Settings;
 using Microsoft.Win32;
+using System.Management;
 
 namespace ChromeHtmlToPdfLib
 {
@@ -189,7 +190,7 @@ namespace ChromeHtmlToPdfLib
         ///     Raised when the <paramref name="userProfile" /> directory is given but
         ///     does not exists
         /// </exception>
-        public Converter(string chromeExeFileName = null, 
+        public Converter(string chromeExeFileName = null,
                          PortRangeSettings portRange = null,
                          string userProfile = null,
                          Stream logStream = null)
@@ -694,6 +695,43 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
 
+        #region Kill Chrome And Children Processes
+        /// <summary>
+        /// Kill the process with given id and it's children
+        /// </summary>
+        /// <param name="processId"></param>
+        /// <returns>
+        ///     Returns the log of what happened inside this function
+        /// </returns>
+        public static string KillProcessAndChildren(int processId)
+        {
+            var result = new StringBuilder();
+            result.AppendLine($"=== START KILLING Process with id {processId} and children processes ===");
+            List<Process> children = new List<Process>();
+            var objs = new ManagementObjectSearcher($"Select * From Win32_Process Where ParentProcessID={processId}")?.Get();
+
+            if (objs != null && objs.Count > 0)
+            {
+                foreach (var mo in objs)
+                {
+                    children.Add(Process.GetProcessById(Convert.ToInt32(mo["ProcessID"])));
+                }
+            }
+
+            Process.Start($"taskkill", $"/F /PID {processId}");
+
+            foreach (var child in children)
+            {
+                result.AppendLine($"Killing process {child.ProcessName} with id {child.Id}");
+                Process.Start($"taskkill", $"/F /PID {child.Id}");
+            }
+
+            result.AppendLine($"=== END KILLING Process with id {processId} ===");
+            return result.ToString();
+        }
+        #endregion
+
+
         #region ConvertToPdf
         /// <summary>
         ///     Converts the given <paramref name="inputUri" /> to PDF
@@ -707,9 +745,9 @@ namespace ChromeHtmlToPdfLib
         /// <param name="waitForWindowsStatusTimeout"></param>
         /// <returns>The filename with full path to the generated PDF</returns>
         /// <exception cref="DirectoryNotFoundException"></exception>
-        public void ConvertToPdf(Uri inputUri, 
-                                string outputFile, 
-                                PageSettings pageSettings, 
+        public void ConvertToPdf(Uri inputUri,
+                                string outputFile,
+                                PageSettings pageSettings,
                                 bool waitForNetworkIdle,
                                 string waitForWindowStatus = "",
                                 int waitForWindowsStatusTimeout = 60000)
@@ -802,7 +840,8 @@ namespace ChromeHtmlToPdfLib
                 if (_chromeProcess == null) return;
                 _chromeProcess.Refresh();
                 if (_chromeProcess.HasExited) return;
-                _chromeProcess.Kill();
+                var logs = KillProcessAndChildren(_chromeProcess.Id);
+                WriteToLog(logs);
                 _chromeProcess = null;
                 WriteToLog("Chrome stopped");
             }
