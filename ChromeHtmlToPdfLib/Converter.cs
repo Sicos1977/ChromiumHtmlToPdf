@@ -675,7 +675,8 @@ namespace ChromeHtmlToPdfLib
         {
             if (processId == 0) return;
 
-            var managedObjects = new ManagementObjectSearcher($"Select * From Win32_Process Where ParentProcessID={processId}").Get();
+            var managedObjects =
+                new ManagementObjectSearcher($"Select * From Win32_Process Where ParentProcessID={processId}").Get();
 
             if (managedObjects.Count > 0)
             {
