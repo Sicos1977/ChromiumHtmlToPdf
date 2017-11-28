@@ -143,7 +143,7 @@ namespace ChromeHtmlToPdfLib
                     chrome = Path.Combine(key.ToString(), "chrome.exe");
                     if (File.Exists(chrome))
                     {
-                        Console.WriteLine("Using chrome from location " + chrome);
+                        WriteToLog("Using chrome from location " + chrome);
                         _chromeLocation = chrome;
                         return chrome;
                     }
@@ -158,7 +158,7 @@ namespace ChromeHtmlToPdfLib
                     chrome = Path.Combine(key.ToString(), "chrome.exe");
                     if (File.Exists(chrome))
                     {
-                        Console.WriteLine("Using chrome from location " + chrome);
+                        WriteToLog("Using chrome from location " + chrome);
                         _chromeLocation = chrome;
                         return chrome;
                     }
