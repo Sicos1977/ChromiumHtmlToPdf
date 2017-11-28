@@ -44,6 +44,16 @@ using (var converter = new Converter())
 System.Diagnostics.Process.Start(@"c:\google.pdf");
 ```
 
+### Converting from Internet Information Services (IIS)
+
+- Download Chrome portable and extract it
+- Let your website run under the ApplicationPool identity
+- Copy the files to the same location as where your project exists on the webserver
+- Reference the ChromeHtmlToPdfLib.dll from your webproject
+- Call the converter.ConverToPdf method from code
+
+Thats it.
+
 ### Converting from the command line
 
 ```csharp
@@ -51,16 +61,7 @@ ChromeHtmlToPdf.exe --input https://www.google.com --output c:\google.pdf
 ```
 ![screenshot](https://github.com/Sicos1977/ChromeHtmlToPdf/blob/master/console.png)
 
-### Converting from Internet Information Services (IIS)
-
-- Download Chrome portable and extract it
-- Copy the files to the same location as where your project exists on the webserver
-- Reference the ChromeHtmlToPdfLib.dll from your webproject
-- Call the converter.ConverToPdf method from code
-
-Thats it.
-
-### Exit codes
+### Console app exit codes
 
 0 = successful, 1 = an error occurred
 
