@@ -352,6 +352,7 @@ namespace ChromeHtmlToPdfLib
                         {
                             if (i >= 5)
                             {
+                                WriteToLog("Chrome process: " + _chromeExeFileName);
                                 WriteToLog("Arguments used: " + string.Join(" ", _defaultArguments));
                                 throw new ChromeException("Could not start Chrome");
                             }
