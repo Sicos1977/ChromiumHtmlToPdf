@@ -328,9 +328,9 @@ namespace ChromeHtmlToPdfLib
                             var userName = string.Empty;
 
                             if (_userName.Contains("\\"))
-                                userName = _userName.Split('\\')[0];
+                                userName = _userName.Split('\\')[1];
 
-                            var domain = _userName.Split('\\')[1];
+                            var domain = _userName.Split('\\')[0];
 
                             processStartInfo.Domain = domain;
                             processStartInfo.UserName = userName;
