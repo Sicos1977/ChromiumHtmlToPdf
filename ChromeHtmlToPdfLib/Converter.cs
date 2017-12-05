@@ -215,7 +215,7 @@ namespace ChromeHtmlToPdfLib
                     throw new DirectoryNotFoundException(
                         $"The directory '{userProfileDirectory.FullName}' does not exists");
 
-                SetDefaultArgument("user-data-dir", $"\"{userProfileDirectory.FullName}\"");
+                SetDefaultArgument("--user-data-dir", $"\"{userProfileDirectory.FullName}\"");
             }
         }
 
@@ -351,7 +351,10 @@ namespace ChromeHtmlToPdfLib
                         if (_chromeProcess.HasExited)
                         {
                             if (i >= 5)
+                            {
+                                WriteToLog("Arguments used: " + string.Join(" ", _defaultArguments));
                                 throw new ChromeException("Could not start Chrome");
+                            }
 
                             Thread.Sleep(i * 50);
                             i++;
