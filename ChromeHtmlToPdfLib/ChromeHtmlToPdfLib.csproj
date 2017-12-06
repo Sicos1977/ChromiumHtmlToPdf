@@ -78,6 +78,7 @@
     <Compile Include="ChromeException.cs" />
     <Compile Include="Communicator.cs" />
     <Compile Include="Converter.cs" />
+    <Compile Include="ExceptionHelper.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Protocol\Error.cs" />

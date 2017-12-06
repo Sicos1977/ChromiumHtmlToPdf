@@ -36,6 +36,7 @@ using System.Threading;
 using ChromeHtmlToPdfLib.Settings;
 using Microsoft.Win32;
 using System.Management;
+using System.Runtime.InteropServices;
 
 namespace ChromeHtmlToPdfLib
 {
@@ -354,7 +355,12 @@ namespace ChromeHtmlToPdfLib
                             {
                                 WriteToLog("Chrome process: " + _chromeExeFileName);
                                 WriteToLog("Arguments used: " + string.Join(" ", _defaultArguments));
-                                throw new ChromeException("Could not start Chrome");
+                                var exception =
+                                    ExceptionHelpers.GetInnerException(
+                                        Marshal.GetExceptionForHR(_chromeProcess.ExitCode));
+                                WriteToLog("Exception: " + exception);
+                                throw new ChromeException(
+                                    $"Could not start Chrome - retried {i} times, exception: " + exception);
                             }
 
                             Thread.Sleep(i * 50);
