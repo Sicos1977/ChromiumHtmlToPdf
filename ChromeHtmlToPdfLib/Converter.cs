@@ -109,12 +109,12 @@ namespace ChromeHtmlToPdfLib
         ///     calling the code from multiple threads and writing all the logging to the same file
         /// </summary>
         public string InstanceId { get; set; }
-        
+
         /// <summary>
-        ///     Returns the location of Chrome
+        ///     Returns the path to Chrome, <c>null</c> will be returned if Chrome could not be found
         /// </summary>
         /// <returns></returns>
-        public string ChromeLocation
+        public string ChromePath
         {
             get
             {
@@ -130,9 +130,8 @@ namespace ChromeHtmlToPdfLib
 
                 if (File.Exists(chrome))
                 {
-                    WriteToLog("Using Chrome from location " + chrome);
-                    _chromeLocation = chrome;
-                    return chrome;
+                    _chromeLocation = currentPath;
+                    return _chromeLocation;
                 }
 
                 var key = Registry.GetValue(
@@ -144,9 +143,8 @@ namespace ChromeHtmlToPdfLib
                     chrome = Path.Combine(key.ToString(), "chrome.exe");
                     if (File.Exists(chrome))
                     {
-                        WriteToLog("Using Chrome from location " + chrome);
-                        _chromeLocation = chrome;
-                        return chrome;
+                        _chromeLocation = key.ToString();
+                        return _chromeLocation;
                     }
                 }
 
@@ -159,13 +157,12 @@ namespace ChromeHtmlToPdfLib
                     chrome = Path.Combine(key.ToString(), "chrome.exe");
                     if (File.Exists(chrome))
                     {
-                        WriteToLog("Using Chrome from location " + chrome);
-                        _chromeLocation = chrome;
-                        return chrome;
+                        _chromeLocation = key.ToString();
+                        return _chromeLocation;
                     }
                 }
 
-                return string.Empty;
+                return null;
             }
         }
         #endregion
@@ -201,7 +198,7 @@ namespace ChromeHtmlToPdfLib
             ResetArguments();
 
             if (string.IsNullOrWhiteSpace(chromeExeFileName))
-                chromeExeFileName = ChromeLocation;
+                chromeExeFileName = Path.Combine(ChromePath, "chrome.exe");
 
             if (string.IsNullOrEmpty(chromeExeFileName))
                 throw new FileNotFoundException("Could not find chrome.exe");
@@ -283,13 +280,15 @@ namespace ChromeHtmlToPdfLib
             if (IsChromeRunning())
                 return;
 
-            var i = 1;
+            WriteToLog($"Starting Chrome from location {_chromeExeFileName}");
+
             using (var mutex = new Mutex(false, ChromeMutexName))
             {
+                var i = 1;
+
                 while (true)
                 {
 
-                    WriteToLog("Starting Chrome");
                     bool mutexAcquired;
                     try
                     {
@@ -333,6 +332,8 @@ namespace ChromeHtmlToPdfLib
 
                             var domain = _userName.Split('\\')[0];
 
+                            WriteToLog($"Starting Chrome with user '{userName}' on domain '{domain}'");
+
                             processStartInfo.Domain = domain;
                             processStartInfo.UserName = userName;
 
@@ -360,7 +361,7 @@ namespace ChromeHtmlToPdfLib
                                         Marshal.GetExceptionForHR(_chromeProcess.ExitCode));
                                 WriteToLog("Exception: " + exception);
                                 throw new ChromeException(
-                                    $"Could not start Chrome - retried {i} times, exception: " + exception);
+                                    $"Could not start Chrome - retried {i} times, " + exception);
                             }
 
                             Thread.Sleep(i * 50);
@@ -409,11 +410,11 @@ namespace ChromeHtmlToPdfLib
             SetDefaultArgument("--mute-audio");
             SetDefaultArgument("--disable-background-networking");
             SetDefaultArgument("--disable-background-timer-throttling");
-            SetDefaultArgument("--disable-client-side-phishing-detection");
+            //SetDefaultArgument("--disable-client-side-phishing-detection");
             SetDefaultArgument("--disable-default-apps");
             SetDefaultArgument("--disable-extensions");
             SetDefaultArgument("--disable-hang-monitor");
-            SetDefaultArgument("--disable-popup-blocking");
+            //SetDefaultArgument("--disable-popup-blocking");
             SetDefaultArgument("--disable-prompt-on-repost");
             SetDefaultArgument("--disable-sync");
             SetDefaultArgument("--disable-translate");
