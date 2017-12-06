@@ -353,13 +353,37 @@ namespace ChromeHtmlToPdf
             using (var converter = new Converter(options.ChromeLocation, portRangeSettings, logStream: Console.OpenStandardOutput()))
             {
                 SetConverterSettings(converter, options);
-                converter.ConvertToPdf(new Uri(options.Input), 
+
+                converter.ConvertToPdf(CheckInput(options), 
                                        options.Output, 
                                        pageSettings, 
                                        options.WaitForNetworkIdle, 
                                        options.WaitForWindowStatus,
                                        options.WaitForWindowStatusTimeOut);
             }
+        }
+        #endregion
+
+        #region CheckInput
+        /// <summary>
+        ///     Checks the input if a file without path is given
+        /// </summary>
+        /// <returns></returns>
+        private static Uri CheckInput(Options options)
+        {
+            try
+            {
+                return new Uri(options.Input);
+            }
+            catch (UriFormatException)
+            {
+                // Check if this is a local file
+                var file = new FileInfo(Path.Combine(Directory.GetCurrentDirectory(), options.Input));
+                if (file.Exists)
+                    return new Uri(file.FullName);
+            }
+
+            return new Uri(options.Input);
         }
         #endregion
 
