@@ -348,6 +348,8 @@ namespace ChromeHtmlToPdfLib
                         if (_chromeProcess == null)
                             throw new ChromeException("Could not start Chrome");
 
+                        WriteToLog($"Chrome started on port {port}");
+
                         _chromeProcess.WaitForInputIdle();
 
                         if (_chromeProcess.HasExited)
@@ -369,8 +371,10 @@ namespace ChromeHtmlToPdfLib
                             continue;
                         }
 
-                        _communicator = new Communicator(new Uri($"http://localhost:{port}"));
-                        WriteToLog($"Chrome started on port {port}");
+                        var devProtocol = new Uri($"http://localhost:{port}");
+                        WriteToLog($"Connecting to dev protocol on url '{devProtocol}'");
+                        _communicator = new Communicator(devProtocol);
+                        WriteToLog("Connected to dev protocol");
                         break;
                     }
                     finally
@@ -801,6 +805,14 @@ namespace ChromeHtmlToPdfLib
             _logStream.Flush();
         }
         #endregion
+
+        private void WrapFileInHtml()
+        {
+            using (var file = File.Open("yourtext.txt", FileMode.Open, FileAccess.ReadWrite))
+            {
+                file.Prepend("Text you want to write.");
+            }
+        }
 
         #region Dispose
         /// <summary>

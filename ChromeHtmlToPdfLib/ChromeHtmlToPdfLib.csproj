@@ -80,6 +80,7 @@
     <Compile Include="Converter.cs" />
     <Compile Include="ExceptionHelper.cs" />
     <Compile Include="Extensions.cs" />
+    <Compile Include="FilePreprender.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Protocol\Error.cs" />
     <Compile Include="Protocol\Evaluate.cs" />
