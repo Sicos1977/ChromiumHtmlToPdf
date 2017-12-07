@@ -30,7 +30,7 @@ The easiest way to install ChromeHtmlToPdf is via NuGet.
 
 In Visual Studio's Package Manager Console, simply enter the following command:
 
-    Install-Package ChromeHtmlToPdf -Version 1.0.0 
+    Install-Package ChromeHtmlToPdf 
 
 ### Converting a file or url from code
 
