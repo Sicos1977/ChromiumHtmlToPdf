@@ -4,17 +4,30 @@ namespace ChromeHtmlToPdfLib
 {
     public class PreWrapper
     {
-        static void WriteABC(string filename)
+        /*
+        <html>
+        <head>
+        <style>
+        pre { white-space: pre-wrap; }
+        </style>
+        </head>
+        <body>
+        <pre>
+        </pre>
+        </html>
+        */
+
+        static void PreWrapFile(string inputFile, string outputFile)
         {
-            string tempfile = Path.GetTempFileName();
-            using (var writer = new StreamWriter(tempfile))
-            using (var reader = new StreamReader(filename))
+            using (var writer = new StreamWriter(outputFile))
+            using (var reader = new StreamReader(inputFile))
             {
-                writer.WriteLine("A,B,C");
+                //writer.WriteLine("A,B,C");
                 while (!reader.EndOfStream)
                     writer.WriteLine(reader.ReadLine());
             }
-            File.Copy(tempfile, filename, true);
+
+            File.Copy(outputFile, inputFile, true);
         }
     }
 }
