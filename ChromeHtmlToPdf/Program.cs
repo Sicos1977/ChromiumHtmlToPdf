@@ -42,10 +42,7 @@ namespace ChromeHtmlToPdf
         {
             try
             {
-                Options options;
-                PortRangeSettings portRangeSettings;
-
-                ParseCommandlineParameters(args, out options, out portRangeSettings);
+                ParseCommandlineParameters(args, out var options, out var portRangeSettings);
 
                 var maxTasks = SetMaxConcurrencyLevel(options);
 
@@ -337,6 +334,8 @@ namespace ChromeHtmlToPdf
 
             if (!string.IsNullOrWhiteSpace(options.ProxyPacUrl))
                 converter.SetProxyPacUrl(options.ProxyPacUrl);
+
+            converter.PreWrapExtensions.AddRange(options.PreWrapFileExtensions);
         }
         #endregion
 
@@ -404,6 +403,7 @@ namespace ChromeHtmlToPdf
             using (var converter = new Converter(options.ChromeLocation, portRangeSettings, logStream: Console.OpenStandardOutput()))
             {
                 converter.InstanceId = instanceId;
+
                 SetConverterSettings(converter, options);
 
                 while (!_itemsToConvert.IsEmpty)

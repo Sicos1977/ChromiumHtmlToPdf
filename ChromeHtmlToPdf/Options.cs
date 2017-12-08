@@ -1,4 +1,5 @@
-﻿using ChromeHtmlToPdfLib.Settings;
+﻿using System.Collections.Generic;
+using ChromeHtmlToPdfLib.Settings;
 using CommandLine;
 
 namespace ChromeHtmlToPdf
@@ -178,7 +179,9 @@ namespace ChromeHtmlToPdf
         /// </summary>
         [Option("proxy-bypass-list", Required = false,
             HelpText =
-                "This tells chrome to bypass any specified proxy for the given semi-colon-separated list of hosts. This flag must be used (or rather, only has an effect) in tandem with --proxy-server. For example \"*.google.com;*foo.com;127.0.0.1:8080\""
+                "This tells chrome to bypass any specified proxy for the given semi-colon-separated list of hosts. " +
+                "This flag must be used (or rather, only has an effect) in tandem with --proxy-server. " +
+                "For example \"*.google.com;*foo.com;127.0.0.1:8080\""
         )]
         public string ProxyByPassList { get; set; }
 
@@ -242,6 +245,13 @@ namespace ChromeHtmlToPdf
         [Option("wait-for-window-status-timeout", Required = false, Default = 60000,
             HelpText = "The timeout when waiting for the parameter --wait-for-windows-status")]
         public int WaitForWindowStatusTimeOut { get; set; }
+
+        /// <summary>
+        ///     The files to wrap in a HTML file with a &lt;PRE&gt; tag
+        /// </summary>
+        [Option("pre-wrap-file-extensions", Required = false, Default = ".txt .log",
+            HelpText = "The files to wrap in a HTML file with a <PRE> tag")]
+        public IEnumerable<string> PreWrapFileExtensions { get; set; }
         #endregion
     }
 }

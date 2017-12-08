@@ -93,9 +93,19 @@ namespace ChromeHtmlToPdfLib
         private bool _disposed;
 
         /// <summary>
+        ///     When set then this folder is used for temporary files
+        /// </summary>
+        private DirectoryInfo _tempDirectory;
+
+        /// <summary>
         ///     Returns the location of Chrome
         /// </summary>
         private string _chromeLocation;
+
+        /// <summary>
+        ///     <see cref="PreWrapper"/>
+        /// </summary>
+        private PreWrapper _preWrapper;
         #endregion
 
         #region Properties
@@ -109,6 +119,38 @@ namespace ChromeHtmlToPdfLib
         ///     calling the code from multiple threads and writing all the logging to the same file
         /// </summary>
         public string InstanceId { get; set; }
+
+        /// <summary>
+        ///     Used to add the extension of text based files that needed to be wrapped in an HTML PRE
+        ///     tag so that they can be opened by Chrome
+        /// </summary>
+        /// <example>
+        ///     <code>
+        ///     var converter = new Converter()
+        ///     converter.PreWrapExtensions.Add(".txt");
+        ///     converter.PreWrapExtensions.Add(".log");
+        ///     // etc ...
+        ///     </code>
+        /// </example>
+        /// <remarks>
+        ///     The extensions are used case insensitive
+        /// </remarks>
+        public List<string> PreWrapExtensions { get; set; }
+
+        /// <summary>
+        ///     When set then this directory is used to store temporary files.
+        ///     For example files that are made in combination with <see cref="PreWrapExtensions"/>
+        /// </summary>
+        /// <exception cref="DirectoryNotFoundException">Raised when the given directory does not exists</exception>
+        public string TempDirectory {
+            get { return _tempDirectory.FullName; }
+            set
+            {
+                _tempDirectory = new DirectoryInfo(value);
+                if (!_tempDirectory.Exists)
+                    throw new DirectoryNotFoundException(value);
+            }
+        }
 
         /// <summary>
         ///     Returns the path to Chrome, <c>null</c> will be returned if Chrome could not be found
@@ -165,6 +207,21 @@ namespace ChromeHtmlToPdfLib
                 return null;
             }
         }
+
+        /// <summary>
+        ///     <see cref="PreWrapper"/>
+        /// </summary>
+        private PreWrapper PreWrapper
+        {
+            get
+            {
+                if (_preWrapper != null)
+                    return _preWrapper;
+
+                _preWrapper = new PreWrapper(_tempDirectory);
+                return _preWrapper;
+            }
+        }
         #endregion
 
         #region Constructor & Destructor
@@ -193,6 +250,7 @@ namespace ChromeHtmlToPdfLib
                          string userProfile = null,
                          Stream logStream = null)
         {
+            PreWrapExtensions = new List<string>();
             _logStream = logStream;
 
             ResetArguments();
@@ -738,26 +796,45 @@ namespace ChromeHtmlToPdfLib
             if (isFile && !File.Exists(inputUri.OriginalString))
                 throw new FileNotFoundException($"The file '{inputUri.OriginalString}' does not exists");
 
-            StartChromeHeadless();
+            FileInfo preWrappedFile = null;
 
-            WriteToLog("Loading " + (isFile ? "file " + inputUri.OriginalString : "url " + inputUri) +
-                       (waitForNetworkIdle ? " and waiting until all resources are loaded" : string.Empty));
-
-            _communicator.NavigateTo(inputUri, waitForNetworkIdle);
-
-            if (!string.IsNullOrWhiteSpace(waitForWindowStatus))
+            try
             {
-                WriteToLog($"Waiting for window.status '{waitForWindowStatus}' or a timeout of {waitForWindowsStatusTimeout} milliseconds");
-                var match = _communicator.WaitForWindowStatus(waitForWindowStatus, waitForWindowsStatusTimeout);
-                WriteToLog(!match ? "Waiting timed out" : $"Window status equaled {waitForWindowStatus}");
+                if (isFile && CheckForPreWrap(inputUri.LocalPath, out var tempFile))
+                {
+                    inputUri = new Uri(tempFile);
+                    preWrappedFile = new FileInfo(tempFile);
+                }
+
+                StartChromeHeadless();
+
+                WriteToLog("Loading " + (isFile ? "file " + inputUri.OriginalString : "url " + inputUri) +
+                           (waitForNetworkIdle ? " and waiting until all resources are loaded" : string.Empty));
+
+                _communicator.NavigateTo(inputUri, waitForNetworkIdle);
+
+                if (!string.IsNullOrWhiteSpace(waitForWindowStatus))
+                {
+                    WriteToLog($"Waiting for window.status '{waitForWindowStatus}' or a timeout of {waitForWindowsStatusTimeout} milliseconds");
+                    var match = _communicator.WaitForWindowStatus(waitForWindowStatus, waitForWindowsStatusTimeout);
+                    WriteToLog(!match ? "Waiting timed out" : $"Window status equaled {waitForWindowStatus}");
+                }
+
+                WriteToLog((isFile ? "File" : "Url") + " loaded");
+
+                WriteToLog("Converting to PDF");
+                var pdfFileName = Path.ChangeExtension(outputFile, ".pdf");
+                _communicator.PrintToPdf(pageSettings).SaveToFile(pdfFileName);
+                WriteToLog("Converted");
             }
-
-            WriteToLog((isFile ? "File" : "Url") + " loaded");
-
-            WriteToLog("Converting to PDF");
-            var pdfFileName = Path.ChangeExtension(outputFile, ".pdf");
-            _communicator.PrintToPdf(pageSettings).SaveToFile(pdfFileName);
-            WriteToLog("Converted");
+            finally
+            {
+                if (preWrappedFile != null)
+                {
+                    WriteToLog("Deleting prewrapped file");
+                    preWrappedFile.Delete();
+                }
+            }
         }
 
         ///// <summary>
@@ -790,6 +867,33 @@ namespace ChromeHtmlToPdfLib
         //}
         #endregion
 
+        #region CheckForPreWrap
+        /// <summary>
+        ///     Checks if <see cref="PreWrapExtensions"/> is set and if the extension
+        ///     is inside this list. When in the list then the file is wrapped
+        /// </summary>
+        /// <param name="inputFile"></param>
+        /// <param name="outputFile"></param>
+        /// <returns></returns>
+        private bool CheckForPreWrap(string inputFile, out string outputFile)
+        {
+            outputFile = inputFile;
+
+            if (PreWrapExtensions.Count == 0)
+                return false;
+
+            var ext = Path.GetExtension(inputFile);
+
+            if (!PreWrapExtensions.Contains(ext, StringComparison.InvariantCultureIgnoreCase))
+                return false;
+
+            WriteToLog($"Prewrapping file '{inputFile}' to '{outputFile}'");
+
+            outputFile = PreWrapper.WrapFile(inputFile);
+            return true;
+        }
+        #endregion
+
         #region WriteToLog
         /// <summary>
         ///     Writes a line and linefeed to the <see cref="_logStream" />
@@ -805,14 +909,6 @@ namespace ChromeHtmlToPdfLib
             _logStream.Flush();
         }
         #endregion
-
-        private void WrapFileInHtml()
-        {
-            using (var file = File.Open("yourtext.txt", FileMode.Open, FileAccess.ReadWrite))
-            {
-                file.Prepend("Text you want to write.");
-            }
-        }
 
         #region Dispose
         /// <summary>
