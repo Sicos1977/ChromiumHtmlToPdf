@@ -1,6 +1,4 @@
-﻿using Newtonsoft.Json;
-
-//
+﻿//
 // Evaluate.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
@@ -25,6 +23,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
+using Newtonsoft.Json;
 
 namespace ChromeHtmlToPdfLib.Protocol
 {
