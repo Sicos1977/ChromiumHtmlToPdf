@@ -25,7 +25,7 @@
 //
 
 // ReSharper disable InconsistentNaming
-namespace ChromeHtmlToPdfLib.Settings
+namespace ChromeHtmlToPdfLib.Enums
 {
     /// <summary>
     /// The default Window sizes

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using ChromeHtmlToPdfLib.Enums;
 using ChromeHtmlToPdfLib.Settings;
 using CommandLine;
 

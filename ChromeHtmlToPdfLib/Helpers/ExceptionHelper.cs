@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Reflection;
 
-namespace ChromeHtmlToPdfLib
+namespace ChromeHtmlToPdfLib.Helpers
 {
     /// <summary>
     ///     Exception helper methods

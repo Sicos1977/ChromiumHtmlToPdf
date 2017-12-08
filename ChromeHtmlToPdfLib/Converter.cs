@@ -37,6 +37,8 @@ using ChromeHtmlToPdfLib.Settings;
 using Microsoft.Win32;
 using System.Management;
 using System.Runtime.InteropServices;
+using ChromeHtmlToPdfLib.Enums;
+using ChromeHtmlToPdfLib.Helpers;
 
 namespace ChromeHtmlToPdfLib
 {

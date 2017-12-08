@@ -28,7 +28,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace ChromeHtmlToPdfLib
+namespace ChromeHtmlToPdfLib.Helpers
 {
     internal static class Extensions
     {

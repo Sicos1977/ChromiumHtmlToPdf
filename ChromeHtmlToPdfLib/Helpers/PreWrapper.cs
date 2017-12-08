@@ -28,7 +28,7 @@ using System;
 using System.IO;
 using System.Web;
 
-namespace ChromeHtmlToPdfLib
+namespace ChromeHtmlToPdfLib.Helpers
 {
     /// <summary>
     ///     Wraps a file in HTML PRE tags
@@ -42,7 +42,7 @@ namespace ChromeHtmlToPdfLib
         private readonly DirectoryInfo _tempDirectory;
         #endregion
 
-        #region Property
+        #region Properties
         /// <summary>
         ///     When set then this option will be used for white space wrapping
         /// </summary>

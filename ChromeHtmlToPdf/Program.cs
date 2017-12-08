@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ChromeHtmlToPdfLib;
+using ChromeHtmlToPdfLib.Enums;
 using ChromeHtmlToPdfLib.Settings;
 using CommandLine;
 using CommandLine.Text;
