@@ -7,7 +7,7 @@ namespace ChromeHtmlToPdfLib
     /// <summary>
     ///     Wraps a file in HTML PRE tags
     /// </summary>
-    public class PreWrapper
+    internal class PreWrapper
     {
         #region Fields
         /// <summary>
@@ -95,7 +95,7 @@ namespace ChromeHtmlToPdfLib
                     writer.WriteLine($"  font-style: { FontStyle };");
                 if (!string.IsNullOrWhiteSpace(FontFamily))
                     writer.WriteLine($"  font-size: { FontSize };");
-                writer.WriteLine("}");
+                writer.WriteLine("  }");
                 writer.WriteLine("</style>");
                 writer.WriteLine("</head>");
                 writer.WriteLine("<body>");
