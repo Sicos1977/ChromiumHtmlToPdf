@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using AngleSharp;
 using AngleSharp.Dom.Html;
+using AngleSharp.Extensions;
 using AngleSharp.Parser.Html;
 using AngleSharp.Services.Media;
 using ChromeHtmlToPdfLib.Enums;
@@ -125,7 +126,7 @@ namespace ChromeHtmlToPdfLib.Helpers
 
             var changed = false;
 
-            var config = Configuration.Default.WithCss().WithDefaultLoader(loader => loader.IsResourceLoadingEnabled = true);
+            var config = Configuration.Default.WithCss();
             var parser = new HtmlParser(config);
             var document = parser.Parse(webpage);
             var htmlImages = document.QuerySelectorAll("img");
@@ -133,7 +134,8 @@ namespace ChromeHtmlToPdfLib.Helpers
             // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
             foreach (IHtmlImageElement htmlImage in htmlImages)
             {
-                var width = htmlImage.DisplayWidth;
+                var t = htmlImage.Attributes;
+                var width = htmlImage.Attributes;
                 var height = htmlImage.DisplayHeight;
                 Image image = null;
 
@@ -160,7 +162,7 @@ namespace ChromeHtmlToPdfLib.Helpers
 
             if (!changed) return true;
             outputFile = GetTempFile(".html");
-            File.WriteAllText(outputFile, document.Body.OuterHtml);
+            File.WriteAllText(outputFile, document.Origin);
             return false;
         }
         #endregion
