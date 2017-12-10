@@ -42,6 +42,9 @@ using ChromeHtmlToPdfLib.Helpers;
 
 namespace ChromeHtmlToPdfLib
 {
+    /// <summary>
+    /// A converter class around Google Chrome headless to convert html to pdf
+    /// </summary>
     public class Converter : IDisposable
     {
         #region Const

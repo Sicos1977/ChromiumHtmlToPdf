@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using ChromeHtmlToPdfLib.Enums;
-using ChromeHtmlToPdfLib.Settings;
 using CommandLine;
 
 namespace ChromeHtmlToPdf
@@ -61,9 +60,9 @@ namespace ChromeHtmlToPdf
         ///     The papersize to use, when this option is set is will override <see cref="PaperWidth" /> and
         ///     <see cref="PaperHeight" />
         /// </summary>
-        [Option("paper-format", Required = false, Default = PaperFormats.Letter,
+        [Option("paper-format", Required = false, Default = PaperFormat.Letter,
             HelpText = "Paper format to use, when set then this will override --paper-width and --paper-height")]
-        public PaperFormats PaperFormat { get; set; }
+        public PaperFormat PaperFormat { get; set; }
 
         /// <summary>
         ///     Paper width in inches. Defaults to 8.5 inches.

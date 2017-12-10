@@ -29,9 +29,6 @@ using ChromeHtmlToPdfLib.Enums;
 
 namespace ChromeHtmlToPdfLib.Settings
 {
-    #region PaperFormats
-    #endregion
-
     /// <summary>
     /// The page settings to use when converting to PDF
     /// </summary>
@@ -104,7 +101,7 @@ namespace ChromeHtmlToPdfLib.Settings
         /// Makes this object and sets all the settings to it's default values
         /// </summary>
         /// <remarks>
-        /// Default paper settings are set to <see cref="PaperFormats.A4"/>
+        /// Default paper settings are set to <see cref="PaperFormat.A4"/>
         /// </remarks>
         public PageSettings()
         {
@@ -115,10 +112,10 @@ namespace ChromeHtmlToPdfLib.Settings
         /// Makes this object and sets all the settings to it's default values
         /// </summary>
         /// <remarks>
-        /// Default paper settings are set to <see cref="PaperFormats.A4"/>
+        /// Default paper settings are set to <see cref="PaperFormat.A4"/>
         /// </remarks>
         /// <param name="paperFormat"></param>
-        public PageSettings(PaperFormats paperFormat)
+        public PageSettings(PaperFormat paperFormat)
         {
             ResetToDefaultSettings();
             SetPaperFormat(paperFormat);
@@ -135,7 +132,7 @@ namespace ChromeHtmlToPdfLib.Settings
             DisplayHeaderFooter = false;
             PrintBackground = false;
             Scale = 1.0;
-            SetPaperFormat(PaperFormats.A4);
+            SetPaperFormat(PaperFormat.A4);
             MarginTop = 0.4;
             MarginBottom = 0.4;
             MarginLeft = 0.4;
@@ -148,52 +145,52 @@ namespace ChromeHtmlToPdfLib.Settings
         /// <summary>
         /// Set the given <paramref name="paperFormat"/>
         /// </summary>
-        /// <param name="paperFormat"><see cref="PaperFormats"/></param>
-        private void SetPaperFormat(PaperFormats paperFormat)
+        /// <param name="paperFormat"><see cref="PaperFormat"/></param>
+        private void SetPaperFormat(PaperFormat paperFormat)
         {
             switch (paperFormat)
             {
-                case PaperFormats.Letter:
+                case PaperFormat.Letter:
                     PaperWidth = 8.5;
                     PaperHeight = 11;
                     break;
-                case PaperFormats.Legal:
+                case PaperFormat.Legal:
                     PaperWidth = 8.5;
                     PaperHeight = 14;
                     break;
-                case PaperFormats.Tabloid:
+                case PaperFormat.Tabloid:
                     PaperWidth = 11;
                     PaperHeight = 17;
                     break;
-                case PaperFormats.Ledger:
+                case PaperFormat.Ledger:
                     PaperWidth = 17;
                     PaperHeight = 11;
                     break;
-                case PaperFormats.A0:
+                case PaperFormat.A0:
                     PaperWidth = 33.1;
                     PaperHeight = 46.8;
                     break;
-                case PaperFormats.A1:
+                case PaperFormat.A1:
                     PaperWidth = 23.4;
                     PaperHeight = 33.1;
                     break;
-                case PaperFormats.A2:
+                case PaperFormat.A2:
                     PaperWidth = 16.5;
                     PaperHeight = 23.4;
                     break;
-                case PaperFormats.A3:
+                case PaperFormat.A3:
                     PaperWidth = 11.7;
                     PaperHeight = 16.5;
                     break;
-                case PaperFormats.A4:
+                case PaperFormat.A4:
                     PaperWidth = 8.27;
                     PaperHeight = 11.7;
                     break;
-                case PaperFormats.A5:
+                case PaperFormat.A5:
                     PaperWidth = 5.83;
                     PaperHeight = 8.27;
                     break;
-                case PaperFormats.A6:
+                case PaperFormat.A6:
                     PaperWidth = 4.13;
                     PaperHeight = 5.83;
                     break;

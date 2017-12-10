@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ChromeHtmlToPdfLib;
 using ChromeHtmlToPdfLib.Enums;
+using ChromeHtmlToPdfLib.Helpers;
 using ChromeHtmlToPdfLib.Settings;
 using CommandLine;
 using CommandLine.Text;
@@ -43,6 +44,9 @@ namespace ChromeHtmlToPdf
         {
             try
             {
+                var ih = new ImageHelper(new Uri(@"d:\test.html"), PaperFormat.A4, new DirectoryInfo("d:\\ff"));
+                ih.ValidateImages(out string result);
+
                 ParseCommandlineParameters(args, out var options, out var portRangeSettings);
 
                 var maxTasks = SetMaxConcurrencyLevel(options);
@@ -190,7 +194,7 @@ namespace ChromeHtmlToPdf
         {
             PageSettings pageSettings;
 
-            if (options.PaperFormat != PaperFormats.Letter)
+            if (options.PaperFormat != PaperFormat.Letter)
             {
                 pageSettings = new PageSettings(options.PaperFormat);
             }

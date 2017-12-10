@@ -3,7 +3,7 @@ namespace ChromeHtmlToPdfLib.Enums
     /// <summary>
     /// The paper formats to use when converting to PDF
     /// </summary>
-    public enum PaperFormats
+    public enum PaperFormat
     {
         /// <summary>
         /// Letter format

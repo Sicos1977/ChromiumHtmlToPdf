@@ -4,7 +4,7 @@ using ChromeHtmlToPdfLib.Enums;
 namespace ChromeHtmlToPdfLib.Helpers
 {
     /// <summary>
-    /// Returns the image dimensions in pixel for the given <see cref="PaperFormats"/>
+    /// Returns the image dimensions in pixel for the given <see cref="PaperFormat"/>
     /// in pixels at 72 DPI
     /// </summary>
     internal class ImageDimension
@@ -25,52 +25,63 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <summary>
         /// Makes this object and sets it's needed properties
         /// </summary>
-        /// <param name="paperFormat"><see cref="PaperFormats"/></param>
-        internal ImageDimensions(PaperFormats paperFormat)
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        internal ImageDimension(int width, int height)
+        {
+            Width = width;
+            Height = height;
+        }
+
+        /// <summary>
+        /// Makes this object and sets it's needed properties
+        /// </summary>
+        /// <param name="paperFormat"><see cref="PaperFormat"/></param>
+        internal ImageDimension(PaperFormat paperFormat)
         {
             switch (paperFormat)
             {
-                case PaperFormats.Letter:
+                case PaperFormat.Letter:
                     Width = 612;
                     Height = 792;
                     break;
-                case PaperFormats.Legal:
+                case PaperFormat.Legal:
                     Width = 612;
                     Height = 1008;
                     break;
-                case PaperFormats.Tabloid:
+                case PaperFormat.Tabloid:
                     Width = 792;
                     Height = 1224;
                     break;
-                case PaperFormats.Ledger:
+                case PaperFormat.Ledger:
                     Width = 1224;
                     Height = 792;
                     break;
-                case PaperFormats.A0:
+                case PaperFormat.A0:
                     Width = 2384;
                     Height = 3370;
                     break;
-                case PaperFormats.A1:
+                case PaperFormat.A1:
                     Width = 1684;
                     Height = 2384;
                     break;
-                case PaperFormats.A2:
+                case PaperFormat.A2:
                     Width = 1191;
                     Height = 1684;
                     break;
-                case PaperFormats.A3:
+                case PaperFormat.A3:
                     Width = 842;
                     Height = 1191;
                     break;
-                case PaperFormats.A4:
+                case PaperFormat.A4:
                     Width = 595;
                     Height = 842;
                     break;
-                case PaperFormats.A5:
+                case PaperFormat.A5:
                     Width = 420;
                     Height = 595;
                     break;
-                case PaperFormats.A6:
+                case PaperFormat.A6:
                     Width = 298;
                     Height = 420;
                     break;
