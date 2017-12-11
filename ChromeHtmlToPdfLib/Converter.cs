@@ -245,6 +245,8 @@ namespace ChromeHtmlToPdfLib
         {
             get
             {
+                // TODO pass proxy server settings
+
                 if (_imageHelper != null)
                     return _imageHelper;
 

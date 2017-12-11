@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Text;
 using AngleSharp;
 using ChromeHtmlToPdfLib.Settings;
+using MetadataExtractor;
+using Directory = System.IO.Directory;
 using Image = System.Drawing.Image;
 
 namespace ChromeHtmlToPdfLib.Helpers
@@ -204,6 +207,8 @@ namespace ChromeHtmlToPdfLib.Helpers
                 {
                     case "https":
                     case "http:":
+                        GetImageOrientation(WebClient.OpenRead(imageUri));
+
                         using (var webStream = WebClient.OpenRead(imageUri))
                             if (webStream != null)
                                 return Image.FromStream(webStream, true, false);
@@ -234,6 +239,15 @@ namespace ChromeHtmlToPdfLib.Helpers
             return null;
         }
         #endregion
+
+        private void GetImageOrientation(Stream stream)
+        {
+            var directories = ImageMetadataReader.ReadMetadata(stream);
+            foreach (var directory in directories)
+            {
+                var name = directory.Name;
+            }
+        }
 
         #region ScaleImage
         /// <summary>
