@@ -4,10 +4,7 @@ using System.IO;
 using System.Net;
 using System.Text;
 using AngleSharp;
-using AngleSharp.Dom.Html;
-using AngleSharp.Parser.Css;
-using AngleSharp.Parser.Html;
-using ChromeHtmlToPdfLib.Enums;
+using ChromeHtmlToPdfLib.Settings;
 using Image = System.Drawing.Image;
 
 namespace ChromeHtmlToPdfLib.Helpers
@@ -33,21 +30,6 @@ namespace ChromeHtmlToPdfLib.Helpers
         ///     The temp folder
         /// </summary>
         private readonly DirectoryInfo _tempDirectory;
-
-        /// <summary>
-        ///     The uri that contains the Image files that we are checking
-        /// </summary>
-        private readonly Uri _sourceUri;
-
-        /// <summary>
-        ///     The local directory when the <see cref="_sourceUri"/> scheme is a file
-        /// </summary>
-        private readonly string _localDirectory;
-
-        /// <summary>
-        ///     The <see cref="PaperFormat"/> that we are converting to
-        /// </summary>
-        private readonly PaperFormat _paperFormat;
 
         /// <summary>
         ///     The web client to use when downloading from the Internet
@@ -81,106 +63,126 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <summary>
         ///     Makes this object and sets its needed properties
         /// </summary>
-        /// <param name="sourceUri">The uri that contains the Image files that we are checking</param>
-        /// <param name="paperFormat">The <see cref="PaperFormat"/> that we are converting to</param>
         /// <param name="tempDirectory">When set then this directory will be used for temporary files</param>
         /// <param name="logStream">When set then logging is written to this stream</param>
         /// <param name="webProxy">The webproxy to use when downloading</param>
-        public ImageHelper(Uri sourceUri, 
-                           PaperFormat paperFormat, 
-                           DirectoryInfo tempDirectory = null,
+        public ImageHelper(DirectoryInfo tempDirectory = null,
                            Stream logStream = null,
                            WebProxy webProxy = null)
         {
-            _sourceUri = sourceUri;
-            _paperFormat = paperFormat;
-
-            if (_sourceUri.Scheme == "file")
-                _localDirectory = Path.GetDirectoryName(_sourceUri.OriginalString);
-
             _tempDirectory = tempDirectory;
             _logStream = logStream;
             _webProxy = webProxy;
         }
         #endregion
 
+        #region ParseValue
+        /// <summary>
+        /// Parses the value from the given value
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private static int ParseValue(string value)
+        {
+            value = value.Replace("px", string.Empty);
+            value = value.Replace(" ", string.Empty);
+            return int.TryParse(value, out int result) ? result : 0;
+        }
+        #endregion
+
         #region ValidateImages
         /// <summary>
-        /// Validates all images if they fit on the given <see cref="_paperFormat"/>.
-        /// If an image does not fit then a local copy is maded of the <see cref="_sourceUri"/>
+        /// Validates all images if they fit on the given <paramref name="pageSettings"/>.
+        /// If an image does not fit then a local copy is maded of the <paramref name="sourceUri"/>
         /// file and the images that don't fit are also downloaded and resized.
         /// </summary>
+        /// <param name="sourceUri">The uri of the webpage</param>
+        /// <param name="pageSettings"><see cref="PageSettings"/></param>
         /// <param name="outputFile">The outputfile when this method returns <c>false</c> otherwise
-        /// <c>null</c> is returned</param>
+        ///     <c>null</c> is returned</param>
         /// <returns>Returns <c>false</c> when the images dit not fit the page, otherwise <c>true</c></returns>
-        /// <exception cref="WebException">Raised when the webpage from <see cref="_sourceUri"/> could not be downloaded</exception>
-        public bool ValidateImages(out string outputFile)
+        /// <exception cref="WebException">Raised when the webpage from <paramref name="sourceUri"/> could not be downloaded</exception>
+        public bool ValidateImages(Uri sourceUri, PageSettings pageSettings, out string outputFile)
         {
             WriteToLog("Validating all images if they fit the page");
             outputFile = null;
 
-            var webpage = _sourceUri.Scheme == "file"
-                ? File.ReadAllText(_sourceUri.OriginalString)
-                : DownloadString(_sourceUri);
+            string localDirectory = null;
+
+            if (sourceUri.IsFile)
+                localDirectory = Path.GetDirectoryName(sourceUri.OriginalString);
+
+            var webpage = sourceUri.IsFile
+                ? File.ReadAllText(sourceUri.OriginalString)
+                : DownloadString(sourceUri);
+
+            var maxWidth = pageSettings.PaperWidth * 96.0;
+            var maxHeight = pageSettings.PaperHeight * 96.0;
 
             var changed = false;
+            var imagesResized = 0;
+            var config = Configuration.Default.WithCss();
+            var context = BrowsingContext.New(config);
+            var document = context.OpenAsync(m => m.Content(webpage)).Result;
 
-            var config = Configuration.Default.WithCss().WithDefaultLoader(c => c.IsResourceLoadingEnabled = true);
-
-            var parser = new HtmlParser(config);
-            var document = parser.Parse(webpage);
-            
             // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
             foreach (var htmlImage in document.Images)
             {
                 // The local width and height attributes always go before css width and height
-                var attributeWidth = htmlImage.Attributes.GetNamedItem("width");
-                var attributeHeight = htmlImage.Attributes.GetNamedItem("height");
-                var attributeStyle = htmlImage.Attributes.GetNamedItem("style");
-                if (attributeStyle != null)
-                {
-                    var css = parser.Parse(attributeStyle.Value);
-                }
+                var width = htmlImage.DisplayWidth;
+                var height = htmlImage.DisplayHeight;
 
-                if (htmlImage.ClassList != null)
+                if (height == 0 && width == 0)
                 {
-                    if (htmlImage.ClassList != null)
+                    var style = context.Current.GetComputedStyle(htmlImage);
+                    if (style != null)
                     {
-                        foreach (var value in htmlImage.ClassList)
-                        {
-                            var css = document.QuerySelector(htmlImage.TagName + "." + value);
-                        }
+                        width = ParseValue(style.Width);
+                        height = ParseValue(style.Height);
                     }
                 }
 
-
                 Image image = null;
-                var width = 1;
-                var height = 1;
+                // If we don't know the image size then get if from the image itself
                 if (width <= 0 || height <= 0)
                 {
-                    image = GetImage(new Uri(htmlImage.Source));
+                    image = GetImage(new Uri(htmlImage.Source), localDirectory);
                     width = image.Width;
                     height = image.Height;
                 }
 
-                var maxDimension = new ImageDimension(_paperFormat);
-                if (width > maxDimension.Width || height > maxDimension.Height)
+                if (width > maxWidth || height > maxHeight)
                 {
                     var extension = Path.GetExtension(htmlImage.Source);
                     var fileName = GetTempFile(extension);
-                    image = ScaleImage(image, maxDimension.Width);
+
+                    // If we did not load the image already then load it
+                    if (image == null)
+                        image = GetImage(new Uri(htmlImage.Source), localDirectory);
+
+                    image = ScaleImage(image, (int) maxWidth);
                     image.Save(fileName);
                     htmlImage.DisplayWidth = image.Width;
                     htmlImage.DisplayHeight = image.Height;
                     htmlImage.Source = new Uri(fileName).ToString();
+                    imagesResized += 1;
                     changed = true;
                 }
             }
 
-            if (!changed) return true;
+            if (!changed)
+            {
+                WriteToLog("All images fit the page, there were no changes needed");
+                return true;
+            }
+
+            WriteToLog($"{imagesResized} image {(imagesResized == 1 ? "was" : "were")} resized to fit the page");
+
             outputFile = GetTempFile(".html");
-            File.WriteAllText(outputFile, document.Origin);
+
+            using (var textWriter = new StreamWriter(outputFile))
+                document.ToHtml(textWriter, new AutoSelectedMarkupFormatter());
+
             return false;
         }
         #endregion
@@ -190,10 +192,11 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// Returns the <see cref="Image"/> for the given <paramref name="imageUri"/>
         /// </summary>
         /// <param name="imageUri"></param>
+        /// <param name="localDirectory"></param>
         /// <returns></returns>
-        private Image GetImage(Uri imageUri) 
+        private Image GetImage(Uri imageUri, string localDirectory) 
         {
-            WriteToLog($"Gettimg image from uri '{imageUri}'");
+            WriteToLog($"Getting image from uri '{imageUri}'");
 
             try
             {
@@ -210,7 +213,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                         var fileName = imageUri.OriginalString;
 
                         if (!File.Exists(fileName))
-                            fileName = Path.Combine(_localDirectory, imageUri.AbsolutePath.Trim('/'));
+                            fileName = Path.Combine(localDirectory, imageUri.AbsolutePath.Trim('/'));
 
                         if (File.Exists(fileName))
                             using (var fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read))
@@ -239,9 +242,9 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <param name="image"></param>
         /// <param name="maxWidth"></param>
         /// <returns></returns>
-        public Image ScaleImage(Image image, int maxWidth)
+        private Image ScaleImage(Image image, double maxWidth)
         {
-            var ratio = (double)maxWidth / image.Width;
+            var ratio = maxWidth / image.Width;
 
             var newWidth = (int)(image.Width * ratio);
             var newHeight = (int)(image.Height * ratio);
@@ -272,7 +275,7 @@ namespace ChromeHtmlToPdfLib.Helpers
             catch (Exception exception)
             {
                 WriteToLog("Downloading failed with exception: " + ExceptionHelpers.GetInnerException(exception));
-                return null;;
+                return null;
             }
         }
         #endregion
@@ -283,7 +286,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// </summary>
         /// <param name="extension">The extension (e.g. .html)</param>
         /// <returns></returns>
-        public string GetTempFile(string extension)
+        private string GetTempFile(string extension)
         {
             var tempFile = Guid.NewGuid() + extension;
             return Path.Combine(_tempDirectory?.FullName ?? Path.GetTempPath(), tempFile);

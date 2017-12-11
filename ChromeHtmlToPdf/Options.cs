@@ -249,9 +249,16 @@ namespace ChromeHtmlToPdf
         /// <summary>
         ///     The files to wrap in a HTML file with a &lt;PRE&gt; tag
         /// </summary>
-        [Option("pre-wrap-file-extensions", Required = false, Default = ".txt .log",
+        [Option("pre-wrap-file-extensions", Required = false,
             HelpText = "The files to wrap in a HTML file with a <PRE> tag")]
         public IEnumerable<string> PreWrapFileExtensions { get; set; }
+
+        /// <summary>
+        ///     Resize images so that they fit the width of the page
+        /// </summary>
+        [Option("resize-images", Required = false, Default = false,
+            HelpText = "Resize images so that they fit the width of the page")]
+        public bool ResizeImages { get; set; }
         #endregion
     }
 }

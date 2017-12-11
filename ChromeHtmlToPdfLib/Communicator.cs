@@ -174,8 +174,6 @@ namespace ChromeHtmlToPdfLib
         {
             WebSocketSend(new Message { Id = MessageId, Method = "Page.enable" }.ToJson());
 
-            var localFile = uri.Scheme == "file";
-
             var message = new Message
             {
                 Id = MessageId,
@@ -191,7 +189,7 @@ namespace ChromeHtmlToPdfLib
                 //File.AppendAllText("d:\\trace.txt", args.Message + Environment.NewLine);
                 var page = PageEvent.FromJson(args.Message);
 
-                if (!localFile)
+                if (!uri.IsFile)
                 {
                     if (waitForNetworkIdle)
                     {

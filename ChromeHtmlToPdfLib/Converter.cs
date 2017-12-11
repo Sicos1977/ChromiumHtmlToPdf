@@ -111,6 +111,11 @@ namespace ChromeHtmlToPdfLib
         ///     <see cref="PreWrapper"/>
         /// </summary>
         private PreWrapper _preWrapper;
+
+        /// <summary>
+        ///     <see cref="ImageHelper"/>
+        /// </summary>
+        private ImageHelper _imageHelper;
         #endregion
 
         #region Properties
@@ -143,6 +148,11 @@ namespace ChromeHtmlToPdfLib
         public List<string> PreWrapExtensions { get; set; }
 
         /// <summary>
+        ///     When set to <c>true</c> then images are resized to fix the given <see cref="PageSettings.PaperWidth"/>
+        /// </summary>
+        public bool ResizeImages { get; set; }
+
+        /// <summary>
         ///     When set then this directory is used to store temporary files.
         ///     For example files that are made in combination with <see cref="PreWrapExtensions"/>
         /// </summary>
@@ -153,7 +163,7 @@ namespace ChromeHtmlToPdfLib
             {
                 _tempDirectory = new DirectoryInfo(value);
                 if (!_tempDirectory.Exists)
-                    throw new DirectoryNotFoundException(value);
+                    throw new DirectoryNotFoundException($"The directory '{value}' does not exists");
             }
         }
 
@@ -225,6 +235,22 @@ namespace ChromeHtmlToPdfLib
 
                 _preWrapper = new PreWrapper(_tempDirectory);
                 return _preWrapper;
+            }
+        }
+        
+        /// <summary>
+        ///     <see cref="ImageHelper"/>
+        /// </summary>
+        private ImageHelper ImageHelper
+        {
+            get
+            {
+                if (_imageHelper != null)
+                    return _imageHelper;
+
+                _imageHelper = new ImageHelper(_tempDirectory, _logStream);
+                _imageHelper.InstanceId = InstanceId;
+                return _imageHelper;
             }
         }
         #endregion
@@ -788,32 +814,35 @@ namespace ChromeHtmlToPdfLib
         /// <returns>The filename with full path to the generated PDF</returns>
         /// <exception cref="DirectoryNotFoundException"></exception>
         public void ConvertToPdf(Uri inputUri,
-                                string outputFile,
-                                PageSettings pageSettings,
-                                bool waitForNetworkIdle,
-                                string waitForWindowStatus = "",
-                                int waitForWindowsStatusTimeout = 60000)
+                                 string outputFile,
+                                 PageSettings pageSettings,
+                                 bool waitForNetworkIdle,
+                                 string waitForWindowStatus = "",
+                                 int waitForWindowsStatusTimeout = 60000)
         {
             CheckIfOutputFolderExists(outputFile);
 
-            var isFile = inputUri.Scheme == "file";
-
-            if (isFile && !File.Exists(inputUri.OriginalString))
+            if (inputUri.IsFile && !File.Exists(inputUri.OriginalString))
                 throw new FileNotFoundException($"The file '{inputUri.OriginalString}' does not exists");
 
             FileInfo preWrappedFile = null;
 
             try
             {
-                if (isFile && CheckForPreWrap(inputUri.LocalPath, out var tempFile))
+                if (inputUri.IsFile && CheckForPreWrap(inputUri.LocalPath, out var preWrapFile))
                 {
-                    inputUri = new Uri(tempFile);
-                    preWrappedFile = new FileInfo(tempFile);
+                    inputUri = new Uri(preWrapFile);
+                    preWrappedFile = new FileInfo(preWrapFile);
                 }
-
+                else if (ResizeImages)
+                {
+                    if (!ImageHelper.ValidateImages(inputUri, pageSettings, out var imageFile))
+                        inputUri = new Uri(imageFile);
+                }
+                
                 StartChromeHeadless();
 
-                WriteToLog("Loading " + (isFile ? "file " + inputUri.OriginalString : "url " + inputUri) +
+                WriteToLog("Loading " + (inputUri.IsFile ? "file " + inputUri.OriginalString : "url " + inputUri) +
                            (waitForNetworkIdle ? " and waiting until all resources are loaded" : string.Empty));
 
                 _communicator.NavigateTo(inputUri, waitForNetworkIdle);
@@ -825,7 +854,7 @@ namespace ChromeHtmlToPdfLib
                     WriteToLog(!match ? "Waiting timed out" : $"Window status equaled {waitForWindowStatus}");
                 }
 
-                WriteToLog((isFile ? "File" : "Url") + " loaded");
+                WriteToLog((inputUri.IsFile ? "File" : "Url") + " loaded");
 
                 WriteToLog("Converting to PDF");
                 var pdfFileName = Path.ChangeExtension(outputFile, ".pdf");

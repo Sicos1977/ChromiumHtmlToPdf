@@ -53,7 +53,7 @@ namespace ChromeHtmlToPdf
         {
             get
             {
-                return (InputUri.Scheme == "file"
+                return (InputUri.IsFile
                            ? $"\"{Status}\";\"{InputUri.AbsolutePath}\";\"{OutputFile}\""
                            : $"\"{Status}\";\"{InputUri}\";\"{OutputFile}\"") +
                        (Exception != null ? $";\"{Exception.Message}\"" : string.Empty) + Environment.NewLine;

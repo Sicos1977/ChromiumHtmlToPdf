@@ -79,7 +79,6 @@
     <Compile Include="Converter.cs" />
     <Compile Include="Helpers\ExceptionHelper.cs" />
     <Compile Include="Helpers\Extensions.cs" />
-    <Compile Include="Helpers\ImageDimension.cs" />
     <Compile Include="Helpers\ImageHelper.cs" />
     <Compile Include="Helpers\PreWrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

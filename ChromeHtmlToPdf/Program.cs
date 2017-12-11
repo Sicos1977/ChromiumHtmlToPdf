@@ -8,7 +8,6 @@ using System.Text;
 using System.Threading.Tasks;
 using ChromeHtmlToPdfLib;
 using ChromeHtmlToPdfLib.Enums;
-using ChromeHtmlToPdfLib.Helpers;
 using ChromeHtmlToPdfLib.Settings;
 using CommandLine;
 using CommandLine.Text;
@@ -44,9 +43,6 @@ namespace ChromeHtmlToPdf
         {
             try
             {
-                var ih = new ImageHelper(new Uri(@"d:\test.html"), PaperFormat.A4, new DirectoryInfo("d:\\ff"));
-                ih.ValidateImages(out string result);
-
                 ParseCommandlineParameters(args, out var options, out var portRangeSettings);
 
                 var maxTasks = SetMaxConcurrencyLevel(options);
@@ -63,7 +59,7 @@ namespace ChromeHtmlToPdf
                         var inputUri = new Uri(line);
                         var outputPath = Path.GetFullPath(options.Output);
 
-                        var outputFile = inputUri.Scheme == "file"
+                        var outputFile = inputUri.IsFile
                             ? Path.GetFileName(inputUri.AbsolutePath)
                             : FileManager.RemoveInvalidFileNameChars(inputUri.ToString());
 
@@ -89,7 +85,6 @@ namespace ChromeHtmlToPdf
                         {
                             task.Wait();
                         }
-
                     }
                     else
                     {
@@ -135,7 +130,6 @@ namespace ChromeHtmlToPdf
         {
             Options tempOptions = null;
 
-            options = null;
             var errors = false;
             var parser = new Parser(settings =>
             {
@@ -340,7 +334,11 @@ namespace ChromeHtmlToPdf
             if (!string.IsNullOrWhiteSpace(options.ProxyPacUrl))
                 converter.SetProxyPacUrl(options.ProxyPacUrl);
 
-            converter.PreWrapExtensions.AddRange(options.PreWrapFileExtensions);
+            if (options.PreWrapFileExtensions == null)
+            {
+                converter.PreWrapExtensions.Add(".txt");
+                converter.PreWrapExtensions.Add(".log");
+            }
         }
         #endregion
 
@@ -357,7 +355,8 @@ namespace ChromeHtmlToPdf
             using (var converter = new Converter(options.ChromeLocation, portRangeSettings, logStream: Console.OpenStandardOutput()))
             {
                 SetConverterSettings(converter, options);
-
+                converter.TempDirectory = "d:\\ff";
+                converter.ResizeImages = true;
                 converter.ConvertToPdf(CheckInput(options), 
                                        options.Output, 
                                        pageSettings, 
