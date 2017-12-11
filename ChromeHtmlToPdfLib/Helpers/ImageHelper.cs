@@ -5,9 +5,8 @@ using System.Net;
 using System.Text;
 using AngleSharp;
 using AngleSharp.Dom.Html;
-using AngleSharp.Extensions;
+using AngleSharp.Parser.Css;
 using AngleSharp.Parser.Html;
-using AngleSharp.Services.Media;
 using ChromeHtmlToPdfLib.Enums;
 using Image = System.Drawing.Image;
 
@@ -126,19 +125,38 @@ namespace ChromeHtmlToPdfLib.Helpers
 
             var changed = false;
 
-            var config = Configuration.Default.WithCss();
+            var config = Configuration.Default.WithCss().WithDefaultLoader(c => c.IsResourceLoadingEnabled = true);
+
             var parser = new HtmlParser(config);
             var document = parser.Parse(webpage);
-            var htmlImages = document.QuerySelectorAll("img");
-
+            
             // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
-            foreach (IHtmlImageElement htmlImage in htmlImages)
+            foreach (var htmlImage in document.Images)
             {
-                var t = htmlImage.Attributes;
-                var width = htmlImage.Attributes;
-                var height = htmlImage.DisplayHeight;
-                Image image = null;
+                // The local width and height attributes always go before css width and height
+                var attributeWidth = htmlImage.Attributes.GetNamedItem("width");
+                var attributeHeight = htmlImage.Attributes.GetNamedItem("height");
+                var attributeStyle = htmlImage.Attributes.GetNamedItem("style");
+                if (attributeStyle != null)
+                {
+                    var css = parser.Parse(attributeStyle.Value);
+                }
 
+                if (htmlImage.ClassList != null)
+                {
+                    if (htmlImage.ClassList != null)
+                    {
+                        foreach (var value in htmlImage.ClassList)
+                        {
+                            var css = document.QuerySelector(htmlImage.TagName + "." + value);
+                        }
+                    }
+                }
+
+
+                Image image = null;
+                var width = 1;
+                var height = 1;
                 if (width <= 0 || height <= 0)
                 {
                     image = GetImage(new Uri(htmlImage.Source));
