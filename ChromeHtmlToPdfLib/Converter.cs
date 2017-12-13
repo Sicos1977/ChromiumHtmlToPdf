@@ -989,9 +989,8 @@ namespace ChromeHtmlToPdfLib
             if (!PreWrapExtensions.Contains(ext, StringComparison.InvariantCultureIgnoreCase))
                 return false;
 
-            WriteToLog($"Prewrapping file '{inputFile}' to '{outputFile}'");
-
             outputFile = PreWrapper.WrapFile(inputFile);
+            WriteToLog($"Prewraped file '{inputFile}' to '{outputFile}'");
             return true;
         }
         #endregion
