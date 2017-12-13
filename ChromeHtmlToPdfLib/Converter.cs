@@ -36,6 +36,7 @@ using System.Threading;
 using ChromeHtmlToPdfLib.Settings;
 using Microsoft.Win32;
 using System.Management;
+using System.Net;
 using System.Runtime.InteropServices;
 using ChromeHtmlToPdfLib.Enums;
 using ChromeHtmlToPdfLib.Helpers;
@@ -76,6 +77,21 @@ namespace ChromeHtmlToPdfLib
         ///     The password for the <see cref="_userName" />
         /// </summary>
         private string _password;
+
+        /// <summary>
+        ///     A proxy server
+        /// </summary>
+        private string _proxyServer;
+
+        /// <summary>
+        ///     The proxy bypass list
+        /// </summary>
+        private string _proxyBypassList;
+
+        /// <summary>
+        ///     A webproxy
+        /// </summary>
+        private WebProxy _webProxy;
 
         /// <summary>
         ///     The process id under which Chrome is running
@@ -237,6 +253,53 @@ namespace ChromeHtmlToPdfLib
                 return _preWrapper;
             }
         }
+
+        /// <summary>
+        /// Retourneerd een <see cref="WebProxy"/> object
+        /// </summary>
+        private WebProxy WebProxy
+        {
+            get
+            {
+                if (_webProxy != null)
+                    return _webProxy;
+
+                try
+                {
+                    string userName = null;
+                    string domain = null;
+
+                    if (_userName.Contains("\\"))
+                    {
+                        domain = _userName.Split('\\')[0];
+                        userName = _userName.Split('\\')[1];
+                    }
+
+                    if (string.IsNullOrWhiteSpace(_proxyServer))
+                        return null;
+
+                    NetworkCredential networkCredential = null;
+
+                    var bypassList = _proxyBypassList.Split(';');
+
+                    if (!string.IsNullOrWhiteSpace(userName))
+                    {
+                        networkCredential = !string.IsNullOrWhiteSpace(domain)
+                            ? new NetworkCredential(userName, _password, domain)
+                            : new NetworkCredential(userName, _password);
+                    }
+
+                    return networkCredential != null
+                        ? _webProxy = new WebProxy(_proxyServer, true, bypassList.ToArray(), networkCredential)
+                        : _webProxy = new WebProxy(_proxyServer, true, bypassList.ToArray());
+
+                }
+                catch (Exception exception)
+                {
+                    throw new Exception("Could not configure webproxy", exception);
+                }
+            }
+        }
         
         /// <summary>
         ///     <see cref="ImageHelper"/>
@@ -245,12 +308,10 @@ namespace ChromeHtmlToPdfLib
         {
             get
             {
-                // TODO pass proxy server settings
-
                 if (_imageHelper != null)
                     return _imageHelper;
 
-                _imageHelper = new ImageHelper(_tempDirectory, _logStream);
+                _imageHelper = new ImageHelper(_tempDirectory, _logStream, WebProxy) {InstanceId = InstanceId};
                 _imageHelper.InstanceId = InstanceId;
                 return _imageHelper;
             }
@@ -560,6 +621,7 @@ namespace ChromeHtmlToPdfLib
         /// </remarks>
         public void SetProxyServer(string value)
         {
+            _proxyServer = value;
             SetDefaultArgument("--proxy-server", value);
         }
         #endregion
@@ -584,6 +646,7 @@ namespace ChromeHtmlToPdfLib
         /// </remarks>
         public void SetProxyBypassList(string values)
         {
+            _proxyBypassList = values;
             SetDefaultArgument("--proxy-bypass-list", values);
         }
         #endregion
