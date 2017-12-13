@@ -156,7 +156,10 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                 if (width > maxWidth || height > maxHeight)
                 {
-                    var extension = Path.GetExtension(htmlImage.Source);
+                    var extension = Path.GetExtension(htmlImage.Source.Contains("?")
+                        ? htmlImage.Source.Split('?')[0]
+                        : htmlImage.Source);
+
                     var fileName = GetTempFile(extension);
 
                     // If we did not load the image already then load it
