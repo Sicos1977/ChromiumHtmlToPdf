@@ -266,15 +266,6 @@ namespace ChromeHtmlToPdfLib
 
                 try
                 {
-                    string userName = null;
-                    string domain = null;
-
-                    if (_userName.Contains("\\"))
-                    {
-                        domain = _userName.Split('\\')[0];
-                        userName = _userName.Split('\\')[1];
-                    }
-
                     if (string.IsNullOrWhiteSpace(_proxyServer))
                         return null;
 
@@ -282,8 +273,17 @@ namespace ChromeHtmlToPdfLib
 
                     var bypassList = _proxyBypassList.Split(';');
 
-                    if (!string.IsNullOrWhiteSpace(userName))
+                    if (!string.IsNullOrWhiteSpace(_userName))
                     {
+                        string userName = null;
+                        string domain = null;
+
+                        if (_userName.Contains("\\"))
+                        {
+                            domain = _userName.Split('\\')[0];
+                            userName = _userName.Split('\\')[1];
+                        }
+
                         networkCredential = !string.IsNullOrWhiteSpace(domain)
                             ? new NetworkCredential(userName, _password, domain)
                             : new NetworkCredential(userName, _password);
