@@ -271,7 +271,10 @@ namespace ChromeHtmlToPdfLib
 
                     NetworkCredential networkCredential = null;
 
-                    var bypassList = _proxyBypassList.Split(';');
+                    string[] bypassList = null;
+
+                    if (_proxyBypassList != null)
+                        bypassList = _proxyBypassList.Split(';');
 
                     if (!string.IsNullOrWhiteSpace(_userName))
                     {
@@ -290,8 +293,8 @@ namespace ChromeHtmlToPdfLib
                     }
 
                     return networkCredential != null
-                        ? _webProxy = new WebProxy(_proxyServer, true, bypassList.ToArray(), networkCredential)
-                        : _webProxy = new WebProxy(_proxyServer, true, bypassList.ToArray());
+                        ? _webProxy = new WebProxy(_proxyServer, true, bypassList, networkCredential)
+                        : _webProxy = new WebProxy(_proxyServer, true, bypassList);
 
                 }
                 catch (Exception exception)
