@@ -897,7 +897,7 @@ namespace ChromeHtmlToPdfLib
 
             try
             {
-                if (inputUri.IsFile && CheckForPreWrap(inputUri.LocalPath, out var preWrapFile))
+                if (inputUri.IsFile && CheckForPreWrap(inputUri, out var preWrapFile))
                 {
                     inputUri = new ConvertUri(preWrapFile);
                     preWrappedFile = new FileInfo(preWrapFile);
@@ -977,19 +977,19 @@ namespace ChromeHtmlToPdfLib
         /// <param name="inputFile"></param>
         /// <param name="outputFile"></param>
         /// <returns></returns>
-        private bool CheckForPreWrap(string inputFile, out string outputFile)
+        private bool CheckForPreWrap(ConvertUri inputFile, out string outputFile)
         {
-            outputFile = inputFile;
+            outputFile = inputFile.LocalPath;
 
             if (PreWrapExtensions.Count == 0)
                 return false;
 
-            var ext = Path.GetExtension(inputFile);
+            var ext = Path.GetExtension(inputFile.LocalPath);
 
             if (!PreWrapExtensions.Contains(ext, StringComparison.InvariantCultureIgnoreCase))
                 return false;
 
-            outputFile = PreWrapper.WrapFile(inputFile);
+            outputFile = PreWrapper.WrapFile(inputFile.LocalPath, inputFile.Encoding);
             WriteToLog($"Prewraped file '{inputFile}' to '{outputFile}'");
             return true;
         }
