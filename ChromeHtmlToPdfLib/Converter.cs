@@ -881,7 +881,7 @@ namespace ChromeHtmlToPdfLib
         /// <param name="waitForWindowsStatusTimeout"></param>
         /// <returns>The filename with full path to the generated PDF</returns>
         /// <exception cref="DirectoryNotFoundException"></exception>
-        public void ConvertToPdf(Uri inputUri,
+        public void ConvertToPdf(ConvertUri inputUri,
                                  string outputFile,
                                  PageSettings pageSettings,
                                  bool waitForNetworkIdle,
@@ -889,7 +889,7 @@ namespace ChromeHtmlToPdfLib
                                  int waitForWindowsStatusTimeout = 60000)
         {
             CheckIfOutputFolderExists(outputFile);
-
+            
             if (inputUri.IsFile && !File.Exists(inputUri.OriginalString))
                 throw new FileNotFoundException($"The file '{inputUri.OriginalString}' does not exists");
 
@@ -899,13 +899,13 @@ namespace ChromeHtmlToPdfLib
             {
                 if (inputUri.IsFile && CheckForPreWrap(inputUri.LocalPath, out var preWrapFile))
                 {
-                    inputUri = new Uri(preWrapFile);
+                    inputUri = new ConvertUri(preWrapFile);
                     preWrappedFile = new FileInfo(preWrapFile);
                 }
                 else if (ResizeImages)
                 {
                     if (!ImageHelper.ValidateImages(inputUri, pageSettings, out var imageFile))
-                        inputUri = new Uri(imageFile);
+                        inputUri = new ConvertUri(imageFile);
                 }
                 
                 StartChromeHeadless();

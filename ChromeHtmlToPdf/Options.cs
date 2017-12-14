@@ -259,6 +259,13 @@ namespace ChromeHtmlToPdf
         [Option("resize-images", Required = false, Default = false,
             HelpText = "Resize images so that they fit the width of the page")]
         public bool ResizeImages { get; set; }
+
+        /// <summary>
+        ///     The encoding that is used for the <see cref="Input"/> file
+        /// </summary>
+        [Option("encoding", Required = false, Default = "",
+            HelpText = "The encoding that is used for the --input file")]
+        public string Encoding { get; set; }
         #endregion
     }
 }
