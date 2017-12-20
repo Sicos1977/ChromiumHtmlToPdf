@@ -1,4 +1,5 @@
 ﻿using System;
+using ChromeHtmlToPdfLib;
 
 namespace ChromeHtmlToPdf
 {
@@ -29,7 +30,7 @@ namespace ChromeHtmlToPdf
         /// <summary>
         /// The uri to convert (this can be a file or url)
         /// </summary>
-        public Uri InputUri { get; internal set; }
+        public ConvertUri InputUri { get; internal set; }
 
         /// <summary>
         /// The output file
@@ -62,7 +63,7 @@ namespace ChromeHtmlToPdf
         #endregion
 
         #region Constructor
-        internal ConversionItem(Uri inputUri, string outputFile)
+        internal ConversionItem(ConvertUri inputUri, string outputFile)
         {
             InputUri = inputUri;
             OutputFile = outputFile;

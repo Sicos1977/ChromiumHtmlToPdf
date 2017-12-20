@@ -60,7 +60,7 @@ namespace ChromeHtmlToPdf
                     var lines = File.ReadAllLines(options.Input);
                     foreach (var line in lines)
                     {
-                        var inputUri = new Uri(line);
+                        var inputUri = new ConvertUri(line);
                         var outputPath = Path.GetFullPath(options.Output);
 
                         var outputFile = inputUri.IsFile
@@ -376,21 +376,23 @@ namespace ChromeHtmlToPdf
         ///     Checks the input if a file without path is given
         /// </summary>
         /// <returns></returns>
-        private static Uri CheckInput(Options options)
+        private static ConvertUri CheckInput(Options options)
         {
             try
             {
-                return new Uri(options.Input);
+                return !string.IsNullOrWhiteSpace(options.Encoding)
+                    ? new ConvertUri(options.Input, options.Encoding)
+                    : new ConvertUri(options.Input);
             }
             catch (UriFormatException)
             {
                 // Check if this is a local file
                 var file = new FileInfo(Path.Combine(Directory.GetCurrentDirectory(), options.Input));
                 if (file.Exists)
-                    return new Uri(file.FullName);
+                    return new ConvertUri(file.FullName);
             }
 
-            return new Uri(options.Input);
+            return new ConvertUri(options.Input);
         }
         #endregion
 

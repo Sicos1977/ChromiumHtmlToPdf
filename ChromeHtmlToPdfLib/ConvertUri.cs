@@ -1,0 +1,57 @@
+﻿using System;
+using System.Runtime.Serialization;
+using System.Text;
+
+namespace ChromeHtmlToPdfLib
+{
+    /// <summary>
+    /// <inheritdoc cref="Uri"/>
+    /// </summary>
+    public class ConvertUri : Uri
+    {
+        /// <summary>
+        ///     The encoding of the file that will be converted
+        /// </summary>
+        public Encoding Encoding { get; private set; }
+
+        public ConvertUri(string uriString) : base(uriString)
+        {
+        }
+
+        /// <summary>
+        ///     Sets the uri and encoding
+        /// </summary>
+        /// <param name="uriString">The uri, e.g. file://c:\test.txt</param>
+        /// <param name="encoding">The encoding used for this file, e.g UTF-8</param>
+        public ConvertUri(string uriString, string encoding) : base(uriString)
+        {
+            Encoding = Encoding.GetEncoding(encoding);
+        }
+
+#pragma warning disable CS0618 // Type or member is obsolete
+        public ConvertUri(string uriString, bool dontEscape) : base(uriString, dontEscape)
+        {
+        }
+
+        public ConvertUri(Uri baseUri, string relativeUri, bool dontEscape) : base(baseUri, relativeUri, dontEscape)
+        {
+        }
+#pragma warning restore CS0618 // Type or member is obsolete
+
+        public ConvertUri(string uriString, UriKind uriKind) : base(uriString, uriKind)
+        {
+        }
+
+        public ConvertUri(Uri baseUri, string relativeUri) : base(baseUri, relativeUri)
+        {
+        }
+
+        public ConvertUri(Uri baseUri, Uri relativeUri) : base(baseUri, relativeUri)
+        {
+        }
+
+        protected ConvertUri(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
+        {
+        }
+    }
+}

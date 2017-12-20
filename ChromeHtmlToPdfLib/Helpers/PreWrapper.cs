@@ -26,6 +26,7 @@
 
 using System;
 using System.IO;
+using System.Text;
 using System.Web;
 
 namespace ChromeHtmlToPdfLib.Helpers
@@ -98,16 +99,17 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <summary>
         ///     Wraps the given <paramref name="inputFile"/> in HTML pre tags
         /// </summary>
-        /// <param name="inputFile"></param>
+        /// <param name="inputFile">The input file</param>
+        /// <param name="encoding">The encoding used in the input file</param>
         /// <returns>The wrapped HTML file</returns>
-        public string WrapFile(string inputFile)
+        public string WrapFile(string inputFile, Encoding encoding)
         {
             var temp = Path.GetFileName(inputFile) ?? string.Empty;
             var title = HttpUtility.HtmlEncode(temp);
             var tempFile = GetTempFile;
 
             using (var writer = new StreamWriter(tempFile))
-            using (var reader = new StreamReader(inputFile))
+            using (var reader = new StreamReader(inputFile, encoding))
             {
                 writer.WriteLine("<html>");
                 writer.WriteLine("<head>");

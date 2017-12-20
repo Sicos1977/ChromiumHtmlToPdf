@@ -36,6 +36,7 @@ using System.Threading;
 using ChromeHtmlToPdfLib.Settings;
 using Microsoft.Win32;
 using System.Management;
+using System.Net;
 using System.Runtime.InteropServices;
 using ChromeHtmlToPdfLib.Enums;
 using ChromeHtmlToPdfLib.Helpers;
@@ -76,6 +77,21 @@ namespace ChromeHtmlToPdfLib
         ///     The password for the <see cref="_userName" />
         /// </summary>
         private string _password;
+
+        /// <summary>
+        ///     A proxy server
+        /// </summary>
+        private string _proxyServer;
+
+        /// <summary>
+        ///     The proxy bypass list
+        /// </summary>
+        private string _proxyBypassList;
+
+        /// <summary>
+        ///     A webproxy
+        /// </summary>
+        private WebProxy _webProxy;
 
         /// <summary>
         ///     The process id under which Chrome is running
@@ -237,6 +253,56 @@ namespace ChromeHtmlToPdfLib
                 return _preWrapper;
             }
         }
+
+        /// <summary>
+        /// Retourneerd een <see cref="WebProxy"/> object
+        /// </summary>
+        private WebProxy WebProxy
+        {
+            get
+            {
+                if (_webProxy != null)
+                    return _webProxy;
+
+                try
+                {
+                    if (string.IsNullOrWhiteSpace(_proxyServer))
+                        return null;
+
+                    NetworkCredential networkCredential = null;
+
+                    string[] bypassList = null;
+
+                    if (_proxyBypassList != null)
+                        bypassList = _proxyBypassList.Split(';');
+
+                    if (!string.IsNullOrWhiteSpace(_userName))
+                    {
+                        string userName = null;
+                        string domain = null;
+
+                        if (_userName.Contains("\\"))
+                        {
+                            domain = _userName.Split('\\')[0];
+                            userName = _userName.Split('\\')[1];
+                        }
+
+                        networkCredential = !string.IsNullOrWhiteSpace(domain)
+                            ? new NetworkCredential(userName, _password, domain)
+                            : new NetworkCredential(userName, _password);
+                    }
+
+                    return networkCredential != null
+                        ? _webProxy = new WebProxy(_proxyServer, true, bypassList, networkCredential)
+                        : _webProxy = new WebProxy(_proxyServer, true, bypassList);
+
+                }
+                catch (Exception exception)
+                {
+                    throw new Exception("Could not configure webproxy", exception);
+                }
+            }
+        }
         
         /// <summary>
         ///     <see cref="ImageHelper"/>
@@ -245,12 +311,10 @@ namespace ChromeHtmlToPdfLib
         {
             get
             {
-                // TODO pass proxy server settings
-
                 if (_imageHelper != null)
                     return _imageHelper;
 
-                _imageHelper = new ImageHelper(_tempDirectory, _logStream);
+                _imageHelper = new ImageHelper(_tempDirectory, _logStream, WebProxy) {InstanceId = InstanceId};
                 _imageHelper.InstanceId = InstanceId;
                 return _imageHelper;
             }
@@ -560,6 +624,7 @@ namespace ChromeHtmlToPdfLib
         /// </remarks>
         public void SetProxyServer(string value)
         {
+            _proxyServer = value;
             SetDefaultArgument("--proxy-server", value);
         }
         #endregion
@@ -584,6 +649,7 @@ namespace ChromeHtmlToPdfLib
         /// </remarks>
         public void SetProxyBypassList(string values)
         {
+            _proxyBypassList = values;
             SetDefaultArgument("--proxy-bypass-list", values);
         }
         #endregion
@@ -815,7 +881,7 @@ namespace ChromeHtmlToPdfLib
         /// <param name="waitForWindowsStatusTimeout"></param>
         /// <returns>The filename with full path to the generated PDF</returns>
         /// <exception cref="DirectoryNotFoundException"></exception>
-        public void ConvertToPdf(Uri inputUri,
+        public void ConvertToPdf(ConvertUri inputUri,
                                  string outputFile,
                                  PageSettings pageSettings,
                                  bool waitForNetworkIdle,
@@ -823,7 +889,7 @@ namespace ChromeHtmlToPdfLib
                                  int waitForWindowsStatusTimeout = 60000)
         {
             CheckIfOutputFolderExists(outputFile);
-
+            
             if (inputUri.IsFile && !File.Exists(inputUri.OriginalString))
                 throw new FileNotFoundException($"The file '{inputUri.OriginalString}' does not exists");
 
@@ -831,15 +897,15 @@ namespace ChromeHtmlToPdfLib
 
             try
             {
-                if (inputUri.IsFile && CheckForPreWrap(inputUri.LocalPath, out var preWrapFile))
+                if (inputUri.IsFile && CheckForPreWrap(inputUri, out var preWrapFile))
                 {
-                    inputUri = new Uri(preWrapFile);
+                    inputUri = new ConvertUri(preWrapFile);
                     preWrappedFile = new FileInfo(preWrapFile);
                 }
                 else if (ResizeImages)
                 {
                     if (!ImageHelper.ValidateImages(inputUri, pageSettings, out var imageFile))
-                        inputUri = new Uri(imageFile);
+                        inputUri = new ConvertUri(imageFile);
                 }
                 
                 StartChromeHeadless();
@@ -911,21 +977,20 @@ namespace ChromeHtmlToPdfLib
         /// <param name="inputFile"></param>
         /// <param name="outputFile"></param>
         /// <returns></returns>
-        private bool CheckForPreWrap(string inputFile, out string outputFile)
+        private bool CheckForPreWrap(ConvertUri inputFile, out string outputFile)
         {
-            outputFile = inputFile;
+            outputFile = inputFile.LocalPath;
 
             if (PreWrapExtensions.Count == 0)
                 return false;
 
-            var ext = Path.GetExtension(inputFile);
+            var ext = Path.GetExtension(inputFile.LocalPath);
 
             if (!PreWrapExtensions.Contains(ext, StringComparison.InvariantCultureIgnoreCase))
                 return false;
 
-            WriteToLog($"Prewrapping file '{inputFile}' to '{outputFile}'");
-
-            outputFile = PreWrapper.WrapFile(inputFile);
+            outputFile = PreWrapper.WrapFile(inputFile.LocalPath, inputFile.Encoding);
+            WriteToLog($"Prewraped file '{inputFile}' to '{outputFile}'");
             return true;
         }
         #endregion
