@@ -1,13 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Net;
 using System.Text;
 using AngleSharp;
 using ChromeHtmlToPdfLib.Settings;
-using MetadataExtractor;
-using Directory = System.IO.Directory;
 using Image = System.Drawing.Image;
 
 namespace ChromeHtmlToPdfLib.Helpers
@@ -207,8 +206,6 @@ namespace ChromeHtmlToPdfLib.Helpers
                 {
                     case "https":
                     case "http:":
-                        GetImageOrientation(WebClient.OpenRead(imageUri));
-
                         using (var webStream = WebClient.OpenRead(imageUri))
                             if (webStream != null)
                                 return Image.FromStream(webStream, true, false);
@@ -240,15 +237,6 @@ namespace ChromeHtmlToPdfLib.Helpers
         }
         #endregion
 
-        private void GetImageOrientation(Stream stream)
-        {
-            var directories = ImageMetadataReader.ReadMetadata(stream);
-            foreach (var directory in directories)
-            {
-                var name = directory.Name;
-            }
-        }
-
         #region ScaleImage
         /// <summary>
         /// Scales the image to the prefered max width
@@ -256,7 +244,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <param name="image"></param>
         /// <param name="maxWidth"></param>
         /// <returns></returns>
-        private Image ScaleImage(Image image, double maxWidth)
+        private static Image ScaleImage(Image image, double maxWidth)
         {
             var ratio = maxWidth / image.Width;
 
@@ -269,6 +257,93 @@ namespace ChromeHtmlToPdfLib.Helpers
 
             return newImage;
         }
+        #endregion
+
+        #region RotateImageByExifOrientationData
+        /// <summary>
+        /// Rotate the given image file according to Exif Orientation data
+        /// </summary>
+        /// <param name="inputFile"></param>
+        /// <param name="outputFile">e</param>
+        /// <param name="targetFormat"><see cref="ImageFormat"/></param>
+        /// <param name="updateExifData">Set it to <c>true</c> to update image Exif data after rotation 
+        /// (default is <c>true</c>)</param>
+        /// <returns>Returns <c>true</c> when a rotation occured, otherwise <c>false</c></returns>
+        public bool RotateImageByExifOrientationData(string inputFile, 
+                                                     string outputFile, 
+                                                     ImageFormat targetFormat, 
+                                                     bool updateExifData = true)
+        {
+            // Rotate the image according to EXIF data
+            var bitmap = new Bitmap(inputFile);
+             var rotateFlipType = RotateImageByExifOrientationData(bitmap, updateExifData);
+            if (rotateFlipType == RotateFlipType.RotateNoneFlipNone) return false;
+            bitmap.Save(outputFile, targetFormat);
+            return true;
+        }
+
+        /// <summary>
+        /// Rotate the given bitmap according to Exif Orientation data
+        /// </summary>
+        /// <param name="img">source image</param>
+        /// <param name="updateExifData">Set it to <c>true</c> to update image Exif data after rotation 
+        /// (default is <c>false</c>)</param>
+        /// <returns>The RotateFlipType value corresponding to the applied rotation. If no rotation occurred, 
+        /// RotateFlipType.RotateNoneFlipNone will be returned.</returns>
+        public RotateFlipType RotateImageByExifOrientationData(Image img, bool updateExifData = true)
+        {
+            const int orientationId = 0x0112;
+            var rotateFlipType = RotateFlipType.RotateNoneFlipNone;
+            if (!((IList) img.PropertyIdList).Contains(orientationId)) return rotateFlipType;
+
+            var item = img.GetPropertyItem(orientationId);
+            WriteToLog("Checking image rotation");
+
+            switch (item.Value[0])
+            {
+                case 2:
+                    rotateFlipType = RotateFlipType.RotateNoneFlipX;
+                    WriteToLog("RotateNoneFlipX");
+                    break;
+                case 3:
+                    rotateFlipType = RotateFlipType.Rotate180FlipNone;
+                    WriteToLog("Rotate180FlipNone");
+                    break;
+                case 4:
+                    rotateFlipType = RotateFlipType.Rotate180FlipX;
+                    WriteToLog("Rotate180FlipX");
+                    break;
+                case 5:
+                    rotateFlipType = RotateFlipType.Rotate90FlipX;
+                    WriteToLog("Rotate90FlipX");
+                    break;
+                case 6:
+                    rotateFlipType = RotateFlipType.Rotate90FlipNone;
+                    WriteToLog("Rotate90FlipNone");
+                    break;
+                case 7:
+                    rotateFlipType = RotateFlipType.Rotate270FlipX;
+                    WriteToLog("Rotate270FlipX");
+                    break;
+                case 8:
+                    rotateFlipType = RotateFlipType.Rotate270FlipNone;
+                    WriteToLog("Rotate270FlipNone");
+                    break;
+                default:
+                    rotateFlipType = RotateFlipType.RotateNoneFlipNone;
+                    WriteToLog("No rotation needed");
+                    break;
+            }
+
+            if (rotateFlipType == RotateFlipType.RotateNoneFlipNone)
+                return rotateFlipType;
+
+            img.RotateFlip(rotateFlipType);
+                
+            // Remove Exif orientation tag (if requested)
+            if (updateExifData) img.RemovePropertyItem(orientationId);
+            return rotateFlipType;
+        }       
         #endregion
 
         #region DownloadString

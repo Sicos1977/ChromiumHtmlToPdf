@@ -248,7 +248,7 @@ namespace ChromeHtmlToPdf
 
         /// <summary>
         ///     The files to wrap in a HTML file with a &lt;PRE&gt; tag
-        /// </summary>
+        /// </summary> 
         [Option("pre-wrap-file-extensions", Required = false,
             HelpText = "The files to wrap in a HTML file with a <PRE> tag")]
         public IEnumerable<string> PreWrapFileExtensions { get; set; }
@@ -256,9 +256,16 @@ namespace ChromeHtmlToPdf
         /// <summary>
         ///     Resize images so that they fit the width of the page
         /// </summary>
-        [Option("resize-images", Required = false, Default = false,
+        [Option("image-resize", Required = false, Default = false,
             HelpText = "Resize images so that they fit the width of the page")]
-        public bool ResizeImages { get; set; }
+        public bool ImageResize { get; set; }
+
+        /// <summary>
+        ///     Rotate images according to the exif information
+        /// </summary>
+        [Option("image-rotate", Required = false, Default = false,
+            HelpText = "Rotate images according to the exif information")]
+        public bool ImageRotate { get; set; }
         #endregion
     }
 }
