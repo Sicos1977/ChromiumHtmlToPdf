@@ -294,7 +294,7 @@ namespace ChromeHtmlToPdfLib
             message.AddParameter("marginBottom", pageSettings.MarginBottom);
             message.AddParameter("marginLeft", pageSettings.MarginLeft);
             message.AddParameter("marginRight", pageSettings.MarginRight);
-            message.AddParameter("pageRanges", pageSettings.PageRanges);
+            message.AddParameter("pageRanges", pageSettings.PageRanges ?? string.Empty);
             message.AddParameter("ignoreInvalidPageRanges", pageSettings.IgnoreInvalidPageRanges);
 
             var converted = false;
@@ -302,6 +302,7 @@ namespace ChromeHtmlToPdfLib
 
             _webSocket.MessageReceived += (sender, args) =>
             {
+                //File.AppendAllText("d:\\trace.txt", args.Message + Environment.NewLine);
                 response = PrintToPdfResponse.FromJson(args.Message);
                 if (response.Result?.Data != null)
                     converted = true;
