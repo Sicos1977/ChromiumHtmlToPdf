@@ -1,14 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Net;
 using System.Text;
 using AngleSharp;
 using ChromeHtmlToPdfLib.Settings;
-using MetadataExtractor;
-using Directory = System.IO.Directory;
 using Image = System.Drawing.Image;
 
 namespace ChromeHtmlToPdfLib.Helpers
@@ -96,19 +93,27 @@ namespace ChromeHtmlToPdfLib.Helpers
 
         #region ValidateImages
         /// <summary>
-        /// Validates all images if they fit on the given <paramref name="pageSettings"/>.
-        /// If an image does not fit then a local copy is maded of the <paramref name="sourceUri"/>
-        /// file and the images that don't fit are also downloaded and resized.
+        /// Validates all images if they are rotated correctly (when <paramref name="rotate"/> is set
+        /// to <c>true</c>) and fit on the given <paramref name="pageSettings"/>.
+        /// If an image does need to be rotated or does not fit then a local copy is maded of 
+        /// the <paramref name="sourceUri"/> file.
         /// </summary>
         /// <param name="sourceUri">The uri of the webpage</param>
+        /// <param name="resize">When set to <c>true</c> then an image is resized when needed</param>
+        /// <param name="rotate">When set to <c>true</c> then the EXIF information of an
+        /// image is read and when needed the image is automaticly rotated</param>
         /// <param name="pageSettings"><see cref="PageSettings"/></param>
         /// <param name="outputFile">The outputfile when this method returns <c>false</c> otherwise
         ///     <c>null</c> is returned</param>
         /// <returns>Returns <c>false</c> when the images dit not fit the page, otherwise <c>true</c></returns>
         /// <exception cref="WebException">Raised when the webpage from <paramref name="sourceUri"/> could not be downloaded</exception>
-        public bool ValidateImages(Uri sourceUri, PageSettings pageSettings, out string outputFile)
+        public bool ValidateImages(Uri sourceUri,
+                                   bool resize,
+                                   bool rotate,
+                                   PageSettings pageSettings, 
+                                   out string outputFile)
         {
-            WriteToLog("Validating all images if they fit the page");
+            WriteToLog("Validating all images if they need to be rotated and if they fit the page");
             outputFile = null;
 
             string localDirectory = null;
@@ -124,7 +129,6 @@ namespace ChromeHtmlToPdfLib.Helpers
             var maxHeight = pageSettings.PaperHeight * 96.0;
 
             var changed = false;
-            var imagesResized = 0;
             var config = Configuration.Default.WithCss();
             var context = BrowsingContext.New(config);
             var document = context.OpenAsync(m => m.Content(webpage)).Result;
@@ -132,58 +136,77 @@ namespace ChromeHtmlToPdfLib.Helpers
             // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
             foreach (var htmlImage in document.Images)
             {
-                // The local width and height attributes always go before css width and height
-                var width = htmlImage.DisplayWidth;
-                var height = htmlImage.DisplayHeight;
+                Image image = null;
 
-                if (height == 0 && width == 0)
+                try
                 {
-                    var style = context.Current.GetComputedStyle(htmlImage);
-                    if (style != null)
+                    // The local width and height attributes always go before css width and height
+                    var width = htmlImage.DisplayWidth;
+                    var height = htmlImage.DisplayHeight;
+
+                    if (rotate)
                     {
-                        width = ParseValue(style.Width);
-                        height = ParseValue(style.Height);
+                        image = GetImage(new Uri(htmlImage.Source), localDirectory);
+                        if (RotateImageByExifOrientationData(image))
+                        {
+                            htmlImage.DisplayWidth = image.Width;
+                            htmlImage.DisplayHeight = image.Height;
+                        }
+                        width = image.Width;
+                        height = image.Height;
+                        changed = true;
+                    }
+
+                    if (!resize) continue;
+
+                    if (height == 0 && width == 0)
+                    {
+                        var style = context.Current.GetComputedStyle(htmlImage);
+                        if (style != null)
+                        {
+                            width = ParseValue(style.Width);
+                            height = ParseValue(style.Height);
+                        }
+                    }
+
+                    // If we don't know the image size then get if from the image itself
+                    if (width <= 0 || height <= 0)
+                    {
+                        if (image == null)
+                            image = GetImage(new Uri(htmlImage.Source), localDirectory);
+                        width = image.Width;
+                        height = image.Height;
+                    }
+
+                    if (width > maxWidth || height > maxHeight)
+                    {
+                        var extension = Path.GetExtension(htmlImage.Source.Contains("?")
+                            ? htmlImage.Source.Split('?')[0]
+                            : htmlImage.Source);
+
+                        var fileName = GetTempFile(extension);
+
+                        // If we did not load the image already then load it
+                        if (image == null)
+                            image = GetImage(new Uri(htmlImage.Source), localDirectory);
+
+                        image = ScaleImage(image, (int)maxWidth);
+                        WriteToLog($"Image resized to width {image.Width} and height {image.Height}");
+                        image.Save(fileName);
+                        htmlImage.DisplayWidth = image.Width;
+                        htmlImage.DisplayHeight = image.Height;
+                        htmlImage.Source = new Uri(fileName).ToString();
+                        changed = true;
                     }
                 }
-
-                Image image = null;
-                // If we don't know the image size then get if from the image itself
-                if (width <= 0 || height <= 0)
+                finally
                 {
-                    image = GetImage(new Uri(htmlImage.Source), localDirectory);
-                    width = image.Width;
-                    height = image.Height;
-                }
-
-                if (width > maxWidth || height > maxHeight)
-                {
-                    var extension = Path.GetExtension(htmlImage.Source.Contains("?")
-                        ? htmlImage.Source.Split('?')[0]
-                        : htmlImage.Source);
-
-                    var fileName = GetTempFile(extension);
-
-                    // If we did not load the image already then load it
-                    if (image == null)
-                        image = GetImage(new Uri(htmlImage.Source), localDirectory);
-
-                    image = ScaleImage(image, (int) maxWidth);
-                    image.Save(fileName);
-                    htmlImage.DisplayWidth = image.Width;
-                    htmlImage.DisplayHeight = image.Height;
-                    htmlImage.Source = new Uri(fileName).ToString();
-                    imagesResized += 1;
-                    changed = true;
+                    image?.Dispose();
                 }
             }
 
             if (!changed)
-            {
-                WriteToLog("All images fit the page, there were no changes needed");
                 return true;
-            }
-
-            WriteToLog($"{imagesResized} image {(imagesResized == 1 ? "was" : "were")} resized to fit the page");
 
             outputFile = GetTempFile(".html");
 
@@ -207,27 +230,29 @@ namespace ChromeHtmlToPdfLib.Helpers
 
             try
             {
+                if (imageUri.IsLoopback || imageUri.IsFile)
+                {
+                    var fileName = imageUri.OriginalString;
+
+                    if (!File.Exists(fileName))
+                        fileName = Path.Combine(localDirectory, imageUri.AbsolutePath.Trim('/'));
+
+                    if (File.Exists(fileName))
+                    {
+                        var fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read);
+                        return Image.FromStream(fileStream, true, false);
+                    }
+                }
+
                 switch (imageUri.Scheme)
                 {
                     case "https":
-                    case "http:":
-                        GetImageOrientation(WebClient.OpenRead(imageUri));
-
+                    case "http":
                         using (var webStream = WebClient.OpenRead(imageUri))
+                        {
                             if (webStream != null)
                                 return Image.FromStream(webStream, true, false);
-                        break;
-
-                    case "file":
-                        var fileName = imageUri.OriginalString;
-
-                        if (!File.Exists(fileName))
-                            fileName = Path.Combine(localDirectory, imageUri.AbsolutePath.Trim('/'));
-
-                        if (File.Exists(fileName))
-                            using (var fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read))
-                                return Image.FromStream(fileStream, true, false);
-
+                        }
                         break;
 
                     default:
@@ -244,15 +269,6 @@ namespace ChromeHtmlToPdfLib.Helpers
         }
         #endregion
 
-        private void GetImageOrientation(Stream stream)
-        {
-            var directories = ImageMetadataReader.ReadMetadata(stream);
-            foreach (var directory in directories)
-            {
-                var name = directory.Name;
-            }
-        }
-
         #region ScaleImage
         /// <summary>
         /// Scales the image to the prefered max width
@@ -263,13 +279,12 @@ namespace ChromeHtmlToPdfLib.Helpers
         private static Image ScaleImage(Image image, double maxWidth)
         {
             var ratio = maxWidth / image.Width;
-
             var newWidth = (int)(image.Width * ratio);
             var newHeight = (int)(image.Height * ratio);
-
             var newImage = new Bitmap(newWidth, newHeight);
-            using (var g = Graphics.FromImage(newImage))
-                g.DrawImage(image, 0, 0, newWidth, newHeight);
+
+            using (var graphic = Graphics.FromImage(newImage))
+                graphic.DrawImage(image, 0, 0, newWidth, newHeight);
 
             return newImage;
         }
@@ -277,88 +292,58 @@ namespace ChromeHtmlToPdfLib.Helpers
 
         #region RotateImageByExifOrientationData
         /// <summary>
-        /// Rotate the given image file according to Exif Orientation data
-        /// </summary>
-        /// <param name="inputFile"></param>
-        /// <param name="outputFile">e</param>
-        /// <param name="targetFormat"><see cref="ImageFormat"/></param>
-        /// <param name="updateExifData">Set it to <c>true</c> to update image Exif data after rotation 
-        /// (default is <c>true</c>)</param>
-        /// <returns>Returns <c>true</c> when a rotation occured, otherwise <c>false</c></returns>
-        public bool RotateImageByExifOrientationData(string inputFile, 
-                                                     string outputFile, 
-                                                     ImageFormat targetFormat, 
-                                                     bool updateExifData = true)
-        {
-            // Rotate the image according to EXIF data
-            var bitmap = new Bitmap(inputFile);
-             var rotateFlipType = RotateImageByExifOrientationData(bitmap, updateExifData);
-            if (rotateFlipType == RotateFlipType.RotateNoneFlipNone) return false;
-            bitmap.Save(outputFile, targetFormat);
-            return true;
-        }
-
-        /// <summary>
         /// Rotate the given bitmap according to Exif Orientation data
         /// </summary>
-        /// <param name="img">source image</param>
+        /// <param name="image">source image</param>
         /// <param name="updateExifData">Set it to <c>true</c> to update image Exif data after rotation 
         /// (default is <c>false</c>)</param>
-        /// <returns>The RotateFlipType value corresponding to the applied rotation. If no rotation occurred, 
-        /// RotateFlipType.RotateNoneFlipNone will be returned.</returns>
-        public RotateFlipType RotateImageByExifOrientationData(Image img, bool updateExifData = true)
+        /// <returns>Returns <c>true</c> when the image is rotated</returns>
+        private bool RotateImageByExifOrientationData(Image image, bool updateExifData = true)
         {
             const int orientationId = 0x0112;
-            var rotateFlipType = RotateFlipType.RotateNoneFlipNone;
-            if (!((IList) img.PropertyIdList).Contains(orientationId)) return rotateFlipType;
+            if (!((IList) image.PropertyIdList).Contains(orientationId)) return false;
 
-            var item = img.GetPropertyItem(orientationId);
+            var item = image.GetPropertyItem(orientationId);
+            RotateFlipType rotateFlipType;
             WriteToLog("Checking image rotation");
 
             switch (item.Value[0])
             {
                 case 2:
                     rotateFlipType = RotateFlipType.RotateNoneFlipX;
-                    WriteToLog("RotateNoneFlipX");
                     break;
                 case 3:
                     rotateFlipType = RotateFlipType.Rotate180FlipNone;
-                    WriteToLog("Rotate180FlipNone");
                     break;
                 case 4:
                     rotateFlipType = RotateFlipType.Rotate180FlipX;
-                    WriteToLog("Rotate180FlipX");
                     break;
                 case 5:
                     rotateFlipType = RotateFlipType.Rotate90FlipX;
-                    WriteToLog("Rotate90FlipX");
                     break;
                 case 6:
                     rotateFlipType = RotateFlipType.Rotate90FlipNone;
-                    WriteToLog("Rotate90FlipNone");
                     break;
                 case 7:
                     rotateFlipType = RotateFlipType.Rotate270FlipX;
-                    WriteToLog("Rotate270FlipX");
                     break;
                 case 8:
                     rotateFlipType = RotateFlipType.Rotate270FlipNone;
-                    WriteToLog("Rotate270FlipNone");
                     break;
                 default:
                     rotateFlipType = RotateFlipType.RotateNoneFlipNone;
-                    WriteToLog("No rotation needed");
                     break;
             }
 
             if (rotateFlipType == RotateFlipType.RotateNoneFlipNone)
-                return rotateFlipType;
+                return false;
 
-            img.RotateFlip(rotateFlipType);
+            image.RotateFlip(rotateFlipType);
+            WriteToLog($"Image rotated with {rotateFlipType}");
                 
             // Remove Exif orientation tag (if requested)
-            if (updateExifData) img.RemovePropertyItem(orientationId);
-            return rotateFlipType;
+            if (updateExifData) image.RemovePropertyItem(orientationId);
+            return true;
         }       
         #endregion
 

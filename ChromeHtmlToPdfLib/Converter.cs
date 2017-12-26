@@ -166,7 +166,13 @@ namespace ChromeHtmlToPdfLib
         /// <summary>
         ///     When set to <c>true</c> then images are resized to fix the given <see cref="PageSettings.PaperWidth"/>
         /// </summary>
-        public bool ResizeImages { get; set; }
+        public bool ImageResize { get; set; }
+
+        /// <summary>
+        ///     When set to <c>true</c> then images are automaticly rotated following the orientation 
+        ///     set in the EXIF information
+        /// </summary>
+        public bool ImageRotate { get; set; }
 
         /// <summary>
         ///     When set then this directory is used to store temporary files.
@@ -902,9 +908,9 @@ namespace ChromeHtmlToPdfLib
                     inputUri = new ConvertUri(preWrapFile);
                     preWrappedFile = new FileInfo(preWrapFile);
                 }
-                else if (ResizeImages)
+                else if (ImageResize || ImageRotate)
                 {
-                    if (!ImageHelper.ValidateImages(inputUri, pageSettings, out var imageFile))
+                    if (!ImageHelper.ValidateImages(inputUri, ImageResize, ImageRotate, pageSettings, out var imageFile))
                         inputUri = new ConvertUri(imageFile);
                 }
                 

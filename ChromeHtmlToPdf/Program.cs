@@ -8,11 +8,9 @@ using System.Text;
 using System.Threading.Tasks;
 using ChromeHtmlToPdfLib;
 using ChromeHtmlToPdfLib.Enums;
-using ChromeHtmlToPdfLib.Helpers;
 using ChromeHtmlToPdfLib.Settings;
 using CommandLine;
 using CommandLine.Text;
-using System.Drawing.Imaging;
 
 namespace ChromeHtmlToPdf
 {
@@ -45,8 +43,6 @@ namespace ChromeHtmlToPdf
         {
             try
             {
-                new ImageHelper().RotateImageByExifOrientationData("d:\\testtt.jpg", "d:\\output.jpg", ImageFormat.Jpeg);
-
                 ParseCommandlineParameters(args, out var options, out var portRangeSettings);
 
                 var maxTasks = SetMaxConcurrencyLevel(options);
@@ -343,6 +339,9 @@ namespace ChromeHtmlToPdf
                 converter.PreWrapExtensions.Add(".txt");
                 converter.PreWrapExtensions.Add(".log");
             }
+
+            converter.ImageResize = options.ImageResize;
+            converter.ImageRotate = options.ImageRotate;
         }
         #endregion
 
@@ -360,7 +359,6 @@ namespace ChromeHtmlToPdf
             {
                 SetConverterSettings(converter, options);
                 converter.TempDirectory = "d:\\ff";
-                converter.ResizeImages = true;
                 converter.ConvertToPdf(CheckInput(options), 
                                        options.Output, 
                                        pageSettings, 
