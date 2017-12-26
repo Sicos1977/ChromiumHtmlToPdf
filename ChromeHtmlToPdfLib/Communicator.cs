@@ -39,7 +39,7 @@ using WebSocket = WebSocket4Net.WebSocket;
 namespace ChromeHtmlToPdfLib
 {
     /// <summary>
-    /// Handles all the communication task with Chrome remote devtools
+    /// Handles all the communication tasks with Chrome remote devtools
     /// </summary>
     /// <remarks>
     /// See https://chromium.googlesource.com/v8/v8/+/master/src/inspector/js_protocol.json

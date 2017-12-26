@@ -23,6 +23,16 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         /// <param name="uriString">The uri, e.g. file://c:\test.txt</param>
         /// <param name="encoding">The encoding used for this file, e.g UTF-8</param>
+        public ConvertUri(string uriString, Encoding encoding) : base(uriString)
+        {
+            Encoding = encoding;
+        }
+
+        /// <summary>
+        ///     Sets the uri and encoding
+        /// </summary>
+        /// <param name="uriString">The uri, e.g. file://c:\test.txt</param>
+        /// <param name="encoding">The encoding used for this file, e.g UTF-8</param>
         public ConvertUri(string uriString, string encoding) : base(uriString)
         {
             Encoding = Encoding.GetEncoding(encoding);
