@@ -1025,7 +1025,7 @@ namespace ChromeHtmlToPdfLib
         {
             try
             {
-                if (_disposed) return;
+                if (_disposed || _chromeProcess == null) return;
                 WriteToLog("Stopping Chrome");
                 if (_chromeProcess == null) return;
                 _chromeProcess.Refresh();
