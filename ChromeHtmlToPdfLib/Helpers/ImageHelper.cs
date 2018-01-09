@@ -5,6 +5,8 @@ using System.IO;
 using System.Net;
 using System.Text;
 using AngleSharp;
+using AngleSharp.Dom;
+using AngleSharp.Html;
 using ChromeHtmlToPdfLib.Settings;
 using Image = System.Drawing.Image;
 
@@ -96,34 +98,36 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// Validates all images if they are rotated correctly (when <paramref name="rotate"/> is set
         /// to <c>true</c>) and fit on the given <paramref name="pageSettings"/>.
         /// If an image does need to be rotated or does not fit then a local copy is maded of 
-        /// the <paramref name="sourceUri"/> file.
+        /// the <paramref name="inputUri"/> file.
         /// </summary>
-        /// <param name="sourceUri">The uri of the webpage</param>
+        /// <param name="inputUri">The uri of the webpage</param>
         /// <param name="resize">When set to <c>true</c> then an image is resized when needed</param>
         /// <param name="rotate">When set to <c>true</c> then the EXIF information of an
         /// image is read and when needed the image is automaticly rotated</param>
         /// <param name="pageSettings"><see cref="PageSettings"/></param>
-        /// <param name="outputFile">The outputfile when this method returns <c>false</c> otherwise
+        /// <param name="outputUri">The outputUri when this method returns <c>false</c> otherwise
         ///     <c>null</c> is returned</param>
         /// <returns>Returns <c>false</c> when the images dit not fit the page, otherwise <c>true</c></returns>
-        /// <exception cref="WebException">Raised when the webpage from <paramref name="sourceUri"/> could not be downloaded</exception>
-        public bool ValidateImages(Uri sourceUri,
+        /// <exception cref="WebException">Raised when the webpage from <paramref name="inputUri"/> could not be downloaded</exception>
+        public bool ValidateImages(ConvertUri inputUri,
                                    bool resize,
                                    bool rotate,
-                                   PageSettings pageSettings, 
-                                   out string outputFile)
+                                   PageSettings pageSettings,
+                                   out ConvertUri outputUri)
         {
             WriteToLog("Validating all images if they need to be rotated and if they fit the page");
-            outputFile = null;
+            outputUri = null;
 
             string localDirectory = null;
 
-            if (sourceUri.IsFile)
-                localDirectory = Path.GetDirectoryName(sourceUri.OriginalString);
+            if (inputUri.IsFile)
+                localDirectory = Path.GetDirectoryName(inputUri.OriginalString);
 
-            var webpage = sourceUri.IsFile
-                ? File.ReadAllText(sourceUri.OriginalString)
-                : DownloadString(sourceUri);
+            var webpage = inputUri.IsFile
+                ? inputUri.Encoding != null
+                    ? File.ReadAllText(inputUri.OriginalString, inputUri.Encoding)
+                    : File.ReadAllText(inputUri.OriginalString)
+                : DownloadString(inputUri);
 
             var maxWidth = pageSettings.PaperWidth * 96.0;
             var maxHeight = pageSettings.PaperHeight * 96.0;
@@ -131,7 +135,10 @@ namespace ChromeHtmlToPdfLib.Helpers
             var changed = false;
             var config = Configuration.Default.WithCss();
             var context = BrowsingContext.New(config);
-            var document = context.OpenAsync(m => m.Content(webpage)).Result;
+
+            var document = inputUri.Encoding != null
+                ? context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}")).Result
+                : context.OpenAsync(m => m.Content(webpage)).Result;
 
             // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
             foreach (var htmlImage in document.Images)
@@ -208,10 +215,20 @@ namespace ChromeHtmlToPdfLib.Helpers
             if (!changed)
                 return true;
 
-            outputFile = GetTempFile(".html");
+            var outputFile = GetTempFile(".htm");
+            outputUri = new ConvertUri(outputFile, inputUri.Encoding);
 
-            using (var textWriter = new StreamWriter(outputFile))
-                document.ToHtml(textWriter, new AutoSelectedMarkupFormatter());
+            using (var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write))
+            {
+                if (inputUri.Encoding != null)
+                {
+                    using (var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
+                        document.ToHtml(textWriter, new AutoSelectedMarkupFormatter());
+                }
+                else
+                    using (var textWriter = new StreamWriter(fileStream))
+                        document.ToHtml(textWriter, new AutoSelectedMarkupFormatter());
+            }
 
             return false;
         }

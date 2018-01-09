@@ -358,7 +358,6 @@ namespace ChromeHtmlToPdf
             using (var converter = new Converter(options.ChromeLocation, portRangeSettings, logStream: Console.OpenStandardOutput()))
             {
                 SetConverterSettings(converter, options);
-                converter.TempDirectory = "d:\\ff";
                 converter.ConvertToPdf(CheckInput(options), 
                                        options.Output, 
                                        pageSettings, 

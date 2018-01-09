@@ -896,13 +896,8 @@ namespace ChromeHtmlToPdfLib
         {
             CheckIfOutputFolderExists(outputFile);
 
-            if (inputUri.IsFile)
-            {
-                if (!File.Exists(inputUri.OriginalString))
-                    throw new FileNotFoundException($"The file '{inputUri.OriginalString}' does not exists");
-
-                inputUri = CheckFileEncoding(inputUri);
-            }
+            if (inputUri.IsFile && !File.Exists(inputUri.OriginalString))
+                throw new FileNotFoundException($"The file '{inputUri.OriginalString}' does not exists");
 
             FileInfo preWrappedFile = null;
 
@@ -915,8 +910,8 @@ namespace ChromeHtmlToPdfLib
                 }
                 else if (ImageResize || ImageRotate)
                 {
-                    if (!ImageHelper.ValidateImages(inputUri, ImageResize, ImageRotate, pageSettings, out var imageFile))
-                        inputUri = new ConvertUri(imageFile);
+                    if (!ImageHelper.ValidateImages(inputUri, ImageResize, ImageRotate, pageSettings, out var outputUri))
+                        inputUri = outputUri;
                 }
                 
                 StartChromeHeadless();
@@ -1003,73 +998,6 @@ namespace ChromeHtmlToPdfLib
             outputFile = PreWrapper.WrapFile(inputFile.LocalPath, inputFile.Encoding);
             WriteToLog($"Prewraped file '{inputFile}' to '{outputFile}'");
             return true;
-        }
-        #endregion
-
-        #region GetEncoding
-        /// <summary>
-        ///     Determines a text file's encoding by analyzing its byte order mark (BOM).
-        ///     Defaults to ASCII when detection of the text file's endianness fails.
-        /// </summary>
-        /// <param name="filename">The text file to analyze.</param>
-        /// <returns>The detected encoding.</returns>
-        private static Encoding GetEncoding(string filename)
-        {
-            // Read the BOM
-            var bom = new byte[4];
-
-            using (var file = new FileStream(filename, FileMode.Open, FileAccess.Read))
-            {
-                file.Read(bom, 0, 4);
-            }
-
-            // Analyze the BOM
-            if (bom[0] == 0x2b && bom[1] == 0x2f && bom[2] == 0x76) return Encoding.UTF7;
-            if (bom[0] == 0xef && bom[1] == 0xbb && bom[2] == 0xbf) return Encoding.UTF8;
-            if (bom[0] == 0xff && bom[1] == 0xfe) return Encoding.Unicode; //UTF-16LE
-            if ((bom[0] == 0x00 && bom[2] == 0x00) | (bom[1] == 0x00 && bom[3] == 0x00)) return Encoding.Unicode;
-            if (bom[0] == 0xfe && bom[1] == 0xff) return Encoding.BigEndianUnicode; //UTF-16BE
-            if (bom[0] == 0 && bom[1] == 0 && bom[2] == 0xfe && bom[3] == 0xff) return Encoding.UTF32;
-            return Encoding.Default;
-        }
-        #endregion
-
-        #region CheckFileEncoding
-        /// <summary>
-        ///     Checks the encoding of the file and when needed converts it to an UTF-8 encoded file
-        /// </summary>
-        /// <param name="convertUri"><see cref="ConvertUri"/></param>
-        /// <returns>The file</returns>
-        private ConvertUri CheckFileEncoding(ConvertUri convertUri)
-        {
-            var inputFile = convertUri.OriginalString;
-            var encoding = convertUri.Encoding ?? GetEncoding(inputFile);
-
-            switch (encoding.EncodingName)
-            {
-                case "Unicode":
-                case "BigEndianUnicode":
-                case "UTF16":
-                case "UTF32":
-                    WriteToLog($"The file '{inputFile}' is in a format that Chrome cannot read, converting it to UTF-8");
-
-                    var tempFile = Guid.NewGuid() + Path.GetExtension(inputFile);
-                    tempFile = Path.Combine(_tempDirectory?.FullName ?? Path.GetTempPath(), tempFile);
-
-                    using (var fileStream = new FileStream(tempFile, FileMode.CreateNew, FileAccess.Write))
-                    using (var writer = new StreamWriter(fileStream, Encoding.UTF8))
-                    using (var reader = new StreamReader(inputFile, encoding))
-                    {
-                        while (!reader.EndOfStream)
-                            writer.WriteLine(reader.ReadLine());
-                    }
-
-                    return new ConvertUri(tempFile, Encoding.UTF8);
-
-                default:
-                    // Do nothing
-                    return convertUri;
-            }
         }
         #endregion
 
