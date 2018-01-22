@@ -5,8 +5,6 @@ using System.IO;
 using System.Net;
 using System.Text;
 using AngleSharp;
-using AngleSharp.Dom;
-using AngleSharp.Html;
 using ChromeHtmlToPdfLib.Settings;
 using Image = System.Drawing.Image;
 
@@ -154,6 +152,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                     if (rotate)
                     {
                         image = GetImage(new Uri(htmlImage.Source), localDirectory);
+                        if (image == null) continue;
                         if (RotateImageByExifOrientationData(image))
                         {
                             htmlImage.DisplayWidth = image.Width;
@@ -181,6 +180,8 @@ namespace ChromeHtmlToPdfLib.Helpers
                     {
                         if (image == null)
                             image = GetImage(new Uri(htmlImage.Source), localDirectory);
+
+                        if (image == null) continue;
                         width = image.Width;
                         height = image.Height;
                     }
@@ -197,6 +198,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                         if (image == null)
                             image = GetImage(new Uri(htmlImage.Source), localDirectory);
 
+                        if (image == null) continue;
                         image = ScaleImage(image, (int)maxWidth);
                         WriteToLog($"Image resized to width {image.Width} and height {image.Height}");
                         image.Save(fileName);
