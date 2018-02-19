@@ -141,6 +141,12 @@ namespace ChromeHtmlToPdfLib.Helpers
             // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
             foreach (var htmlImage in document.Images)
             {
+                if (string.IsNullOrWhiteSpace(htmlImage.Source))
+                {
+                    WriteToLog($"HTML image tag '{htmlImage.TagName}' has no image source '{htmlImage.Source}'");
+                    continue;
+                }
+
                 Image image = null;
 
                 try
