@@ -35,8 +35,9 @@ namespace ChromeHtmlToPdfLib
         /// <param name="encoding">The encoding used for this file, e.g UTF-8</param>
         public ConvertUri(string uriString, string encoding) : base(uriString)
         {
-            if (!string.IsNullOrWhiteSpace(encoding))
-                Encoding = Encoding.GetEncoding(encoding);
+            Encoding = !string.IsNullOrWhiteSpace(encoding)
+                ? Encoding.GetEncoding(encoding)
+                : Encoding.Unicode;
         }
 
 #pragma warning disable CS0618 // Type or member is obsolete
