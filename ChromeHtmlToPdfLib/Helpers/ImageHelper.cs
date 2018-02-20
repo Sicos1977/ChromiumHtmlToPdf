@@ -163,10 +163,10 @@ namespace ChromeHtmlToPdfLib.Helpers
                         {
                             htmlImage.DisplayWidth = image.Width;
                             htmlImage.DisplayHeight = image.Height;
+                            changed = true;
                         }
                         width = image.Width;
                         height = image.Height;
-                        changed = true;
                     }
 
                     if (!resize) continue;
