@@ -226,19 +226,28 @@ namespace ChromeHtmlToPdfLib.Helpers
             var outputFile = GetTempFile(".htm");
             outputUri = new ConvertUri(outputFile, inputUri.Encoding);
 
-            using (var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write))
+            try
             {
-                if (inputUri.Encoding != null)
+                using (var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write))
                 {
-                    using (var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
-                        document.ToHtml(textWriter, new AutoSelectedMarkupFormatter());
-                }
-                else
-                    using (var textWriter = new StreamWriter(fileStream))
-                        document.ToHtml(textWriter, new AutoSelectedMarkupFormatter());
-            }
+                    if (inputUri.Encoding != null)
+                    {
+                        using (var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
+                            document.ToHtml(textWriter, new AutoSelectedMarkupFormatter());
+                    }
+                    else
+                        using (var textWriter = new StreamWriter(fileStream))
+                            document.ToHtml(textWriter, new AutoSelectedMarkupFormatter());
 
-            return false;
+                }
+
+                return false;
+            }
+            catch (Exception exception)
+            {
+                WriteToLog($"Could not generate new html file '{outputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
+                return true;
+            }
         }
         #endregion
 
