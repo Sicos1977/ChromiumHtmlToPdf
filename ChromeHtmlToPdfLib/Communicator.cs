@@ -182,7 +182,7 @@ namespace ChromeHtmlToPdfLib
 
             message.AddParameter("url", uri.ToString());
 
-            var loaded = false;
+            var waitEvent = new ManualResetEvent(false);
 
             _webSocket.MessageReceived += (sender, args) =>
             {
@@ -194,19 +194,18 @@ namespace ChromeHtmlToPdfLib
                     if (waitForNetworkIdle)
                     {
                         if (page.Params?.Name == "networkIdle")
-                            loaded = true;
+                            waitEvent.Set();
                     }
                     else if (page.Method == "Page.lifecycleEvent" && page.Params.Name == "DOMContentLoaded")
-                        loaded = true;
+                        waitEvent.Set();
                 }
                 else if (page.Method == "Page.loadEventFired")
-                    loaded = true;
+                    waitEvent.Set();
             };
 
             WebSocketSend(message.ToJson());
 
-            while (!loaded)
-                Thread.Sleep(1);
+            waitEvent.WaitOne();
 
             WebSocketSend(new Message { Id = MessageId, Method = "Page.disable" }.ToJson());
         }
@@ -297,21 +296,20 @@ namespace ChromeHtmlToPdfLib
             message.AddParameter("pageRanges", pageSettings.PageRanges ?? string.Empty);
             message.AddParameter("ignoreInvalidPageRanges", pageSettings.IgnoreInvalidPageRanges);
 
-            var converted = false;
             PrintToPdfResponse response = null;
 
+            var waitEvent = new ManualResetEvent(false);
+            
             _webSocket.MessageReceived += (sender, args) =>
             {
                 //File.AppendAllText("d:\\trace.txt", args.Message + Environment.NewLine);
                 response = PrintToPdfResponse.FromJson(args.Message);
                 if (response.Result?.Data != null)
-                    converted = true;
+                    waitEvent.Set();
             };
 
             WebSocketSend(message.ToJson());
-
-            while (!converted)
-                Thread.Sleep(1);
+            waitEvent.WaitOne();
 
             return response;
         }

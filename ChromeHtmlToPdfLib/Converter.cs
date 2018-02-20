@@ -1009,7 +1009,7 @@ namespace ChromeHtmlToPdfLib
         private void WriteToLog(string message)
         {
             if (_logStream == null) return;
-            var line = DateTime.Now.ToString("s") + (InstanceId != null ? " - " + InstanceId : string.Empty) + " - " +
+            var line = DateTime.Now.ToString("o") + (InstanceId != null ? " - " + InstanceId : string.Empty) + " - " +
                        message + Environment.NewLine;
             var bytes = Encoding.UTF8.GetBytes(line);
             _logStream.Write(bytes, 0, bytes.Length);

@@ -441,7 +441,7 @@ namespace ChromeHtmlToPdf
         /// <param name="message">The message to write</param>
         private static void WriteToLog(string message)
         {
-            Console.WriteLine(DateTime.Now.ToString("s") + " - " + message);
+            Console.WriteLine(DateTime.Now.ToString("o") + " - " + message);
         }
         #endregion
     }
