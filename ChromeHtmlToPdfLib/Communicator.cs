@@ -130,35 +130,13 @@ namespace ChromeHtmlToPdfLib
         /// <returns></returns>
         internal List<RemoteSessionsResponse> GetAvailableSessions(Uri remoteDebuggingUri)
         {
-            // Sometimes Chrome starts to slow and we try to make a connection to quick
-            // in this case Chrome isn't already listening for incomming connections. That is
-            // why we have a retry loop overhere
-            var i = 0;
-
-            while (true)
+            var request = (HttpWebRequest)WebRequest.Create(remoteDebuggingUri + "json");
+            using (var response = request.GetResponse())
+            using (var responseStream = response.GetResponseStream())
             {
-                try
-                {
-                    var request = (HttpWebRequest)WebRequest.Create(remoteDebuggingUri + "json");
-                    using (var response = request.GetResponse())
-                    using (var responseStream = response.GetResponseStream())
-                    {
-                        if (responseStream == null) throw new InvalidOperationException();
-                        var streamReader = new StreamReader(responseStream);
-                        return RemoteSessionsResponse.FromJson(streamReader.ReadToEnd());
-                    }
-                }
-                catch
-                {
-                    i++;
-
-                    if (i < 5)
-                    {
-                        Thread.Sleep(i * 10);
-                    }
-                    else
-                        throw;
-                }
+                if (responseStream == null) throw new InvalidOperationException();
+                var streamReader = new StreamReader(responseStream);
+                return RemoteSessionsResponse.FromJson(streamReader.ReadToEnd());
             }
         }
         #endregion
