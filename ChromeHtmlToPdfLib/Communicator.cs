@@ -166,7 +166,7 @@ namespace ChromeHtmlToPdfLib
 
             EventHandler<MessageReceivedEventArgs> messageReceived = (sender, args) =>
             {
-                File.AppendAllText("d:\\trace.txt", args.Message + Environment.NewLine);
+                //File.AppendAllText("d:\\trace.txt", args.Message + Environment.NewLine);
                 var page = PageEvent.FromJson(args.Message);
 
                 if (!uri.IsFile)
@@ -296,7 +296,7 @@ namespace ChromeHtmlToPdfLib
 
             EventHandler <MessageReceivedEventArgs> messageReceived = (sender, args) =>
             {
-                File.AppendAllText("d:\\trace.txt", args.Message + Environment.NewLine);
+                //File.AppendAllText("d:\\trace.txt", args.Message + Environment.NewLine);
                 response = PrintToPdfResponse.FromJson(args.Message);
                 if (response.Result?.Data != null)
                     waitEvent.Set();

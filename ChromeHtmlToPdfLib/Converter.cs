@@ -470,7 +470,11 @@ namespace ChromeHtmlToPdfLib
                     {
                         // Find a free remote debugging port
                         var port = GetUnusedPort(_portRange);
+                        // https://peter.sh/experiments/chromium-command-line-switches/3/
                         SetDefaultArgument("--remote-debugging-port", port.ToString());
+
+                        // TODO: Add support for --remote-debugging-socket-fd, this way we probably can avoid using the mutex
+                        SetDefaultArgument("--remote-debugging-socket-fd");
 
                         var processStartInfo = new ProcessStartInfo
                         {
