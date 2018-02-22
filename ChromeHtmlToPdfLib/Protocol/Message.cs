@@ -36,7 +36,7 @@ namespace ChromeHtmlToPdfLib.Protocol
     {
         #region Properties
         /// <summary>
-        /// The parameters that we want to feed into the <see cref="Method"/>
+        /// The parameters that we want to feed into Chrome
         /// </summary>
         [JsonProperty("params")]
         public Dictionary<string, object> Parameters { get; set; }
