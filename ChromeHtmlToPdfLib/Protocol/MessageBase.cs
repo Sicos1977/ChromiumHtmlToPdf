@@ -38,7 +38,7 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// The message id
         /// </summary>
         [JsonProperty("id")]
-        public long Id { get; set; }
+        public int Id { get; set; }
 
         /// <summary>
         /// The method that we want to execute in Chrome

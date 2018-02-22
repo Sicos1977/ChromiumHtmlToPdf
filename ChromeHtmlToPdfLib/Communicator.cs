@@ -33,6 +33,7 @@ using System.Net.WebSockets;
 using System.Threading;
 using ChromeHtmlToPdfLib.Protocol;
 using ChromeHtmlToPdfLib.Settings;
+using WebSocket4Net;
 using ErrorEventArgs = SuperSocket.ClientEngine.ErrorEventArgs;
 using WebSocket = WebSocket4Net.WebSocket;
 
@@ -56,7 +57,7 @@ namespace ChromeHtmlToPdfLib
         /// The message that we are sending to Chrome
         /// </summary>
         private string _message;
-
+        
         /// <summary>
         /// The Chrome message id
         /// </summary>
@@ -163,9 +164,9 @@ namespace ChromeHtmlToPdfLib
 
             var waitEvent = new ManualResetEvent(false);
 
-            _webSocket.MessageReceived += (sender, args) =>
+            EventHandler<MessageReceivedEventArgs> messageReceived = (sender, args) =>
             {
-                //File.AppendAllText("d:\\trace.txt", args.Message + Environment.NewLine);
+                File.AppendAllText("d:\\trace.txt", args.Message + Environment.NewLine);
                 var page = PageEvent.FromJson(args.Message);
 
                 if (!uri.IsFile)
@@ -182,12 +183,16 @@ namespace ChromeHtmlToPdfLib
                     waitEvent.Set();
             };
 
+            _webSocket.MessageReceived += messageReceived;
+
             WebSocketSend(message.ToJson());
 
             if (timeout.HasValue)
                 waitEvent.WaitOne(timeout.Value);
             else
                 waitEvent.WaitOne();
+
+            _webSocket.MessageReceived -= messageReceived;
 
             WebSocketSend(new Message { Id = MessageId, Method = "Page.disable" }.ToJson());
         }
@@ -216,7 +221,7 @@ namespace ChromeHtmlToPdfLib
             var waitEvent = new ManualResetEvent(false);
             var match = false;
 
-            _webSocket.MessageReceived += (sender, args) =>
+            EventHandler<MessageReceivedEventArgs> messageReceived = (sender, args) =>
             {
                 var evaluate = Evaluate.FromJson(args.Message);
                 if (evaluate.Result?.Result?.Value == status)
@@ -225,6 +230,8 @@ namespace ChromeHtmlToPdfLib
                     waitEvent.Set();
                 }
             };
+
+            _webSocket.MessageReceived += messageReceived;
 
             var stopWatch = new Stopwatch();
             stopWatch.Start();
@@ -237,7 +244,8 @@ namespace ChromeHtmlToPdfLib
             }
 
             stopWatch.Stop();
-
+            _webSocket.MessageReceived -= messageReceived;
+            
             return match;
         }
         #endregion
@@ -285,17 +293,19 @@ namespace ChromeHtmlToPdfLib
             PrintToPdfResponse response = null;
 
             var waitEvent = new ManualResetEvent(false);
-            
-            _webSocket.MessageReceived += (sender, args) =>
+
+            EventHandler <MessageReceivedEventArgs> messageReceived = (sender, args) =>
             {
-                //File.AppendAllText("d:\\trace.txt", args.Message + Environment.NewLine);
+                File.AppendAllText("d:\\trace.txt", args.Message + Environment.NewLine);
                 response = PrintToPdfResponse.FromJson(args.Message);
                 if (response.Result?.Data != null)
                     waitEvent.Set();
             };
 
+            _webSocket.MessageReceived += messageReceived;
             WebSocketSend(message.ToJson());
             waitEvent.WaitOne();
+            _webSocket.MessageReceived -= messageReceived;
 
             return response;
         }
