@@ -147,8 +147,9 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="waitForNetworkIdle">Wait until all external sources are loaded</param>
+        /// <param name="timeout">Timeout in milliseconds</param>
         /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
-        public void NavigateTo(Uri uri, bool waitForNetworkIdle)
+        public void NavigateTo(Uri uri, bool waitForNetworkIdle, int? timeout = null)
         {
             WebSocketSend(new Message { Id = MessageId, Method = "Page.enable" }.ToJson());
 
@@ -183,7 +184,10 @@ namespace ChromeHtmlToPdfLib
 
             WebSocketSend(message.ToJson());
 
-            waitEvent.WaitOne();
+            if (timeout.HasValue)
+                waitEvent.WaitOne(timeout.Value);
+            else
+                waitEvent.WaitOne();
 
             WebSocketSend(new Message { Id = MessageId, Method = "Page.disable" }.ToJson());
         }
@@ -209,13 +213,17 @@ namespace ChromeHtmlToPdfLib
             message.AddParameter("silent", true);
             message.AddParameter("returnByValue", true);
 
+            var waitEvent = new ManualResetEvent(false);
             var match = false;
 
             _webSocket.MessageReceived += (sender, args) =>
             {
                 var evaluate = Evaluate.FromJson(args.Message);
                 if (evaluate.Result?.Result?.Value == status)
+                {
                     match = true;
+                    waitEvent.Set();
+                }
             };
 
             var stopWatch = new Stopwatch();
@@ -224,7 +232,7 @@ namespace ChromeHtmlToPdfLib
             while (!match)
             {
                 WebSocketSend(message.ToJson());
-                Thread.Sleep(10);
+                waitEvent.WaitOne(10);
                 if (stopWatch.ElapsedMilliseconds >= timeout) break;
             }
 
