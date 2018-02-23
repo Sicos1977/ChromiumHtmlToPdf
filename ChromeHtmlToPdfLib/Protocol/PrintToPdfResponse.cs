@@ -28,13 +28,10 @@ using System;
 using System.IO;
 using Newtonsoft.Json;
 
-#pragma warning disable 1584,1711,1572,1581,1580
-#pragma warning disable 1574
-
 namespace ChromeHtmlToPdfLib.Protocol
 {
     /// <summary>
-    /// The JSON object that is returned from Chrome when calling the <see cref="Converter.ConvertToPdf"/> method
+    /// The JSON object that is returned from Chrome when calling the <see cref="Converter"/> ConvertToPdf method
     /// </summary>
     public class PrintToPdfResponse
     {
@@ -46,22 +43,11 @@ namespace ChromeHtmlToPdfLib.Protocol
         public PrintToPdfResult Result { get; set; }
 
         /// <summary>
-        /// Returns <see cref="PrintToPdfResult.Data"/> as a stream
+        /// Returns <see cref="PrintToPdfResult.Data"/> as array of bytes
         /// </summary>
-        public Stream Stream
+        public byte[] Bytes
         {
-            get { return new MemoryStream(Convert.FromBase64String(Result.Data)); }
-        }
-        #endregion
-
-        #region SaveToFile
-        /// <summary>
-        /// Saves the <see cref="PrintToPdfResult.Data"/> to a file
-        /// </summary>
-        /// <param name="fileName"></param>
-        public void SaveToFile(string fileName)
-        {
-            File.WriteAllBytes(fileName, Convert.FromBase64String(Result.Data));
+            get { return Convert.FromBase64String(Result.Data); }    
         }
         #endregion
 
@@ -83,7 +69,7 @@ namespace ChromeHtmlToPdfLib.Protocol
     }
 
     /// <summary>
-    /// The result returned from the <see cref="Converter.ConverToPdf"/> method
+    /// The result returned from the <see cref="Converter"/> ConvertToPdf  method
     /// </summary>
     public class PrintToPdfResult
     {

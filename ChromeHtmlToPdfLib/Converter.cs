@@ -37,6 +37,7 @@ using ChromeHtmlToPdfLib.Settings;
 using Microsoft.Win32;
 using System.Management;
 using System.Net;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using ChromeHtmlToPdfLib.Enums;
 using ChromeHtmlToPdfLib.Helpers;
@@ -473,8 +474,10 @@ namespace ChromeHtmlToPdfLib
                         // https://peter.sh/experiments/chromium-command-line-switches/3/
                         SetDefaultArgument("--remote-debugging-port", port.ToString());
 
+                        //var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
                         // TODO: Add support for --remote-debugging-socket-fd, this way we probably can avoid using the mutex
-                        SetDefaultArgument("--remote-debugging-socket-fd");
+                        //SetDefaultArgument("--remote-debugging-socket-fd", socket.Handle.ToString());
 
                         var processStartInfo = new ProcessStartInfo
                         {
@@ -877,28 +880,26 @@ namespace ChromeHtmlToPdfLib
             }
         }
         #endregion
-        
+
         #region ConvertToPdf
         /// <summary>
         ///     Converts the given <paramref name="inputUri" /> to PDF
         /// </summary>
         /// <param name="inputUri">The webpage to convert</param>
-        /// <param name="outputFile">The output file</param>
+        /// <param name="outputStream">The output stream</param>
         /// <param name="pageSettings"><see cref="PageSettings"/></param>
         /// <param name="waitForNetworkIdle">Wait until all external sources are loaded</param>
         /// <param name="waitForWindowStatus">Wait until the javascript window.status has this value before
         ///     rendering the PDF</param>
         /// <param name="waitForWindowsStatusTimeout"></param>
-        /// <returns>The filename with full path to the generated PDF</returns>
         /// <exception cref="DirectoryNotFoundException"></exception>
         public void ConvertToPdf(ConvertUri inputUri,
-                                 string outputFile,
+                                 Stream outputStream,
                                  PageSettings pageSettings,
                                  bool waitForNetworkIdle,
                                  string waitForWindowStatus = "",
                                  int waitForWindowsStatusTimeout = 60000)
         {
-            CheckIfOutputFolderExists(outputFile);
 
             if (inputUri.IsFile && !File.Exists(inputUri.OriginalString))
                 throw new FileNotFoundException($"The file '{inputUri.OriginalString}' does not exists");
@@ -917,7 +918,7 @@ namespace ChromeHtmlToPdfLib
                     if (!ImageHelper.ValidateImages(inputUri, ImageResize, ImageRotate, pageSettings, out var outputUri))
                         inputUri = outputUri;
                 }
-                
+
                 StartChromeHeadless();
 
                 WriteToLog("Loading " + (inputUri.IsFile ? "file " + inputUri.OriginalString : "url " + inputUri) +
@@ -935,8 +936,13 @@ namespace ChromeHtmlToPdfLib
                 WriteToLog((inputUri.IsFile ? "File" : "Url") + " loaded");
 
                 WriteToLog("Converting to PDF");
-                var pdfFileName = Path.ChangeExtension(outputFile, ".pdf");
-                _communicator.PrintToPdf(pageSettings).SaveToFile(pdfFileName);
+
+                using (var memorystream = new MemoryStream(_communicator.PrintToPdf(pageSettings).Bytes))
+                {
+                    memorystream.Position = 0;
+                    memorystream.CopyTo(outputStream);
+                }
+
                 WriteToLog("Converted");
             }
             finally
@@ -945,6 +951,38 @@ namespace ChromeHtmlToPdfLib
                 {
                     WriteToLog("Deleting prewrapped file");
                     preWrappedFile.Delete();
+                }
+            }
+        }
+
+        /// <summary>
+        ///     Converts the given <paramref name="inputUri" /> to PDF
+        /// </summary>
+        /// <param name="inputUri">The webpage to convert</param>
+        /// <param name="outputFile">The output file</param>
+        /// <param name="pageSettings"><see cref="PageSettings"/></param>
+        /// <param name="waitForNetworkIdle">Wait until all external sources are loaded</param>
+        /// <param name="waitForWindowStatus">Wait until the javascript window.status has this value before
+        ///     rendering the PDF</param>
+        /// <param name="waitForWindowsStatusTimeout"></param>
+        /// <exception cref="DirectoryNotFoundException"></exception>
+        public void ConvertToPdf(ConvertUri inputUri,
+                                 string outputFile,
+                                 PageSettings pageSettings,
+                                 bool waitForNetworkIdle,
+                                 string waitForWindowStatus = "",
+                                 int waitForWindowsStatusTimeout = 60000)
+        {
+            CheckIfOutputFolderExists(outputFile);
+            using (var memoryStream = new MemoryStream())
+            {
+                ConvertToPdf(inputUri, memoryStream, pageSettings, waitForNetworkIdle, waitForWindowStatus,
+                    waitForWindowsStatusTimeout);
+
+                using (var fileStream = File.Open(outputFile, FileMode.Create))
+                {
+                    memoryStream.Position = 0;
+                    memoryStream.CopyTo(fileStream);
                 }
             }
         }
