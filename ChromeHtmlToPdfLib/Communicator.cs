@@ -25,10 +25,8 @@
 //
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
 using System.Net.WebSockets;
 using System.Threading;
 using ChromeHtmlToPdfLib.Protocol;
@@ -40,30 +38,30 @@ using WebSocket = WebSocket4Net.WebSocket;
 namespace ChromeHtmlToPdfLib
 {
     /// <summary>
-    /// Handles all the communication tasks with Chrome remote devtools
+    ///     Handles all the communication tasks with Chrome remote devtools
     /// </summary>
     /// <remarks>
-    /// See https://chromium.googlesource.com/v8/v8/+/master/src/inspector/js_protocol.json
+    ///     See https://chromium.googlesource.com/v8/v8/+/master/src/inspector/js_protocol.json
     /// </remarks>
     internal class Communicator : IDisposable
     {
         #region Fields
         /// <summary>
-        /// The websocket need to communicate with Chrome
+        ///     The websocket need to communicate with Chrome
         /// </summary>
         private readonly WebSocket _webSocket;
 
         /// <summary>
-        /// The message that we are sending to Chrome
+        ///     The message that we are sending to Chrome
         /// </summary>
         private string _message;
-        
+
         /// <summary>
-        /// The Chrome message id
+        ///     The Chrome message id
         /// </summary>
         private int _messageId;
         #endregion
-
+        
         #region Properties
         private int MessageId
         {
@@ -77,20 +75,44 @@ namespace ChromeHtmlToPdfLib
 
         #region Constructor & destructor
         /// <summary>
-        /// Makes this object and sets the Chrome remote debugging url
+        ///     Makes this object and sets the Chrome remote debugging url
         /// </summary>
-        /// <param name="remoteDebuggingUri"></param>
-        internal Communicator(Uri remoteDebuggingUri)
+        /// <param name="devTools">The devtools websocket</param>
+        internal Communicator(string devTools)
         {
-            var sessions = GetAvailableSessions(remoteDebuggingUri);
-            if (sessions.Count == 0)
-                throw new Exception("Could not retrieve remote sessions from Chrome");
+            var webSocket = new WebSocket(devTools);
+            var waitEvent = new ManualResetEvent(false);
+            var newPage = string.Empty;
 
-            _webSocket = new WebSocket(sessions[0].WebSocketDebuggerUrl.Replace("ws://localhost", "ws://127.0.0.1"));
+            webSocket.Opened += (sender, args) => waitEvent.Set();
+
+            webSocket.MessageReceived += (sender, args) =>
+            {
+                newPage = args.Message;
+                waitEvent.Set();
+            };
+
+            webSocket.Open();
+            waitEvent.WaitOne();
+            waitEvent.Reset();
+
+            var message = new Message
+            {
+                Id = MessageId,
+                Method = "Target.createTarget"
+            };
+            message.Parameters.Add("url", "about:blank");
+            webSocket.Send(message.ToJson());
+            waitEvent.WaitOne();
+            webSocket.Close();
+
+            _webSocket = new WebSocket(devTools);
             _webSocket.Error += WebSocketOnError;
 
-            var waitEvent = new ManualResetEvent(false);
-            _webSocket.Opened += (sender, args) => { waitEvent.Set(); };
+            _webSocket.Opened += (sender, args) =>
+            {
+                waitEvent.Set();
+            };
             _webSocket.Open();
             waitEvent.WaitOne();
         }
@@ -103,7 +125,7 @@ namespace ChromeHtmlToPdfLib
 
         #region WebSocket
         /// <summary>
-        /// Uses the <see cref="_webSocket"/> to send a message to Chrome
+        ///     Uses the <see cref="_webSocket" /> to send a message to Chrome
         /// </summary>
         /// <param name="message"></param>
         private void WebSocketSend(string message)
@@ -113,38 +135,20 @@ namespace ChromeHtmlToPdfLib
         }
 
         /// <summary>
-        /// Raised when a <see cref="_webSocket"/> error occurs
+        ///     Raised when a <see cref="_webSocket" /> error occurs
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="errorEventArgs"></param>
         private void WebSocketOnError(object sender, ErrorEventArgs errorEventArgs)
         {
-            throw new WebSocketException($"An error occured while sending the JSON message '{_message}' to Chrome", errorEventArgs.Exception);
-        }
-        #endregion
-
-        #region GetAvailableSessions
-        /// <summary>
-        /// Returns all the available Chrome remote debugging sesssions
-        /// </summary>
-        /// <param name="remoteDebuggingUri"></param>
-        /// <returns></returns>
-        internal List<RemoteSessionsResponse> GetAvailableSessions(Uri remoteDebuggingUri)
-        {
-            var request = (HttpWebRequest)WebRequest.Create(remoteDebuggingUri + "json");
-            using (var response = request.GetResponse())
-            using (var responseStream = response.GetResponseStream())
-            {
-                if (responseStream == null) throw new InvalidOperationException();
-                var streamReader = new StreamReader(responseStream);
-                return RemoteSessionsResponse.FromJson(streamReader.ReadToEnd());
-            }
+            throw new WebSocketException($"An error occured while sending the JSON message '{_message}' to Chrome",
+                errorEventArgs.Exception);
         }
         #endregion
 
         #region NavigateTo
         /// <summary>
-        /// Instructs Chrome to navigate to the given <paramref name="uri"/>
+        ///     Instructs Chrome to navigate to the given <paramref name="uri" />
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="waitForNetworkIdle">Wait until all external sources are loaded</param>
@@ -152,7 +156,7 @@ namespace ChromeHtmlToPdfLib
         /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
         public void NavigateTo(Uri uri, bool waitForNetworkIdle, int? timeout = null)
         {
-            WebSocketSend(new Message { Id = MessageId, Method = "Page.enable" }.ToJson());
+            WebSocketSend(new Message {Id = MessageId, Method = "Page.enable"}.ToJson());
 
             var message = new Message
             {
@@ -166,17 +170,15 @@ namespace ChromeHtmlToPdfLib
 
             EventHandler<MessageReceivedEventArgs> messageReceived = (sender, args) =>
             {
-                //File.AppendAllText("d:\\trace.txt", args.Message + Environment.NewLine);
+                File.AppendAllText("d:\\trace.txt", args.Message + Environment.NewLine);
+                CheckForError(args.Message);
                 var page = PageEvent.FromJson(args.Message);
 
                 if (!uri.IsFile)
                 {
-                    if (waitForNetworkIdle)
-                    {
-                        if (page.Params?.Name == "networkIdle")
+                    if (waitForNetworkIdle && page.Params?.Name == "networkIdle")
                             waitEvent.Set();
-                    }
-                    else if (page.Method == "Page.lifecycleEvent" && page.Params.Name == "DOMContentLoaded")
+                    else if (page.Method == "Page.lifecycleEvent" && page.Params?.Name == "DOMContentLoaded")
                         waitEvent.Set();
                 }
                 else if (page.Method == "Page.loadEventFired")
@@ -194,13 +196,13 @@ namespace ChromeHtmlToPdfLib
 
             _webSocket.MessageReceived -= messageReceived;
 
-            WebSocketSend(new Message { Id = MessageId, Method = "Page.disable" }.ToJson());
+            WebSocketSend(new Message {Id = MessageId, Method = "Page.disable"}.ToJson());
         }
         #endregion
 
         #region WaitForWindowStatus
         /// <summary>
-        /// Wait until the javascript window.status is returning the given <paramref name="status"/>
+        ///     Wait until the javascript window.status is returning the given <paramref name="status" />
         /// </summary>
         /// <param name="status">The case insensitive status</param>
         /// <param name="timeout">Continue after reaching the set timeout in milliseconds</param>
@@ -223,6 +225,7 @@ namespace ChromeHtmlToPdfLib
 
             EventHandler<MessageReceivedEventArgs> messageReceived = (sender, args) =>
             {
+                CheckForError(args.Message);
                 var evaluate = Evaluate.FromJson(args.Message);
                 if (evaluate.Result?.Result?.Value == status)
                 {
@@ -245,18 +248,20 @@ namespace ChromeHtmlToPdfLib
 
             stopWatch.Stop();
             _webSocket.MessageReceived -= messageReceived;
-            
+
             return match;
         }
         #endregion
 
         #region PrintToPdf
         /// <summary>
-        /// Instructs Chrome to print the page
+        ///     Instructs Chrome to print the page
         /// </summary>
-        /// <param name="pageSettings"><see cref="PageSettings"/></param>
+        /// <param name="pageSettings">
+        ///     <see cref="PageSettings" />
+        /// </param>
         /// <remarks>
-        /// See https://chromedevtools.github.io/devtools-protocol/tot/Page/#method-printToPDF
+        ///     See https://chromedevtools.github.io/devtools-protocol/tot/Page/#method-printToPDF
         /// </remarks>
         /// <returns>
         ///     <code>
@@ -294,9 +299,10 @@ namespace ChromeHtmlToPdfLib
 
             var waitEvent = new ManualResetEvent(false);
 
-            EventHandler <MessageReceivedEventArgs> messageReceived = (sender, args) =>
+            EventHandler<MessageReceivedEventArgs> messageReceived = (sender, args) =>
             {
                 //File.AppendAllText("d:\\trace.txt", args.Message + Environment.NewLine);
+                CheckForError(args.Message);
                 response = PrintToPdfResponse.FromJson(args.Message);
                 if (response.Result?.Data != null)
                     waitEvent.Set();
@@ -308,6 +314,43 @@ namespace ChromeHtmlToPdfLib
             _webSocket.MessageReceived -= messageReceived;
 
             return response;
+        }
+        #endregion
+
+        #region CheckForError
+        /// <summary>
+        ///     Checks if <paramref name="message"/> contains an error and if so raises an exception
+        /// </summary>
+        /// <param name="message"></param>
+        private void CheckForError(string message)
+        {
+            var error = Error.FromJson(message);
+            if (error.InnerError.Code != 0)
+                throw new ChromeException(error.InnerError.Message);
+        }
+        #endregion
+
+        #region Close
+        /// <summary>
+        ///     Instructs Chrome to close
+        /// </summary>
+        /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
+        public void Close()
+        {
+            var message = new Message
+            {
+                Id = MessageId,
+                Method = "Browser.close"
+            };
+
+            EventHandler<MessageReceivedEventArgs> messageReceived = (sender, args) =>
+            {
+                File.AppendAllText("d:\\trace.txt", args.Message + Environment.NewLine);
+            };
+
+            _webSocket.MessageReceived += messageReceived;
+            WebSocketSend(message.ToJson());
+            _webSocket.MessageReceived -= messageReceived;
         }
         #endregion
 

@@ -28,17 +28,14 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Net.NetworkInformation;
 using System.Security;
 using System.Text;
-using System.Threading;
 using ChromeHtmlToPdfLib.Settings;
 using Microsoft.Win32;
 using System.Management;
 using System.Net;
-using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Threading;
 using ChromeHtmlToPdfLib.Enums;
 using ChromeHtmlToPdfLib.Helpers;
 
@@ -49,10 +46,6 @@ namespace ChromeHtmlToPdfLib
     /// </summary>
     public class Converter : IDisposable
     {
-        #region Const
-        private string ChromeMutexName = "ChromeHtmlToPdfMutex";
-        #endregion
-
         #region Fields
         /// <summary>
         ///     When set then logging is written to this stream
@@ -98,11 +91,6 @@ namespace ChromeHtmlToPdfLib
         ///     The process id under which Chrome is running
         /// </summary>
         private Process _chromeProcess;
-
-        /// <summary>
-        ///     The portrange to use when starting Chrome
-        /// </summary>
-        private readonly PortRangeSettings _portRange;
 
         /// <summary>
         ///     Handles the communication with Chrome devtools
@@ -335,10 +323,6 @@ namespace ChromeHtmlToPdfLib
         /// <param name="chromeExeFileName">When set then this has to be tThe full path to the chrome executable.
         ///      When not set then then the converter tries to find Chrome.exe by first looking in the path
         ///      where this library exists. After that it tries to find it by looking into the registry</param>
-        /// <param name="portRange">
-        ///     Force the converter to pick a port from the given range. When not set then the port range 9222
-        ///     - 9322 is used
-        /// </param>
         /// <param name="userProfile">
         ///     If set then this directory will be used to store a user profile.
         ///     Leave blank or set to <c>null</c> if you want to use the default Chrome userprofile location
@@ -350,7 +334,6 @@ namespace ChromeHtmlToPdfLib
         ///     does not exists
         /// </exception>
         public Converter(string chromeExeFileName = null,
-                         PortRangeSettings portRange = null,
                          string userProfile = null,
                          Stream logStream = null)
         {
@@ -366,7 +349,6 @@ namespace ChromeHtmlToPdfLib
                 throw new FileNotFoundException("Could not find chrome.exe");
 
             _chromeExeFileName = chromeExeFileName;
-            _portRange = portRange;
 
             if (!string.IsNullOrWhiteSpace(userProfile))
             {
@@ -385,32 +367,6 @@ namespace ChromeHtmlToPdfLib
         ~Converter()
         {
             Dispose();
-        }
-        #endregion
-
-        #region GetUnusedPort
-        /// <summary>
-        ///     Returns an unused port
-        /// </summary>
-        /// <param name="portRange">The port range to use</param>
-        /// <returns></returns>
-        private static int GetUnusedPort(PortRangeSettings portRange)
-        {
-            var startPort = 9222;
-            var endPort = 9322;
-
-            if (portRange != null)
-            {
-                startPort = portRange.Start;
-                endPort = portRange.End;
-            }
-
-            var properties = IPGlobalProperties.GetIPGlobalProperties();
-            var tcpEndPoints = properties.GetActiveTcpListeners();
-            var usedPorts = tcpEndPoints.Select(p => p.Port).ToList();
-            var unusedPort = Enumerable.Range(startPort, endPort - startPort)
-                .FirstOrDefault(port => !usedPorts.Contains(port));
-            return unusedPort;
         }
         #endregion
 
@@ -444,113 +400,70 @@ namespace ChromeHtmlToPdfLib
 
             WriteToLog($"Starting Chrome from location {_chromeExeFileName}");
 
-            using (var mutex = new Mutex(false, ChromeMutexName))
+            _chromeProcess = new Process();
+            var processStartInfo = new ProcessStartInfo
             {
-                var i = 1;
+                FileName = _chromeExeFileName,
+                Arguments = string.Join(" ", _defaultArguments),
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            };
 
-                while (true)
-                {
+            if (!string.IsNullOrWhiteSpace(_userName))
+            {
+                var userName = string.Empty;
 
-                    bool mutexAcquired;
-                    try
-                    {
-                        mutexAcquired = mutex.WaitOne();
-                    }
-                    catch (AbandonedMutexException)
-                    {
-                        mutexAcquired = true;
-                    }
+                if (_userName.Contains("\\"))
+                    userName = _userName.Split('\\')[1];
 
-                    if (!mutexAcquired)
-                    {
-                        WriteToLog("Could not acquire Chrome locking mutext");
-                        return;
-                    }
+                var domain = _userName.Split('\\')[0];
 
-                    try
-                    {
-                        // Find a free remote debugging port
-                        var port = GetUnusedPort(_portRange);
-                        // https://peter.sh/experiments/chromium-command-line-switches/3/
-                        SetDefaultArgument("--remote-debugging-port", port.ToString());
+                WriteToLog($"Starting Chrome with user '{userName}' on domain '{domain}'");
 
-                        //var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                processStartInfo.Domain = domain;
+                processStartInfo.UserName = userName;
 
-                        // TODO: Add support for --remote-debugging-socket-fd, this way we probably can avoid using the mutex
-                        //SetDefaultArgument("--remote-debugging-socket-fd", socket.Handle.ToString());
+                var secureString = new SecureString();
+                foreach (var t in _password)
+                    secureString.AppendChar(t);
 
-                        var processStartInfo = new ProcessStartInfo
-                        {
-                            FileName = _chromeExeFileName,
-                            Arguments = string.Join(" ", _defaultArguments),
-                            CreateNoWindow = true,
-                            RedirectStandardInput = false,
-                            RedirectStandardOutput = true,
-                            RedirectStandardError = true,
-                            UseShellExecute = false,
-                            WindowStyle = ProcessWindowStyle.Normal
-                        };
-
-                        if (!string.IsNullOrWhiteSpace(_userName))
-                        {
-                            var userName = string.Empty;
-
-                            if (_userName.Contains("\\"))
-                                userName = _userName.Split('\\')[1];
-
-                            var domain = _userName.Split('\\')[0];
-
-                            WriteToLog($"Starting Chrome with user '{userName}' on domain '{domain}'");
-
-                            processStartInfo.Domain = domain;
-                            processStartInfo.UserName = userName;
-
-                            var secureString = new SecureString();
-                            foreach (var t in _password)
-                                secureString.AppendChar(t);
-
-                            processStartInfo.Password = secureString;
-                        }
-
-                        _chromeProcess = Process.Start(processStartInfo);
-                        if (_chromeProcess == null)
-                            throw new ChromeException("Could not start Chrome");
-
-                        WriteToLog($"Chrome started on port {port}");
-
-                        _chromeProcess.WaitForInputIdle();
-
-                        if (_chromeProcess.HasExited)
-                        {
-                            if (i >= 5)
-                            {
-                                WriteToLog("Chrome process: " + _chromeExeFileName);
-                                WriteToLog("Arguments used: " + string.Join(" ", _defaultArguments));
-                                var exception =
-                                    ExceptionHelpers.GetInnerException(
-                                        Marshal.GetExceptionForHR(_chromeProcess.ExitCode));
-                                WriteToLog("Exception: " + exception);
-                                throw new ChromeException(
-                                    $"Could not start Chrome - retried {i} times, " + exception);
-                            }
-
-                            Thread.Sleep(i * 50);
-                            i++;
-                            continue;
-                        }
-
-                        var devProtocol = new Uri($"http://localhost:{port}");
-                        WriteToLog($"Connecting to dev protocol on url '{devProtocol}'");
-                        _communicator = new Communicator(devProtocol);
-                        WriteToLog("Connected to dev protocol");
-                        break;
-                    }
-                    finally
-                    {
-                        mutex.ReleaseMutex();
-                    }
-                }
+                processStartInfo.Password = secureString;
             }
+
+            _chromeProcess.StartInfo = processStartInfo;
+
+            var waitEvent = new ManualResetEvent(false);
+
+            _chromeProcess.ErrorDataReceived += (sender, args) =>
+            {
+                if (args.Data == null) return;
+
+                if (args.Data.StartsWith("DevTools listening on"))
+                {
+                    // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
+                    _communicator = new Communicator(args.Data.Replace("DevTools listening on ", string.Empty));
+                    WriteToLog("Connected to dev protocol");
+                    waitEvent.Set();
+                }
+                else if (!string.IsNullOrWhiteSpace(args.Data))
+                    WriteToLog($"Error: {args.Data}");
+            };
+
+            _chromeProcess.Exited += (sender, args) =>
+            {
+                WriteToLog("Chrome process: " + _chromeExeFileName);
+                WriteToLog("Arguments used: " + string.Join(" ", _defaultArguments));
+                var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromeProcess.ExitCode));
+                WriteToLog("Exception: " + exception);
+                throw new ChromeException("Could not start Chrome, " + exception);
+            };
+
+            _chromeProcess.Start();
+            _chromeProcess.BeginErrorReadLine();
+            waitEvent.WaitOne();
+
+            WriteToLog("Chrome started");
         }
         #endregion
 
@@ -596,6 +509,7 @@ namespace ChromeHtmlToPdfLib
             SetDefaultArgument("--allow-insecure-localhost");
             SetDefaultArgument("--hide-scrollbars");
             SetDefaultArgument("--safebrowsing-disable-auto-update");
+            SetDefaultArgument("--remote-debugging-port", "0");
             SetWindowSize(WindowSize.HD_1366_768);
         }
         #endregion
@@ -1067,6 +981,8 @@ namespace ChromeHtmlToPdfLib
         {
             try
             {
+                _communicator.Close();
+
                 if (_disposed || _chromeProcess == null) return;
                 WriteToLog("Stopping Chrome");
                 if (_chromeProcess == null) return;

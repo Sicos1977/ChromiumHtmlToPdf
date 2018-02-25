@@ -43,7 +43,7 @@ namespace ChromeHtmlToPdf
         {
             try
             {
-                ParseCommandlineParameters(args, out var options, out var portRangeSettings);
+                ParseCommandlineParameters(args, out var options);
 
                 var maxTasks = SetMaxConcurrencyLevel(options);
 
@@ -76,7 +76,7 @@ namespace ChromeHtmlToPdf
                         for (var i = 0; i < maxTasks; i++)
                         {
                             var i1 = i;
-                            _workerTasks.Add(_taskFactory.StartNew(() => ConvertWithTask(options, portRangeSettings, (i1 + 1).ToString())));
+                            _workerTasks.Add(_taskFactory.StartNew(() => ConvertWithTask(options, (i1 + 1).ToString())));
                         }
                         WriteToLog("Started");
 
@@ -88,7 +88,7 @@ namespace ChromeHtmlToPdf
                     }
                     else
                     {
-                        ConvertWithTask(options, portRangeSettings, null);
+                        ConvertWithTask(options, null);
                     }
 
                     // Write conversion information to output file
@@ -103,7 +103,7 @@ namespace ChromeHtmlToPdf
                 }
                 else
                 {
-                    Convert(options, portRangeSettings);
+                    Convert(options);
                 }
 
                 Environment.Exit(0);
@@ -118,15 +118,11 @@ namespace ChromeHtmlToPdf
 
         #region ParseCommandlineParameters
         /// <summary>
-        /// Parses the commandline parameters and returns these as an <paramref name="options"/> and
-        /// <paramref name="portRangeSettings"/> object
+        /// Parses the commandline parameters and returns these as an <paramref name="options"/>object
         /// </summary>
         /// <param name="args"></param>
         /// <param name="options"><see cref="Options"/></param>
-        /// <param name="portRangeSettings"><see cref="PortRangeSettings"/></param>
-        private static void ParseCommandlineParameters(IEnumerable<string> args, 
-            out Options options, 
-            out PortRangeSettings portRangeSettings)
+        private static void ParseCommandlineParameters(IEnumerable<string> args, out Options options)
         {
             Options tempOptions = null;
 
@@ -151,19 +147,12 @@ namespace ChromeHtmlToPdf
 
             options = tempOptions;
 
-            portRangeSettings = null;
-            string result = null;
-
-            if (errors || !GetPortRangeSettings(options, out result, out portRangeSettings))
+            if (errors)
             {
                 var helpText = HelpText.AutoBuild(parserResult);
 
                 helpText.AddPreOptionsText("Example usage:");
                 helpText.AddPreOptionsText("    ChromeHtmlToPdf --input https://www.google.nl --output c:\\google.pdf");
-
-                if (!string.IsNullOrWhiteSpace(result))
-                    helpText.AddPreOptionsText(result);
-
                 helpText.AddEnumValuesToHelpText = true;
                 helpText.AdditionalNewLineAfterOption = false;
                 helpText.AddOptions(parserResult);
@@ -240,72 +229,6 @@ namespace ChromeHtmlToPdf
         }
         #endregion
 
-        #region GetPortRangeSettings
-        /// <summary>
-        /// Parses the port(range) settings from the commandline
-        /// </summary>
-        /// <param name="options"><see cref="Options"/></param>
-        /// <param name="result"></param>
-        /// <param name="portRangeSettings"><see cref="PortRangeSettings"/></param>
-        /// <returns><c>true</c> when the portrange options are valid</returns>
-        private static bool GetPortRangeSettings(Options options,
-                                                 out string result, 
-                                                 out PortRangeSettings portRangeSettings)
-        {
-            int start;
-            var end = 0;
-            result = string.Empty;
-            portRangeSettings = null;
-
-            var portRangeParts = options.PortRange.Split('-');
-
-            if (portRangeParts.Length > 2)
-            {
-                result = "Portrange should only contain 1 or 2 parts, e.g 9222 or 9222-9322";
-                return false;
-            }
-
-            switch (portRangeParts.Length)
-            {
-                case 2:
-                    if (!int.TryParse(portRangeParts[0], out start))
-                    {
-                        result = $"The start port {portRangeParts[0]} is not valid";
-                        return false;
-                    }
-
-                    if (!int.TryParse(portRangeParts[1], out end))
-                    {
-                        result = $"The end port {portRangeParts[1]} is not valid";
-                        return false;
-                    }
-
-                    if (start >= end)
-                    {
-                        result = "The end port needs to be bigger then the start port";
-                        return false;
-                    }
-
-                    break;
-
-                case 1:
-                    if (!int.TryParse(portRangeParts[0], out start))
-                    {
-                        result = $"The port {portRangeParts[0]} is not valid";
-                        return false;
-                    }
-                    break;
-
-                default:
-                    result = "Port(range) is blank";
-                    return false;
-            }
-
-            portRangeSettings = new PortRangeSettings(start, end);
-            return true;
-        }
-        #endregion
-
         #region SetConverterSettings
         /// <summary>
         /// Sets the converter settings
@@ -350,12 +273,11 @@ namespace ChromeHtmlToPdf
         /// Convert a single <see cref="ConversionItem"/> to PDF
         /// </summary>
         /// <param name="options"></param>
-        /// <param name="portRangeSettings"></param>
-        private static void Convert(Options options, PortRangeSettings portRangeSettings)
+        private static void Convert(Options options)
         {
             var pageSettings = GetPageSettings(options);
 
-            using (var converter = new Converter(options.ChromeLocation, portRangeSettings, logStream: Console.OpenStandardOutput()))
+            using (var converter = new Converter(options.ChromeLocation, logStream: Console.OpenStandardOutput()))
             {
                 SetConverterSettings(converter, options);
                 converter.ConvertToPdf(CheckInput(options), 
@@ -399,15 +321,13 @@ namespace ChromeHtmlToPdf
         /// that are in the <see cref="_itemsToConvert"/> queue
         /// </summary>
         /// <param name="options"></param>
-        /// <param name="portRangeSettings"></param>
         /// <param name="instanceId"></param>
         private static void ConvertWithTask(Options options, 
-                                            PortRangeSettings portRangeSettings,
                                             string instanceId)
         {
             var pageSettings = GetPageSettings(options);
 
-            using (var converter = new Converter(options.ChromeLocation, portRangeSettings, logStream: Console.OpenStandardOutput()))
+            using (var converter = new Converter(options.ChromeLocation, logStream: Console.OpenStandardOutput()))
             {
                 converter.InstanceId = instanceId;
 

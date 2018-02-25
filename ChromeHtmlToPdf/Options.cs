@@ -158,15 +158,6 @@ namespace ChromeHtmlToPdf
         public string ChromeUserProfile { get; set; }
 
         /// <summary>
-        ///     The default port to use when communicating with Chrome
-        /// </summary>
-        [Option("portrange", Default = "9222-9322", Required = false,
-            HelpText =
-                "The port(range) to use when communicating with Chrome. For example 9222-9322 when setting a port range"
-        )]
-        public string PortRange { get; set; }
-
-        /// <summary>
         ///     This tells Chrome to use a custom proxy configuration
         /// </summary>
         [Option("proxy-server", Required = false, HelpText = "This tells Chrome to use a custom proxy configuration")]
