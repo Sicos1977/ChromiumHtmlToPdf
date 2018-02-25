@@ -29,7 +29,7 @@ using Newtonsoft.Json;
 namespace ChromeHtmlToPdfLib.Protocol
 {
     /// <summary>
-    /// The JSON object that is returned when we dit request Chrome to send page events
+    /// The JSON object that is returned when we asked request Chrome to send page events
     /// </summary>
     public class PageEvent
     {

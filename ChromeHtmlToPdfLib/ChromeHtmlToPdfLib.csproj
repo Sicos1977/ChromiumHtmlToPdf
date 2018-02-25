@@ -100,6 +100,7 @@
     <Compile Include="Protocol\Expression.cs" />
     <Compile Include="Protocol\Message.cs" />
     <Compile Include="Protocol\MessageBase.cs" />
+    <Compile Include="Protocol\Page.cs" />
     <Compile Include="Protocol\PageEvent.cs" />
     <Compile Include="Protocol\PrintToPdfResponse.cs" />
     <Compile Include="Protocol\RemoteSessions.cs" />
