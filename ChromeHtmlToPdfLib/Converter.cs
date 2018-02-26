@@ -32,7 +32,6 @@ using System.Security;
 using System.Text;
 using ChromeHtmlToPdfLib.Settings;
 using Microsoft.Win32;
-using System.Management;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -442,7 +441,7 @@ namespace ChromeHtmlToPdfLib
                 if (args.Data.StartsWith("DevTools listening on"))
                 {
                     // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
-                    _communicator = new Communicator(args.Data.Replace("DevTools listening on ", string.Empty));
+                    _communicator = new Communicator(new Uri(args.Data.Replace("DevTools listening on ", string.Empty)));
                     WriteToLog("Connected to dev protocol");
                     waitEvent.Set();
                 }
@@ -765,36 +764,6 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
 
-        #region KillProcessAndChildren
-        /// <summary>
-        ///     Kill the process with given id and all it's children
-        /// </summary>
-        /// <param name="processId">The process id</param>
-        private void KillProcessAndChildren(int processId)
-        {
-            if (processId == 0) return;
-
-            var managedObjects =
-                new ManagementObjectSearcher($"Select * From Win32_Process Where ParentProcessID={processId}").Get();
-
-            if (managedObjects.Count > 0)
-            {
-                foreach (var managedObject in managedObjects)
-                    KillProcessAndChildren(Convert.ToInt32(managedObject["ProcessID"]));
-            }
-
-            try
-            {
-                var process = Process.GetProcessById(processId);
-                process.Kill();
-            }
-            catch (Exception exception)
-            {
-                WriteToLog(exception.Message);
-            }
-        }
-        #endregion
-
         #region ConvertToPdf
         /// <summary>
         ///     Converts the given <paramref name="inputUri" /> to PDF
@@ -802,7 +771,6 @@ namespace ChromeHtmlToPdfLib
         /// <param name="inputUri">The webpage to convert</param>
         /// <param name="outputStream">The output stream</param>
         /// <param name="pageSettings"><see cref="PageSettings"/></param>
-        /// <param name="waitForNetworkIdle">Wait until all external sources are loaded</param>
         /// <param name="waitForWindowStatus">Wait until the javascript window.status has this value before
         ///     rendering the PDF</param>
         /// <param name="waitForWindowsStatusTimeout"></param>
@@ -810,7 +778,6 @@ namespace ChromeHtmlToPdfLib
         public void ConvertToPdf(ConvertUri inputUri,
                                  Stream outputStream,
                                  PageSettings pageSettings,
-                                 bool waitForNetworkIdle,
                                  string waitForWindowStatus = "",
                                  int waitForWindowsStatusTimeout = 60000)
         {
@@ -835,10 +802,9 @@ namespace ChromeHtmlToPdfLib
 
                 StartChromeHeadless();
 
-                WriteToLog("Loading " + (inputUri.IsFile ? "file " + inputUri.OriginalString : "url " + inputUri) +
-                           (waitForNetworkIdle ? " and waiting until all resources are loaded" : string.Empty));
+                WriteToLog("Loading " + (inputUri.IsFile ? "file " + inputUri.OriginalString : "url " + inputUri));
 
-                _communicator.NavigateTo(inputUri, waitForNetworkIdle);
+                _communicator.NavigateTo(inputUri);
 
                 if (!string.IsNullOrWhiteSpace(waitForWindowStatus))
                 {
@@ -875,7 +841,6 @@ namespace ChromeHtmlToPdfLib
         /// <param name="inputUri">The webpage to convert</param>
         /// <param name="outputFile">The output file</param>
         /// <param name="pageSettings"><see cref="PageSettings"/></param>
-        /// <param name="waitForNetworkIdle">Wait until all external sources are loaded</param>
         /// <param name="waitForWindowStatus">Wait until the javascript window.status has this value before
         ///     rendering the PDF</param>
         /// <param name="waitForWindowsStatusTimeout"></param>
@@ -883,14 +848,13 @@ namespace ChromeHtmlToPdfLib
         public void ConvertToPdf(ConvertUri inputUri,
                                  string outputFile,
                                  PageSettings pageSettings,
-                                 bool waitForNetworkIdle,
                                  string waitForWindowStatus = "",
                                  int waitForWindowsStatusTimeout = 60000)
         {
             CheckIfOutputFolderExists(outputFile);
             using (var memoryStream = new MemoryStream())
             {
-                ConvertToPdf(inputUri, memoryStream, pageSettings, waitForNetworkIdle, waitForWindowStatus,
+                ConvertToPdf(inputUri, memoryStream, pageSettings, waitForWindowStatus,
                     waitForWindowsStatusTimeout);
 
                 using (var fileStream = File.Open(outputFile, FileMode.Create))
@@ -979,24 +943,11 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         public void Dispose()
         {
-            try
-            {
-                _communicator.Close();
-
-                if (_disposed || _chromeProcess == null) return;
-                WriteToLog("Stopping Chrome");
-                if (_chromeProcess == null) return;
-                _chromeProcess.Refresh();
-                if (_chromeProcess.HasExited) return;
-                KillProcessAndChildren(_chromeProcess.Id);
-                _chromeProcess = null;
-                WriteToLog("Chrome stopped");
-            }
-            catch (Exception exception)
-            {
-                WriteToLog(exception.Message);
-            }
-
+            if (_disposed) return;
+            WriteToLog("Stopping Chrome");
+            _communicator.Close();
+            WriteToLog("Chrome stopped");
+            _chromeProcess = null;
             _disposed = true;
         }
         #endregion

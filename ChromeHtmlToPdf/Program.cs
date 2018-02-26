@@ -283,7 +283,6 @@ namespace ChromeHtmlToPdf
                 converter.ConvertToPdf(CheckInput(options), 
                                        options.Output, 
                                        pageSettings, 
-                                       options.WaitForNetworkIdle, 
                                        options.WaitForWindowStatus,
                                        options.WaitForWindowStatusTimeOut);
             }
@@ -338,8 +337,7 @@ namespace ChromeHtmlToPdf
                     if (!_itemsToConvert.TryDequeue(out var itemToConvert)) continue;
                     try
                     {
-                        converter.ConvertToPdf(itemToConvert.InputUri, itemToConvert.OutputFile, pageSettings,
-                            options.WaitForNetworkIdle);
+                        converter.ConvertToPdf(itemToConvert.InputUri, itemToConvert.OutputFile, pageSettings);
 
                         itemToConvert.SetStatus(ConversionItemStatus.Success);
                     }

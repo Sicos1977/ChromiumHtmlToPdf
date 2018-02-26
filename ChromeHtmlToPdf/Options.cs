@@ -198,14 +198,6 @@ namespace ChromeHtmlToPdf
         public string Password { get; set; }
 
         /// <summary>
-        ///     The extra time in milliseconds to wait after the page has been loaded
-        /// </summary>
-        [Option("wait-for-network-idle", Required = false, Default = false,
-            HelpText = "Wait until Chrome signals that all networking is done (e.g. loading external sources like javascript files). " +
-                       "Normally this app waits until the DOMLoaded event is executed.")]
-        public bool WaitForNetworkIdle { get; set; }
-
-        /// <summary>
         ///     Use multithreading when converting. Only usefull if the parameter --inputlist is used
         /// </summary>
         [Option("multi-threading", Required = false, Default = false,
