@@ -28,6 +28,7 @@ using System;
 using System.Diagnostics;
 using System.Net.WebSockets;
 using System.Threading;
+using ChromeHtmlToPdfLib.Helpers;
 using ChromeHtmlToPdfLib.Protocol;
 using ChromeHtmlToPdfLib.Settings;
 using WebSocket4Net;
@@ -148,9 +149,12 @@ namespace ChromeHtmlToPdfLib
         ///     Instructs Chrome to navigate to the given <paramref name="uri" />
         /// </summary>
         /// <param name="uri"></param>
-        /// <param name="timeout">Timeout in milliseconds</param>
+        /// <param name="countdownTimer">If a <see cref="CountdownTimer"/> is set then
+        /// the method will raise an <see cref="ConversionTimedOutException"/> if the 
+        /// <see cref="CountdownTimer"/> reaches zero before finishing navigation</param>
         /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
-        public void NavigateTo(Uri uri, int? timeout = null)
+        /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer"/> reaches zero</exception>
+        public void NavigateTo(Uri uri, CountdownTimer countdownTimer = null)
         {
             _pageWebSocket.Send(new Message {Id = MessageId, Method = "Page.enable"}.ToJson());
 
@@ -166,7 +170,7 @@ namespace ChromeHtmlToPdfLib
 
             EventHandler<MessageReceivedEventArgs> messageReceived = (sender, args) =>
             {
-                System.IO.File.AppendAllText("d:\\trace.txt", args.Message + Environment.NewLine);
+                //System.IO.File.AppendAllText("d:\\trace.txt", args.Message + Environment.NewLine);
                 CheckForError(args.Message);
                 var page = PageEvent.FromJson(args.Message);
 
@@ -185,8 +189,12 @@ namespace ChromeHtmlToPdfLib
 
             _pageWebSocket.Send(message.ToJson());
 
-            if (timeout.HasValue)
-                waitEvent.WaitOne(timeout.Value);
+            if (countdownTimer != null)
+            {
+                waitEvent.WaitOne(countdownTimer.MillisecondsLeft);
+                if (countdownTimer.MillisecondsLeft == 0)
+                    throw new ConversionTimedOutException($"The {nameof(NavigateTo)} method timedout");
+            }
             else
                 waitEvent.WaitOne();
 
@@ -253,9 +261,10 @@ namespace ChromeHtmlToPdfLib
         /// <summary>
         ///     Instructs Chrome to print the page
         /// </summary>
-        /// <param name="pageSettings">
-        ///     <see cref="PageSettings" />
-        /// </param>
+        /// <param name="pageSettings"><see cref="PageSettings" /></param>
+        /// <param name="countdownTimer">If a <see cref="CountdownTimer"/> is set then
+        /// the method will raise an <see cref="ConversionTimedOutException"/> in the 
+        /// <see cref="CountdownTimer"/> reaches zero before finishing the printing to pdf</param>        
         /// <remarks>
         ///     See https://chromedevtools.github.io/devtools-protocol/tot/Page/#method-printToPDF
         /// </remarks>
@@ -270,7 +279,8 @@ namespace ChromeHtmlToPdfLib
         ///     </code>
         /// </returns>
         /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
-        internal PrintToPdfResponse PrintToPdf(PageSettings pageSettings)
+        /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer"/> reaches zero</exception>
+        internal PrintToPdfResponse PrintToPdf(PageSettings pageSettings, CountdownTimer countdownTimer = null)
         {
             var message = new Message
             {
@@ -306,7 +316,16 @@ namespace ChromeHtmlToPdfLib
 
             _pageWebSocket.MessageReceived += messageReceived;
             _pageWebSocket.Send(message.ToJson());
-            waitEvent.WaitOne();
+
+            if (countdownTimer != null)
+            {
+                waitEvent.WaitOne(countdownTimer.MillisecondsLeft);
+                if (countdownTimer.MillisecondsLeft == 0)
+                    throw new ConversionTimedOutException($"The {nameof(PrintToPdf)} method timedout");
+            }
+            else
+                waitEvent.WaitOne();
+
             _pageWebSocket.MessageReceived -= messageReceived;
 
             return response;
@@ -331,8 +350,11 @@ namespace ChromeHtmlToPdfLib
         /// <summary>
         ///     Instructs Chrome to close
         /// </summary>
+        /// <param name="countdownTimer">If a <see cref="CountdownTimer"/> is set then
+        /// the method will raise an <see cref="ConversionTimedOutException"/> in the 
+        /// <see cref="CountdownTimer"/> reaches zero before Chrome respons that it is going to close</param>    
         /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
-        public void Close()
+        public void Close(CountdownTimer countdownTimer = null)
         {
             var waitEvent = new ManualResetEvent(false);
 
@@ -351,7 +373,16 @@ namespace ChromeHtmlToPdfLib
 
             _browserWebSocket.MessageReceived += messageReceived;
             _browserWebSocket.Send(message.ToJson());
-            waitEvent.WaitOne();
+
+            if (countdownTimer != null)
+            {
+                waitEvent.WaitOne(countdownTimer.MillisecondsLeft);
+                if (countdownTimer.MillisecondsLeft == 0)
+                    throw new ConversionTimedOutException($"The {nameof(PrintToPdf)} method timedout");
+            }
+            else
+                waitEvent.WaitOne();
+
             _browserWebSocket.MessageReceived -= messageReceived;
         }
         #endregion

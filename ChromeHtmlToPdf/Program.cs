@@ -280,11 +280,14 @@ namespace ChromeHtmlToPdf
             using (var converter = new Converter(options.ChromeLocation, logStream: Console.OpenStandardOutput()))
             {
                 SetConverterSettings(converter, options);
-                converter.ConvertToPdf(CheckInput(options), 
-                                       options.Output, 
-                                       pageSettings, 
-                                       options.WaitForWindowStatus,
-                                       options.WaitForWindowStatusTimeOut);
+                for (var i = 0; i < 100; i++)
+                {
+                    converter.ConvertToPdf(CheckInput(options),
+                        options.Output,
+                        pageSettings,
+                        options.WaitForWindowStatus,
+                        options.WaitForWindowStatusTimeOut);
+                }
             }
         }
         #endregion
