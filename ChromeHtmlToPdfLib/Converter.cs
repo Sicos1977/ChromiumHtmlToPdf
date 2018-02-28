@@ -774,12 +774,16 @@ namespace ChromeHtmlToPdfLib
         /// <param name="waitForWindowStatus">Wait until the javascript window.status has this value before
         ///     rendering the PDF</param>
         /// <param name="waitForWindowsStatusTimeout"></param>
-        /// <exception cref="DirectoryNotFoundException"></exception>
+        /// <param name="conversionTimeout">An conversion timeout in milliseconds, if the conversion failes
+        /// to finished in the set amount of time then an <see cref="ConversionTimedOutException"/> is raised</param>
+        /// <exception cref="ConversionTimedOutException">Raised when <see cref="conversionTimeout"/> is set and the 
+        /// conversion fails to finish in this amount of time</exception>
         public void ConvertToPdf(ConvertUri inputUri,
                                  Stream outputStream,
                                  PageSettings pageSettings,
                                  string waitForWindowStatus = "",
-                                 int waitForWindowsStatusTimeout = 60000)
+                                 int waitForWindowsStatusTimeout = 60000,
+                                 int? conversionTimeout = null)
         {
 
             if (inputUri.IsFile && !File.Exists(inputUri.OriginalString))
@@ -802,22 +806,47 @@ namespace ChromeHtmlToPdfLib
 
                 StartChromeHeadless();
 
+                CountdownTimer countdownTimer = null;
+
+                if (conversionTimeout.HasValue)
+                {
+                    if (conversionTimeout <= 1)
+                        throw new ArgumentOutOfRangeException($"The value for {nameof(countdownTimer)} has to be a value equal to 1 or greater");
+
+                    WriteToLog($"Conversion timeout set to {conversionTimeout.Value} milliseconds");
+
+                    countdownTimer = new CountdownTimer(conversionTimeout.Value);
+                    countdownTimer.Start();
+                }
+
                 WriteToLog("Loading " + (inputUri.IsFile ? "file " + inputUri.OriginalString : "url " + inputUri));
 
-                _communicator.NavigateTo(inputUri);
+                _communicator.NavigateTo(inputUri, countdownTimer);
 
                 if (!string.IsNullOrWhiteSpace(waitForWindowStatus))
                 {
+                    if (conversionTimeout.HasValue)
+                    {
+                        WriteToLog("Conversion timeout paused because we are waiting for a window.status");
+                        countdownTimer.Stop();
+                    }
+
                     WriteToLog($"Waiting for window.status '{waitForWindowStatus}' or a timeout of {waitForWindowsStatusTimeout} milliseconds");
                     var match = _communicator.WaitForWindowStatus(waitForWindowStatus, waitForWindowsStatusTimeout);
                     WriteToLog(!match ? "Waiting timed out" : $"Window status equaled {waitForWindowStatus}");
+
+                    if (conversionTimeout.HasValue)
+                    {
+                        WriteToLog("Conversion timeout started again because we are done waiting for a window.status");
+                        countdownTimer.Start();
+                    }
                 }
 
                 WriteToLog((inputUri.IsFile ? "File" : "Url") + " loaded");
 
                 WriteToLog("Converting to PDF");
 
-                using (var memorystream = new MemoryStream(_communicator.PrintToPdf(pageSettings).Bytes))
+                using (var memorystream = new MemoryStream(_communicator.PrintToPdf(pageSettings, countdownTimer).Bytes))
                 {
                     memorystream.Position = 0;
                     memorystream.CopyTo(outputStream);
@@ -844,18 +873,23 @@ namespace ChromeHtmlToPdfLib
         /// <param name="waitForWindowStatus">Wait until the javascript window.status has this value before
         ///     rendering the PDF</param>
         /// <param name="waitForWindowsStatusTimeout"></param>
+        /// <param name="conversionTimeout">An conversion timeout in milliseconds, if the conversion failes
+        /// to finished in the set amount of time then an <see cref="ConversionTimedOutException"/> is raised</param>
+        /// <exception cref="ConversionTimedOutException">Raised when <see cref="conversionTimeout"/> is set and the 
+        /// conversion fails to finish in this amount of time</exception>
         /// <exception cref="DirectoryNotFoundException"></exception>
         public void ConvertToPdf(ConvertUri inputUri,
                                  string outputFile,
                                  PageSettings pageSettings,
                                  string waitForWindowStatus = "",
-                                 int waitForWindowsStatusTimeout = 60000)
+                                 int waitForWindowsStatusTimeout = 60000,
+                                 int? conversionTimeout = null)
         {
             CheckIfOutputFolderExists(outputFile);
             using (var memoryStream = new MemoryStream())
             {
                 ConvertToPdf(inputUri, memoryStream, pageSettings, waitForWindowStatus,
-                    waitForWindowsStatusTimeout);
+                    waitForWindowsStatusTimeout, conversionTimeout);
 
                 using (var fileStream = File.Open(outputFile, FileMode.Create))
                 {
