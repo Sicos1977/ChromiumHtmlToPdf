@@ -31,15 +31,9 @@ namespace ChromeHtmlToPdfLib.Protocol
     /// <summary>
     /// The JSON structure that is returned from Chrome when an expression is evaluated
     /// </summary>
-    public class Expression
+    public class Expression : MessageBase
     {
         #region Properties
-        /// <summary>
-        /// The message id
-        /// </summary>
-        [JsonProperty("id")]
-        public long Id { get; set; }
-
         /// <summary>
         /// <see cref="ExpressionResult"/>
         /// </summary>
@@ -53,13 +47,9 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// </summary>
         /// <param name="json"></param>
         /// <returns></returns>
-        public static Expression FromJson(string json)
+        public new static Expression FromJson(string json)
         {
-            return JsonConvert.DeserializeObject<Expression>(json, new JsonSerializerSettings
-            {
-                MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
-                DateParseHandling = DateParseHandling.None
-            });
+            return JsonConvert.DeserializeObject<Expression>(json);
         }
         #endregion
     }
@@ -133,7 +123,6 @@ namespace ChromeHtmlToPdfLib.Protocol
         #region Properties
         [JsonProperty("className")]
         public string ClassName { get; set; }
-
 
         [JsonProperty("description")]
         public string Description { get; set; }

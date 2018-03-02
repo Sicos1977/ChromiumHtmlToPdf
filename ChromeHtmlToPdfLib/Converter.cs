@@ -36,6 +36,7 @@ using System.Net;
 using System.Runtime.InteropServices;
 using System.Threading;
 using ChromeHtmlToPdfLib.Enums;
+using ChromeHtmlToPdfLib.Exceptions;
 using ChromeHtmlToPdfLib.Helpers;
 
 namespace ChromeHtmlToPdfLib
@@ -94,7 +95,7 @@ namespace ChromeHtmlToPdfLib
         /// <summary>
         ///     Handles the communication with Chrome devtools
         /// </summary>
-        private Communicator _communicator;
+        private Browser _communicator;
 
         /// <summary>
         ///     Keeps track is we already disposed our resources
@@ -441,7 +442,7 @@ namespace ChromeHtmlToPdfLib
                 if (args.Data.StartsWith("DevTools listening on"))
                 {
                     // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
-                    _communicator = new Communicator(new Uri(args.Data.Replace("DevTools listening on ", string.Empty)));
+                    _communicator = new Browser(new Uri(args.Data.Replace("DevTools listening on ", string.Empty)));
                     WriteToLog("Connected to dev protocol");
                     waitEvent.Set();
                 }

@@ -277,13 +277,13 @@ namespace ChromeHtmlToPdf
         {
             var pageSettings = GetPageSettings(options);
 
-            using (var converter = new Converter(options.ChromeLocation, logStream: Console.OpenStandardOutput()))
+            using (var browser = new Converter(options.ChromeLocation, logStream: Console.OpenStandardOutput()))
             {
-                SetConverterSettings(converter, options);
+                SetConverterSettings(browser, options);
                 for (var i = 0; i < 100; i++)
                 {
-                    converter.ConvertToPdf(CheckInput(options),
-                        options.Output,
+                    browser.ConvertToPdf(CheckInput(options),
+                        $"d:\\kees_{i}.pdf",
                         pageSettings,
                         options.WaitForWindowStatus,
                         options.WaitForWindowStatusTimeOut,
@@ -330,18 +330,18 @@ namespace ChromeHtmlToPdf
         {
             var pageSettings = GetPageSettings(options);
 
-            using (var converter = new Converter(options.ChromeLocation, logStream: Console.OpenStandardOutput()))
+            using (var browser = new Converter(options.ChromeLocation, logStream: Console.OpenStandardOutput()))
             {
-                converter.InstanceId = instanceId;
+                browser.InstanceId = instanceId;
 
-                SetConverterSettings(converter, options);
+                SetConverterSettings(browser, options);
 
                 while (!_itemsToConvert.IsEmpty)
                 {
                     if (!_itemsToConvert.TryDequeue(out var itemToConvert)) continue;
                     try
                     {
-                        converter.ConvertToPdf(itemToConvert.InputUri, itemToConvert.OutputFile, pageSettings);
+                        browser.ConvertToPdf(itemToConvert.InputUri, itemToConvert.OutputFile, pageSettings);
 
                         itemToConvert.SetStatus(ConversionItemStatus.Success);
                     }

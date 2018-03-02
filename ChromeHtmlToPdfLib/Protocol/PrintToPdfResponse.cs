@@ -25,7 +25,6 @@
 //
 
 using System;
-using System.IO;
 using Newtonsoft.Json;
 
 namespace ChromeHtmlToPdfLib.Protocol
@@ -59,11 +58,7 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// <returns></returns>
         public static PrintToPdfResponse FromJson(string json)
         {
-            return JsonConvert.DeserializeObject<PrintToPdfResponse>(json, new JsonSerializerSettings
-            {
-                MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
-                DateParseHandling = DateParseHandling.None
-            });
+            return JsonConvert.DeserializeObject<PrintToPdfResponse>(json);
         }
         #endregion
     }
@@ -73,10 +68,12 @@ namespace ChromeHtmlToPdfLib.Protocol
     /// </summary>
     public class PrintToPdfResult
     {
+        #region Properties
         /// <summary>
         /// The PDF as base64 string
         /// </summary>
         [JsonProperty("data")]
         public string Data { get; set; }
+        #endregion
     }
 }

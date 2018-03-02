@@ -5,15 +5,9 @@ namespace ChromeHtmlToPdfLib.Protocol
     /// <summary>
     /// The JSON object that is returned when we create a new Target (page)
     /// </summary>
-    public class Page
+    public class Page : MessageBase
     {
         #region Properties
-        /// <summary>
-        /// The id
-        /// </summary>
-        [JsonProperty("id")]
-        public long Id { get; set; }
-
         /// <summary>
         /// The result
         /// </summary>
@@ -27,20 +21,18 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// </summary>
         /// <param name="json"></param>
         /// <returns></returns>
-        public static Page FromJson(string json)
+        public new static Page FromJson(string json)
         {
-            return JsonConvert.DeserializeObject<Page>(json, new JsonSerializerSettings
-            {
-                MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
-                DateParseHandling = DateParseHandling.None
-            });
+            return JsonConvert.DeserializeObject<Page>(json);
         }
         #endregion
     }
 
     public class Result
     {
+        #region Propertie
         [JsonProperty("targetId")]
         public string TargetId { get; set; }
+        #endregion
     }
 }

@@ -55,17 +55,14 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// <returns></returns>
         public static PageEvent FromJson(string json)
         {
-            return JsonConvert.DeserializeObject<PageEvent>(json, new JsonSerializerSettings
-            {
-                MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
-                DateParseHandling = DateParseHandling.None
-            });
+            return JsonConvert.DeserializeObject<PageEvent>(json);
         }
         #endregion
     }
 
     public class Params
     {
+        #region Properties
         /// <summary>
         /// The parameters name
         /// </summary>
@@ -77,5 +74,6 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// </summary>
         [JsonProperty("timestamp")]
         public long Timestamp { get; set; }
+        #endregion
     }
 }

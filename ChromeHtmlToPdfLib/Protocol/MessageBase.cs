@@ -39,12 +39,29 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// </summary>
         [JsonProperty("id")]
         public int Id { get; set; }
+        #endregion
 
+        #region FromJson
         /// <summary>
-        /// The method that we want to execute in Chrome
+        /// Returns this object deserialized from the given <paramref name="json"/> string
         /// </summary>
-        [JsonProperty("method")]
-        public string Method { get; set; }
+        /// <param name="json"></param>
+        /// <returns></returns>
+        public static MessageBase FromJson(string json)
+        {
+            return JsonConvert.DeserializeObject<MessageBase>(json);
+        }
+        #endregion
+
+        #region ToJson
+        /// <summary>
+        /// Returns this object as a JSON string
+        /// </summary>
+        /// <returns></returns>
+        public string ToJson()
+        {
+            return JsonConvert.SerializeObject(this);
+        }
         #endregion
     }
 }

@@ -28,7 +28,7 @@ using System;
 using System.Runtime.Serialization;
 using ChromeHtmlToPdfLib.Protocol;
 
-namespace ChromeHtmlToPdfLib
+namespace ChromeHtmlToPdfLib.Exceptions
 {
     /// <summary>
     /// Raised when an error is returned from Chrome

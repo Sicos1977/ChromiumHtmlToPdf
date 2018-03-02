@@ -43,16 +43,12 @@
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="SuperSocket.ClientEngine, Version=0.9.0.0, Culture=neutral, PublicKeyToken=ee9af13f57f00acc, processorArchitecture=MSIL">
-      <HintPath>..\packages\SuperSocket.ClientEngine.Core.0.9.0\lib\net45\SuperSocket.ClientEngine.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Collections.Specialized, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Collections.Specialized.4.3.0\lib\net46\System.Collections.Specialized.dll</HintPath>
     </Reference>
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
-    <Reference Include="System.Management" />
     <Reference Include="System.Net.NameResolution, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Net.NameResolution.4.3.0\lib\net46\System.Net.NameResolution.dll</HintPath>
     </Reference>
@@ -75,20 +71,14 @@
       <HintPath>..\packages\System.Security.Cryptography.X509Certificates.4.3.2\lib\net461\System.Security.Cryptography.X509Certificates.dll</HintPath>
     </Reference>
     <Reference Include="System.Web" />
-    <Reference Include="WebSocket4Net, Version=0.15.1.10, Culture=neutral, PublicKeyToken=eb4e154b696bf72a, processorArchitecture=MSIL">
-      <HintPath>..\packages\WebSocket4Net.0.15.1\lib\net45\WebSocket4Net.dll</HintPath>
-    </Reference>
-    <Reference Include="XmpCore, Version=5.1.3.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\XmpCore.5.1.3\lib\net35\XmpCore.dll</HintPath>
-    </Reference>
-    <Reference Include="XmpCore.StrongName, Version=5.1.3.0, Culture=neutral, PublicKeyToken=961f4f366277b80e, processorArchitecture=MSIL">
-      <HintPath>..\packages\XmpCore.StrongName.5.1.3\lib\net35\XmpCore.StrongName.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ChromeException.cs" />
-    <Compile Include="Communicator.cs" />
-    <Compile Include="ConverionTimedOut.cs" />
+    <Compile Include="Exceptions\ChromeException.cs" />
+    <Compile Include="Browser.cs" />
+    <Compile Include="Connection.cs" />
+    <Compile Include="Exceptions\ConversionException.cs" />
+    <Compile Include="Exceptions\TaskTimedOutException.cs" />
+    <Compile Include="Exceptions\ConverionTimedOutException.cs" />
     <Compile Include="Converter.cs" />
     <Compile Include="ConvertUri.cs" />
     <Compile Include="Helpers\CountdownTimer.cs" />
@@ -105,7 +95,6 @@
     <Compile Include="Protocol\Page.cs" />
     <Compile Include="Protocol\PageEvent.cs" />
     <Compile Include="Protocol\PrintToPdfResponse.cs" />
-    <Compile Include="Protocol\RemoteSessions.cs" />
     <Compile Include="Settings\PageSettings.cs" />
     <Compile Include="Enums\PaperFormats.cs" />
     <Compile Include="Enums\WindowSize.cs" />

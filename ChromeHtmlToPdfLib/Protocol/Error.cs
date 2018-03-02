@@ -31,15 +31,9 @@ namespace ChromeHtmlToPdfLib.Protocol
     /// <summary>
     /// The JSON structure that is returned from Chrome when an Error occurs
     /// </summary>
-    public class Error
+    public class Error : MessageBase
     {
         #region Properties
-        /// <summary>
-        /// The message id
-        /// </summary>
-        [JsonProperty("id")]
-        public long Id { get; set; }
-
         /// <summary>
         /// <see cref="InnerError"/>
         /// </summary>
@@ -53,13 +47,9 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// </summary>
         /// <param name="json"></param>
         /// <returns></returns>
-        public static Error FromJson(string json)
+        public new static Error FromJson(string json)
         {
-            return JsonConvert.DeserializeObject<Error>(json, new JsonSerializerSettings
-            {
-                MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
-                DateParseHandling = DateParseHandling.None
-            });
+            return JsonConvert.DeserializeObject<Error>(json);
         }
         #endregion
     }

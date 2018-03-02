@@ -36,6 +36,12 @@ namespace ChromeHtmlToPdfLib.Protocol
     {
         #region Properties
         /// <summary>
+        /// The method executed by Chrome
+        /// </summary>
+        [JsonProperty("method")]
+        public string Method { get; set; }
+
+        /// <summary>
         /// The parameters that we want to feed into Chrome
         /// </summary>
         [JsonProperty("params")]
@@ -62,21 +68,6 @@ namespace ChromeHtmlToPdfLib.Protocol
         public void AddParameter(string name, object value)
         {
             Parameters.Add(name, value);   
-        }
-        #endregion
-
-        #region ToJson
-        /// <summary>
-        /// Returns this object as a JSON string
-        /// </summary>
-        /// <returns></returns>
-        public string ToJson()
-        {
-            return JsonConvert.SerializeObject(this, new JsonSerializerSettings
-            {
-                MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
-                DateParseHandling = DateParseHandling.None,
-            });
         }
         #endregion
     }
