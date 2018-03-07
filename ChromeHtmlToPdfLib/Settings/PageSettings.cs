@@ -44,6 +44,19 @@ namespace ChromeHtmlToPdfLib.Settings
         ///     Display header and footer. Defaults to false.
         /// </summary>
         public bool DisplayHeaderFooter { get; set; }
+        
+        /// <summary>
+        ///     HTML template for the print header. 
+        ///     Should be valid HTML markup with following classes used to inject printing values into them: 
+        ///     - date - formatted print date - title - document title - url - document location - pageNumber - current page number 
+        ///     - totalPages - total pages in the document For example, would generate span containing the title.
+        /// </summary>
+        public string HeaderTemplate { get; set; }
+        
+        /// <summary>
+        ///     HTML template for the print footer. Should use the same format as the headerTemplate.
+        /// </summary>
+        public string FooterTemplate { get; set; }
 
         /// <summary>
         ///     Print background graphics. Defaults to false.
@@ -94,6 +107,11 @@ namespace ChromeHtmlToPdfLib.Settings
         ///     Whether to silently ignore invalid but successfully parsed page ranges, such as '3-2'. Defaults to false.
         /// </summary>
         public bool IgnoreInvalidPageRanges { get; set; }
+        
+        /// <summary>
+        ///     Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled to fit the paper size.
+        /// </summary>
+        public bool PreferCSSPageSize { get; set; }
         #endregion
 
         #region PageSettings
