@@ -241,14 +241,14 @@ namespace ChromeHtmlToPdfLib
         /// the method will raise an <see cref="ConversionTimedOutException"/> in the 
         /// <see cref="CountdownTimer"/> reaches zero before Chrome respons that it is going to close</param>    
         /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
-        public async void Close(CountdownTimer countdownTimer = null)
+        public void Close(CountdownTimer countdownTimer = null)
         {
             var message = new Message {Method = "Browser.close"};
 
             if (countdownTimer != null)
-                await _browserConnection.SendAsync(message).Timeout(countdownTimer.MillisecondsLeft);
+                _browserConnection.SendAsync(message).Timeout(countdownTimer.MillisecondsLeft).GetAwaiter();
             else
-                await _browserConnection.SendAsync(message);
+                _browserConnection.SendAsync(message).GetAwaiter();
         }
         #endregion
 
