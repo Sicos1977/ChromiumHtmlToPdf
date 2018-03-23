@@ -980,7 +980,7 @@ namespace ChromeHtmlToPdfLib
         {
             if (_disposed) return;
             WriteToLog("Stopping Chrome");
-            _communicator.Close();
+            _communicator?.Close();
             WriteToLog("Chrome stopped");
             _chromeProcess = null;
             _disposed = true;
