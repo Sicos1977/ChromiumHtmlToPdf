@@ -280,15 +280,12 @@ namespace ChromeHtmlToPdf
             using (var browser = new Converter(options.ChromeLocation, logStream: Console.OpenStandardOutput()))
             {
                 SetConverterSettings(browser, options);
-                for (var i = 0; i < 100; i++)
-                {
-                    browser.ConvertToPdf(CheckInput(options),
-                        $"d:\\kees_{i}.pdf",
-                        pageSettings,
-                        options.WaitForWindowStatus,
-                        options.WaitForWindowStatusTimeOut,
-                        5000);
-                }
+                browser.ConvertToPdf(CheckInput(options),
+                    options.Output,
+                    pageSettings,
+                    options.WaitForWindowStatus,
+                    options.WaitForWindowStatusTimeOut,
+                    options.);
             }
         }
         #endregion

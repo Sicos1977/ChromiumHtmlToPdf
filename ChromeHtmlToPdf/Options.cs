@@ -22,7 +22,7 @@ namespace ChromeHtmlToPdf
         [Option("input-is-list", Required = false,
             HelpText =
                 "Tells this app that --input is a list of input url's and/or files. Use the --output parameter to " +
-                "give a location where to write information about the converted files, e.g. c:\\myconvertedfiles.txt"
+                "give a location where to write information about the converted files, e.g. c:\\myconvertedfiles"
         )]
         public bool InputIsList { get; set; }
 
@@ -150,12 +150,12 @@ namespace ChromeHtmlToPdf
                 "to get the needed information")]
         public string ChromeLocation { get; set; }
 
-        /// <summary>
-        ///     The Chrome user profile location to use, when not set then the default location is used
-        /// </summary>
-        [Option("chrome-user-profile", Required = false,
-            HelpText = "The Chrome user profile location to use, when not set then the default location is used")]
-        public string ChromeUserProfile { get; set; }
+        ///// <summary>
+        /////     The Chrome user profile location to use, when not set then the default location is used
+        ///// </summary>
+        //[Option("chrome-user-profile", Required = false,
+        //    HelpText = "The Chrome user profile location to use, when not set then the default location is used")]
+        //public string ChromeUserProfile { get; set; }
 
         /// <summary>
         ///     This tells Chrome to use a custom proxy configuration
