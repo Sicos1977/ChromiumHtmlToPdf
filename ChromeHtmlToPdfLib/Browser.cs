@@ -216,8 +216,10 @@ namespace ChromeHtmlToPdfLib
             message.AddParameter("marginRight", pageSettings.MarginRight);
             message.AddParameter("pageRanges", pageSettings.PageRanges ?? string.Empty);
             message.AddParameter("ignoreInvalidPageRanges", pageSettings.IgnoreInvalidPageRanges);
-            message.AddParameter("headerTemplate", pageSettings.HeaderTemplate);
-            message.AddParameter("footerTemplate", pageSettings.FooterTemplate);
+            if (!string.IsNullOrEmpty(pageSettings.HeaderTemplate))
+                message.AddParameter("headerTemplate", pageSettings.HeaderTemplate);
+            if (!string.IsNullOrEmpty(pageSettings.FooterTemplate))
+                message.AddParameter("footerTemplate", pageSettings.FooterTemplate);
             message.AddParameter("preferCSSPageSize", pageSettings.PreferCSSPageSize);
             
             var result = countdownTimer == null
