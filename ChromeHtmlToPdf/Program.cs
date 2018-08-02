@@ -284,8 +284,7 @@ namespace ChromeHtmlToPdf
                     options.Output,
                     pageSettings,
                     options.WaitForWindowStatus,
-                    options.WaitForWindowStatusTimeOut,
-                    options.);
+                    options.WaitForWindowStatusTimeOut);
             }
         }
         #endregion
