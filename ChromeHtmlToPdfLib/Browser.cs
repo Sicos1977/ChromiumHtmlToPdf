@@ -40,7 +40,7 @@ namespace ChromeHtmlToPdfLib
     /// <remarks>
     ///     See https://chromium.googlesource.com/v8/v8/+/master/src/inspector/js_protocol.json
     /// </remarks>
-    internal class Browser : IDisposable
+    internal class Browser
     {
         #region Fields
         /// <summary>
@@ -64,7 +64,7 @@ namespace ChromeHtmlToPdfLib
         internal Browser(Uri browser)
         {
             // Open a websocket to the browser
-            _browserConnection = Connection.Create(browser.ToString()).Result;
+            _browserConnection = Connection.Create(browser.ToString());
 
             var message = new Message
             {
@@ -80,12 +80,7 @@ namespace ChromeHtmlToPdfLib
             // ws://localhost:9222/devtools/page/BA386DE8075EB19DDCE459B4B623FBE7
             // ws://127.0.0.1:50841/devtools/browser/9a919bf0-b243-479d-8396-ede653356e12
             var pageUrl = $"{browser.Scheme}://{browser.Host}:{browser.Port}/devtools/page/{page.Result.TargetId}";
-            _pageConnection = Connection.Create(pageUrl).Result;
-        }
-
-        ~Browser()
-        {
-            Dispose();
+            _pageConnection = Connection.Create(pageUrl);
         }
         #endregion
 
@@ -108,22 +103,28 @@ namespace ChromeHtmlToPdfLib
 
             var waitEvent = new ManualResetEvent(false);
 
-            EventHandler<string> messageReceived = (sender, data) =>
+            void MessageReceived(object sender, string data)
             {
                 var page = PageEvent.FromJson(data);
 
                 if (!uri.IsFile)
                 {
-                    if (page.Method == "Page.lifecycleEvent" && page.Params?.Name == "DOMContentLoaded")
-                        waitEvent.Set();
-                    else if (page.Method == "Page.frameStoppedLoading")
-                        waitEvent.Set();
+                    switch (page.Method)
+                    {
+                        case "Page.lifecycleEvent" when page.Params?.Name == "DOMContentLoaded":
+                        case "Page.frameStoppedLoading":
+                            waitEvent.Set();
+                            break;
+                    }
                 }
-                else if (page.Method == "Page.loadEventFired")
-                    waitEvent.Set();
-            };
+                else if (page.Method == "Page.loadEventFired") waitEvent.Set();
+            }
 
-            _pageConnection.MessageReceived += messageReceived;
+            _pageConnection.MessageReceived += MessageReceived;
+            _pageConnection.Closed += (sender, args) =>
+            {
+                waitEvent.Set();
+            };
             _pageConnection.SendAsync(message).GetAwaiter();
 
             if (countdownTimer != null)
@@ -135,7 +136,7 @@ namespace ChromeHtmlToPdfLib
             else
                 waitEvent.WaitOne();
 
-            _pageConnection.MessageReceived -= messageReceived;
+            _pageConnection.MessageReceived -= MessageReceived;
 
             _pageConnection.SendAsync(new Message {Method = "Page.disable"}).GetAwaiter();
         }
@@ -251,21 +252,6 @@ namespace ChromeHtmlToPdfLib
                 _browserConnection.SendAsync(message).Timeout(countdownTimer.MillisecondsLeft).GetAwaiter();
             else
                 _browserConnection.SendAsync(message).GetAwaiter();
-        }
-        #endregion
-
-        #region Dispose
-        /// <summary>
-        ///     Disposes the opened <see cref="_pageConnection" />
-        /// </summary>
-        public void Dispose()
-        {
-            if (_disposed) return;
-
-            _browserConnection?.Dispose();
-            _browserConnection?.Dispose();
-
-            _disposed = true;
         }
         #endregion
     }
