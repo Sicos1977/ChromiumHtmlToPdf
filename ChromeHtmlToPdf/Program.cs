@@ -257,7 +257,12 @@ namespace ChromeHtmlToPdf
             if (!string.IsNullOrWhiteSpace(options.ProxyPacUrl))
                 converter.SetProxyPacUrl(options.ProxyPacUrl);
 
-            if (options.PreWrapFileExtensions == null)
+            if (!string.IsNullOrWhiteSpace(options.TempFolder))
+                converter.TempDirectory = options.TempFolder;
+            else
+                Path.GetTempPath();
+
+            if (options.PreWrapFileExtensions?.Count() == 0)
             {
                 converter.PreWrapExtensions.Add(".txt");
                 converter.PreWrapExtensions.Add(".log");
@@ -277,19 +282,14 @@ namespace ChromeHtmlToPdf
         {
             var pageSettings = GetPageSettings(options);
 
-            using (var browser = new Converter(options.ChromeLocation, logStream: Console.OpenStandardOutput()))
+            using (var browser = new Converter(options.ChromeLocation, options.ChromeUserProfile, Console.OpenStandardOutput()))
             {
                 SetConverterSettings(browser, options);
-                for (var i = 0; i < 100; i++)
-                {
-                    var output = $@"d:\test{i}.pdf";
-                    Console.WriteLine($"Outputfile: {output}");
-                    browser.ConvertToPdf(CheckInput(options),
-                        output,
-                        pageSettings,
-                        options.WaitForWindowStatus,
-                        options.WaitForWindowStatusTimeOut);
-                }
+                browser.ConvertToPdf(CheckInput(options),
+                    options.Output,
+                    pageSettings,
+                    options.WaitForWindowStatus,
+                    options.WaitForWindowStatusTimeOut);
             }
         }
         #endregion
@@ -331,7 +331,7 @@ namespace ChromeHtmlToPdf
         {
             var pageSettings = GetPageSettings(options);
 
-            using (var browser = new Converter(options.ChromeLocation, logStream: Console.OpenStandardOutput()))
+            using (var browser = new Converter(options.ChromeLocation, options.ChromeUserProfile, Console.OpenStandardOutput()))
             {
                 browser.InstanceId = instanceId;
 

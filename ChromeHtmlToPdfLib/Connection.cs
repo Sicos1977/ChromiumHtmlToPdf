@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Text;
 using System.Threading.Tasks;
 using ChromeHtmlToPdfLib.Exceptions;
 using ChromeHtmlToPdfLib.Protocol;
@@ -10,7 +9,7 @@ namespace ChromeHtmlToPdfLib
     /// <summary>
     /// A connection to a page (tab) in Chrome
     /// </summary>
-    internal class Connection
+    internal class Connection : IDisposable
     {
         #region Events
         /// <summary>
@@ -38,7 +37,7 @@ namespace ChromeHtmlToPdfLib
         /// <summary>
         /// The websocket
         /// </summary>
-        public WebSocketSharp.WebSocket WebSocket { get; set; }
+        public WebSocket WebSocket { get; set; }
         #endregion
 
         #region Constructor
@@ -52,7 +51,8 @@ namespace ChromeHtmlToPdfLib
             WebSocket = new WebSocket(url)
             {
                 EmitOnPing = false,
-                EnableRedirection = true
+                EnableRedirection = true,
+                Log = {Output = (_, __) => { }}
             };
 
             WebSocket.OnMessage += Websocket_OnMessage;
@@ -62,15 +62,18 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
 
+        #region Websocket events
         private void Websocket_OnError(object sender, ErrorEventArgs e)
         {
-            _response.SetResult(string.Empty);
+            if (_response.Task.Status != TaskStatus.RanToCompletion)
+                _response.SetResult(string.Empty);
             throw new ChromeException(e.Message, e.Exception);
         }
 
         private void Websocket_OnClose(object sender, CloseEventArgs e)
         {
-            _response.SetResult(string.Empty);
+            if (_response.Task.Status != TaskStatus.RanToCompletion)
+                _response.SetResult(string.Empty);
             Closed?.Invoke(this, e);
         }
 
@@ -87,6 +90,7 @@ namespace ChromeHtmlToPdfLib
 
             MessageReceived?.Invoke(this, response);
         }
+        #endregion
 
         #region SendAsync
         /// <summary>
@@ -99,9 +103,7 @@ namespace ChromeHtmlToPdfLib
             _messageId += 1;
             message.Id = _messageId;
             _response = new TaskCompletionSource<string>();
-            //var bytes = Encoding.UTF8.GetBytes(message.ToJson());
             WebSocket.Send(message.ToJson());
-            //WebSocket.Send(bytes);
             return await _response.Task;
         }
         #endregion
@@ -129,6 +131,21 @@ namespace ChromeHtmlToPdfLib
         internal static Connection Create(string url)
         {
             return new Connection(url);
+        }
+        #endregion
+
+        #region Dispose
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            WebSocket.OnMessage -= Websocket_OnMessage;
+            WebSocket.OnClose -= Websocket_OnClose;
+            WebSocket.OnError -= Websocket_OnError;
+
+            //if (WebSocket.ReadyState == WebSocketState.Open)
+            //    WebSocket.Close();
         }
         #endregion
     }

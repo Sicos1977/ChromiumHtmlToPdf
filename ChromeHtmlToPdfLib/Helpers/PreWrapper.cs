@@ -108,6 +108,9 @@ namespace ChromeHtmlToPdfLib.Helpers
             var title = HttpUtility.HtmlEncode(temp);
             var tempFile = GetTempFile;
 
+            if (encoding == null)
+                encoding = Encoding.Default;
+
             using (var writer = new StreamWriter(tempFile))
             using (var reader = new StreamReader(inputFile, encoding))
             {

@@ -26,6 +26,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using ChromeHtmlToPdfLib.Exceptions;
 using ChromeHtmlToPdfLib.Helpers;
@@ -40,7 +41,7 @@ namespace ChromeHtmlToPdfLib
     /// <remarks>
     ///     See https://chromium.googlesource.com/v8/v8/+/master/src/inspector/js_protocol.json
     /// </remarks>
-    internal class Browser
+    internal class Browser : IDisposable
     {
         #region Fields
         /// <summary>
@@ -52,8 +53,6 @@ namespace ChromeHtmlToPdfLib
         ///     A connection to a page
         /// </summary>
         private readonly Connection _pageConnection;
-
-        private bool _disposed;
         #endregion
 
         #region Constructor & destructor
@@ -252,6 +251,17 @@ namespace ChromeHtmlToPdfLib
                 _browserConnection.SendAsync(message).Timeout(countdownTimer.MillisecondsLeft).GetAwaiter();
             else
                 _browserConnection.SendAsync(message).GetAwaiter();
+        }
+        #endregion
+
+        #region Dispose
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            _pageConnection?.Dispose();
+            _browserConnection?.Dispose();
         }
         #endregion
     }

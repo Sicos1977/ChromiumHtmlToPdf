@@ -145,11 +145,19 @@ namespace ChromeHtmlToPdf
         /// </summary>
         [Option("chrome-location", Required = false,
             HelpText =
-                "The location for Chrome, when not set then then this tool first looks inside the folder where" +
+                "The location for Chrome, when not set then then this tool first looks inside the folder where " +
                 "it is executed from if it can find Chrome.exe (protable) otherwise the registry is accessed " +
                 "to get the needed information")]
         public string ChromeLocation { get; set; }
 
+        /// <summary>
+        ///     The location for Chrome, when not set then the registry is accessed to get the needed information
+        /// </summary>
+        [Option("chrome-userprofile", Required = false,
+            HelpText =
+                "The location where Chrome can store it's user profile")]
+        public string ChromeUserProfile { get; set; }
+        
         ///// <summary>
         /////     The Chrome user profile location to use, when not set then the default location is used
         ///// </summary>
@@ -196,6 +204,12 @@ namespace ChromeHtmlToPdf
         /// </summary>
         [Option("password", Required = false, HelpText = "The password needed for --user")]
         public string Password { get; set; }
+
+        /// <summary>
+        ///     The password needed for --user
+        /// </summary>
+        [Option("tempfolder", Required = false, HelpText = "A folder where this tool kan put temporary files")]
+        public string TempFolder { get; set; }
 
         /// <summary>
         ///     Use multithreading when converting. Only usefull if the parameter --inputlist is used

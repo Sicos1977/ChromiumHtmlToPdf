@@ -28,6 +28,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Management;
 using System.Security;
 using System.Text;
 using ChromeHtmlToPdfLib.Settings;
@@ -56,11 +57,6 @@ namespace ChromeHtmlToPdfLib
         ///     Chrome with it's full path
         /// </summary>
         private readonly string _chromeExeFileName;
-
-        /// <summary>
-        ///     The default arguments that are passed to Chrome
-        /// </summary>
-        private List<string> _defaultArguments;
 
         /// <summary>
         ///     The user to use when starting Chrome, when blank then Chrome is started under the code running user
@@ -95,7 +91,7 @@ namespace ChromeHtmlToPdfLib
         /// <summary>
         ///     Handles the communication with Chrome devtools
         /// </summary>
-        private Browser _communicator;
+        private Browser _browser;
 
         /// <summary>
         ///     Keeps track is we already disposed our resources
@@ -127,7 +123,7 @@ namespace ChromeHtmlToPdfLib
         /// <summary>
         ///     Returns the list with default arguments that are send to Chrome when starting
         /// </summary>
-        public List<string> DefaultArguments => _defaultArguments;
+        public List<string> DefaultArguments { get; private set; }
 
         /// <summary>
         ///     An unique id that can be used to identify the logging of the converter when
@@ -168,13 +164,30 @@ namespace ChromeHtmlToPdfLib
         ///     For example files that are made in combination with <see cref="PreWrapExtensions"/>
         /// </summary>
         /// <exception cref="DirectoryNotFoundException">Raised when the given directory does not exists</exception>
-        public string TempDirectory {
+        public string TempDirectory 
+        {
             get { return _tempDirectory.FullName; }
             set
             {
-                _tempDirectory = new DirectoryInfo(value);
-                if (!_tempDirectory.Exists)
+                if (!Directory.Exists(value))
                     throw new DirectoryNotFoundException($"The directory '{value}' does not exists");
+
+                _tempDirectory = new DirectoryInfo(Path.Combine(value, Guid.NewGuid().ToString()));
+            }
+        }
+
+        /// <summary>
+        /// Retourneerd een reference naar de tempfolder en wanneer deze nog niet bestaant dan
+        /// wordt deze aangemaakt
+        /// </summary>
+        private DirectoryInfo GetTempDirectory
+        {
+            get
+            {
+                if (!_tempDirectory.Exists)
+                    _tempDirectory.Create();
+
+                return _tempDirectory;
             }
         }
 
@@ -202,22 +215,16 @@ namespace ChromeHtmlToPdfLib
                     return _chromeLocation;
                 }
 
-                var key = Registry.GetValue(
-                    @"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Google Chrome",
-                    "InstallLocation", string.Empty);
+                chrome = @"c:\Program Files (x86)\Google\Chrome\Application\chrome.exe";
 
-                if (key != null)
+                if (File.Exists(chrome))
                 {
-                    chrome = Path.Combine(key.ToString(), "chrome.exe");
-                    if (File.Exists(chrome))
-                    {
-                        _chromeLocation = key.ToString();
-                        return _chromeLocation;
-                    }
+                    _chromeLocation = @"c:\Program Files (x86)\Google\Chrome\Application\";
+                    return _chromeLocation;
                 }
 
-                key = Registry.GetValue(
-                    @"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\U‌​ninstall\Google Chrome",
+                var key = Registry.GetValue(
+                    @"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Google Chrome",
                     "InstallLocation", string.Empty);
 
                 if (key != null)
@@ -244,7 +251,7 @@ namespace ChromeHtmlToPdfLib
                 if (_preWrapper != null)
                     return _preWrapper;
 
-                _preWrapper = new PreWrapper(_tempDirectory);
+                _preWrapper = new PreWrapper(GetTempDirectory);
                 return _preWrapper;
             }
         }
@@ -309,7 +316,7 @@ namespace ChromeHtmlToPdfLib
                 if (_imageHelper != null)
                     return _imageHelper;
 
-                _imageHelper = new ImageHelper(_tempDirectory, _logStream, WebProxy) {InstanceId = InstanceId};
+                _imageHelper = new ImageHelper(GetTempDirectory, _logStream, WebProxy) {InstanceId = InstanceId};
                 _imageHelper.InstanceId = InstanceId;
                 return _imageHelper;
             }
@@ -345,7 +352,7 @@ namespace ChromeHtmlToPdfLib
             if (string.IsNullOrWhiteSpace(chromeExeFileName))
                 chromeExeFileName = Path.Combine(ChromePath, "chrome.exe");
 
-            if (string.IsNullOrEmpty(chromeExeFileName))
+            if (!File.Exists(chromeExeFileName))
                 throw new FileNotFoundException("Could not find chrome.exe");
 
             _chromeExeFileName = chromeExeFileName;
@@ -404,7 +411,7 @@ namespace ChromeHtmlToPdfLib
             var processStartInfo = new ProcessStartInfo
             {
                 FileName = _chromeExeFileName,
-                Arguments = string.Join(" ", _defaultArguments),
+                Arguments = string.Join(" ", DefaultArguments),
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -442,7 +449,7 @@ namespace ChromeHtmlToPdfLib
                 if (args.Data.StartsWith("DevTools listening on"))
                 {
                     // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
-                    _communicator = new Browser(new Uri(args.Data.Replace("DevTools listening on ", string.Empty)));
+                    _browser = new Browser(new Uri(args.Data.Replace("DevTools listening on ", string.Empty)));
                     WriteToLog("Connected to dev protocol");
                     waitEvent.Set();
                 }
@@ -452,8 +459,9 @@ namespace ChromeHtmlToPdfLib
 
             _chromeProcess.Exited += (sender, args) =>
             {
+                if (_disposed) return;
                 WriteToLog("Chrome process: " + _chromeExeFileName);
-                WriteToLog("Arguments used: " + string.Join(" ", _defaultArguments));
+                WriteToLog("Arguments used: " + string.Join(" ", DefaultArguments));
                 var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromeProcess.ExitCode));
                 WriteToLog("Exception: " + exception);
                 throw new ChromeException("Could not start Chrome, " + exception);
@@ -488,7 +496,7 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         private void ResetArguments()
         {
-            _defaultArguments = new List<string>();
+            DefaultArguments = new List<string>();
             SetDefaultArgument("--headless");
             SetDefaultArgument("--disable-gpu");
             SetDefaultArgument("--hide-scrollbars");
@@ -516,14 +524,14 @@ namespace ChromeHtmlToPdfLib
 
         #region RemoveArgument
         /// <summary>
-        ///     Removes the given <paramref name="argument" /> from <see cref="_defaultArguments" />
+        ///     Removes the given <paramref name="argument" /> from <see cref="DefaultArguments" />
         /// </summary>
         /// <param name="argument"></param>
         // ReSharper disable once UnusedMember.Local
         private void RemoveArgument(string argument)
         {
-            if (_defaultArguments.Contains(argument))
-                _defaultArguments.Remove(argument);
+            if (DefaultArguments.Contains(argument))
+                DefaultArguments.Remove(argument);
         }
         #endregion
 
@@ -632,7 +640,7 @@ namespace ChromeHtmlToPdfLib
 
         #region SetArgument
         /// <summary>
-        ///     Add's an extra conversion argument to the <see cref="_defaultArguments" />
+        ///     Add's an extra conversion argument to the <see cref="DefaultArguments" />
         /// </summary>
         /// <remarks>
         ///     This is a one time only default setting which can not be changed when doing multiple conversions.
@@ -641,12 +649,12 @@ namespace ChromeHtmlToPdfLib
         /// <param name="argument"></param>
         private void SetDefaultArgument(string argument)
         {
-            if (!_defaultArguments.Contains(argument, StringComparison.CurrentCultureIgnoreCase))
-                _defaultArguments.Add(argument);
+            if (!DefaultArguments.Contains(argument, StringComparison.CurrentCultureIgnoreCase))
+                DefaultArguments.Add(argument);
         }
 
         /// <summary>
-        ///     Add's an extra conversion argument with value to the <see cref="_defaultArguments" />
+        ///     Add's an extra conversion argument with value to the <see cref="DefaultArguments" />
         ///     or replaces it when it already exists
         /// </summary>
         /// <remarks>
@@ -661,14 +669,14 @@ namespace ChromeHtmlToPdfLib
                 throw new ChromeException($"Chrome is already running, you need to set the parameter '{argument}' before staring Chrome");
 
 
-            for (var i = 0; i < _defaultArguments.Count; i++)
+            for (var i = 0; i < DefaultArguments.Count; i++)
             {
-                if (!_defaultArguments[i].StartsWith(argument + "=")) continue;
-                _defaultArguments[i] = argument + $"=\"{value}\"";
+                if (!DefaultArguments[i].StartsWith(argument + "=")) continue;
+                DefaultArguments[i] = argument + $"=\"{value}\"";
                 return;
             }
 
-            _defaultArguments.Add(argument + $"=\"{value}\"");
+            DefaultArguments.Add(argument + $"=\"{value}\"");
         }
         #endregion
 
@@ -790,14 +798,11 @@ namespace ChromeHtmlToPdfLib
             if (inputUri.IsFile && !File.Exists(inputUri.OriginalString))
                 throw new FileNotFoundException($"The file '{inputUri.OriginalString}' does not exists");
 
-            FileInfo preWrappedFile = null;
-
             try
             {
                 if (inputUri.IsFile && CheckForPreWrap(inputUri, out var preWrapFile))
                 {
                     inputUri = new ConvertUri(preWrapFile);
-                    preWrappedFile = new FileInfo(preWrapFile);
                 }
                 else if (ImageResize || ImageRotate)
                 {
@@ -822,7 +827,7 @@ namespace ChromeHtmlToPdfLib
 
                 WriteToLog("Loading " + (inputUri.IsFile ? "file " + inputUri.OriginalString : "url " + inputUri));
 
-                _communicator.NavigateTo(inputUri, countdownTimer);
+                _browser.NavigateTo(inputUri, countdownTimer);
 
                 if (!string.IsNullOrWhiteSpace(waitForWindowStatus))
                 {
@@ -833,7 +838,7 @@ namespace ChromeHtmlToPdfLib
                     }
 
                     WriteToLog($"Waiting for window.status '{waitForWindowStatus}' or a timeout of {waitForWindowsStatusTimeout} milliseconds");
-                    var match = _communicator.WaitForWindowStatus(waitForWindowStatus, waitForWindowsStatusTimeout);
+                    var match = _browser.WaitForWindowStatus(waitForWindowStatus, waitForWindowsStatusTimeout);
                     WriteToLog(!match ? "Waiting timed out" : $"Window status equaled {waitForWindowStatus}");
 
                     if (conversionTimeout.HasValue)
@@ -847,7 +852,7 @@ namespace ChromeHtmlToPdfLib
 
                 WriteToLog("Converting to PDF");
 
-                using (var memorystream = new MemoryStream(_communicator.PrintToPdf(pageSettings, countdownTimer).Bytes))
+                using (var memorystream = new MemoryStream(_browser.PrintToPdf(pageSettings, countdownTimer).Bytes))
                 {
                     memorystream.Position = 0;
                     memorystream.CopyTo(outputStream);
@@ -857,10 +862,11 @@ namespace ChromeHtmlToPdfLib
             }
             finally
             {
-                if (preWrappedFile != null)
+                _tempDirectory.Refresh();
+                if (_tempDirectory.Exists)
                 {
-                    WriteToLog("Deleting prewrapped file");
-                    preWrappedFile.Delete();
+                    WriteToLog($"Deleting temporary folder '{_tempDirectory.FullName}'");
+                    _tempDirectory.Delete(true);
                 }
             }
         }
@@ -964,11 +970,41 @@ namespace ChromeHtmlToPdfLib
         private void WriteToLog(string message)
         {
             if (_logStream == null) return;
-            var line = DateTime.Now.ToString("o") + (InstanceId != null ? " - " + InstanceId : string.Empty) + " - " +
+            var line = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + (InstanceId != null ? " - " + InstanceId : string.Empty) + " - " +
                        message + Environment.NewLine;
             var bytes = Encoding.UTF8.GetBytes(line);
             _logStream.Write(bytes, 0, bytes.Length);
             _logStream.Flush();
+        }
+        #endregion
+
+        #region KillProcessAndChildren
+        /// <summary>
+        ///     Kill the process with given id and all it's children
+        /// </summary>
+        /// <param name="processId">The process id</param>
+        private void KillProcessAndChildren(int processId)
+        {
+            if (processId == 0) return;
+
+            var managedObjects = new ManagementObjectSearcher($"Select * From Win32_Process Where ParentProcessID={processId}").Get();
+
+            if (managedObjects.Count > 0)
+            {
+                foreach (var managedObject in managedObjects)
+                    KillProcessAndChildren(Convert.ToInt32(managedObject["ProcessID"]));
+            }
+
+            try
+            {
+                var process = Process.GetProcessById(processId);
+                process.Kill();
+            }
+            catch (Exception exception)
+            {
+                if (!exception.Message.Contains("is not running"))
+                WriteToLog(exception.Message);
+            }
         }
         #endregion
 
@@ -979,11 +1015,24 @@ namespace ChromeHtmlToPdfLib
         public void Dispose()
         {
             if (_disposed) return;
+            _disposed = true;
+
             WriteToLog("Stopping Chrome");
-            _communicator?.Close();
+
+            if (_browser != null)
+            {
+                _browser.Close();
+                _browser.Dispose();
+            }
+
+            _chromeProcess.Refresh();
+            
+            // Sometimes Chrome does not close all processes so kill them
+            if (!_chromeProcess.HasExited)
+                KillProcessAndChildren(_chromeProcess.Id);
+
             WriteToLog("Chrome stopped");
             _chromeProcess = null;
-            _disposed = true;
         }
         #endregion
     }
