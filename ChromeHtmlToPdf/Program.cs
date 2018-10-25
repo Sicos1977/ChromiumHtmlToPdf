@@ -111,7 +111,7 @@ namespace ChromeHtmlToPdf
             }
             catch (Exception exception)
             {
-                WriteToLog(exception.Message);
+                WriteToLog(exception.StackTrace + ", " + exception.Message);
                 Environment.Exit(1);
             }
         }
@@ -385,7 +385,7 @@ namespace ChromeHtmlToPdf
         /// <param name="message">The message to write</param>
         private static void WriteToLog(string message)
         {
-            Console.WriteLine(DateTime.Now.ToString("o") + " - " + message);
+            Console.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + message);
         }
         #endregion
     }

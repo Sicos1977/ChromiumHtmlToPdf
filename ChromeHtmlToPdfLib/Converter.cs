@@ -107,16 +107,6 @@ namespace ChromeHtmlToPdfLib
         ///     Returns the location of Chrome
         /// </summary>
         private string _chromeLocation;
-
-        /// <summary>
-        ///     <see cref="PreWrapper"/>
-        /// </summary>
-        private PreWrapper _preWrapper;
-
-        /// <summary>
-        ///     <see cref="ImageHelper"/>
-        /// </summary>
-        private ImageHelper _imageHelper;
         #endregion
 
         #region Properties
@@ -184,6 +174,9 @@ namespace ChromeHtmlToPdfLib
         {
             get
             {
+                if (_tempDirectory == null)
+                    _tempDirectory = new DirectoryInfo(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()));
+
                 if (!_tempDirectory.Exists)
                     _tempDirectory.Create();
 
@@ -242,21 +235,6 @@ namespace ChromeHtmlToPdfLib
         }
 
         /// <summary>
-        ///     <see cref="PreWrapper"/>
-        /// </summary>
-        private PreWrapper PreWrapper
-        {
-            get
-            {
-                if (_preWrapper != null)
-                    return _preWrapper;
-
-                _preWrapper = new PreWrapper(GetTempDirectory);
-                return _preWrapper;
-            }
-        }
-
-        /// <summary>
         /// Retourneerd een <see cref="WebProxy"/> object
         /// </summary>
         private WebProxy WebProxy
@@ -303,22 +281,6 @@ namespace ChromeHtmlToPdfLib
                 {
                     throw new Exception("Could not configure webproxy", exception);
                 }
-            }
-        }
-        
-        /// <summary>
-        ///     <see cref="ImageHelper"/>
-        /// </summary>
-        private ImageHelper ImageHelper
-        {
-            get
-            {
-                if (_imageHelper != null)
-                    return _imageHelper;
-
-                _imageHelper = new ImageHelper(GetTempDirectory, _logStream, WebProxy) {InstanceId = InstanceId};
-                _imageHelper.InstanceId = InstanceId;
-                return _imageHelper;
             }
         }
         #endregion
@@ -515,7 +477,6 @@ namespace ChromeHtmlToPdfLib
             SetDefaultArgument("--no-first-run");
             SetDefaultArgument("--disable-crash-reporter");
             SetDefaultArgument("--allow-insecure-localhost");
-            SetDefaultArgument("--hide-scrollbars");
             SetDefaultArgument("--safebrowsing-disable-auto-update");
             SetDefaultArgument("--remote-debugging-port", "0");
             SetWindowSize(WindowSize.HD_1366_768);
@@ -806,7 +767,9 @@ namespace ChromeHtmlToPdfLib
                 }
                 else if (ImageResize || ImageRotate)
                 {
-                    if (!ImageHelper.ValidateImages(inputUri, ImageResize, ImageRotate, pageSettings, out var outputUri))
+                    var imageHelper = new ImageHelper(GetTempDirectory, _logStream, WebProxy) {InstanceId = InstanceId};
+                    imageHelper.InstanceId = InstanceId;
+                    if (!imageHelper.ValidateImages(inputUri, ImageResize, ImageRotate, pageSettings, out var outputUri))
                         inputUri = outputUri;
                 }
 
@@ -959,7 +922,8 @@ namespace ChromeHtmlToPdfLib
             if (!PreWrapExtensions.Contains(ext, StringComparison.InvariantCultureIgnoreCase))
                 return false;
 
-            outputFile = PreWrapper.WrapFile(inputFile.LocalPath, inputFile.Encoding);
+            var preWrapper = new PreWrapper(GetTempDirectory);
+            outputFile = preWrapper.WrapFile(inputFile.LocalPath, inputFile.Encoding);
             WriteToLog($"Prewraped file '{inputFile}' to '{outputFile}'");
             return true;
         }
@@ -1028,8 +992,9 @@ namespace ChromeHtmlToPdfLib
                 _browser.Dispose();
             }
 
+            if (_chromeProcess == null) return;
             _chromeProcess.Refresh();
-            
+
             // Sometimes Chrome does not close all processes so kill them
             if (!_chromeProcess.HasExited)
                 KillProcessAndChildren(_chromeProcess.Id);
