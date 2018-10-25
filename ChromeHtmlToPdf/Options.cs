@@ -275,7 +275,8 @@ namespace ChromeHtmlToPdf
         ///     The encoding that is used for the <see cref="Input"/> file
         /// </summary>
         [Option("logfile", Required = false, Default = "",
-            HelpText = "When set then the logging gets written to this file instead of the console")]
+            HelpText = "When set then the logging gets written to this file instead of the console " +
+                       "(Wildcards {PID}, {DATE}, {TIME})")]
         public string LogFile { get; set; }
         #endregion
     }

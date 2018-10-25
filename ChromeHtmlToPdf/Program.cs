@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -273,6 +274,16 @@ namespace ChromeHtmlToPdf
         }
         #endregion
 
+        #region ReplaceWildCards
+        private static string ReplaceWildCards(string text)
+        {
+            text = text.Replace("{PID}", Process.GetCurrentProcess().Id.ToString());
+            text = text.Replace("{DATE}", DateTime.Now.ToString("yyyy-MM-dd"));
+            text = text.Replace("{TIME}", DateTime.Now.ToString("HH:mm:ss"));
+            return text;
+        }
+        #endregion
+
         #region Convert
         /// <summary>
         /// Convert a single <see cref="ConversionItem"/> to PDF
@@ -284,7 +295,7 @@ namespace ChromeHtmlToPdf
 
             var logStream = string.IsNullOrWhiteSpace(options.LogFile)
                 ? Console.OpenStandardOutput()
-                : File.OpenWrite(options.LogFile);
+                : File.OpenWrite(ReplaceWildCards(options.LogFile));
 
             using(logStream)
             using (var browser = new Converter(options.ChromeLocation, options.ChromeUserProfile, logStream))
@@ -338,7 +349,7 @@ namespace ChromeHtmlToPdf
 
             var logStream = string.IsNullOrWhiteSpace(options.LogFile)
                 ? Console.OpenStandardOutput()
-                : File.OpenWrite(options.LogFile);
+                : File.OpenWrite(ReplaceWildCards(options.LogFile));
 
             using(logStream)
             using (var browser = new Converter(options.ChromeLocation, options.ChromeUserProfile, logStream))
