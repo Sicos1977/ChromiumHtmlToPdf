@@ -282,7 +282,12 @@ namespace ChromeHtmlToPdf
         {
             var pageSettings = GetPageSettings(options);
 
-            using (var browser = new Converter(options.ChromeLocation, options.ChromeUserProfile, Console.OpenStandardOutput()))
+            var logStream = string.IsNullOrWhiteSpace(options.LogFile)
+                ? Console.OpenStandardOutput()
+                : File.OpenWrite(options.LogFile);
+
+            using(logStream)
+            using (var browser = new Converter(options.ChromeLocation, options.ChromeUserProfile, logStream))
             {
                 SetConverterSettings(browser, options);
                 browser.ConvertToPdf(CheckInput(options),
@@ -331,7 +336,12 @@ namespace ChromeHtmlToPdf
         {
             var pageSettings = GetPageSettings(options);
 
-            using (var browser = new Converter(options.ChromeLocation, options.ChromeUserProfile, Console.OpenStandardOutput()))
+            var logStream = string.IsNullOrWhiteSpace(options.LogFile)
+                ? Console.OpenStandardOutput()
+                : File.OpenWrite(options.LogFile);
+
+            using(logStream)
+            using (var browser = new Converter(options.ChromeLocation, options.ChromeUserProfile, logStream))
             {
                 browser.InstanceId = instanceId;
 

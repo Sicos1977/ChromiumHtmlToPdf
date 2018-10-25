@@ -51,7 +51,7 @@ namespace ChromeHtmlToPdfLib
         /// <summary>
         ///     When set then logging is written to this stream
         /// </summary>
-        private static Stream _logStream;
+        private readonly Stream _logStream;
 
         /// <summary>
         ///     Chrome with it's full path
