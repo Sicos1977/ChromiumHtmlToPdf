@@ -862,11 +862,14 @@ namespace ChromeHtmlToPdfLib
             }
             finally
             {
-                _tempDirectory.Refresh();
-                if (_tempDirectory.Exists)
+                if (_tempDirectory != null)
                 {
-                    WriteToLog($"Deleting temporary folder '{_tempDirectory.FullName}'");
-                    _tempDirectory.Delete(true);
+                    _tempDirectory.Refresh();
+                    if (_tempDirectory.Exists)
+                    {
+                        WriteToLog($"Deleting temporary folder '{_tempDirectory.FullName}'");
+                        _tempDirectory.Delete(true);
+                    }
                 }
             }
         }
