@@ -107,6 +107,8 @@ namespace ChromeHtmlToPdfLib
         ///     Returns the location of Chrome
         /// </summary>
         private string _chromeLocation;
+
+        private int? _conversionTimeout;
         #endregion
 
         #region Properties
@@ -376,7 +378,7 @@ namespace ChromeHtmlToPdfLib
                 Arguments = string.Join(" ", DefaultArguments),
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
-                RedirectStandardError = true,
+                RedirectStandardError = true
             };
 
             if (!string.IsNullOrWhiteSpace(_userName))
@@ -404,6 +406,12 @@ namespace ChromeHtmlToPdfLib
 
             var waitEvent = new ManualResetEvent(false);
 
+            _chromeProcess.OutputDataReceived += (sender, args) =>
+            {
+                if (!string.IsNullOrWhiteSpace(args.Data))
+                    WriteToLog($"Error: {args.Data}");
+            };
+
             _chromeProcess.ErrorDataReceived += (sender, args) =>
             {
                 if (args.Data == null) return;
@@ -424,14 +432,21 @@ namespace ChromeHtmlToPdfLib
                 if (_disposed) return;
                 WriteToLog("Chrome process: " + _chromeExeFileName);
                 WriteToLog("Arguments used: " + string.Join(" ", DefaultArguments));
+                waitEvent.Set();
                 var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromeProcess.ExitCode));
                 WriteToLog("Exception: " + exception);
                 throw new ChromeException("Could not start Chrome, " + exception);
             };
 
             _chromeProcess.Start();
+            WriteToLog("Chrome process started");
+            _chromeProcess.BeginOutputReadLine();
             _chromeProcess.BeginErrorReadLine();
-            waitEvent.WaitOne();
+
+            if (_conversionTimeout.HasValue)
+                waitEvent.WaitOne(_conversionTimeout.Value);
+            else
+                waitEvent.WaitOne();
 
             WriteToLog("Chrome started");
         }
@@ -755,6 +770,7 @@ namespace ChromeHtmlToPdfLib
                                  int waitForWindowsStatusTimeout = 60000,
                                  int? conversionTimeout = null)
         {
+            _conversionTimeout = conversionTimeout;
 
             if (inputUri.IsFile && !File.Exists(inputUri.OriginalString))
                 throw new FileNotFoundException($"The file '{inputUri.OriginalString}' does not exists");

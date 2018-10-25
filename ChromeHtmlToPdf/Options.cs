@@ -226,7 +226,7 @@ namespace ChromeHtmlToPdf
         [Option("max-concurrency-level", Required = false, Default = 0,
             HelpText = "Limits the concurrency level when doing multi threading conversions. This parameter is only used when " +
                        "--input-is-list and --multi-threading is set to true. When not set then the system decides about " +
-                       " how many threads will be used")]
+                       "how many threads will be used")]
         public int MaxConcurrencyLevel { get; set; }
 
         /// <summary>
@@ -242,6 +242,13 @@ namespace ChromeHtmlToPdf
         [Option("wait-for-window-status-timeout", Required = false, Default = 60000,
             HelpText = "The timeout when waiting for the parameter --wait-for-windows-status")]
         public int WaitForWindowStatusTimeOut { get; set; }
+        
+        /// <summary>
+        ///     The timeout in milliseconds before this application aborts the conversion
+        /// </summary>
+        [Option("timeout", Required = false,
+            HelpText = "The timeout in milliseconds before this application aborts the conversion")]
+        public int? Timeout { get; set; }
 
         /// <summary>
         ///     The files to wrap in a HTML file with a &lt;PRE&gt; tag
