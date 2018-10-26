@@ -19,6 +19,11 @@ namespace ChromeHtmlToPdf
     {
         #region Fields
         /// <summary>
+        ///     When set then logging is written to this stream
+        /// </summary>
+        private static Stream _logStream;
+
+        /// <summary>
         ///     <see cref="LimitedConcurrencyLevel" />
         /// </summary>
         private static TaskFactory _taskFactory;
@@ -42,77 +47,97 @@ namespace ChromeHtmlToPdf
         #region Main
         static void Main(string[] args)
         {
+            Options options = null;
+
             try
             {
-                ParseCommandlineParameters(args, out var options);
+                ParseCommandlineParameters(args, out options);
+                if (options == null)
+                    throw new ArgumentException(nameof(options));
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
 
-                var maxTasks = SetMaxConcurrencyLevel(options);
-
-                if (options.InputIsList)
+            // ReSharper disable once PossibleNullReferenceException
+            using (_logStream = string.IsNullOrWhiteSpace(options.LogFile)
+                ? Console.OpenStandardOutput()
+                : File.OpenWrite(ReplaceWildCards(options.LogFile)))
+            {
+                try
                 {
-                    _itemsToConvert = new ConcurrentQueue<ConversionItem>();
-                    _itemsConverted = new ConcurrentQueue<ConversionItem>();
+                    var maxTasks = SetMaxConcurrencyLevel(options);
 
-                    WriteToLog($"Reading inputfile '{options.Input}'");
-                    var lines = File.ReadAllLines(options.Input);
-                    foreach (var line in lines)
+                    if (options.InputIsList)
                     {
-                        var inputUri = new ConvertUri(line);
-                        var outputPath = Path.GetFullPath(options.Output);
+                        _itemsToConvert = new ConcurrentQueue<ConversionItem>();
+                        _itemsConverted = new ConcurrentQueue<ConversionItem>();
 
-                        var outputFile = inputUri.IsFile
-                            ? Path.GetFileName(inputUri.AbsolutePath)
-                            : FileManager.RemoveInvalidFileNameChars(inputUri.ToString());
-
-                        _itemsToConvert.Enqueue(new ConversionItem(inputUri, Path.Combine(outputPath, outputFile)));
-                    }
-
-                    WriteToLog($"{_itemsToConvert.Count} items read");
-                    
-                    if (options.UseMultiThreading)
-                    {
-                        _workerTasks = new List<Task>();
-
-                        WriteToLog($"Starting {maxTasks} processing tasks");
-                        for (var i = 0; i < maxTasks; i++)
+                        WriteToLog($"Reading inputfile '{options.Input}'");
+                        var lines = File.ReadAllLines(options.Input);
+                        foreach (var line in lines)
                         {
-                            var i1 = i;
-                            _workerTasks.Add(_taskFactory.StartNew(() => ConvertWithTask(options, (i1 + 1).ToString())));
+                            var inputUri = new ConvertUri(line);
+                            var outputPath = Path.GetFullPath(options.Output);
+
+                            var outputFile = inputUri.IsFile
+                                ? Path.GetFileName(inputUri.AbsolutePath)
+                                : FileManager.RemoveInvalidFileNameChars(inputUri.ToString());
+
+                            _itemsToConvert.Enqueue(new ConversionItem(inputUri,
+                                Path.Combine(outputPath, outputFile)));
                         }
-                        WriteToLog("Started");
 
-                        // Waiting until all tasks are finished
-                        foreach (var task in _workerTasks)
+                        WriteToLog($"{_itemsToConvert.Count} items read");
+
+                        if (options.UseMultiThreading)
                         {
-                            task.Wait();
+                            _workerTasks = new List<Task>();
+
+                            WriteToLog($"Starting {maxTasks} processing tasks");
+                            for (var i = 0; i < maxTasks; i++)
+                            {
+                                var i1 = i;
+                                _workerTasks.Add(_taskFactory.StartNew(() =>
+                                    ConvertWithTask(options, (i1 + 1).ToString())));
+                            }
+
+                            WriteToLog("Started");
+
+                            // Waiting until all tasks are finished
+                            foreach (var task in _workerTasks)
+                            {
+                                task.Wait();
+                            }
+                        }
+                        else
+                        {
+                            ConvertWithTask(options, null);
+                        }
+
+                        // Write conversion information to output file
+                        using (var output = File.OpenWrite(options.Output))
+                        {
+                            foreach (var itemConverted in _itemsConverted)
+                            {
+                                var bytes = new UTF8Encoding(true).GetBytes(itemConverted.OutputLine);
+                                output.Write(bytes, 0, bytes.Length);
+                            }
                         }
                     }
                     else
                     {
-                        ConvertWithTask(options, null);
+                        Convert(options);
                     }
 
-                    // Write conversion information to output file
-                    using (var output = File.OpenWrite(options.Output))
-                    {
-                        foreach (var itemConverted in _itemsConverted)
-                        {
-                            var bytes = new UTF8Encoding(true).GetBytes(itemConverted.OutputLine);
-                            output.Write(bytes, 0, bytes.Length);
-                        }
-                    }
+                    Environment.Exit(0);
                 }
-                else
+                catch (Exception exception)
                 {
-                    Convert(options);
+                    WriteToLog(exception.StackTrace + ", " + exception.Message);
+                    Environment.Exit(1);
                 }
-
-                Environment.Exit(0);
-            }
-            catch (Exception exception)
-            {
-                WriteToLog(exception.StackTrace + ", " + exception.Message);
-                Environment.Exit(1);
             }
         }
         #endregion
@@ -293,12 +318,7 @@ namespace ChromeHtmlToPdf
         {
             var pageSettings = GetPageSettings(options);
 
-            var logStream = string.IsNullOrWhiteSpace(options.LogFile)
-                ? Console.OpenStandardOutput()
-                : File.OpenWrite(ReplaceWildCards(options.LogFile));
-
-            using(logStream)
-            using (var browser = new Converter(options.ChromeLocation, options.ChromeUserProfile, logStream))
+            using (var browser = new Converter(options.ChromeLocation, options.ChromeUserProfile, _logStream))
             {
                 SetConverterSettings(browser, options);
                 browser.ConvertToPdf(CheckInput(options),
@@ -381,12 +401,16 @@ namespace ChromeHtmlToPdf
 
         #region WriteToLog
         /// <summary>
-        ///     Writes a line to the console
+        ///     Writes a line and linefeed to the <see cref="_logStream" />
         /// </summary>
         /// <param name="message">The message to write</param>
         private static void WriteToLog(string message)
         {
-            Console.WriteLine(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + message);
+            if (_logStream == null) return;
+            var line = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + message + Environment.NewLine;
+            var bytes = Encoding.UTF8.GetBytes(line);
+            _logStream.Write(bytes, 0, bytes.Length);
+            _logStream.Flush();
         }
         #endregion
     }

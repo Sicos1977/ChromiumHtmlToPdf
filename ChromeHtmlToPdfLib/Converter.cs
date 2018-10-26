@@ -113,6 +113,22 @@ namespace ChromeHtmlToPdfLib
 
         #region Properties
         /// <summary>
+        /// Returns <c>true</c> when Chrome is running
+        /// </summary>
+        /// <returns></returns>
+        private bool IsChromeRunning
+        {
+            get
+            {
+                if (_chromeProcess == null)
+                    return false;
+
+                _chromeProcess.Refresh();
+                return !_chromeProcess.HasExited;
+            }
+        }
+
+        /// <summary>
         ///     Returns the list with default arguments that are send to Chrome when starting
         /// </summary>
         public List<string> DefaultArguments { get; private set; }
@@ -341,21 +357,6 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
 
-        #region IsChromeRunning
-        /// <summary>
-        /// Returns <c>true</c> when Chrome is running
-        /// </summary>
-        /// <returns></returns>
-        private bool IsChromeRunning()
-        {
-            if (_chromeProcess == null)
-                return false;
-
-            _chromeProcess.Refresh();
-            return !_chromeProcess.HasExited;
-        }
-        #endregion
-
         #region StartChromeHeadless
         /// <summary>
         ///     Start Chrome headless with the debugger set to the given port
@@ -366,29 +367,37 @@ namespace ChromeHtmlToPdfLib
         /// <exception cref="ChromeException"></exception>
         private void StartChromeHeadless()
         {
-            if (IsChromeRunning())
+            if (IsChromeRunning)
                 return;
 
-            WriteToLog($"Starting Chrome from location {_chromeExeFileName}");
+            var starting = true;
 
+            var userName = string.Empty;
+
+            if (_userName.Contains("\\"))
+                userName = _userName.Split('\\')[1];
+
+            var domain = _userName.Split('\\')[0];
+
+            WriteToLog($"Starting Chrome from location {_chromeExeFileName}");
+            WriteToLog($"{_chromeExeFileName} {string.Join(" ", DefaultArguments)}");
             _chromeProcess = new Process();
             var processStartInfo = new ProcessStartInfo
             {
                 FileName = _chromeExeFileName,
                 Arguments = string.Join(" ", DefaultArguments),
                 UseShellExecute = false,
+                CreateNoWindow = true,
+                ErrorDialog = false,
+                WindowStyle = ProcessWindowStyle.Hidden,
+                // ReSharper disable once AssignNullToNotNullAttribute
+                WorkingDirectory = Path.GetDirectoryName(_chromeExeFileName),
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
             };
 
             if (!string.IsNullOrWhiteSpace(_userName))
             {
-                var userName = string.Empty;
-
-                if (_userName.Contains("\\"))
-                    userName = _userName.Split('\\')[1];
-
-                var domain = _userName.Split('\\')[0];
 
                 WriteToLog($"Starting Chrome with user '{userName}' on domain '{domain}'");
 
@@ -429,24 +438,30 @@ namespace ChromeHtmlToPdfLib
 
             _chromeProcess.Exited += (sender, args) =>
             {
-                if (_disposed) return;
-                WriteToLog("Chrome process: " + _chromeExeFileName);
-                WriteToLog("Arguments used: " + string.Join(" ", DefaultArguments));
-                waitEvent.Set();
-                var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromeProcess.ExitCode));
+                // ReSharper disable once AccessToModifiedClosure
+                if (!starting) return;
+                WriteToLog("Chrome exited unexpectedly, arguments used: " + string.Join(" ", DefaultArguments));
+                WriteToLog("Process id: " + _chromeProcess.Id);
+                WriteToLog("Process exit time: " + _chromeProcess.ExitTime.ToString("yyyy-MM-ddTHH:mm:ss.fff"));
+                var exception =
+                    ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromeProcess.ExitCode));
                 WriteToLog("Exception: " + exception);
-                throw new ChromeException("Could not start Chrome, " + exception);
+                throw new ChromeException("Chrome exited unexpectedly, " + exception);
             };
 
+            _chromeProcess.EnableRaisingEvents = true;
             _chromeProcess.Start();
             WriteToLog("Chrome process started");
-            _chromeProcess.BeginOutputReadLine();
+
             _chromeProcess.BeginErrorReadLine();
+            _chromeProcess.BeginOutputReadLine();
 
             if (_conversionTimeout.HasValue)
                 waitEvent.WaitOne(_conversionTimeout.Value);
             else
                 waitEvent.WaitOne();
+
+            starting = false;
 
             WriteToLog("Chrome started");
         }
@@ -480,7 +495,6 @@ namespace ChromeHtmlToPdfLib
             SetDefaultArgument("--mute-audio");
             SetDefaultArgument("--disable-background-networking");
             SetDefaultArgument("--disable-background-timer-throttling");
-            //SetDefaultArgument("--disable-client-side-phishing-detection");
             SetDefaultArgument("--disable-default-apps");
             SetDefaultArgument("--disable-extensions");
             SetDefaultArgument("--disable-hang-monitor");
@@ -491,7 +505,7 @@ namespace ChromeHtmlToPdfLib
             SetDefaultArgument("--metrics-recording-only");
             SetDefaultArgument("--no-first-run");
             SetDefaultArgument("--disable-crash-reporter");
-            SetDefaultArgument("--allow-insecure-localhost");
+            //SetDefaultArgument("--allow-insecure-localhost");
             SetDefaultArgument("--safebrowsing-disable-auto-update");
             SetDefaultArgument("--remote-debugging-port", "0");
             SetWindowSize(WindowSize.HD_1366_768);
@@ -641,7 +655,7 @@ namespace ChromeHtmlToPdfLib
         /// <param name="value"></param>
         private void SetDefaultArgument(string argument, string value)
         {
-            if (IsChromeRunning())
+            if (IsChromeRunning)
                 throw new ChromeException($"Chrome is already running, you need to set the parameter '{argument}' before staring Chrome");
 
 
@@ -1000,22 +1014,23 @@ namespace ChromeHtmlToPdfLib
             if (_disposed) return;
             _disposed = true;
 
-            WriteToLog("Stopping Chrome");
-
             if (_browser != null)
             {
                 _browser.Close();
                 _browser.Dispose();
             }
 
-            if (_chromeProcess == null) return;
-            _chromeProcess.Refresh();
+            if (!IsChromeRunning)
+            {
+                _chromeProcess = null;
+                return;
+            }
 
             // Sometimes Chrome does not close all processes so kill them
-            if (!_chromeProcess.HasExited)
-                KillProcessAndChildren(_chromeProcess.Id);
-
+            WriteToLog("Stopping Chrome");
+            KillProcessAndChildren(_chromeProcess.Id);
             WriteToLog("Chrome stopped");
+
             _chromeProcess = null;
         }
         #endregion
