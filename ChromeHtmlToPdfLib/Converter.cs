@@ -477,7 +477,7 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         /// <param name="outputFile"></param>
         /// <exception cref="DirectoryNotFoundException"></exception>
-        private static void CheckIfOutputFolderExists(string outputFile)
+        private void CheckIfOutputFolderExists(string outputFile)
         {
             var directory = new FileInfo(outputFile).Directory;
             if (directory != null && !directory.Exists)

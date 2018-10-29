@@ -19,7 +19,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <summary>
         ///     When set then logging is written to this stream
         /// </summary>
-        private static Stream _logStream;
+        private Stream _logStream;
 
         /// <summary>
         ///     An unique id that can be used to identify the logging of the converter when
@@ -83,7 +83,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        private static int ParseValue(string value)
+        private int ParseValue(string value)
         {
             value = value.Replace("px", string.Empty);
             value = value.Replace(" ", string.Empty);
@@ -310,7 +310,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <param name="image"></param>
         /// <param name="maxWidth"></param>
         /// <returns></returns>
-        private static Image ScaleImage(Image image, double maxWidth)
+        private Image ScaleImage(Image image, double maxWidth)
         {
             var ratio = maxWidth / image.Width;
             var newWidth = (int)(image.Width * ratio);

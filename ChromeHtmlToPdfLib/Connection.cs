@@ -122,18 +122,6 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
 
-        #region Create
-        /// <summary>
-        /// Creates a new connection to a page (tab) in Chrome
-        /// </summary>
-        /// <param name="url">The url to the websocket</param>
-        /// <returns></returns>
-        internal static Connection Create(string url)
-        {
-            return new Connection(url);
-        }
-        #endregion
-
         #region Dispose
         /// <summary>
         /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
