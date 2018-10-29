@@ -3,7 +3,7 @@ using System.Net;
 
 namespace ChromeHtmlToPdfLib.Helpers
 {
-    internal class CustomWebClient : WebClient
+    internal class CustomWebClient2 : WebClient
     {   
         #region Properties
         /// <summary>
