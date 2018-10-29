@@ -368,7 +368,10 @@ namespace ChromeHtmlToPdfLib
         private void StartChromeHeadless()
         {
             if (IsChromeRunning)
+            {
+                WriteToLog($"Chrome is already running on PID {_chromeProcess.Id}... skipped");
                 return;
+            }
 
             var starting = true;
 

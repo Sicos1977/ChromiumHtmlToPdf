@@ -35,7 +35,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <summary>
         ///     The web client to use when downloading from the Internet
         /// </summary>
-        private WebClient _webClient;
+        private CustomWebClient _webClient;
 
         /// <summary>
         ///     The web proxy to use
@@ -47,14 +47,14 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <summary>
         ///     The web client to use when downloading from the Internet
         /// </summary>
-        private WebClient WebClient
+        private CustomWebClient WebClient
         {
             get
             {
                 if (_webClient != null)
                     return _webClient;
 
-                _webClient = new WebClient {Proxy = _webProxy};
+                _webClient = new CustomWebClient() {Proxy = _webProxy, Timeout = 5000};
                 return _webClient;
             }
         }
