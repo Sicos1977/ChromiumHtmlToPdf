@@ -18,7 +18,7 @@ namespace ChromeHtmlToPdfLib.Helpers
             var webRequest = base.GetWebRequest(uri);
             // ReSharper disable once PossibleNullReferenceException
             webRequest.Timeout = Timeout;
-            var httpWebRequest = ((HttpWebRequest)webRequest);
+            var httpWebRequest = (HttpWebRequest)webRequest;
             httpWebRequest.ReadWriteTimeout = Timeout;
             httpWebRequest.Timeout = Timeout;
             return webRequest;
