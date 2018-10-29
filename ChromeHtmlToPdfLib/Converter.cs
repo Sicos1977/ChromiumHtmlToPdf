@@ -848,10 +848,10 @@ namespace ChromeHtmlToPdfLib
 
                 WriteToLog("Converting to PDF");
 
-                using (var memorystream = new MemoryStream(_browser.PrintToPdf(pageSettings, countdownTimer).Bytes))
+                using (var memoryStream = new MemoryStream(_browser.PrintToPdf(pageSettings, countdownTimer).Bytes))
                 {
-                    memorystream.Position = 0;
-                    memorystream.CopyTo(outputStream);
+                    memoryStream.Position = 0;
+                    memoryStream.CopyTo(outputStream);
                 }
 
                 WriteToLog("Converted");

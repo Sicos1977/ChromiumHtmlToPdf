@@ -54,7 +54,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                 if (_webClient != null)
                     return _webClient;
 
-                _webClient = new CustomWebClient {Proxy = _webProxy, Timeout = 5000};
+                _webClient = new CustomWebClient {Proxy = _webProxy, Timeout = 500};
                 return _webClient;
             }
         }
