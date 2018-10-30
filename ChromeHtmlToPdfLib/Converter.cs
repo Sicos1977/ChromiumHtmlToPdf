@@ -51,7 +51,7 @@ namespace ChromeHtmlToPdfLib
         /// <summary>
         ///     When set then logging is written to this stream
         /// </summary>
-        private readonly Stream _logStream;
+        private Stream _logStream;
 
         /// <summary>
         ///     Chrome with it's full path
@@ -297,7 +297,7 @@ namespace ChromeHtmlToPdfLib
                 }
                 catch (Exception exception)
                 {
-                    throw new Exception("Could not configure webproxy", exception);
+                    throw new Exception("Could not configure web proxy", exception);
                 }
             }
         }
@@ -314,7 +314,8 @@ namespace ChromeHtmlToPdfLib
         ///     If set then this directory will be used to store a user profile.
         ///     Leave blank or set to <c>null</c> if you want to use the default Chrome userprofile location
         /// </param>
-        /// <param name="logStream">When set then logging is written to this stream</param>
+        /// <param name="logStream">When set then logging is written to this stream for all conversions. If
+        /// you want a separate log for each conversion then set the logsteam on one of the ConvertToPdf" methods</param>
         /// <exception cref="FileNotFoundException">Raised when <see cref="chromeExeFileName" /> does not exists</exception>
         /// <exception cref="DirectoryNotFoundException">
         ///     Raised when the <paramref name="userProfile" /> directory is given but
@@ -503,6 +504,7 @@ namespace ChromeHtmlToPdfLib
             SetDefaultArgument("--disable-extensions");
             SetDefaultArgument("--disable-hang-monitor");
             //SetDefaultArgument("--disable-popup-blocking");
+            // ReSharper disable once StringLiteralTypo
             SetDefaultArgument("--disable-prompt-on-repost");
             SetDefaultArgument("--disable-sync");
             SetDefaultArgument("--disable-translate");
@@ -510,6 +512,7 @@ namespace ChromeHtmlToPdfLib
             SetDefaultArgument("--no-first-run");
             SetDefaultArgument("--disable-crash-reporter");
             //SetDefaultArgument("--allow-insecure-localhost");
+            // ReSharper disable once StringLiteralTypo
             SetDefaultArgument("--safebrowsing-disable-auto-update");
             SetDefaultArgument("--remote-debugging-port", "0");
             SetWindowSize(WindowSize.HD_1366_768);
@@ -778,7 +781,9 @@ namespace ChromeHtmlToPdfLib
         ///     rendering the PDF</param>
         /// <param name="waitForWindowsStatusTimeout"></param>
         /// <param name="conversionTimeout">An conversion timeout in milliseconds, if the conversion failes
-        /// to finished in the set amount of time then an <see cref="ConversionTimedOutException"/> is raised</param>
+        ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException"/> is raised</param>
+        /// <param name="logStream">When set then this will give a logging for each conversion. Use the logstream
+        /// option in the constructor if you want one log for all conversions</param>
         /// <exception cref="ConversionTimedOutException">Raised when <see cref="conversionTimeout"/> is set and the 
         /// conversion fails to finish in this amount of time</exception>
         public void ConvertToPdf(ConvertUri inputUri,
@@ -786,8 +791,10 @@ namespace ChromeHtmlToPdfLib
                                  PageSettings pageSettings,
                                  string waitForWindowStatus = "",
                                  int waitForWindowsStatusTimeout = 60000,
-                                 int? conversionTimeout = null)
+                                 int? conversionTimeout = null,
+                                 Stream logStream = null)
         {
+            _logStream = logStream;
             _conversionTimeout = conversionTimeout;
 
             if (inputUri.IsFile && !File.Exists(inputUri.OriginalString))
@@ -882,6 +889,8 @@ namespace ChromeHtmlToPdfLib
         /// <param name="waitForWindowsStatusTimeout"></param>
         /// <param name="conversionTimeout">An conversion timeout in milliseconds, if the conversion failes
         /// to finished in the set amount of time then an <see cref="ConversionTimedOutException"/> is raised</param>
+        /// <param name="logStream">When set then this will give a logging for each conversion. Use the logstream
+        /// option in the constructor if you want one log for all conversions</param>
         /// <exception cref="ConversionTimedOutException">Raised when <see cref="conversionTimeout"/> is set and the 
         /// conversion fails to finish in this amount of time</exception>
         /// <exception cref="DirectoryNotFoundException"></exception>
@@ -890,8 +899,11 @@ namespace ChromeHtmlToPdfLib
                                  PageSettings pageSettings,
                                  string waitForWindowStatus = "",
                                  int waitForWindowsStatusTimeout = 60000,
-                                 int? conversionTimeout = null)
+                                 int? conversionTimeout = null,
+                                 Stream logStream = null)
         {
+            _logStream = logStream;
+
             CheckIfOutputFolderExists(outputFile);
             using (var memoryStream = new MemoryStream())
             {
@@ -958,7 +970,7 @@ namespace ChromeHtmlToPdfLib
 
             var preWrapper = new PreWrapper(GetTempDirectory);
             outputFile = preWrapper.WrapFile(inputFile.LocalPath, inputFile.Encoding);
-            WriteToLog($"Prewraped file '{inputFile}' to '{outputFile}'");
+            WriteToLog($"Pre wrapped file '{inputFile}' to '{outputFile}'");
             return true;
         }
         #endregion
