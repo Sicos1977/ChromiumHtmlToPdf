@@ -279,6 +279,16 @@ namespace ChromeHtmlToPdf
         public bool ImageRotate { get; set; }
 
         /// <summary>
+        ///     The timeout in milliseconds before this application aborts the downloading
+        ///     of images when the option <see cref="ImageResize"/> and/or <see cref="ImageRotate"/>
+        ///     is being used
+        /// </summary>
+        [Option("timeout", Required = false, Default = 30000,
+            HelpText = "The timeout in milliseconds before this application aborts the downloading " +
+                       "of images when the option --ImageResize and/or --ImageRotate is being used")]
+        public int? ImageDownloadTimeout { get; set; }
+
+        /// <summary>
         ///     The encoding that is used for the <see cref="Input"/> file
         /// </summary>
         [Option("logfile", Required = false, Default = "",

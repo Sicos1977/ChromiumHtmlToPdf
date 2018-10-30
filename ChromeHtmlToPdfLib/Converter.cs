@@ -168,6 +168,13 @@ namespace ChromeHtmlToPdfLib
         public bool ImageRotate { get; set; }
 
         /// <summary>
+        ///     The timeout in milliseconds before this application aborts the downloading
+        ///     of images when the option <see cref="ImageResize"/> and/or <see cref="ImageRotate"/>
+        ///     is being used
+        /// </summary>
+        public int? ImageDownloadTimeout { get; set; }
+
+        /// <summary>
         ///     When set then this directory is used to store temporary files.
         ///     For example files that are made in combination with <see cref="PreWrapExtensions"/>
         /// </summary>

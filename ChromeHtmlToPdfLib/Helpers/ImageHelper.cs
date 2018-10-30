@@ -19,7 +19,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <summary>
         ///     When set then logging is written to this stream
         /// </summary>
-        private Stream _logStream;
+        private readonly Stream _logStream;
 
         /// <summary>
         ///     An unique id that can be used to identify the logging of the converter when
@@ -41,6 +41,12 @@ namespace ChromeHtmlToPdfLib.Helpers
         ///     The web proxy to use
         /// </summary>
         private readonly WebProxy _webProxy;
+
+        /// <summary>
+        ///     The timeout in milliseconds before this application aborts the downloading
+        ///     of images
+        /// </summary>
+        private readonly int _timeout;
         #endregion
 
         #region Properties
@@ -55,8 +61,8 @@ namespace ChromeHtmlToPdfLib.Helpers
                     return _webClient;
 
                 _webClient = _webProxy != null
-                    ? new CustomWebClient {Proxy = _webProxy, Timeout = 1000}
-                    : new CustomWebClient {Timeout = 1000};
+                    ? new CustomWebClient {Proxy = _webProxy, Timeout = _timeout}
+                    : new CustomWebClient {Timeout = _timeout};
 
                 return _webClient;
             }
@@ -70,13 +76,16 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <param name="tempDirectory">When set then this directory will be used for temporary files</param>
         /// <param name="logStream">When set then logging is written to this stream</param>
         /// <param name="webProxy">The webproxy to use when downloading</param>
+        /// <param name="timeout"></param>
         public ImageHelper(DirectoryInfo tempDirectory = null,
                            Stream logStream = null,
-                           WebProxy webProxy = null)
+                           WebProxy webProxy = null,
+                           int? timeout = null)
         {
             _tempDirectory = tempDirectory;
             _logStream = logStream;
             _webProxy = webProxy;
+            _timeout = timeout ?? 30000;
         }
         #endregion
 
