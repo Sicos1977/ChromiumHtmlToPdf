@@ -375,13 +375,6 @@ namespace ChromeHtmlToPdfLib
 
             var starting = true;
 
-            var userName = string.Empty;
-
-            if (_userName.Contains("\\"))
-                userName = _userName.Split('\\')[1];
-
-            var domain = _userName.Split('\\')[0];
-
             WriteToLog($"Starting Chrome from location {_chromeExeFileName}");
             WriteToLog($"{_chromeExeFileName} {string.Join(" ", DefaultArguments)}");
             _chromeProcess = new Process();
@@ -401,7 +394,15 @@ namespace ChromeHtmlToPdfLib
 
             if (!string.IsNullOrWhiteSpace(_userName))
             {
+                var userName = string.Empty;
+                var domain = string.Empty;
 
+                if (_userName.Contains("\\"))
+                {
+                    userName = _userName.Split('\\')[1];
+                    domain = _userName.Split('\\')[0];
+                }
+                
                 WriteToLog($"Starting Chrome with user '{userName}' on domain '{domain}'");
 
                 processStartInfo.Domain = domain;
