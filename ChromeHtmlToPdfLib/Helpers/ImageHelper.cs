@@ -35,7 +35,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <summary>
         ///     The web client to use when downloading from the Internet
         /// </summary>
-        private CustomWebClient _webClient;
+        private WebClient _webClient;
 
         /// <summary>
         ///     The web proxy to use
@@ -53,7 +53,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <summary>
         ///     The web client to use when downloading from the Internet
         /// </summary>
-        private CustomWebClient WebClient
+        private WebClient WebClient
         {
             get
             {
@@ -61,8 +61,8 @@ namespace ChromeHtmlToPdfLib.Helpers
                     return _webClient;
 
                 _webClient = _webProxy != null
-                    ? new CustomWebClient {Proxy = _webProxy, Timeout = _timeout}
-                    : new CustomWebClient {Timeout = _timeout};
+                    ? new WebClient {Proxy = _webProxy}
+                    : new WebClient();
 
                 return _webClient;
             }
@@ -294,7 +294,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                 {
                     case "https":
                     case "http":
-                        using (var webStream = WebClient.OpenRead(imageUri))
+                        using (var webStream = WebClient.OpenReadTaskAsync(imageUri).Timeout(_timeout).GetAwaiter().GetResult())
                         {
                             if (webStream != null)
                                 return Image.FromStream(webStream, true, false);
@@ -404,7 +404,7 @@ namespace ChromeHtmlToPdfLib.Helpers
             try
             {
                 WriteToLog($"Downloading from uri '{sourceUri}'");
-                var result = WebClient.DownloadString(sourceUri);
+                var result = WebClient.DownloadStringTaskAsync(sourceUri).Timeout(_timeout).GetAwaiter().GetResult();
                 WriteToLog("Downloaded");
                 return result;
             }

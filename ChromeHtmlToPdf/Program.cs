@@ -52,13 +52,14 @@ namespace ChromeHtmlToPdf
             try
             {
                 ParseCommandlineParameters(args, out options);
-                if (options == null)
-                    throw new ArgumentException(nameof(options));
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
             }
+
+            if (options == null)
+                throw new ArgumentException(nameof(options));
 
             // ReSharper disable once PossibleNullReferenceException
             using (_logStream = string.IsNullOrWhiteSpace(options.LogFile)

@@ -70,9 +70,6 @@
     <Compile Include="Converter.cs" />
     <Compile Include="ConvertUri.cs" />
     <Compile Include="Helpers\CountdownTimer.cs" />
-    <Compile Include="Helpers\CustomWebClient.cs">
-      <SubType>Component</SubType>
-    </Compile>
     <Compile Include="Helpers\ExceptionHelper.cs" />
     <Compile Include="Helpers\Extensions.cs" />
     <Compile Include="Helpers\ImageHelper.cs" />

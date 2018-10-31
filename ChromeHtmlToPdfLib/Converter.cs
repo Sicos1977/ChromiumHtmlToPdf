@@ -382,9 +382,11 @@ namespace ChromeHtmlToPdfLib
             }
 
             var starting = true;
-
-            WriteToLog($"Starting Chrome from location {_chromeExeFileName}");
-            WriteToLog($"{_chromeExeFileName} {string.Join(" ", DefaultArguments)}");
+            var workingDirectory = Path.GetDirectoryName(_chromeExeFileName);
+            
+            WriteToLog($"Starting Chrome from location '{_chromeExeFileName}' with working directory '{workingDirectory}'");
+            WriteToLog($"\"{_chromeExeFileName}\" {string.Join(" ", DefaultArguments)}");
+            
             _chromeProcess = new Process();
             var processStartInfo = new ProcessStartInfo
             {
@@ -395,7 +397,7 @@ namespace ChromeHtmlToPdfLib
                 ErrorDialog = false,
                 WindowStyle = ProcessWindowStyle.Hidden,
                 // ReSharper disable once AssignNullToNotNullAttribute
-                WorkingDirectory = Path.GetDirectoryName(_chromeExeFileName),
+                WorkingDirectory = workingDirectory,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
             };
@@ -411,7 +413,7 @@ namespace ChromeHtmlToPdfLib
                     domain = _userName.Split('\\')[0];
                 }
                 
-                WriteToLog($"Starting Chrome with user '{userName}' on domain '{domain}'");
+                WriteToLog($"Starting Chrome with username '{userName}' on domain '{domain}'");
 
                 processStartInfo.Domain = domain;
                 processStartInfo.UserName = userName;
@@ -421,6 +423,7 @@ namespace ChromeHtmlToPdfLib
                     secureString.AppendChar(t);
 
                 processStartInfo.Password = secureString;
+                processStartInfo.LoadUserProfile = true;
             }
 
             _chromeProcess.StartInfo = processStartInfo;
@@ -462,7 +465,17 @@ namespace ChromeHtmlToPdfLib
             };
 
             _chromeProcess.EnableRaisingEvents = true;
-            _chromeProcess.Start();
+
+            try
+            {
+                _chromeProcess.Start();
+            }
+            catch (Exception exception)
+            {
+                WriteToLog("Could not start the Chrome process due to the following reason: " + ExceptionHelpers.GetInnerException(exception));
+                throw;
+            }
+
             WriteToLog("Chrome process started");
 
             _chromeProcess.BeginErrorReadLine();
@@ -909,13 +922,11 @@ namespace ChromeHtmlToPdfLib
                                  int? conversionTimeout = null,
                                  Stream logStream = null)
         {
-            _logStream = logStream;
-
             CheckIfOutputFolderExists(outputFile);
             using (var memoryStream = new MemoryStream())
             {
                 ConvertToPdf(inputUri, memoryStream, pageSettings, waitForWindowStatus,
-                    waitForWindowsStatusTimeout, conversionTimeout);
+                    waitForWindowsStatusTimeout, conversionTimeout, logStream);
 
                 using (var fileStream = File.Open(outputFile, FileMode.Create))
                 {
@@ -990,11 +1001,19 @@ namespace ChromeHtmlToPdfLib
         private void WriteToLog(string message)
         {
             if (_logStream == null) return;
-            var line = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + (InstanceId != null ? " - " + InstanceId : string.Empty) + " - " +
-                       message + Environment.NewLine;
-            var bytes = Encoding.UTF8.GetBytes(line);
-            _logStream.Write(bytes, 0, bytes.Length);
-            _logStream.Flush();
+
+            try
+            {
+                var line = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + (InstanceId != null ? " - " + InstanceId : string.Empty) + " - " +
+                           message + Environment.NewLine;
+                var bytes = Encoding.UTF8.GetBytes(line);
+                _logStream.Write(bytes, 0, bytes.Length);
+                _logStream.Flush();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Ignore
+            }
         }
         #endregion
 
