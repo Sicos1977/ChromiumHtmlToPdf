@@ -29,12 +29,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Management;
-using System.Security;
 using System.Text;
 using ChromeHtmlToPdfLib.Settings;
 using Microsoft.Win32;
 using System.Net;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Threading;
 using ChromeHtmlToPdfLib.Enums;
 using ChromeHtmlToPdfLib.Exceptions;
@@ -399,7 +399,8 @@ namespace ChromeHtmlToPdfLib
                 // ReSharper disable once AssignNullToNotNullAttribute
                 WorkingDirectory = workingDirectory,
                 RedirectStandardOutput = true,
-                RedirectStandardError = true
+                RedirectStandardError = true,
+                LoadUserProfile = false
             };
 
             if (!string.IsNullOrWhiteSpace(_userName))
@@ -412,7 +413,7 @@ namespace ChromeHtmlToPdfLib
                     userName = _userName.Split('\\')[1];
                     domain = _userName.Split('\\')[0];
                 }
-                
+
                 WriteToLog($"Starting Chrome with username '{userName}' on domain '{domain}'");
 
                 processStartInfo.Domain = domain;
@@ -458,8 +459,7 @@ namespace ChromeHtmlToPdfLib
                 WriteToLog("Chrome exited unexpectedly, arguments used: " + string.Join(" ", DefaultArguments));
                 WriteToLog("Process id: " + _chromeProcess.Id);
                 WriteToLog("Process exit time: " + _chromeProcess.ExitTime.ToString("yyyy-MM-ddTHH:mm:ss.fff"));
-                var exception =
-                    ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromeProcess.ExitCode));
+                var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromeProcess.ExitCode));
                 WriteToLog("Exception: " + exception);
                 throw new ChromeException("Chrome exited unexpectedly, " + exception);
             };
@@ -534,6 +534,7 @@ namespace ChromeHtmlToPdfLib
             //SetDefaultArgument("--allow-insecure-localhost");
             // ReSharper disable once StringLiteralTypo
             SetDefaultArgument("--safebrowsing-disable-auto-update");
+            SetDefaultArgument("--no-sandbox");
             SetDefaultArgument("--remote-debugging-port", "0");
             SetWindowSize(WindowSize.HD_1366_768);
         }
