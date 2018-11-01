@@ -108,7 +108,16 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         private string _chromeLocation;
 
+        /// <summary>
+        ///     The timeout for a conversion
+        /// </summary>
         private int? _conversionTimeout;
+
+        /// <summary>
+        ///     Used to add the extension of text based files that needed to be wrapped in an HTML PRE
+        ///     tag so that they can be opened by Chrome
+        /// </summary>
+        private List<string> _preWrapExtensions;
         #endregion
 
         #region Properties
@@ -154,7 +163,15 @@ namespace ChromeHtmlToPdfLib
         /// <remarks>
         ///     The extensions are used case insensitive
         /// </remarks>
-        public List<string> PreWrapExtensions { get; set; }
+        public List<string> PreWrapExtensions
+        {
+            get => _preWrapExtensions;
+            set
+            {
+                _preWrapExtensions = value;
+                WriteToLog($"Setting prewrap extension to '{string.Join(", ", value)}'");
+            } 
+        }
 
         /// <summary>
         ///     When set to <c>true</c> then images are resized to fix the given <see cref="PageSettings.PaperWidth"/>
@@ -179,7 +196,7 @@ namespace ChromeHtmlToPdfLib
         ///     For example files that are made in combination with <see cref="PreWrapExtensions"/>
         /// </summary>
         /// <exception cref="DirectoryNotFoundException">Raised when the given directory does not exists</exception>
-        public string TempDirectory 
+        public string TempDirectory
         {
             get { return _tempDirectory.FullName; }
             set
@@ -332,7 +349,7 @@ namespace ChromeHtmlToPdfLib
                          string userProfile = null,
                          Stream logStream = null)
         {
-            PreWrapExtensions = new List<string>();
+            _preWrapExtensions = new List<string>();
             _logStream = logStream;
 
             ResetArguments();
@@ -383,10 +400,10 @@ namespace ChromeHtmlToPdfLib
 
             var starting = true;
             var workingDirectory = Path.GetDirectoryName(_chromeExeFileName);
-            
+
             WriteToLog($"Starting Chrome from location '{_chromeExeFileName}' with working directory '{workingDirectory}'");
             WriteToLog($"\"{_chromeExeFileName}\" {string.Join(" ", DefaultArguments)}");
-            
+
             _chromeProcess = new Process();
             var processStartInfo = new ProcessStartInfo
             {
@@ -444,8 +461,9 @@ namespace ChromeHtmlToPdfLib
                 if (args.Data.StartsWith("DevTools listening on"))
                 {
                     // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
-                    _browser = new Browser(new Uri(args.Data.Replace("DevTools listening on ", string.Empty)));
-                    WriteToLog("Connected to dev protocol");
+                    var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
+                    _browser = new Browser(uri);
+                    WriteToLog($"Connected to dev protocol on uri '{uri.ToString()}'");
                     waitEvent.Set();
                 }
                 else if (!string.IsNullOrWhiteSpace(args.Data))
@@ -818,8 +836,27 @@ namespace ChromeHtmlToPdfLib
             _logStream = logStream;
             _conversionTimeout = conversionTimeout;
 
-            if (inputUri.IsFile && !File.Exists(inputUri.OriginalString))
-                throw new FileNotFoundException($"The file '{inputUri.OriginalString}' does not exists");
+            if (inputUri.IsFile)
+            {
+                if (!File.Exists(inputUri.OriginalString))
+                    throw new FileNotFoundException($"The file '{inputUri.OriginalString}' does not exists");
+
+                var ext = Path.GetExtension(inputUri.OriginalString);
+
+                switch (ext.ToLowerInvariant())
+                {
+                    case ".htm":
+                    case ".html":
+                        // This is ok
+                        break;
+
+                    default:
+                        if (!PreWrapExtensions.Contains(ext, StringComparison.InvariantCultureIgnoreCase))
+                            throw new ConversionException($"The file '{inputUri.OriginalString}' with extension '{ext}' is not valid. " +
+                                                          "If this is a text based file then add the extension to the PreWrapExtensions");
+                        break;
+                }
+            }
 
             try
             {
@@ -830,8 +867,9 @@ namespace ChromeHtmlToPdfLib
                 else if (ImageResize || ImageRotate)
                 {
                     var imageHelper = new ImageHelper(GetTempDirectory, _logStream, WebProxy, ImageDownloadTimeout)
-                        {InstanceId = InstanceId};
-                    if (!imageHelper.ValidateImages(inputUri, ImageResize, ImageRotate, pageSettings, out var outputUri))
+                    { InstanceId = InstanceId };
+                    if (!imageHelper.ValidateImages(inputUri, ImageResize, ImageRotate, pageSettings,
+                        out var outputUri))
                         inputUri = outputUri;
                 }
 
@@ -842,7 +880,8 @@ namespace ChromeHtmlToPdfLib
                 if (conversionTimeout.HasValue)
                 {
                     if (conversionTimeout <= 1)
-                        throw new ArgumentOutOfRangeException($"The value for {nameof(countdownTimer)} has to be a value equal to 1 or greater");
+                        throw new ArgumentOutOfRangeException(
+                            $"The value for {nameof(countdownTimer)} has to be a value equal to 1 or greater");
 
                     WriteToLog($"Conversion timeout set to {conversionTimeout.Value} milliseconds");
 
@@ -862,7 +901,8 @@ namespace ChromeHtmlToPdfLib
                         countdownTimer.Stop();
                     }
 
-                    WriteToLog($"Waiting for window.status '{waitForWindowStatus}' or a timeout of {waitForWindowsStatusTimeout} milliseconds");
+                    WriteToLog(
+                        $"Waiting for window.status '{waitForWindowStatus}' or a timeout of {waitForWindowsStatusTimeout} milliseconds");
                     var match = _browser.WaitForWindowStatus(waitForWindowStatus, waitForWindowsStatusTimeout);
                     WriteToLog(!match ? "Waiting timed out" : $"Window status equaled {waitForWindowStatus}");
 
@@ -884,6 +924,11 @@ namespace ChromeHtmlToPdfLib
                 }
 
                 WriteToLog("Converted");
+            }
+            catch (Exception exception)
+            {
+                WriteToLog($"Error: {ExceptionHelpers.GetInnerException(exception)}'");
+                throw;
             }
             finally
             {
@@ -1043,7 +1088,7 @@ namespace ChromeHtmlToPdfLib
             catch (Exception exception)
             {
                 if (!exception.Message.Contains("is not running"))
-                WriteToLog(exception.Message);
+                    WriteToLog(exception.Message);
             }
         }
         #endregion

@@ -12,7 +12,7 @@ namespace ChromeHtmlToPdfLib
         /// <summary>
         ///     The encoding of the file that will be converted
         /// </summary>
-        public Encoding Encoding { get; private set; }
+        public Encoding Encoding { get; }
 
         public ConvertUri(string uriString) : base(uriString)
         {
