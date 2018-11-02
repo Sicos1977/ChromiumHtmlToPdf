@@ -979,6 +979,8 @@ namespace ChromeHtmlToPdfLib
                     memoryStream.Position = 0;
                     memoryStream.CopyTo(fileStream);
                 }
+
+                WriteToLog($"PDF written to outputfile '{outputFile}'");
             }
         }
 
