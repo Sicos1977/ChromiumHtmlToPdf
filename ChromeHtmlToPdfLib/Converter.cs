@@ -552,7 +552,7 @@ namespace ChromeHtmlToPdfLib
             //SetDefaultArgument("--allow-insecure-localhost");
             // ReSharper disable once StringLiteralTypo
             SetDefaultArgument("--safebrowsing-disable-auto-update");
-            SetDefaultArgument("--no-sandbox");
+            //SetDefaultArgument("--no-sandbox");
             SetDefaultArgument("--remote-debugging-port", "0");
             SetWindowSize(WindowSize.HD_1366_768);
         }
@@ -1034,7 +1034,7 @@ namespace ChromeHtmlToPdfLib
             if (!PreWrapExtensions.Contains(ext, StringComparison.InvariantCultureIgnoreCase))
                 return false;
 
-            var preWrapper = new PreWrapper(GetTempDirectory);
+            var preWrapper = new PreWrapper(GetTempDirectory, _logStream) {InstanceId = InstanceId};
             outputFile = preWrapper.WrapFile(inputFile.LocalPath, inputFile.Encoding);
             WriteToLog($"Pre wrapped file '{inputFile}' to '{outputFile}'");
             return true;
