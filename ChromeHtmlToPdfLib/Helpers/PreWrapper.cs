@@ -126,11 +126,12 @@ namespace ChromeHtmlToPdfLib.Helpers
 
             WriteToLog($"Writing file with encoding '{encoding.WebName}'");
 
-            using (var writer = new StreamWriter(tempFile))
-            using (var reader = new StreamReader(inputFile, encoding))
+            using (var writer = new StreamWriter(tempFile, false, encoding))
+            using (var reader = new StreamReader(inputFile))
             {
                 writer.WriteLine("<html>");
                 writer.WriteLine("<head>");
+                writer.WriteLine($"   <meta charset=\"{encoding.WebName}\">");
                 writer.WriteLine($"<title>{title}</title>");
                 writer.WriteLine("<style>");
                 writer.WriteLine("  pre {");
