@@ -100,6 +100,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         ///     Makes this object and sets its needed properties
         /// </summary>
         /// <param name="tempDirectory">When set then this directory will be used for temporary files</param>
+        /// <param name="logStream"></param>
         public PreWrapper(DirectoryInfo tempDirectory = null,
                           Stream logStream = null)
         {
@@ -121,17 +122,20 @@ namespace ChromeHtmlToPdfLib.Helpers
             var title = HttpUtility.HtmlEncode(temp);
             var tempFile = GetTempFile;
 
-            if (encoding == null)
-                encoding = Encoding.Default;
+            var streamReader = encoding != null
+                ? new StreamReader(inputFile, encoding)
+                : new EncodingTools.Detector().OpenTextFile(inputFile);
 
-            WriteToLog($"Writing file with encoding '{encoding.WebName}'");
+            WriteToLog($"Reading text-file file with encoding '{streamReader.CurrentEncoding.WebName}'");
 
-            using (var writer = new StreamWriter(tempFile, false, encoding))
-            using (var reader = new StreamReader(inputFile))
+            var writeEncoding = new UnicodeEncoding(!BitConverter.IsLittleEndian, true);
+
+            using (var writer = new StreamWriter(tempFile, false, writeEncoding))
+            using (streamReader)
             {
                 writer.WriteLine("<html>");
                 writer.WriteLine("<head>");
-                writer.WriteLine($"   <meta charset=\"{encoding.WebName}\">");
+                writer.WriteLine($"   <meta charset=\"{writeEncoding.WebName}\">");
                 writer.WriteLine($"<title>{title}</title>");
                 writer.WriteLine("<style>");
                 writer.WriteLine("  pre {");
@@ -148,8 +152,8 @@ namespace ChromeHtmlToPdfLib.Helpers
                 writer.WriteLine("<body>");
                 writer.WriteLine("<pre>");
 
-                while (!reader.EndOfStream)
-                    writer.WriteLine(reader.ReadLine());
+                while (!streamReader.EndOfStream)
+                    writer.WriteLine(streamReader.ReadLine());
 
                 writer.WriteLine("</pre>");
                 writer.WriteLine("</body>");
