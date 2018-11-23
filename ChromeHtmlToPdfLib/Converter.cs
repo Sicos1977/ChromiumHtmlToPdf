@@ -209,7 +209,7 @@ namespace ChromeHtmlToPdfLib
         }
 
         /// <summary>
-        /// Retourneerd een reference naar de tempfolder en wanneer deze nog niet bestaant dan
+        /// Retourneerd een reference naar de tempfolder en wanneer deze nog niet bestaat dan
         /// wordt deze aangemaakt
         /// </summary>
         private DirectoryInfo GetTempDirectory
