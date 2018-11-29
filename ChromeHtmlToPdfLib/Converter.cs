@@ -17,7 +17,7 @@
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -79,7 +79,7 @@ namespace ChromeHtmlToPdfLib
         private string _proxyBypassList;
 
         /// <summary>
-        ///     A webproxy
+        ///     A web proxy
         /// </summary>
         private WebProxy _webProxy;
 
@@ -89,7 +89,7 @@ namespace ChromeHtmlToPdfLib
         private Process _chromeProcess;
 
         /// <summary>
-        ///     Handles the communication with Chrome devtools
+        ///     Handles the communication with Chrome dev tools
         /// </summary>
         private Browser _browser;
 
@@ -169,7 +169,7 @@ namespace ChromeHtmlToPdfLib
             set
             {
                 _preWrapExtensions = value;
-                WriteToLog($"Setting prewrap extension to '{string.Join(", ", value)}'");
+                WriteToLog($"Setting pre wrap extension to '{string.Join(", ", value)}'");
             } 
         }
 
@@ -179,7 +179,7 @@ namespace ChromeHtmlToPdfLib
         public bool ImageResize { get; set; }
 
         /// <summary>
-        ///     When set to <c>true</c> then images are automaticly rotated following the orientation 
+        ///     When set to <c>true</c> then images are automatically rotated following the orientation 
         ///     set in the EXIF information
         /// </summary>
         public bool ImageRotate { get; set; }
@@ -198,7 +198,7 @@ namespace ChromeHtmlToPdfLib
         /// <exception cref="DirectoryNotFoundException">Raised when the given directory does not exists</exception>
         public string TempDirectory
         {
-            get { return _tempDirectory.FullName; }
+            get => _tempDirectory.FullName;
             set
             {
                 if (!Directory.Exists(value))
@@ -209,8 +209,7 @@ namespace ChromeHtmlToPdfLib
         }
 
         /// <summary>
-        /// Retourneerd een reference naar de tempfolder en wanneer deze nog niet bestaat dan
-        /// wordt deze aangemaakt
+        ///     Returns a reference to the temp directory
         /// </summary>
         private DirectoryInfo GetTempDirectory
         {
@@ -277,7 +276,7 @@ namespace ChromeHtmlToPdfLib
         }
 
         /// <summary>
-        /// Retourneerd een <see cref="WebProxy"/> object
+        /// Returns a <see cref="WebProxy"/> object
         /// </summary>
         private WebProxy WebProxy
         {
@@ -336,10 +335,10 @@ namespace ChromeHtmlToPdfLib
         ///      where this library exists. After that it tries to find it by looking into the registry</param>
         /// <param name="userProfile">
         ///     If set then this directory will be used to store a user profile.
-        ///     Leave blank or set to <c>null</c> if you want to use the default Chrome userprofile location
+        ///     Leave blank or set to <c>null</c> if you want to use the default Chrome user profile location
         /// </param>
         /// <param name="logStream">When set then logging is written to this stream for all conversions. If
-        /// you want a separate log for each conversion then set the logstream on one of the ConvertToPdf" methods</param>
+        /// you want a separate log for each conversion then set the log stream on one of the ConvertToPdf" methods</param>
         /// <exception cref="FileNotFoundException">Raised when <see cref="chromeExeFileName" /> does not exists</exception>
         /// <exception cref="DirectoryNotFoundException">
         ///     Raised when the <paramref name="userProfile" /> directory is given but
@@ -460,6 +459,7 @@ namespace ChromeHtmlToPdfLib
 
                 if (args.Data.StartsWith("DevTools listening on"))
                 {
+                    // ReSharper disable once CommentTypo
                     // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
                     var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
                     _browser = new Browser(uri);
@@ -659,7 +659,7 @@ namespace ChromeHtmlToPdfLib
 
         #region SetUser
         /// <summary>
-        ///     Sets the user under which Chrome wil run. This is usefull if you are on a server and
+        ///     Sets the user under which Chrome wil run. This is useful if you are on a server and
         ///     the user under which the code runs doesn't have access to the internet.
         /// </summary>
         /// <param name="userName">The username with or without a domain name (e.g DOMAIN\USERNAME)</param>
@@ -676,7 +676,7 @@ namespace ChromeHtmlToPdfLib
 
         #region SetArgument
         /// <summary>
-        ///     Add's an extra conversion argument to the <see cref="DefaultArguments" />
+        ///     Adds an extra conversion argument to the <see cref="DefaultArguments" />
         /// </summary>
         /// <remarks>
         ///     This is a one time only default setting which can not be changed when doing multiple conversions.
@@ -690,7 +690,7 @@ namespace ChromeHtmlToPdfLib
         }
 
         /// <summary>
-        ///     Add's an extra conversion argument with value to the <see cref="DefaultArguments" />
+        ///     Adds an extra conversion argument with value to the <see cref="DefaultArguments" />
         ///     or replaces it when it already exists
         /// </summary>
         /// <remarks>
@@ -819,9 +819,9 @@ namespace ChromeHtmlToPdfLib
         /// <param name="waitForWindowStatus">Wait until the javascript window.status has this value before
         ///     rendering the PDF</param>
         /// <param name="waitForWindowsStatusTimeout"></param>
-        /// <param name="conversionTimeout">An conversion timeout in milliseconds, if the conversion failes
+        /// <param name="conversionTimeout">An conversion timeout in milliseconds, if the conversion fails
         ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException"/> is raised</param>
-        /// <param name="logStream">When set then this will give a logging for each conversion. Use the logstream
+        /// <param name="logStream">When set then this will give a logging for each conversion. Use the log stream
         /// option in the constructor if you want one log for all conversions</param>
         /// <exception cref="ConversionTimedOutException">Raised when <see cref="conversionTimeout"/> is set and the 
         /// conversion fails to finish in this amount of time</exception>
@@ -953,9 +953,9 @@ namespace ChromeHtmlToPdfLib
         /// <param name="waitForWindowStatus">Wait until the javascript window.status has this value before
         ///     rendering the PDF</param>
         /// <param name="waitForWindowsStatusTimeout"></param>
-        /// <param name="conversionTimeout">An conversion timeout in milliseconds, if the conversion failes
+        /// <param name="conversionTimeout">An conversion timeout in milliseconds, if the conversion fails
         /// to finished in the set amount of time then an <see cref="ConversionTimedOutException"/> is raised</param>
-        /// <param name="logStream">When set then this will give a logging for each conversion. Use the logstream
+        /// <param name="logStream">When set then this will give a logging for each conversion. Use the log stream
         /// option in the constructor if you want one log for all conversions</param>
         /// <exception cref="ConversionTimedOutException">Raised when <see cref="conversionTimeout"/> is set and the 
         /// conversion fails to finish in this amount of time</exception>
@@ -980,14 +980,14 @@ namespace ChromeHtmlToPdfLib
                     memoryStream.CopyTo(fileStream);
                 }
 
-                WriteToLog($"PDF written to outputfile '{outputFile}'");
+                WriteToLog($"PDF written to output file '{outputFile}'");
             }
         }
 
         ///// <summary>
-        /////     Converts the given <paramref name="inputFile" /> to JPG
+        /////     Converts the given <see paramref name="inputFile" /> to JPG
         ///// </summary>
-        ///// <param name="inputFile">The inputfile to convert to PDF</param>
+        ///// <param name="inputFile">The input file to convert to PDF</param>
         ///// <param name="outputFile">The output file</param>
         ///// <param name="pageSettings"><see cref="PageSettings"/></param>
         ///// <returns>The filename with full path to the generated PNG</returns>
