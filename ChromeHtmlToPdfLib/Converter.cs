@@ -122,7 +122,7 @@ namespace ChromeHtmlToPdfLib
 
         #region Properties
         /// <summary>
-        /// Returns <c>true</c> when Chrome is running
+        ///     Returns <c>true</c> when Chrome is running
         /// </summary>
         /// <returns></returns>
         private bool IsChromeRunning
