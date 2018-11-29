@@ -339,7 +339,7 @@ namespace ChromeHtmlToPdfLib
         ///     Leave blank or set to <c>null</c> if you want to use the default Chrome userprofile location
         /// </param>
         /// <param name="logStream">When set then logging is written to this stream for all conversions. If
-        /// you want a separate log for each conversion then set the logsteam on one of the ConvertToPdf" methods</param>
+        /// you want a separate log for each conversion then set the logstream on one of the ConvertToPdf" methods</param>
         /// <exception cref="FileNotFoundException">Raised when <see cref="chromeExeFileName" /> does not exists</exception>
         /// <exception cref="DirectoryNotFoundException">
         ///     Raised when the <paramref name="userProfile" /> directory is given but
