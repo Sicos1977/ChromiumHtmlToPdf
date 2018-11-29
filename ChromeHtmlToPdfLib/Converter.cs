@@ -940,8 +940,6 @@ namespace ChromeHtmlToPdfLib
                         WriteToLog($"Deleting temporary folder '{_tempDirectory.FullName}'");
                         _tempDirectory.Delete(true);
                     }
-
-                    _tempDirectory = null;
                 }
             }
         }
