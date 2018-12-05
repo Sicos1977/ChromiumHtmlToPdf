@@ -121,12 +121,14 @@ namespace ChromeHtmlToPdfLib.Helpers
             var temp = Path.GetFileName(inputFile) ?? string.Empty;
             var title = HttpUtility.HtmlEncode(temp);
             var tempFile = GetTempFile;
+            
+            WriteToLog($"Reading text file '{inputFile}'");
 
             var streamReader = encoding != null
                 ? new StreamReader(inputFile, encoding)
                 : new EncodingTools.Detector().OpenTextFile(inputFile);
 
-            WriteToLog($"Reading text-file file with encoding '{streamReader.CurrentEncoding.WebName}'");
+            WriteToLog($"File is '{streamReader.CurrentEncoding.WebName}' encoded");
 
             var writeEncoding = new UnicodeEncoding(!BitConverter.IsLittleEndian, true);
 
@@ -159,6 +161,8 @@ namespace ChromeHtmlToPdfLib.Helpers
                 writer.WriteLine("</body>");
                 writer.WriteLine("</html>");
             }
+
+            WriteToLog($"File pre wrapped and written to temporary file '{tempFile}'");
 
             return tempFile;
         }

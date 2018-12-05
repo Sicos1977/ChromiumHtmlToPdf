@@ -101,7 +101,12 @@ namespace ChromeHtmlToPdfLib
         /// <summary>
         ///     When set then this folder is used for temporary files
         /// </summary>
-        private DirectoryInfo _tempDirectory;
+        private string _tempDirectory;
+
+        /// <summary>
+        ///     The directory used for temporary files
+        /// </summary>
+        private DirectoryInfo _currentTempDirectory;
 
         /// <summary>
         ///     Returns the location of Chrome
@@ -198,13 +203,13 @@ namespace ChromeHtmlToPdfLib
         /// <exception cref="DirectoryNotFoundException">Raised when the given directory does not exists</exception>
         public string TempDirectory
         {
-            get => _tempDirectory.FullName;
+            get => _tempDirectory;
             set
             {
                 if (!Directory.Exists(value))
                     throw new DirectoryNotFoundException($"The directory '{value}' does not exists");
 
-                _tempDirectory = new DirectoryInfo(Path.Combine(value, Guid.NewGuid().ToString()));
+                _tempDirectory = value;
             }
         }
 
@@ -215,13 +220,14 @@ namespace ChromeHtmlToPdfLib
         {
             get
             {
-                if (_tempDirectory == null)
-                    _tempDirectory = new DirectoryInfo(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()));
+                _currentTempDirectory = _tempDirectory == null
+                    ? new DirectoryInfo(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()))
+                    : new DirectoryInfo(Path.Combine(_tempDirectory, Guid.NewGuid().ToString()));
 
-                if (!_tempDirectory.Exists)
-                    _tempDirectory.Create();
+                if (!_currentTempDirectory.Exists)
+                    _currentTempDirectory.Create();
 
-                return _tempDirectory;
+                return _currentTempDirectory;
             }
         }
 
@@ -932,13 +938,13 @@ namespace ChromeHtmlToPdfLib
             }
             finally
             {
-                if (_tempDirectory != null)
+                if (_currentTempDirectory != null)
                 {
-                    _tempDirectory.Refresh();
-                    if (_tempDirectory.Exists)
+                    _currentTempDirectory.Refresh();
+                    if (_currentTempDirectory.Exists)
                     {
-                        WriteToLog($"Deleting temporary folder '{_tempDirectory.FullName}'");
-                        _tempDirectory.Delete(true);
+                        WriteToLog($"Deleting temporary folder '{_currentTempDirectory.FullName}'");
+                        _currentTempDirectory.Delete(true);
                     }
                 }
             }
@@ -1036,7 +1042,6 @@ namespace ChromeHtmlToPdfLib
 
             var preWrapper = new PreWrapper(GetTempDirectory, _logStream) {InstanceId = InstanceId};
             outputFile = preWrapper.WrapFile(inputFile.LocalPath, inputFile.Encoding);
-            WriteToLog($"Pre wrapped file '{inputFile}' to '{outputFile}'");
             return true;
         }
         #endregion
