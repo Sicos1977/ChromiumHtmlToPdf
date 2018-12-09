@@ -75,7 +75,7 @@ namespace ChromeHtmlToPdf
                         _itemsToConvert = new ConcurrentQueue<ConversionItem>();
                         _itemsConverted = new ConcurrentQueue<ConversionItem>();
 
-                        WriteToLog($"Reading inputfile '{options.Input}'");
+                        WriteToLog($"Reading input file '{options.Input}'");
                         var lines = File.ReadAllLines(options.Input);
                         foreach (var line in lines)
                         {
