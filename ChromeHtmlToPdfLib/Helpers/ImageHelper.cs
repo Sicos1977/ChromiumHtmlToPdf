@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Text;
 using AngleSharp;
+using AngleSharp.Dom.Html;
 using ChromeHtmlToPdfLib.Settings;
 using Image = System.Drawing.Image;
 
@@ -150,6 +152,8 @@ namespace ChromeHtmlToPdfLib.Helpers
                 ? context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}")).Result
                 : context.OpenAsync(m => m.Content(webpage)).Result;
 
+            var unchangedImages = new List<IHtmlImageElement>();
+
             // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
             foreach (var htmlImage in document.Images)
             {
@@ -160,6 +164,10 @@ namespace ChromeHtmlToPdfLib.Helpers
                 }
 
                 Image image = null;
+                var extension = Path.GetExtension(htmlImage.Source.Contains("?")
+                    ? htmlImage.Source.Split('?')[0]
+                    : htmlImage.Source);
+                var fileName = GetTempFile(extension);
 
                 try
                 {
@@ -179,61 +187,92 @@ namespace ChromeHtmlToPdfLib.Helpers
                         }
                         width = image.Width;
                         height = image.Height;
-                    }
 
-                    if (!resize) continue;
-
-                    if (height == 0 && width == 0)
-                    {
-                        var style = context.Current.GetComputedStyle(htmlImage);
-                        if (style != null)
+                        if (!resize)
                         {
-                            width = ParseValue(style.Width);
-                            height = ParseValue(style.Height);
+                            WriteToLog($"Image rotated and saved to location '{fileName}'");
+                            image.Save(fileName);
+                            htmlImage.DisplayWidth = image.Width;
+                            htmlImage.DisplayHeight = image.Height;
+                            htmlImage.Source = new Uri(fileName).ToString();
                         }
                     }
-
-                    // If we don't know the image size then get if from the image itself
-                    if (width <= 0 || height <= 0)
+                    
+                    if (resize)
                     {
-                        if (image == null)
-                            image = GetImage(new Uri(htmlImage.Source), localDirectory);
+                        if (height == 0 && width == 0)
+                        {
+                            var style = context.Current.GetComputedStyle(htmlImage);
+                            if (style != null)
+                            {
+                                width = ParseValue(style.Width);
+                                height = ParseValue(style.Height);
+                            }
+                        }
 
-                        if (image == null) continue;
-                        width = image.Width;
-                        height = image.Height;
-                    }
+                        // If we don't know the image size then get if from the image itself
+                        if (width <= 0 || height <= 0)
+                        {
+                            if (image == null)
+                                image = GetImage(new Uri(htmlImage.Source), localDirectory);
 
-                    if (width > maxWidth || height > maxHeight)
-                    {
-                        var extension = Path.GetExtension(htmlImage.Source.Contains("?")
-                            ? htmlImage.Source.Split('?')[0]
-                            : htmlImage.Source);
+                            if (image == null) continue;
+                            width = image.Width;
+                            height = image.Height;
+                        }
 
-                        var fileName = GetTempFile(extension);
+                        if (width > maxWidth || height > maxHeight)
+                        {
+                            // If we did not load the image already then load it
+                            if (image == null)
+                                image = GetImage(new Uri(htmlImage.Source), localDirectory);
 
-                        // If we did not load the image already then load it
-                        if (image == null)
-                            image = GetImage(new Uri(htmlImage.Source), localDirectory);
-
-                        if (image == null) continue;
-                        image = ScaleImage(image, (int)maxWidth);
-                        WriteToLog($"Image resized to width {image.Width} and height {image.Height}");
-                        image.Save(fileName);
-                        htmlImage.DisplayWidth = image.Width;
-                        htmlImage.DisplayHeight = image.Height;
-                        htmlImage.Source = new Uri(fileName).ToString();
-                        changed = true;
+                            if (image == null) continue;
+                            image = ScaleImage(image, (int) maxWidth);
+                            WriteToLog($"Image resized to width {image.Width} and height {image.Height} and saved to location '{fileName}'");
+                            image.Save(fileName);
+                            htmlImage.DisplayWidth = image.Width;
+                            htmlImage.DisplayHeight = image.Height;
+                            htmlImage.Source = new Uri(fileName).ToString();
+                            changed = true;
+                        }
                     }
                 }
                 finally
                 {
                     image?.Dispose();
                 }
+
+                if (!changed)
+                    unchangedImages.Add(htmlImage);
             }
 
             if (!changed)
                 return true;
+
+            foreach (var unchangedImage in unchangedImages)
+            {
+                var imageSource = new Uri(unchangedImage.Source);
+                using(var image = GetImage(imageSource, localDirectory))
+                {
+                    if (localDirectory != null)
+                    {
+                        var fileName = Path.Combine(localDirectory, Path.GetFileName(imageSource.ToString()));
+                        unchangedImage.Source = new Uri(fileName).ToString();
+                    }
+                    else
+                    {
+                        var extension = Path.GetExtension(unchangedImage.Source.Contains("?")
+                            ? unchangedImage.Source.Split('?')[0]
+                            : unchangedImage.Source);
+                        var fileName = GetTempFile(extension);
+
+                        WriteToLog($"Unchanged image saved to location '{fileName}'");
+                        image.Save(fileName);
+                        unchangedImage.Source = new Uri(fileName).ToString();
+                    }
+                }
+            }
 
             var outputFile = GetTempFile(".htm");
             outputUri = new ConvertUri(outputFile, inputUri.Encoding);
