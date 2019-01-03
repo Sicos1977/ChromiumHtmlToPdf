@@ -123,6 +123,16 @@ namespace ChromeHtmlToPdfLib
         ///     tag so that they can be opened by Chrome
         /// </summary>
         private List<string> _preWrapExtensions;
+
+        /// <summary>
+        ///     Flag to wait in code when starting Chrome
+        /// </summary>
+        private ManualResetEvent _chromeWaitEvent;
+
+        /// <summary>
+        ///     Exceptions thrown from a Chrome startup event
+        /// </summary>
+        private Exception _chromeEventException;
         #endregion
 
         #region Properties
@@ -403,7 +413,7 @@ namespace ChromeHtmlToPdfLib
                 return;
             }
 
-            var starting = true;
+            _chromeEventException = null;
             var workingDirectory = Path.GetDirectoryName(_chromeExeFileName);
 
             WriteToLog($"Starting Chrome from location '{_chromeExeFileName}' with working directory '{workingDirectory}'");
@@ -451,42 +461,11 @@ namespace ChromeHtmlToPdfLib
 
             _chromeProcess.StartInfo = processStartInfo;
 
-            var waitEvent = new ManualResetEvent(false);
-
-            _chromeProcess.OutputDataReceived += (sender, args) =>
-            {
-                if (!string.IsNullOrWhiteSpace(args.Data))
-                    WriteToLog($"Error: {args.Data}");
-            };
-
-            _chromeProcess.ErrorDataReceived += (sender, args) =>
-            {
-                if (args.Data == null) return;
-
-                if (args.Data.StartsWith("DevTools listening on"))
-                {
-                    // ReSharper disable once CommentTypo
-                    // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
-                    var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
-                    _browser = new Browser(uri);
-                    WriteToLog($"Connected to dev protocol on uri '{uri.ToString()}'");
-                    waitEvent.Set();
-                }
-                else if (!string.IsNullOrWhiteSpace(args.Data))
-                    WriteToLog($"Error: {args.Data}");
-            };
-
-            _chromeProcess.Exited += (sender, args) =>
-            {
-                // ReSharper disable once AccessToModifiedClosure
-                if (!starting) return;
-                WriteToLog("Chrome exited unexpectedly, arguments used: " + string.Join(" ", DefaultArguments));
-                WriteToLog("Process id: " + _chromeProcess.Id);
-                WriteToLog("Process exit time: " + _chromeProcess.ExitTime.ToString("yyyy-MM-ddTHH:mm:ss.fff"));
-                var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromeProcess.ExitCode));
-                WriteToLog("Exception: " + exception);
-                throw new ChromeException("Chrome exited unexpectedly, " + exception);
-            };
+            _chromeWaitEvent = new ManualResetEvent(false);
+            
+            _chromeProcess.OutputDataReceived += _chromeProcess_OutputDataReceived;
+            _chromeProcess.ErrorDataReceived += _chromeProcess_ErrorDataReceived;
+            _chromeProcess.Exited += _chromeProcess_Exited;
 
             _chromeProcess.EnableRaisingEvents = true;
 
@@ -506,13 +485,96 @@ namespace ChromeHtmlToPdfLib
             _chromeProcess.BeginOutputReadLine();
 
             if (_conversionTimeout.HasValue)
-                waitEvent.WaitOne(_conversionTimeout.Value);
+                _chromeWaitEvent.WaitOne(_conversionTimeout.Value);
             else
-                waitEvent.WaitOne();
+                _chromeWaitEvent.WaitOne();
 
-            starting = false;
+            if (_chromeEventException != null)
+            {
+                WriteToLog("Exception: " + ExceptionHelpers.GetInnerException(_chromeEventException));
+                throw _chromeEventException;
+            }
 
             WriteToLog("Chrome started");
+        }
+
+        /// <summary>
+        ///     Raised when the Chrome process exits
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void _chromeProcess_Exited(object sender, EventArgs e)
+        {
+            try
+            {
+                // ReSharper disable once AccessToModifiedClosure
+                if (_chromeProcess == null) return;
+                WriteToLog("Chrome exited unexpectedly, arguments used: " + string.Join(" ", DefaultArguments));
+                WriteToLog("Process id: " + _chromeProcess.Id);
+                WriteToLog("Process exit time: " + _chromeProcess.ExitTime.ToString("yyyy-MM-ddTHH:mm:ss.fff"));
+                var exception =
+                    ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromeProcess.ExitCode));
+                WriteToLog("Exception: " + exception);
+                throw new ChromeException("Chrome exited unexpectedly, " + exception);
+            }
+            catch (Exception exception)
+            {
+                _chromeEventException = exception;
+                if (_chromeProcess != null) 
+                    _chromeProcess.Exited -= _chromeProcess_Exited;
+                _chromeWaitEvent.Set();
+            }
+        }
+
+        /// <summary>
+        ///     Raised when Chrome sends data to the error output
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _chromeProcess_ErrorDataReceived(object sender, DataReceivedEventArgs args)
+        {
+            try
+            {
+                if (args.Data == null) return;
+
+                if (args.Data.StartsWith("DevTools listening on"))
+                {
+                    // ReSharper disable once CommentTypo
+                    // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
+                    var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
+                    _browser = new Browser(uri);
+                    WriteToLog($"Connected to dev protocol on uri '{uri}'");
+                    _chromeWaitEvent.Set();
+                }
+                else if (!string.IsNullOrWhiteSpace(args.Data))
+                    WriteToLog($"Error: {args.Data}");
+            }
+            catch (Exception exception)
+            {
+                _chromeEventException = exception;
+                _chromeProcess.ErrorDataReceived -= _chromeProcess_ErrorDataReceived;
+                _chromeWaitEvent.Set();
+            }
+        }
+
+        /// <summary>
+        ///     Raises when Chrome send data to the standard output
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void _chromeProcess_OutputDataReceived(object sender, DataReceivedEventArgs args)
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(args.Data))
+                    WriteToLog($"Error: {args.Data}");
+            }
+            catch (Exception exception)
+            {
+                _chromeEventException = exception;
+                _chromeProcess.OutputDataReceived -= _chromeProcess_OutputDataReceived;
+                _chromeWaitEvent.Set();
+            }
         }
         #endregion
 
