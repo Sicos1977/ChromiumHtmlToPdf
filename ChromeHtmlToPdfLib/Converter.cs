@@ -399,7 +399,7 @@ namespace ChromeHtmlToPdfLib
 
         #region StartChromeHeadless
         /// <summary>
-        ///     Start Chrome headless with the debugger set to the given port
+        ///     Start Chrome headless
         /// </summary>
         /// <remarks>
         ///     If Chrome is already running then this step is skipped
@@ -558,7 +558,7 @@ namespace ChromeHtmlToPdfLib
         }
 
         /// <summary>
-        ///     Raises when Chrome send data to the standard output
+        ///     Raised when Chrome send data to the standard output
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
