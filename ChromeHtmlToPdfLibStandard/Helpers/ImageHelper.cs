@@ -367,7 +367,9 @@ namespace ChromeHtmlToPdfLib.Helpers
         {
             var ratio = maxWidth / image.Width;
             var newWidth = (int)(image.Width * ratio);
+            if (newWidth == 0) newWidth = 1;
             var newHeight = (int)(image.Height * ratio);
+            if (newHeight == 0) newHeight = 1;
             var newImage = new Bitmap(newWidth, newHeight);
 
             using (var graphic = Graphics.FromImage(newImage))
