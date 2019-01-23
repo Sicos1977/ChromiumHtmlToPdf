@@ -28,10 +28,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Management;
 using System.Text;
 using ChromeHtmlToPdfLib.Settings;
-using Microsoft.Win32;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -39,6 +37,7 @@ using System.Threading;
 using ChromeHtmlToPdfLib.Enums;
 using ChromeHtmlToPdfLib.Exceptions;
 using ChromeHtmlToPdfLib.Helpers;
+// ReSharper disable UnusedMember.Global
 
 namespace ChromeHtmlToPdfLib
 {

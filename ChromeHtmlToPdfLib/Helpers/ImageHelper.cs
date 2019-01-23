@@ -6,7 +6,9 @@ using System.IO;
 using System.Net;
 using System.Text;
 using AngleSharp;
-using AngleSharp.Dom.Html;
+using AngleSharp.Dom;
+using AngleSharp.Html.Dom;
+using AngleSharp.Xhtml;
 using ChromeHtmlToPdfLib.Settings;
 using Image = System.Drawing.Image;
 
@@ -101,7 +103,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         {
             value = value.Replace("px", string.Empty);
             value = value.Replace(" ", string.Empty);
-            return int.TryParse(value, out int result) ? result : 0;
+            return int.TryParse(value, out var result) ? result : 0;
         }
         #endregion
 
@@ -205,8 +207,8 @@ namespace ChromeHtmlToPdfLib.Helpers
                             var style = context.Current.GetComputedStyle(htmlImage);
                             if (style != null)
                             {
-                                width = ParseValue(style.Width);
-                                height = ParseValue(style.Height);
+                                width = ParseValue(style.GetPropertyValue("width"));
+                                height = ParseValue(style.GetPropertyValue("height"));
                             }
                         }
 
