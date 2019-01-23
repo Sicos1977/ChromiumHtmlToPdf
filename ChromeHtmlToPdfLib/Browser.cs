@@ -27,6 +27,7 @@
 using System;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 using ChromeHtmlToPdfLib.Exceptions;
 using ChromeHtmlToPdfLib.Helpers;
 using ChromeHtmlToPdfLib.Protocol;
@@ -168,7 +169,7 @@ namespace ChromeHtmlToPdfLib
                 }
             };
 
-            _pageConnection.MessageReceived += messageReceived;
+            _pageConnection.MessageReceived += messageReceived = ;
 
             var stopWatch = new Stopwatch();
             stopWatch.Start();
@@ -181,7 +182,7 @@ namespace ChromeHtmlToPdfLib
             }
 
             stopWatch.Stop();
-            _pageConnection.MessageReceived -= messageReceived;
+            _pageConnection.MessageReceived -= messageReceived = ;
 
             return match;
         }
@@ -200,7 +201,7 @@ namespace ChromeHtmlToPdfLib
         /// </remarks>
         /// <exception cref="ConversionException">Raised when Chrome returns an empty string</exception>
         /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer"/> reaches zero</exception>
-        internal PrintToPdfResponse PrintToPdf(PageSettings pageSettings, CountdownTimer countdownTimer = null)
+        internal async Task<PrintToPdfResponse> PrintToPdf(PageSettings pageSettings, CountdownTimer countdownTimer = null)
         {
             var message = new Message {Method = "Page.printToPDF"};
             message.AddParameter("landscape", pageSettings.Landscape);
@@ -220,10 +221,10 @@ namespace ChromeHtmlToPdfLib
             if (!string.IsNullOrEmpty(pageSettings.FooterTemplate))
                 message.AddParameter("footerTemplate", pageSettings.FooterTemplate);
             message.AddParameter("preferCSSPageSize", pageSettings.PreferCSSPageSize);
-            
+
             var result = countdownTimer == null
-                ? _pageConnection.SendAsync(message).GetAwaiter().GetResult()
-                : _pageConnection.SendAsync(message).Timeout(countdownTimer.MillisecondsLeft).GetAwaiter().GetResult();
+                ? await _pageConnection.SendAsync(message)
+                : await _pageConnection.SendAsync(message).Timeout(countdownTimer.MillisecondsLeft);
 
             var printToPdfResponse = PrintToPdfResponse.FromJson(result);
 

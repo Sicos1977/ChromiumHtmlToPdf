@@ -985,7 +985,7 @@ namespace ChromeHtmlToPdfLib
 
                 WriteToLog("Converting to PDF");
 
-                using (var memoryStream = new MemoryStream(_browser.PrintToPdf(pageSettings, countdownTimer).Bytes))
+                using (var memoryStream = new MemoryStream(_browser.PrintToPdf(pageSettings, countdownTimer).GetAwaiter().GetResult().Bytes))
                 {
                     memoryStream.Position = 0;
                     memoryStream.CopyTo(outputStream);
