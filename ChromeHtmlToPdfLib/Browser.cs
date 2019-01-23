@@ -159,17 +159,15 @@ namespace ChromeHtmlToPdfLib
             var waitEvent = new ManualResetEvent(false);
             var match = false;
 
-            EventHandler<string> messageReceived = (sender, data) =>
+            void MessageReceived(object sender, string data)
             {
                 var evaluate = Evaluate.FromJson(data);
-                if (evaluate.Result?.Result?.Value == status)
-                {
-                    match = true;
-                    waitEvent.Set();
-                }
-            };
+                if (evaluate.Result?.Result?.Value != status) return;
+                match = true;
+                waitEvent.Set();
+            }
 
-            _pageConnection.MessageReceived += messageReceived = ;
+            _pageConnection.MessageReceived += MessageReceived;
 
             var stopWatch = new Stopwatch();
             stopWatch.Start();
@@ -182,7 +180,7 @@ namespace ChromeHtmlToPdfLib
             }
 
             stopWatch.Stop();
-            _pageConnection.MessageReceived -= messageReceived = ;
+            _pageConnection.MessageReceived -= MessageReceived;
 
             return match;
         }
