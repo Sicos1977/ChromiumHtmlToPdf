@@ -435,29 +435,29 @@ namespace ChromeHtmlToPdfLib
                 LoadUserProfile = false
             };
 
-            //if (!string.IsNullOrWhiteSpace(_userName))
-            //{
-            //    var userName = string.Empty;
-            //    var domain = string.Empty;
+            if (!string.IsNullOrWhiteSpace(_userName))
+            {
+                var userName = string.Empty;
+                var domain = string.Empty;
 
-            //    if (_userName.Contains("\\"))
-            //    {
-            //        userName = _userName.Split('\\')[1];
-            //        domain = _userName.Split('\\')[0];
-            //    }
+                if (_userName.Contains("\\"))
+                {
+                    userName = _userName.Split('\\')[1];
+                    domain = _userName.Split('\\')[0];
+                }
 
-            //    WriteToLog($"Starting Chrome with username '{userName}' on domain '{domain}'");
+                WriteToLog($"Starting Chrome with username '{userName}' on domain '{domain}'");
 
-            //    processStartInfo.Domain = domain;
-            //    processStartInfo.UserName = userName;
+                processStartInfo.Domain = domain;
+                processStartInfo.UserName = userName;
 
-            //    var secureString = new SecureString();
-            //    foreach (var t in _password)
-            //        secureString.AppendChar(t);
+                var secureString = new SecureString();
+                foreach (var t in _password)
+                    secureString.AppendChar(t);
 
-            //    processStartInfo.Password = secureString;
-            //    processStartInfo.LoadUserProfile = true;
-            //}
+                processStartInfo.Password = secureString;
+                processStartInfo.LoadUserProfile = true;
+            }
 
             _chromeProcess.StartInfo = processStartInfo;
 
