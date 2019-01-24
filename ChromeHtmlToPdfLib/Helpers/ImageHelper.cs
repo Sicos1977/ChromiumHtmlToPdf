@@ -5,6 +5,7 @@ using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using AngleSharp;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
@@ -107,6 +108,31 @@ namespace ChromeHtmlToPdfLib.Helpers
         }
         #endregion
 
+        #region GetImageFromBase64
+        private Image GetImageFromBase64(string data)
+        {
+            WriteToLog("Decoding image from base64 string");
+
+            try
+            {
+                var base64Data = Regex.Match(data, @"data:image/(?<type>.+?),(?<data>.+)").Groups["data"].Value;
+                var binaryData = Convert.FromBase64String(base64Data);
+
+                using (var stream = new MemoryStream(binaryData))
+                {
+                    var image = Image.FromStream(stream);
+                    WriteToLog("Image decoded");
+                    return image;
+                }
+            }
+            catch (Exception exception)
+            {
+                WriteToLog($"Error decoding image: {ExceptionHelpers.GetInnerException(exception)}");
+                return null;
+            }
+        }
+        #endregion
+
         #region ValidateImages
         /// <summary>
         /// Validates all images if they are rotated correctly (when <paramref name="rotate"/> is set
@@ -179,8 +205,12 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                     if (rotate)
                     {
-                        image = GetImage(new Uri(htmlImage.Source), localDirectory);
+                        image = htmlImage.Source.StartsWith("data:", StringComparison.InvariantCultureIgnoreCase)
+                            ? GetImageFromBase64(htmlImage.Source)
+                            : GetImage(new Uri(htmlImage.Source), localDirectory);
+
                         if (image == null) continue;
+
                         if (RotateImageByExifOrientationData(image))
                         {
                             htmlImage.DisplayWidth = image.Width;
@@ -216,7 +246,12 @@ namespace ChromeHtmlToPdfLib.Helpers
                         if (width <= 0 || height <= 0)
                         {
                             if (image == null)
-                                image = GetImage(new Uri(htmlImage.Source), localDirectory);
+                            {
+                                image = htmlImage.Source.StartsWith("data:",
+                                    StringComparison.InvariantCultureIgnoreCase)
+                                    ? GetImageFromBase64(htmlImage.Source)
+                                    : GetImage(new Uri(htmlImage.Source), localDirectory);
+                            }
 
                             if (image == null) continue;
                             width = image.Width;
@@ -226,10 +261,15 @@ namespace ChromeHtmlToPdfLib.Helpers
                         if (width > maxWidth || height > maxHeight)
                         {
                             // If we did not load the image already then load it
+
                             if (image == null)
-                                image = GetImage(new Uri(htmlImage.Source), localDirectory);
+                                image = htmlImage.Source.StartsWith("data:",
+                                    StringComparison.InvariantCultureIgnoreCase)
+                                    ? GetImageFromBase64(htmlImage.Source)
+                                    : GetImage(new Uri(htmlImage.Source), localDirectory);
 
                             if (image == null) continue;
+
                             image = ScaleImage(image, (int) maxWidth);
                             WriteToLog($"Image resized to width {image.Width} and height {image.Height} and saved to location '{fileName}'");
                             image.Save(fileName);
