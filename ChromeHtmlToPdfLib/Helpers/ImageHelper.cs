@@ -172,7 +172,7 @@ namespace ChromeHtmlToPdfLib.Helpers
             var maxWidth = pageSettings.PaperWidth * 96.0;
             var maxHeight = pageSettings.PaperHeight * 96.0;
 
-            var changed = false;
+            var htmlChanged = false;
             var config = Configuration.Default.WithCss();
             var context = BrowsingContext.New(config);
 
@@ -185,6 +185,8 @@ namespace ChromeHtmlToPdfLib.Helpers
             // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
             foreach (var htmlImage in document.Images)
             {
+                var imageChanged = false;
+
                 if (string.IsNullOrWhiteSpace(htmlImage.Source))
                 {
                     WriteToLog($"HTML image tag '{htmlImage.TagName}' has no image source '{htmlImage.Source}'");
@@ -215,19 +217,17 @@ namespace ChromeHtmlToPdfLib.Helpers
                         {
                             htmlImage.DisplayWidth = image.Width;
                             htmlImage.DisplayHeight = image.Height;
-                            changed = true;
-                        }
-                        width = image.Width;
-                        height = image.Height;
-
-                        if (!resize)
-                        {
                             WriteToLog($"Image rotated and saved to location '{fileName}'");
                             image.Save(fileName);
                             htmlImage.DisplayWidth = image.Width;
                             htmlImage.DisplayHeight = image.Height;
                             htmlImage.Source = new Uri(fileName).ToString();
+                            htmlChanged = true;
+                            imageChanged = true;
                         }
+
+                        width = image.Width;
+                        height = image.Height;
                     }
                     
                     if (resize)
@@ -276,7 +276,8 @@ namespace ChromeHtmlToPdfLib.Helpers
                             htmlImage.DisplayWidth = image.Width;
                             htmlImage.DisplayHeight = image.Height;
                             htmlImage.Source = new Uri(fileName).ToString();
-                            changed = true;
+                            htmlChanged = true;
+                            imageChanged = true;
                         }
                     }
                 }
@@ -285,11 +286,11 @@ namespace ChromeHtmlToPdfLib.Helpers
                     image?.Dispose();
                 }
 
-                if (!changed)
+                if (!imageChanged)
                     unchangedImages.Add(htmlImage);
             }
 
-            if (!changed)
+            if (!htmlChanged)
                 return true;
 
             foreach (var unchangedImage in unchangedImages)
