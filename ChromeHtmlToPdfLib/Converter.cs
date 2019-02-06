@@ -894,12 +894,12 @@ namespace ChromeHtmlToPdfLib
         /// <exception cref="ConversionTimedOutException">Raised when <see cref="conversionTimeout"/> is set and the 
         /// conversion fails to finish in this amount of time</exception>
         public void ConvertToPdf(ConvertUri inputUri,
-                                 Stream outputStream,
-                                 PageSettings pageSettings,
-                                 string waitForWindowStatus = "",
-                                 int waitForWindowsStatusTimeout = 60000,
-                                 int? conversionTimeout = null,
-                                 Stream logStream = null)
+            Stream outputStream,
+            PageSettings pageSettings,
+            string waitForWindowStatus = "",
+            int waitForWindowsStatusTimeout = 60000,
+            int? conversionTimeout = null,
+            Stream logStream = null)
         {
             _logStream = logStream;
             _conversionTimeout = conversionTimeout;
@@ -1029,12 +1029,12 @@ namespace ChromeHtmlToPdfLib
         /// conversion fails to finish in this amount of time</exception>
         /// <exception cref="DirectoryNotFoundException"></exception>
         public void ConvertToPdf(ConvertUri inputUri,
-                                 string outputFile,
-                                 PageSettings pageSettings,
-                                 string waitForWindowStatus = "",
-                                 int waitForWindowsStatusTimeout = 60000,
-                                 int? conversionTimeout = null,
-                                 Stream logStream = null)
+            string outputFile,
+            PageSettings pageSettings,
+            string waitForWindowStatus = "",
+            int waitForWindowsStatusTimeout = 60000,
+            int? conversionTimeout = null,
+            Stream logStream = null)
         {
             CheckIfOutputFolderExists(outputFile);
             using (var memoryStream = new MemoryStream())

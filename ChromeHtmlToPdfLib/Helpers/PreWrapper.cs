@@ -26,8 +26,8 @@
 
 using System;
 using System.IO;
+using System.Net;
 using System.Text;
-using System.Web;
 
 namespace ChromeHtmlToPdfLib.Helpers
 {
@@ -119,7 +119,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         public string WrapFile(string inputFile, Encoding encoding)
         {
             var temp = Path.GetFileName(inputFile) ?? string.Empty;
-            var title = HttpUtility.HtmlEncode(temp);
+            var title = WebUtility.HtmlEncode(temp);
             var tempFile = GetTempFile;
             
             WriteToLog($"Reading text file '{inputFile}'");

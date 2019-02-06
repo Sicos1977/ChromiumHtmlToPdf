@@ -320,10 +320,10 @@ namespace ChromeHtmlToPdf
         {
             var pageSettings = GetPageSettings(options);
 
-            using (var browser = new Converter(options.ChromeLocation, options.ChromeUserProfile, _logStream))
+            using (var converter = new Converter(options.ChromeLocation, options.ChromeUserProfile, _logStream))
             {
-                SetConverterSettings(browser, options);
-                browser.ConvertToPdf(CheckInput(options),
+                SetConverterSettings(converter, options);
+                converter.ConvertToPdf(CheckInput(options),
                     options.Output,
                     pageSettings,
                     options.WaitForWindowStatus,
@@ -374,19 +374,19 @@ namespace ChromeHtmlToPdf
                 ? Console.OpenStandardOutput()
                 : File.OpenWrite(ReplaceWildCards(options.LogFile));
 
-            using(logStream)
-            using (var browser = new Converter(options.ChromeLocation, options.ChromeUserProfile, logStream))
+            using (logStream)
+            using (var converter = new Converter(options.ChromeLocation, options.ChromeUserProfile, logStream))
             {
-                browser.InstanceId = instanceId;
+                converter.InstanceId = instanceId;
 
-                SetConverterSettings(browser, options);
+                SetConverterSettings(converter, options);
 
                 while (!_itemsToConvert.IsEmpty)
                 {
                     if (!_itemsToConvert.TryDequeue(out var itemToConvert)) continue;
                     try
                     {
-                        browser.ConvertToPdf(itemToConvert.InputUri, itemToConvert.OutputFile, pageSettings);
+                        converter.ConvertToPdf(itemToConvert.InputUri, itemToConvert.OutputFile, pageSettings);
 
                         itemToConvert.SetStatus(ConversionItemStatus.Success);
                     }
