@@ -169,8 +169,15 @@ namespace ChromeHtmlToPdfLib.Helpers
                     : File.ReadAllText(inputUri.OriginalString)
                 : DownloadString(inputUri);
 
-            var maxWidth = pageSettings.PaperWidth * 96.0;
-            var maxHeight = pageSettings.PaperHeight * 96.0;
+            /*
+             * const convertPixelToInches = (value, dpi) => {
+      let inches = value/ dpi;
+      return `${inches}in`; // Calculate inches value and round it up.
+    }
+             */
+
+            var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft) * 96.0;
+            var maxHeight = (pageSettings.PaperHeight - pageSettings.MarginRight) * 96.0;
 
             var htmlChanged = false;
             var config = Configuration.Default.WithCss();
