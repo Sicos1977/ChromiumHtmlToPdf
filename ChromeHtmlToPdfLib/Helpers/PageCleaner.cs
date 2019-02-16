@@ -7,18 +7,20 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using AngleSharp;
-using AngleSharp.Dom;
-using AngleSharp.Html.Dom;
-using AngleSharp.Xhtml;
+using AngleSharp.Dom.Html;
 using ChromeHtmlToPdfLib.Settings;
+using Ganss.XSS;
 using Image = System.Drawing.Image;
 
 namespace ChromeHtmlToPdfLib.Helpers
 {
     /// <summary>
-    ///     This class contains helper methods for image
+    ///     This class contains method to cleanup the webpage<br/>
+    ///     - Cleanup html code to prevent cross site scripting
+    ///     - Resize images so that they fit the page
+    ///     - Auto rotate images according to the exif information
     /// </summary>
-    public class ImageHelper
+    public class PageCleaner
     {
         #region Fields
         /// <summary>
@@ -82,7 +84,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <param name="logStream">When set then logging is written to this stream</param>
         /// <param name="webProxy">The web proxy to use when downloading</param>
         /// <param name="timeout"></param>
-        public ImageHelper(DirectoryInfo tempDirectory = null,
+        public PageCleaner(DirectoryInfo tempDirectory = null,
                            Stream logStream = null,
                            WebProxy webProxy = null,
                            int? timeout = null)
@@ -133,29 +135,30 @@ namespace ChromeHtmlToPdfLib.Helpers
         }
         #endregion
 
-        #region ValidateImages
+        #region Cleanup
         /// <summary>
-        /// Validates all images if they are rotated correctly (when <paramref name="rotate"/> is set
+        /// Validates all images if they are rotated correctly when <paramref name="rotate"/> is set
         /// to <c>true</c>) and fit on the given <paramref name="pageSettings"/>.
         /// If an image does need to be rotated or does not fit then a local copy is made of 
         /// the <paramref name="inputUri"/> file.
         /// </summary>
         /// <param name="inputUri">The uri of the webpage</param>
+        /// <param name="sanitize"></param>
         /// <param name="resize">When set to <c>true</c> then an image is resized when needed</param>
         /// <param name="rotate">When set to <c>true</c> then the EXIF information of an
-        /// image is read and when needed the image is automatic rotated</param>
+        ///     image is read and when needed the image is automatically rotated</param>
         /// <param name="pageSettings"><see cref="PageSettings"/></param>
         /// <param name="outputUri">The outputUri when this method returns <c>false</c> otherwise
         ///     <c>null</c> is returned</param>
         /// <returns>Returns <c>false</c> when the images dit not fit the page, otherwise <c>true</c></returns>
         /// <exception cref="WebException">Raised when the webpage from <paramref name="inputUri"/> could not be downloaded</exception>
-        public bool ValidateImages(ConvertUri inputUri,
-                                   bool resize,
-                                   bool rotate,
-                                   PageSettings pageSettings,
-                                   out ConvertUri outputUri)
+        public bool Cleanup(ConvertUri inputUri,
+            bool sanitize,
+            bool resize,
+            bool rotate,
+            PageSettings pageSettings,
+            out ConvertUri outputUri)
         {
-            WriteToLog("Validating all images if they need to be rotated and if they fit the page");
             outputUri = null;
 
             string localDirectory = null;
@@ -168,18 +171,34 @@ namespace ChromeHtmlToPdfLib.Helpers
                     ? File.ReadAllText(inputUri.OriginalString, inputUri.Encoding)
                     : File.ReadAllText(inputUri.OriginalString)
                 : DownloadString(inputUri);
+            
+            var changed = false;
 
-            /*
-             * const convertPixelToInches = (value, dpi) => {
-      let inches = value/ dpi;
-      return `${inches}in`; // Calculate inches value and round it up.
-    }
-             */
+            if (sanitize)
+            {
+                var sanitizer = new HtmlSanitizer();
+                sanitizer.AllowedSchemes.Add("mailto");
+                sanitizer.AllowedTags.Add("html");
+                sanitizer.AllowedTags.Add("head");
+                sanitizer.AllowedAttributes.Add("http-equiv");
+                sanitizer.AllowedAttributes.Add("content");
+                sanitizer.AllowedTags.Add("body");
+                sanitizer.AllowedTags.Add("meta");
+                sanitizer.AllowedAttributes.Add("class");
+                sanitizer.AllowDataAttributes = true;
 
-            var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft) * 96.0;
-            var maxHeight = (pageSettings.PaperHeight - pageSettings.MarginRight) * 96.0;
+                var sanitizedWebPage = sanitizer.Sanitize(webpage, string.Empty, new AutoSelectedMarkupFormatter());
+                if (webpage != sanitizedWebPage)
+                {
+                    changed = true;
+                    webpage = sanitizedWebPage;
+                    WriteToLog("Webpage sanitized");
+                }
+            }
 
-            var htmlChanged = false;
+            var maxWidth = pageSettings.PaperWidth * 96.0;
+            var maxHeight = pageSettings.PaperHeight * 96.0;
+
             var config = Configuration.Default.WithCss();
             var context = BrowsingContext.New(config);
 
@@ -187,13 +206,13 @@ namespace ChromeHtmlToPdfLib.Helpers
                 ? context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}")).Result
                 : context.OpenAsync(m => m.Content(webpage)).Result;
 
+            //document.TextContent
+
             var unchangedImages = new List<IHtmlImageElement>();
 
             // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
             foreach (var htmlImage in document.Images)
             {
-                var imageChanged = false;
-
                 if (string.IsNullOrWhiteSpace(htmlImage.Source))
                 {
                     WriteToLog($"HTML image tag '{htmlImage.TagName}' has no image source '{htmlImage.Source}'");
@@ -201,9 +220,11 @@ namespace ChromeHtmlToPdfLib.Helpers
                 }
 
                 Image image = null;
+
                 var extension = Path.GetExtension(htmlImage.Source.Contains("?")
                     ? htmlImage.Source.Split('?')[0]
                     : htmlImage.Source);
+
                 var fileName = GetTempFile(extension);
 
                 try
@@ -224,17 +245,19 @@ namespace ChromeHtmlToPdfLib.Helpers
                         {
                             htmlImage.DisplayWidth = image.Width;
                             htmlImage.DisplayHeight = image.Height;
+                            changed = true;
+                        }
+                        width = image.Width;
+                        height = image.Height;
+
+                        if (!resize)
+                        {
                             WriteToLog($"Image rotated and saved to location '{fileName}'");
                             image.Save(fileName);
                             htmlImage.DisplayWidth = image.Width;
                             htmlImage.DisplayHeight = image.Height;
                             htmlImage.Source = new Uri(fileName).ToString();
-                            htmlChanged = true;
-                            imageChanged = true;
                         }
-
-                        width = image.Width;
-                        height = image.Height;
                     }
                     
                     if (resize)
@@ -283,8 +306,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                             htmlImage.DisplayWidth = image.Width;
                             htmlImage.DisplayHeight = image.Height;
                             htmlImage.Source = new Uri(fileName).ToString();
-                            htmlChanged = true;
-                            imageChanged = true;
+                            changed = true;
                         }
                     }
                 }
@@ -293,11 +315,11 @@ namespace ChromeHtmlToPdfLib.Helpers
                     image?.Dispose();
                 }
 
-                if (!imageChanged)
+                if (!changed)
                     unchangedImages.Add(htmlImage);
             }
 
-            if (!htmlChanged)
+            if (!changed)
                 return true;
 
             foreach (var unchangedImage in unchangedImages)
