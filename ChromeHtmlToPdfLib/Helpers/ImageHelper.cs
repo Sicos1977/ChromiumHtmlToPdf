@@ -7,6 +7,7 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using AngleSharp;
+using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using AngleSharp.Xhtml;
@@ -176,8 +177,8 @@ namespace ChromeHtmlToPdfLib.Helpers
     }
              */
 
-            var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft) * 96.0;
-            var maxHeight = (pageSettings.PaperHeight - pageSettings.MarginRight) * 96.0;
+            var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft - pageSettings.MarginRight) * 96.0;
+            var maxHeight = (pageSettings.PaperHeight - pageSettings.MarginTop - pageSettings.MarginBottom) * 96.0;
 
             var htmlChanged = false;
             var config = Configuration.Default.WithCss();
@@ -228,6 +229,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                             image.Save(fileName);
                             htmlImage.DisplayWidth = image.Width;
                             htmlImage.DisplayHeight = image.Height;
+                            htmlImage.SetStyle(string.Empty);
                             htmlImage.Source = new Uri(fileName).ToString();
                             htmlChanged = true;
                             imageChanged = true;
@@ -282,6 +284,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                             image.Save(fileName);
                             htmlImage.DisplayWidth = image.Width;
                             htmlImage.DisplayHeight = image.Height;
+                            htmlImage.SetStyle(string.Empty);
                             htmlImage.Source = new Uri(fileName).ToString();
                             htmlChanged = true;
                             imageChanged = true;
