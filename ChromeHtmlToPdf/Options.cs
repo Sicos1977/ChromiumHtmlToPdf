@@ -17,11 +17,11 @@ namespace ChromeHtmlToPdf
         public string Input { get; set; }
 
         /// <summary>
-        ///     A file with input url's and/or files
+        ///     A file with input urls and/or files
         /// </summary>
         [Option("input-is-list", Required = false,
             HelpText =
-                "Tells this app that --input is a list of input url's and/or files. Use the --output parameter to " +
+                "Tells this app that --input is a list of input urls and/or files. Use the --output parameter to " +
                 "give a location where to write information about the converted files, e.g. c:\\myconvertedfiles"
         )]
         public bool InputIsList { get; set; }
@@ -57,7 +57,7 @@ namespace ChromeHtmlToPdf
         public double Scale { get; set; }
 
         /// <summary>
-        ///     The papersize to use, when this option is set is will override <see cref="PaperWidth" /> and
+        ///     The paper size to use, when this option is set is will override <see cref="PaperWidth" /> and
         ///     <see cref="PaperHeight" />
         /// </summary>
         [Option("paper-format", Required = false, Default = PaperFormat.Letter,
@@ -77,7 +77,7 @@ namespace ChromeHtmlToPdf
         public double PaperHeight { get; set; }
 
         /// <summary>
-        ///     The widowsize to use, when this option is set it will override <see cref="WindowWidth" /> and
+        ///     The widow size to use, when this option is set it will override <see cref="WindowWidth" /> and
         ///     <see cref="WindowHeight" />
         /// </summary>
         [Option("window-size", Required = false, Default = WindowSize.HD_1366_768,
@@ -146,7 +146,7 @@ namespace ChromeHtmlToPdf
         [Option("chrome-location", Required = false,
             HelpText =
                 "The location for Chrome, when not set then then this tool first looks inside the folder where " +
-                "it is executed from if it can find Chrome.exe (protable) otherwise the registry is accessed " +
+                "it is executed from if it can find Chrome.exe (portable) otherwise the registry is accessed " +
                 "to get the needed information")]
         public string ChromeLocation { get; set; }
 
@@ -212,7 +212,7 @@ namespace ChromeHtmlToPdf
         public string TempFolder { get; set; }
 
         /// <summary>
-        ///     Use multithreading when converting. Only usefull if the parameter --inputlist is used
+        ///     Use multi threading when converting. Only useful if the parameter --inputlist is used
         /// </summary>
         [Option("multi-threading", Required = false, Default = false,
             HelpText = "Use multi threading when converting. Only usefull if the parameter --input-is-list is used")]
