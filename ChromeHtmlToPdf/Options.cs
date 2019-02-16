@@ -215,7 +215,7 @@ namespace ChromeHtmlToPdf
         ///     Use multi threading when converting. Only useful if the parameter --inputlist is used
         /// </summary>
         [Option("multi-threading", Required = false, Default = false,
-            HelpText = "Use multi threading when converting. Only usefull if the parameter --input-is-list is used")]
+            HelpText = "Use multi threading when converting. Only useful if the parameter --input-is-list is used")]
         public bool UseMultiThreading { get; set; }
 
         /// <summary>
