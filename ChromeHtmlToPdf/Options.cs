@@ -145,7 +145,7 @@ namespace ChromeHtmlToPdf
         /// </summary>
         [Option("chrome-location", Required = false,
             HelpText =
-                "The location for Chrome, when not set then then this tool first looks inside the folder where " +
+                "The location for Chrome, when not set then this tool first looks inside the folder where " +
                 "it is executed from if it can find Chrome.exe (portable) otherwise the registry is accessed " +
                 "to get the needed information")]
         public string ChromeLocation { get; set; }
