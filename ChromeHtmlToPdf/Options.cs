@@ -282,7 +282,7 @@ namespace ChromeHtmlToPdf
         public int? ImageDownloadTimeout { get; set; }
 
         /// <summary>
-        ///     The encoding that is used for the <see cref="Input"/> file
+        ///     When set then the logging gets written to this file instead of the console
         /// </summary>
         [Option("logfile", Required = false, Default = "",
             HelpText = "When set then the logging gets written to this file instead of the console " +
