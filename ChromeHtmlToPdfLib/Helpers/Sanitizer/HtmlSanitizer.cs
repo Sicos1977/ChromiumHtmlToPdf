@@ -94,7 +94,7 @@ namespace ChromeHtmlToPdfLib.Helpers.Sanitizer
         /// <summary>
         /// The default allowed URI schemes.
         /// </summary>
-        public static ISet<string> DefaultAllowedSchemes { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "http", "https" };
+        public static ISet<string> DefaultAllowedSchemes { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "http", "https", "mailto", "data" };
 
         /// <summary>
         /// Gets or sets the allowed HTML tag names such as "a" and "div".
@@ -187,6 +187,7 @@ namespace ChromeHtmlToPdfLib.Helpers.Sanitizer
             "dropzone", // Global attribute
             "autocomplete", // <form>, <input>
             "autosave", // <input>
+            "class"
         };
 
         /// <summary>
@@ -404,6 +405,7 @@ namespace ChromeHtmlToPdfLib.Helpers.Sanitizer
         {
             AllowedTags = new HashSet<string>(allowedTags ?? DefaultAllowedTags, StringComparer.OrdinalIgnoreCase);
             AllowedSchemes = new HashSet<string>(allowedSchemes ?? DefaultAllowedSchemes, StringComparer.OrdinalIgnoreCase);
+            AllowedSchemes.Add("mailto");
             AllowedAttributes = new HashSet<string>(allowedAttributes ?? DefaultAllowedAttributes, StringComparer.OrdinalIgnoreCase);
             UriAttributes = new HashSet<string>(uriAttributes ?? DefaultUriAttributes, StringComparer.OrdinalIgnoreCase);
             AllowedCssProperties = new HashSet<string>(allowedCssProperties ?? DefaultAllowedCssProperties, StringComparer.OrdinalIgnoreCase);
