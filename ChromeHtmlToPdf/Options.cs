@@ -157,13 +157,6 @@ namespace ChromeHtmlToPdf
             HelpText =
                 "The location where Chrome can store it's user profile")]
         public string ChromeUserProfile { get; set; }
-        
-        ///// <summary>
-        /////     The Chrome user profile location to use, when not set then the default location is used
-        ///// </summary>
-        //[Option("chrome-user-profile", Required = false,
-        //    HelpText = "The Chrome user profile location to use, when not set then the default location is used")]
-        //public string ChromeUserProfile { get; set; }
 
         /// <summary>
         ///     This tells Chrome to use a custom proxy configuration
