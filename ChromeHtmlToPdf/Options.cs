@@ -281,6 +281,8 @@ namespace ChromeHtmlToPdf
                        "of images when the option --ImageResize and/or --ImageRotate is being used")]
         public int? ImageDownloadTimeout { get; set; }
 
+        public bool SanitizeHtml { get; set; }
+
         /// <summary>
         ///     When set then the logging gets written to this file instead of the console
         /// </summary>

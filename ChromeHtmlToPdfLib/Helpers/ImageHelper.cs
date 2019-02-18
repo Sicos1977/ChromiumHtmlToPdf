@@ -7,10 +7,7 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using AngleSharp;
-using AngleSharp.Css.Dom;
-using AngleSharp.Dom;
-using AngleSharp.Html.Dom;
-using AngleSharp.Xhtml;
+using AngleSharp.Dom.Html;
 using ChromeHtmlToPdfLib.Settings;
 using Image = System.Drawing.Image;
 
@@ -170,13 +167,6 @@ namespace ChromeHtmlToPdfLib.Helpers
                     : File.ReadAllText(inputUri.OriginalString)
                 : DownloadString(inputUri);
 
-            /*
-             * const convertPixelToInches = (value, dpi) => {
-      let inches = value/ dpi;
-      return `${inches}in`; // Calculate inches value and round it up.
-    }
-             */
-
             var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft - pageSettings.MarginRight) * 96.0;
             var maxHeight = (pageSettings.PaperHeight - pageSettings.MarginTop - pageSettings.MarginBottom) * 96.0;
 
@@ -229,7 +219,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                             image.Save(fileName);
                             htmlImage.DisplayWidth = image.Width;
                             htmlImage.DisplayHeight = image.Height;
-                            htmlImage.SetStyle(string.Empty);
+                            htmlImage.SetAttribute("style", string.Empty);
                             htmlImage.Source = new Uri(fileName).ToString();
                             htmlChanged = true;
                             imageChanged = true;
@@ -284,7 +274,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                             image.Save(fileName);
                             htmlImage.DisplayWidth = image.Width;
                             htmlImage.DisplayHeight = image.Height;
-                            htmlImage.SetStyle(string.Empty);
+                            htmlImage.SetAttribute("style", string.Empty);
                             htmlImage.Source = new Uri(fileName).ToString();
                             htmlChanged = true;
                             imageChanged = true;
