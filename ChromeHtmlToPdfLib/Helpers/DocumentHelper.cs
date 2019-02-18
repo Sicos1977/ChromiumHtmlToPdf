@@ -7,7 +7,11 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using AngleSharp;
-using AngleSharp.Dom.Html;
+using AngleSharp.Css.Dom;
+using AngleSharp.Dom;
+using AngleSharp.Html;
+using AngleSharp.Html.Dom;
+using ChromeHtmlToPdfLib.Helpers.Sanitizer;
 using ChromeHtmlToPdfLib.Settings;
 using Image = System.Drawing.Image;
 
@@ -16,7 +20,7 @@ namespace ChromeHtmlToPdfLib.Helpers
     /// <summary>
     ///     This class contains helper methods for image
     /// </summary>
-    public class ImageHelper
+    public class DocumentHelper
     {
         #region Fields
         /// <summary>
@@ -80,7 +84,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <param name="logStream">When set then logging is written to this stream</param>
         /// <param name="webProxy">The web proxy to use when downloading</param>
         /// <param name="timeout"></param>
-        public ImageHelper(DirectoryInfo tempDirectory = null,
+        public DocumentHelper(DirectoryInfo tempDirectory = null,
                            Stream logStream = null,
                            WebProxy webProxy = null,
                            int? timeout = null)
@@ -141,7 +145,8 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <param name="inputUri">The uri of the webpage</param>
         /// <param name="resize">When set to <c>true</c> then an image is resized when needed</param>
         /// <param name="rotate">When set to <c>true</c> then the EXIF information of an
-        /// image is read and when needed the image is automatic rotated</param>
+        ///     image is read and when needed the image is automatic rotated</param>
+        /// <param name="sanitizeHtml">When set to <c>true</c> then the HTML with get sanitized</param>
         /// <param name="pageSettings"><see cref="PageSettings"/></param>
         /// <param name="outputUri">The outputUri when this method returns <c>false</c> otherwise
         ///     <c>null</c> is returned</param>
@@ -150,10 +155,10 @@ namespace ChromeHtmlToPdfLib.Helpers
         public bool ValidateImages(ConvertUri inputUri,
                                    bool resize,
                                    bool rotate,
+                                   bool sanitizeHtml,
                                    PageSettings pageSettings,
                                    out ConvertUri outputUri)
         {
-            WriteToLog("Validating all images if they need to be rotated and if they fit the page");
             outputUri = null;
 
             string localDirectory = null;
@@ -178,6 +183,15 @@ namespace ChromeHtmlToPdfLib.Helpers
                 ? context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}")).Result
                 : context.OpenAsync(m => m.Content(webpage)).Result;
 
+            if (sanitizeHtml)
+            {
+                WriteToLog("Sanitizing HTML");
+                new HtmlSanitizer().DoSanitize(document as IHtmlDocument, document.DocumentElement);
+                htmlChanged = true;
+                WriteToLog("HTML sanitized");
+            }
+
+            WriteToLog("Validating all images if they need to be rotated and if they fit the page");
             var unchangedImages = new List<IHtmlImageElement>();
 
             // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
@@ -219,7 +233,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                             image.Save(fileName);
                             htmlImage.DisplayWidth = image.Width;
                             htmlImage.DisplayHeight = image.Height;
-                            htmlImage.SetAttribute("style", string.Empty);
+                            htmlImage.SetStyle(string.Empty);
                             htmlImage.Source = new Uri(fileName).ToString();
                             htmlChanged = true;
                             imageChanged = true;
@@ -274,7 +288,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                             image.Save(fileName);
                             htmlImage.DisplayWidth = image.Width;
                             htmlImage.DisplayHeight = image.Height;
-                            htmlImage.SetAttribute("style", string.Empty);
+                            htmlImage.SetStyle(string.Empty);
                             htmlImage.Source = new Uri(fileName).ToString();
                             htmlChanged = true;
                             imageChanged = true;
@@ -327,11 +341,11 @@ namespace ChromeHtmlToPdfLib.Helpers
                     if (inputUri.Encoding != null)
                     {
                         using (var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
-                            document.ToHtml(textWriter, new AutoSelectedMarkupFormatter());
+                            document.ToHtml(textWriter, new HtmlMarkupFormatter());
                     }
                     else
                         using (var textWriter = new StreamWriter(fileStream))
-                            document.ToHtml(textWriter, new AutoSelectedMarkupFormatter());
+                            document.ToHtml(textWriter, new HtmlMarkupFormatter());
 
                 }
 

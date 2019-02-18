@@ -200,6 +200,12 @@ namespace ChromeHtmlToPdfLib
         public bool ImageRotate { get; set; }
 
         /// <summary>
+        ///     When set to <c>true</c> then the HTML is sanitized. All not allowed attributes
+        ///     will be removed
+        /// </summary>
+        public bool SanitizeHtml { get; set; }
+
+        /// <summary>
         ///     The timeout in milliseconds before this application aborts the downloading
         ///     of images when the option <see cref="ImageResize"/> and/or <see cref="ImageRotate"/>
         ///     is being used
@@ -932,11 +938,11 @@ namespace ChromeHtmlToPdfLib
                 {
                     inputUri = new ConvertUri(preWrapFile);
                 }
-                else if (ImageResize || ImageRotate)
+                else if (ImageResize || ImageRotate || SanitizeHtml)
                 {
-                    var imageHelper = new ImageHelper(GetTempDirectory, _logStream, WebProxy, ImageDownloadTimeout)
+                    var documentHelper = new DocumentHelper(GetTempDirectory, _logStream, WebProxy, ImageDownloadTimeout)
                     { InstanceId = InstanceId };
-                    if (!imageHelper.ValidateImages(inputUri, ImageResize, ImageRotate, pageSettings,
+                    if (!documentHelper.ValidateImages(inputUri, ImageResize, ImageRotate, SanitizeHtml, pageSettings,
                         out var outputUri))
                         inputUri = outputUri;
                 }

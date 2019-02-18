@@ -281,6 +281,12 @@ namespace ChromeHtmlToPdf
                        "of images when the option --ImageResize and/or --ImageRotate is being used")]
         public int? ImageDownloadTimeout { get; set; }
 
+        /// <summary>
+        ///     When set to <c>true</c> this will remove all HTML that can lead to XSS attacks
+        /// </summary>
+        [Option("sanitize-html", Required = false, Default = false,
+            HelpText = "When set to true this will remove all HTML that can lead to XSS attacks")]
+
         public bool SanitizeHtml { get; set; }
 
         /// <summary>

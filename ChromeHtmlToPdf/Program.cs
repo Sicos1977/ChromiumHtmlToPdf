@@ -298,6 +298,7 @@ namespace ChromeHtmlToPdf
             converter.ImageResize = options.ImageResize;
             converter.ImageRotate = options.ImageRotate;
             converter.ImageDownloadTimeout = options.ImageDownloadTimeout;
+            converter.SanitizeHtml = options.SanitizeHtml;
         }
         #endregion
 
