@@ -205,7 +205,7 @@ namespace ChromeHtmlToPdf
         public string TempFolder { get; set; }
 
         /// <summary>
-        ///     Use multi threading when converting. Only useful if the parameter --inputlist is used
+        ///     Use multi threading when converting. Only useful if the parameter --input-is-list is used
         /// </summary>
         [Option("multi-threading", Required = false, Default = false,
             HelpText = "Use multi threading when converting. Only useful if the parameter --input-is-list is used")]
