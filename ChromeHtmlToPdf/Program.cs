@@ -86,7 +86,10 @@ namespace ChromeHtmlToPdf
                                 ? Path.GetFileName(inputUri.AbsolutePath)
                                 : FileManager.RemoveInvalidFileNameChars(inputUri.ToString());
 
+                            outputFile = Path.ChangeExtension(outputFile, ".pdf");
+
                             _itemsToConvert.Enqueue(new ConversionItem(inputUri,
+                                // ReSharper disable once AssignNullToNotNullAttribute
                                 Path.Combine(outputPath, outputFile)));
                         }
 
