@@ -110,31 +110,6 @@ namespace ChromeHtmlToPdfLib.Helpers
         }
         #endregion
 
-        #region GetImageFromBase64
-        private Image GetImageFromBase64(string data)
-        {
-            WriteToLog("Decoding image from base64 string");
-
-            try
-            {
-                var base64Data = Regex.Match(data, @"data:image/(?<type>.+?),(?<data>.+)").Groups["data"].Value;
-                var binaryData = Convert.FromBase64String(base64Data);
-
-                using (var stream = new MemoryStream(binaryData))
-                {
-                    var image = Image.FromStream(stream);
-                    WriteToLog("Image decoded");
-                    return image;
-                }
-            }
-            catch (Exception exception)
-            {
-                WriteToLog($"Error decoding image: {ExceptionHelpers.GetInnerException(exception)}");
-                return null;
-            }
-        }
-        #endregion
-
         #region ValidateImages
         /// <summary>
         /// Validates all images if they are rotated correctly (when <paramref name="rotate"/> is set
@@ -219,9 +194,7 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                     if (rotate)
                     {
-                        image = htmlImage.Source.StartsWith("data:", StringComparison.InvariantCultureIgnoreCase)
-                            ? GetImageFromBase64(htmlImage.Source)
-                            : GetImage(new Uri(htmlImage.Source), localDirectory);
+                        image = GetImage(htmlImage.Source, localDirectory);
 
                         if (image == null) continue;
 
@@ -259,12 +232,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                         if (width <= 0 || height <= 0)
                         {
                             if (image == null)
-                            {
-                                image = htmlImage.Source.StartsWith("data:",
-                                    StringComparison.InvariantCultureIgnoreCase)
-                                    ? GetImageFromBase64(htmlImage.Source)
-                                    : GetImage(new Uri(htmlImage.Source), localDirectory);
-                            }
+                                image = GetImage(htmlImage.Source, localDirectory);
 
                             if (image == null) continue;
                             width = image.Width;
@@ -276,10 +244,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                             // If we did not load the image already then load it
 
                             if (image == null)
-                                image = htmlImage.Source.StartsWith("data:",
-                                    StringComparison.InvariantCultureIgnoreCase)
-                                    ? GetImageFromBase64(htmlImage.Source)
-                                    : GetImage(new Uri(htmlImage.Source), localDirectory);
+                                image = GetImage(htmlImage.Source, localDirectory);
 
                             if (image == null) continue;
 
@@ -309,25 +274,16 @@ namespace ChromeHtmlToPdfLib.Helpers
 
             foreach (var unchangedImage in unchangedImages)
             {
-                var imageSource = new Uri(unchangedImage.Source);
-                using(var image = GetImage(imageSource, localDirectory))
+                using(var image = GetImage(unchangedImage.Source, localDirectory))
                 {
-                    if (localDirectory != null)
-                    {
-                        var fileName = Path.Combine(localDirectory, Path.GetFileName(imageSource.ToString()));
-                        unchangedImage.Source = new Uri(fileName).ToString();
-                    }
-                    else
-                    {
-                        var extension = Path.GetExtension(unchangedImage.Source.Contains("?")
-                            ? unchangedImage.Source.Split('?')[0]
-                            : unchangedImage.Source);
-                        var fileName = GetTempFile(extension);
+                    var extension = Path.GetExtension(unchangedImage.Source.Contains("?")
+                        ? unchangedImage.Source.Split('?')[0]
+                        : unchangedImage.Source);
+                    var fileName = GetTempFile(extension);
 
-                        WriteToLog($"Unchanged image saved to location '{fileName}'");
-                        image.Save(fileName);
-                        unchangedImage.Source = new Uri(fileName).ToString();
-                    }
+                    WriteToLog($"Unchanged image saved to location '{fileName}'");
+                    image.Save(fileName);
+                    unchangedImage.Source = new Uri(fileName).ToString();
                 }
             }
 
@@ -361,17 +317,42 @@ namespace ChromeHtmlToPdfLib.Helpers
 
         #region GetImage
         /// <summary>
-        /// Returns the <see cref="Image"/> for the given <paramref name="imageUri"/>
+        /// Returns the <see cref="Image"/> for the given <paramref name="imageSource"/>
         /// </summary>
-        /// <param name="imageUri"></param>
+        /// <param name="imageSource"></param>
         /// <param name="localDirectory"></param>
         /// <returns></returns>
-        private Image GetImage(Uri imageUri, string localDirectory) 
+        private Image GetImage(string imageSource, string localDirectory) 
         {
-            WriteToLog($"Getting image from uri '{imageUri}'");
+            if (imageSource.StartsWith("data:", StringComparison.InvariantCultureIgnoreCase))
+            {
+                WriteToLog("Decoding image from base64 string");
+
+                try
+                {
+                    var base64Data = Regex.Match(imageSource, @"data:image/(?<type>.+?),(?<data>.+)").Groups["data"].Value;
+                    var binaryData = Convert.FromBase64String(base64Data);
+
+                    using (var stream = new MemoryStream(binaryData))
+                    {
+                        var image = Image.FromStream(stream);
+                        WriteToLog("Image decoded");
+                        return image;
+                    }
+                }
+                catch (Exception exception)
+                {
+                    WriteToLog($"Error decoding image: {ExceptionHelpers.GetInnerException(exception)}");
+                    return null;
+                }
+            }
 
             try
             {
+                WriteToLog($"Getting image from uri '{imageSource}'");
+
+                var imageUri = new Uri(imageSource);
+
                 if (imageUri.IsLoopback || imageUri.IsFile)
                 {
                     var fileName = imageUri.OriginalString;
