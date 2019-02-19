@@ -921,6 +921,7 @@ namespace ChromeHtmlToPdfLib
                 {
                     case ".htm":
                     case ".html":
+                    case ".svg":
                         // This is ok
                         break;
 
