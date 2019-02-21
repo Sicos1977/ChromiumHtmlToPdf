@@ -943,7 +943,7 @@ namespace ChromeHtmlToPdfLib
                 {
                     var documentHelper = new DocumentHelper(GetTempDirectory, _logStream, WebProxy, ImageDownloadTimeout)
                     { InstanceId = InstanceId };
-                    if (!documentHelper.ValidateImages(inputUri, ImageResize, ImageRotate, SanitizeHtml, pageSettings,
+                    if (!documentHelper.Validate(inputUri, ImageResize, ImageRotate, SanitizeHtml, pageSettings,
                         out var outputUri))
                         inputUri = outputUri;
                 }

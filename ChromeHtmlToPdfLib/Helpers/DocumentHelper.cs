@@ -127,12 +127,12 @@ namespace ChromeHtmlToPdfLib.Helpers
         ///     <c>null</c> is returned</param>
         /// <returns>Returns <c>false</c> when the images dit not fit the page, otherwise <c>true</c></returns>
         /// <exception cref="WebException">Raised when the webpage from <paramref name="inputUri"/> could not be downloaded</exception>
-        public bool ValidateImages(ConvertUri inputUri,
-                                   bool resize,
-                                   bool rotate,
-                                   bool sanitizeHtml,
-                                   PageSettings pageSettings,
-                                   out ConvertUri outputUri)
+        public bool Validate(ConvertUri inputUri,
+            bool resize,
+            bool rotate,
+            bool sanitizeHtml,
+            PageSettings pageSettings,
+            out ConvertUri outputUri)
         {
             outputUri = null;
 
