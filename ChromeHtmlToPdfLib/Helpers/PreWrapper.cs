@@ -3,7 +3,7 @@
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
-// Copyright (c) 2017 Magic-Sessions. (www.magic-sessions.com)
+// Copyright (c) 2017-2018 Magic-Sessions. (www.magic-sessions.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -17,7 +17,7 @@
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -26,8 +26,8 @@
 
 using System;
 using System.IO;
+using System.Net;
 using System.Text;
-using System.Web;
 
 namespace ChromeHtmlToPdfLib.Helpers
 {
@@ -37,6 +37,17 @@ namespace ChromeHtmlToPdfLib.Helpers
     internal class PreWrapper
     {
         #region Fields
+        /// <summary>
+        ///     When set then logging is written to this stream
+        /// </summary>
+        private readonly Stream _logStream;
+
+        /// <summary>
+        ///     An unique id that can be used to identify the logging of the converter when
+        ///     calling the code from multiple threads and writing all the logging to the same file
+        /// </summary>
+        public string InstanceId { get; set; }
+
         /// <summary>
         ///     The temp folder
         /// </summary>
@@ -89,9 +100,12 @@ namespace ChromeHtmlToPdfLib.Helpers
         ///     Makes this object and sets its needed properties
         /// </summary>
         /// <param name="tempDirectory">When set then this directory will be used for temporary files</param>
-        public PreWrapper(DirectoryInfo tempDirectory = null)
+        /// <param name="logStream"></param>
+        public PreWrapper(DirectoryInfo tempDirectory = null,
+                          Stream logStream = null)
         {
             _tempDirectory = tempDirectory;
+            _logStream = logStream;
         }
         #endregion
 
@@ -105,14 +119,25 @@ namespace ChromeHtmlToPdfLib.Helpers
         public string WrapFile(string inputFile, Encoding encoding)
         {
             var temp = Path.GetFileName(inputFile) ?? string.Empty;
-            var title = HttpUtility.HtmlEncode(temp);
+            var title = WebUtility.HtmlEncode(temp);
             var tempFile = GetTempFile;
+            
+            WriteToLog($"Reading text file '{inputFile}'");
 
-            using (var writer = new StreamWriter(tempFile))
-            using (var reader = new StreamReader(inputFile, encoding))
+            var streamReader = encoding != null
+                ? new StreamReader(inputFile, encoding)
+                : new EncodingTools.Detector().OpenTextFile(inputFile);
+
+            WriteToLog($"File is '{streamReader.CurrentEncoding.WebName}' encoded");
+
+            var writeEncoding = new UnicodeEncoding(!BitConverter.IsLittleEndian, true);
+
+            using (var writer = new StreamWriter(tempFile, false, writeEncoding))
+            using (streamReader)
             {
                 writer.WriteLine("<html>");
                 writer.WriteLine("<head>");
+                writer.WriteLine($"   <meta charset=\"{writeEncoding.WebName}\">");
                 writer.WriteLine($"<title>{title}</title>");
                 writer.WriteLine("<style>");
                 writer.WriteLine("  pre {");
@@ -129,15 +154,33 @@ namespace ChromeHtmlToPdfLib.Helpers
                 writer.WriteLine("<body>");
                 writer.WriteLine("<pre>");
 
-                while (!reader.EndOfStream)
-                    writer.WriteLine(reader.ReadLine());
+                while (!streamReader.EndOfStream)
+                    writer.WriteLine(streamReader.ReadLine());
 
                 writer.WriteLine("</pre>");
                 writer.WriteLine("</body>");
                 writer.WriteLine("</html>");
             }
 
+            WriteToLog($"File pre wrapped and written to temporary file '{tempFile}'");
+
             return tempFile;
+        }
+        #endregion
+
+        #region WriteToLog
+        /// <summary>
+        ///     Writes a line and linefeed to the <see cref="_logStream" />
+        /// </summary>
+        /// <param name="message">The message to write</param>
+        private void WriteToLog(string message)
+        {
+            if (_logStream == null) return;
+            var line = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + (InstanceId != null ? " - " + InstanceId : string.Empty) + " - " +
+                       message + Environment.NewLine;
+            var bytes = Encoding.UTF8.GetBytes(line);
+            _logStream.Write(bytes, 0, bytes.Length);
+            _logStream.Flush();
         }
         #endregion
     }

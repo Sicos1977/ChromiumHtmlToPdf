@@ -3,7 +3,7 @@
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
-// Copyright (c) 2017 Magic-Sessions. (www.magic-sessions.com)
+// Copyright (c) 2017-2018 Magic-Sessions. (www.magic-sessions.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -17,7 +17,7 @@
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// FITNESS FOR A PARTICULAR PURPOSE AND NON INFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -27,6 +27,7 @@
 using System;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 using ChromeHtmlToPdfLib.Exceptions;
 using ChromeHtmlToPdfLib.Helpers;
 using ChromeHtmlToPdfLib.Protocol;
@@ -52,8 +53,6 @@ namespace ChromeHtmlToPdfLib
         ///     A connection to a page
         /// </summary>
         private readonly Connection _pageConnection;
-
-        private bool _disposed;
         #endregion
 
         #region Constructor & destructor
@@ -64,7 +63,7 @@ namespace ChromeHtmlToPdfLib
         internal Browser(Uri browser)
         {
             // Open a websocket to the browser
-            _browserConnection = Connection.Create(browser.ToString()).Result;
+            _browserConnection = new Connection(browser.ToString());
 
             var message = new Message
             {
@@ -80,12 +79,7 @@ namespace ChromeHtmlToPdfLib
             // ws://localhost:9222/devtools/page/BA386DE8075EB19DDCE459B4B623FBE7
             // ws://127.0.0.1:50841/devtools/browser/9a919bf0-b243-479d-8396-ede653356e12
             var pageUrl = $"{browser.Scheme}://{browser.Host}:{browser.Port}/devtools/page/{page.Result.TargetId}";
-            _pageConnection = Connection.Create(pageUrl).Result;
-        }
-
-        ~Browser()
-        {
-            Dispose();
+            _pageConnection = new Connection(pageUrl);
         }
         #endregion
 
@@ -108,22 +102,28 @@ namespace ChromeHtmlToPdfLib
 
             var waitEvent = new ManualResetEvent(false);
 
-            EventHandler<string> messageReceived = (sender, data) =>
+            void MessageReceived(object sender, string data)
             {
                 var page = PageEvent.FromJson(data);
 
                 if (!uri.IsFile)
                 {
-                    if (page.Method == "Page.lifecycleEvent" && page.Params?.Name == "DOMContentLoaded")
-                        waitEvent.Set();
-                    else if (page.Method == "Page.frameStoppedLoading")
-                        waitEvent.Set();
+                    switch (page.Method)
+                    {
+                        case "Page.lifecycleEvent" when page.Params?.Name == "DOMContentLoaded":
+                        case "Page.frameStoppedLoading":
+                            waitEvent.Set();
+                            break;
+                    }
                 }
-                else if (page.Method == "Page.loadEventFired")
-                    waitEvent.Set();
-            };
+                else if (page.Method == "Page.loadEventFired") waitEvent.Set();
+            }
 
-            _pageConnection.MessageReceived += messageReceived;
+            _pageConnection.MessageReceived += MessageReceived;
+            _pageConnection.Closed += (sender, args) =>
+            {
+                waitEvent.Set();
+            };
             _pageConnection.SendAsync(message).GetAwaiter();
 
             if (countdownTimer != null)
@@ -135,7 +135,7 @@ namespace ChromeHtmlToPdfLib
             else
                 waitEvent.WaitOne();
 
-            _pageConnection.MessageReceived -= messageReceived;
+            _pageConnection.MessageReceived -= MessageReceived;
 
             _pageConnection.SendAsync(new Message {Method = "Page.disable"}).GetAwaiter();
         }
@@ -159,17 +159,15 @@ namespace ChromeHtmlToPdfLib
             var waitEvent = new ManualResetEvent(false);
             var match = false;
 
-            EventHandler<string> messageReceived = (sender, data) =>
+            void MessageReceived(object sender, string data)
             {
                 var evaluate = Evaluate.FromJson(data);
-                if (evaluate.Result?.Result?.Value == status)
-                {
-                    match = true;
-                    waitEvent.Set();
-                }
-            };
+                if (evaluate.Result?.Result?.Value != status) return;
+                match = true;
+                waitEvent.Set();
+            }
 
-            _pageConnection.MessageReceived += messageReceived;
+            _pageConnection.MessageReceived += MessageReceived;
 
             var stopWatch = new Stopwatch();
             stopWatch.Start();
@@ -182,7 +180,7 @@ namespace ChromeHtmlToPdfLib
             }
 
             stopWatch.Stop();
-            _pageConnection.MessageReceived -= messageReceived;
+            _pageConnection.MessageReceived -= MessageReceived;
 
             return match;
         }
@@ -201,7 +199,7 @@ namespace ChromeHtmlToPdfLib
         /// </remarks>
         /// <exception cref="ConversionException">Raised when Chrome returns an empty string</exception>
         /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer"/> reaches zero</exception>
-        internal PrintToPdfResponse PrintToPdf(PageSettings pageSettings, CountdownTimer countdownTimer = null)
+        internal async Task<PrintToPdfResponse> PrintToPdf(PageSettings pageSettings, CountdownTimer countdownTimer = null)
         {
             var message = new Message {Method = "Page.printToPDF"};
             message.AddParameter("landscape", pageSettings.Landscape);
@@ -216,13 +214,15 @@ namespace ChromeHtmlToPdfLib
             message.AddParameter("marginRight", pageSettings.MarginRight);
             message.AddParameter("pageRanges", pageSettings.PageRanges ?? string.Empty);
             message.AddParameter("ignoreInvalidPageRanges", pageSettings.IgnoreInvalidPageRanges);
-            message.AddParameter("headerTemplate", pageSettings.HeaderTemplate);
-            message.AddParameter("footerTemplate", pageSettings.FooterTemplate);
+            if (!string.IsNullOrEmpty(pageSettings.HeaderTemplate))
+                message.AddParameter("headerTemplate", pageSettings.HeaderTemplate);
+            if (!string.IsNullOrEmpty(pageSettings.FooterTemplate))
+                message.AddParameter("footerTemplate", pageSettings.FooterTemplate);
             message.AddParameter("preferCSSPageSize", pageSettings.PreferCSSPageSize);
-            
+
             var result = countdownTimer == null
-                ? _pageConnection.SendAsync(message).GetAwaiter().GetResult()
-                : _pageConnection.SendAsync(message).Timeout(countdownTimer.MillisecondsLeft).GetAwaiter().GetResult();
+                ? await _pageConnection.SendAsync(message)
+                : await _pageConnection.SendAsync(message).Timeout(countdownTimer.MillisecondsLeft);
 
             var printToPdfResponse = PrintToPdfResponse.FromJson(result);
 
@@ -254,16 +254,12 @@ namespace ChromeHtmlToPdfLib
 
         #region Dispose
         /// <summary>
-        ///     Disposes the opened <see cref="_pageConnection" />
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
         /// </summary>
         public void Dispose()
         {
-            if (_disposed) return;
-
+            _pageConnection?.Dispose();
             _browserConnection?.Dispose();
-            _browserConnection?.Dispose();
-
-            _disposed = true;
         }
         #endregion
     }

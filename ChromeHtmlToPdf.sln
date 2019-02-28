@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChromeHtmlToPdfLib", "Chrom
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChromeHtmlToPdf", "ChromeHtmlToPdf\ChromeHtmlToPdf.csproj", "{6B9BBCF3-BAE4-47CB-BF46-B616C734947D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChromeHtmlToPdfLibStandard", "ChromeHtmlToPdfLibStandard\ChromeHtmlToPdfLibStandard.csproj", "{FD874FFC-34A6-492B-8AA6-37C49298D152}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{6B9BBCF3-BAE4-47CB-BF46-B616C734947D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6B9BBCF3-BAE4-47CB-BF46-B616C734947D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6B9BBCF3-BAE4-47CB-BF46-B616C734947D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FD874FFC-34A6-492B-8AA6-37C49298D152}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD874FFC-34A6-492B-8AA6-37C49298D152}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FD874FFC-34A6-492B-8AA6-37C49298D152}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FD874FFC-34A6-492B-8AA6-37C49298D152}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

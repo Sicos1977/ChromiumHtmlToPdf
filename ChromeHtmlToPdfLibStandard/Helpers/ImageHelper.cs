@@ -1,10 +1,14 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Text;
 using AngleSharp;
+using AngleSharp.Dom;
+using AngleSharp.Html.Dom;
+using AngleSharp.Xhtml;
 using ChromeHtmlToPdfLib.Settings;
 using Image = System.Drawing.Image;
 
@@ -19,7 +23,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <summary>
         ///     When set then logging is written to this stream
         /// </summary>
-        private static Stream _logStream;
+        private readonly Stream _logStream;
 
         /// <summary>
         ///     An unique id that can be used to identify the logging of the converter when
@@ -41,6 +45,12 @@ namespace ChromeHtmlToPdfLib.Helpers
         ///     The web proxy to use
         /// </summary>
         private readonly WebProxy _webProxy;
+
+        /// <summary>
+        ///     The timeout in milliseconds before this application aborts the downloading
+        ///     of images
+        /// </summary>
+        private readonly int _timeout;
         #endregion
 
         #region Properties
@@ -54,7 +64,10 @@ namespace ChromeHtmlToPdfLib.Helpers
                 if (_webClient != null)
                     return _webClient;
 
-                _webClient = new WebClient {Proxy = _webProxy};
+                _webClient = _webProxy != null
+                    ? new WebClient {Proxy = _webProxy}
+                    : new WebClient();
+
                 return _webClient;
             }
         }
@@ -67,13 +80,16 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <param name="tempDirectory">When set then this directory will be used for temporary files</param>
         /// <param name="logStream">When set then logging is written to this stream</param>
         /// <param name="webProxy">The webproxy to use when downloading</param>
+        /// <param name="timeout"></param>
         public ImageHelper(DirectoryInfo tempDirectory = null,
                            Stream logStream = null,
-                           WebProxy webProxy = null)
+                           WebProxy webProxy = null,
+                           int? timeout = null)
         {
             _tempDirectory = tempDirectory;
             _logStream = logStream;
             _webProxy = webProxy;
+            _timeout = timeout ?? 30000;
         }
         #endregion
 
@@ -83,7 +99,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        private static int ParseValue(string value)
+        private int ParseValue(string value)
         {
             value = value.Replace("px", string.Empty);
             value = value.Replace(" ", string.Empty);
@@ -138,6 +154,8 @@ namespace ChromeHtmlToPdfLib.Helpers
                 ? context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}")).Result
                 : context.OpenAsync(m => m.Content(webpage)).Result;
 
+            var unchangedImages = new List<IHtmlImageElement>();
+
             // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
             foreach (var htmlImage in document.Images)
             {
@@ -148,6 +166,10 @@ namespace ChromeHtmlToPdfLib.Helpers
                 }
 
                 Image image = null;
+                var extension = Path.GetExtension(htmlImage.Source.Contains("?")
+                    ? htmlImage.Source.Split('?')[0]
+                    : htmlImage.Source);
+                var fileName = GetTempFile(extension);
 
                 try
                 {
@@ -167,61 +189,92 @@ namespace ChromeHtmlToPdfLib.Helpers
                         }
                         width = image.Width;
                         height = image.Height;
-                    }
 
-                    if (!resize) continue;
-
-                    if (height == 0 && width == 0)
-                    {
-                        var style = context.Current.GetComputedStyle(htmlImage);
-                        if (style != null)
+                        if (!resize)
                         {
-                            width = ParseValue(style.Width);
-                            height = ParseValue(style.Height);
+                            WriteToLog($"Image rotated and saved to location '{fileName}'");
+                            image.Save(fileName);
+                            htmlImage.DisplayWidth = image.Width;
+                            htmlImage.DisplayHeight = image.Height;
+                            htmlImage.Source = new Uri(fileName).ToString();
                         }
                     }
-
-                    // If we don't know the image size then get if from the image itself
-                    if (width <= 0 || height <= 0)
+                    
+                    if (resize)
                     {
-                        if (image == null)
-                            image = GetImage(new Uri(htmlImage.Source), localDirectory);
+                        if (height == 0 && width == 0)
+                        {
+                            var style = context.Current.GetComputedStyle(htmlImage);
+                            if (style != null)
+                            {
+                                width = ParseValue(style.GetPropertyValue("width"));
+                                height = ParseValue(style.GetPropertyValue("height"));
+                            }
+                        }
 
-                        if (image == null) continue;
-                        width = image.Width;
-                        height = image.Height;
-                    }
+                        // If we don't know the image size then get if from the image itself
+                        if (width <= 0 || height <= 0)
+                        {
+                            if (image == null)
+                                image = GetImage(new Uri(htmlImage.Source), localDirectory);
 
-                    if (width > maxWidth || height > maxHeight)
-                    {
-                        var extension = Path.GetExtension(htmlImage.Source.Contains("?")
-                            ? htmlImage.Source.Split('?')[0]
-                            : htmlImage.Source);
+                            if (image == null) continue;
+                            width = image.Width;
+                            height = image.Height;
+                        }
 
-                        var fileName = GetTempFile(extension);
+                        if (width > maxWidth || height > maxHeight)
+                        {
+                            // If we did not load the image already then load it
+                            if (image == null)
+                                image = GetImage(new Uri(htmlImage.Source), localDirectory);
 
-                        // If we did not load the image already then load it
-                        if (image == null)
-                            image = GetImage(new Uri(htmlImage.Source), localDirectory);
-
-                        if (image == null) continue;
-                        image = ScaleImage(image, (int)maxWidth);
-                        WriteToLog($"Image resized to width {image.Width} and height {image.Height}");
-                        image.Save(fileName);
-                        htmlImage.DisplayWidth = image.Width;
-                        htmlImage.DisplayHeight = image.Height;
-                        htmlImage.Source = new Uri(fileName).ToString();
-                        changed = true;
+                            if (image == null) continue;
+                            image = ScaleImage(image, (int) maxWidth);
+                            WriteToLog($"Image resized to width {image.Width} and height {image.Height} and saved to location '{fileName}'");
+                            image.Save(fileName);
+                            htmlImage.DisplayWidth = image.Width;
+                            htmlImage.DisplayHeight = image.Height;
+                            htmlImage.Source = new Uri(fileName).ToString();
+                            changed = true;
+                        }
                     }
                 }
                 finally
                 {
                     image?.Dispose();
                 }
+
+                if (!changed)
+                    unchangedImages.Add(htmlImage);
             }
 
             if (!changed)
                 return true;
+
+            foreach (var unchangedImage in unchangedImages)
+            {
+                var imageSource = new Uri(unchangedImage.Source);
+                using(var image = GetImage(imageSource, localDirectory))
+                {
+                    if (localDirectory != null)
+                    {
+                        var fileName = Path.Combine(localDirectory, Path.GetFileName(imageSource.ToString()));
+                        unchangedImage.Source = new Uri(fileName).ToString();
+                    }
+                    else
+                    {
+                        var extension = Path.GetExtension(unchangedImage.Source.Contains("?")
+                            ? unchangedImage.Source.Split('?')[0]
+                            : unchangedImage.Source);
+                        var fileName = GetTempFile(extension);
+
+                        WriteToLog($"Unchanged image saved to location '{fileName}'");
+                        image.Save(fileName);
+                        unchangedImage.Source = new Uri(fileName).ToString();
+                    }
+                }
+            }
 
             var outputFile = GetTempFile(".htm");
             outputUri = new ConvertUri(outputFile, inputUri.Encoding);
@@ -282,7 +335,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                 {
                     case "https":
                     case "http":
-                        using (var webStream = WebClient.OpenRead(imageUri))
+                        using (var webStream = WebClient.OpenReadTaskAsync(imageUri).Timeout(_timeout).GetAwaiter().GetResult())
                         {
                             if (webStream != null)
                                 return Image.FromStream(webStream, true, false);
@@ -310,11 +363,13 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <param name="image"></param>
         /// <param name="maxWidth"></param>
         /// <returns></returns>
-        private static Image ScaleImage(Image image, double maxWidth)
+        private Image ScaleImage(Image image, double maxWidth)
         {
             var ratio = maxWidth / image.Width;
             var newWidth = (int)(image.Width * ratio);
+            if (newWidth == 0) newWidth = 1;
             var newHeight = (int)(image.Height * ratio);
+            if (newHeight == 0) newHeight = 1;
             var newImage = new Bitmap(newWidth, newHeight);
 
             using (var graphic = Graphics.FromImage(newImage))
@@ -392,7 +447,7 @@ namespace ChromeHtmlToPdfLib.Helpers
             try
             {
                 WriteToLog($"Downloading from uri '{sourceUri}'");
-                var result = WebClient.DownloadString(sourceUri);
+                var result = WebClient.DownloadStringTaskAsync(sourceUri).Timeout(_timeout).GetAwaiter().GetResult();
                 WriteToLog("Downloaded");
                 return result;
             }
@@ -425,7 +480,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         private void WriteToLog(string message)
         {
             if (_logStream == null) return;
-            var line = DateTime.Now.ToString("o") + (InstanceId != null ? " - " + InstanceId : string.Empty) + " - " +
+            var line = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + (InstanceId != null ? " - " + InstanceId : string.Empty) + " - " +
                        message + Environment.NewLine;
             var bytes = Encoding.UTF8.GetBytes(line);
             _logStream.Write(bytes, 0, bytes.Length);

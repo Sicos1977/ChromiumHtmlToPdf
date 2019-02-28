@@ -11,7 +11,7 @@ namespace ChromeHtmlToPdf
         None,
 
         /// <summary>
-        /// The conversion was successfull
+        /// The conversion was successful
         /// </summary>
         Success,
 
@@ -48,18 +48,12 @@ namespace ChromeHtmlToPdf
         public Exception Exception { get; private set; }
 
         /// <summary>
-        /// Returns this object as a comma seperated string
+        /// Returns this object as a comma separated string
         /// </summary>
-        public string OutputLine
-        {
-            get
-            {
-                return (InputUri.IsFile
-                           ? $"\"{Status}\";\"{InputUri.AbsolutePath}\";\"{OutputFile}\""
-                           : $"\"{Status}\";\"{InputUri}\";\"{OutputFile}\"") +
-                       (Exception != null ? $";\"{Exception.Message}\"" : string.Empty) + Environment.NewLine;
-            } 
-        }
+        public string OutputLine => (InputUri.IsFile
+                                        ? $"\"{Status}\";\"{InputUri.AbsolutePath}\";\"{OutputFile}\""
+                                        : $"\"{Status}\";\"{InputUri}\";\"{OutputFile}\"") +
+                                    (Exception != null ? $";\"{Exception.Message}\"" : string.Empty) + Environment.NewLine;
         #endregion
 
         #region Constructor

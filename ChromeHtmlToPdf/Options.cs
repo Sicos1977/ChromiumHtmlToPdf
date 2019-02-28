@@ -17,12 +17,12 @@ namespace ChromeHtmlToPdf
         public string Input { get; set; }
 
         /// <summary>
-        ///     A file with input url's and/or files
+        ///     A file with input urls and/or files
         /// </summary>
         [Option("input-is-list", Required = false,
             HelpText =
-                "Tells this app that --input is a list of input url's and/or files. Use the --output parameter to " +
-                "give a location where to write information about the converted files, e.g. c:\\myconvertedfiles.txt"
+                "Tells this app that --input is a list of input urls and/or files. Use the --output parameter to " +
+                "give a location where to write information about the converted files, e.g. c:\\myconvertedfiles"
         )]
         public bool InputIsList { get; set; }
 
@@ -57,7 +57,7 @@ namespace ChromeHtmlToPdf
         public double Scale { get; set; }
 
         /// <summary>
-        ///     The papersize to use, when this option is set is will override <see cref="PaperWidth" /> and
+        ///     The paper size to use, when this option is set is will override <see cref="PaperWidth" /> and
         ///     <see cref="PaperHeight" />
         /// </summary>
         [Option("paper-format", Required = false, Default = PaperFormat.Letter,
@@ -77,7 +77,7 @@ namespace ChromeHtmlToPdf
         public double PaperHeight { get; set; }
 
         /// <summary>
-        ///     The widowsize to use, when this option is set it will override <see cref="WindowWidth" /> and
+        ///     The widow size to use, when this option is set it will override <see cref="WindowWidth" /> and
         ///     <see cref="WindowHeight" />
         /// </summary>
         [Option("window-size", Required = false, Default = WindowSize.HD_1366_768,
@@ -145,16 +145,17 @@ namespace ChromeHtmlToPdf
         /// </summary>
         [Option("chrome-location", Required = false,
             HelpText =
-                "The location for Chrome, when not set then then this tool first looks inside the folder where" +
-                "it is executed from if it can find Chrome.exe (protable) otherwise the registry is accessed " +
+                "The location for Chrome, when not set then this tool first looks inside the folder where " +
+                "it is executed from if it can find Chrome.exe (portable) otherwise the registry is accessed " +
                 "to get the needed information")]
         public string ChromeLocation { get; set; }
 
         /// <summary>
-        ///     The Chrome user profile location to use, when not set then the default location is used
+        ///     The location for Chrome, when not set then the registry is accessed to get the needed information
         /// </summary>
-        [Option("chrome-user-profile", Required = false,
-            HelpText = "The Chrome user profile location to use, when not set then the default location is used")]
+        [Option("chrome-userprofile", Required = false,
+            HelpText =
+                "The location where Chrome can store it's user profile")]
         public string ChromeUserProfile { get; set; }
 
         /// <summary>
@@ -198,10 +199,16 @@ namespace ChromeHtmlToPdf
         public string Password { get; set; }
 
         /// <summary>
-        ///     Use multithreading when converting. Only usefull if the parameter --inputlist is used
+        ///     The password needed for --user
+        /// </summary>
+        [Option("tempfolder", Required = false, HelpText = "A folder where this tool kan put temporary files")]
+        public string TempFolder { get; set; }
+
+        /// <summary>
+        ///     Use multi threading when converting. Only useful if the parameter --input-is-list is used
         /// </summary>
         [Option("multi-threading", Required = false, Default = false,
-            HelpText = "Use multi threading when converting. Only usefull if the parameter --input-is-list is used")]
+            HelpText = "Use multi threading when converting. Only useful if the parameter --input-is-list is used")]
         public bool UseMultiThreading { get; set; }
 
         /// <summary>
@@ -212,7 +219,7 @@ namespace ChromeHtmlToPdf
         [Option("max-concurrency-level", Required = false, Default = 0,
             HelpText = "Limits the concurrency level when doing multi threading conversions. This parameter is only used when " +
                        "--input-is-list and --multi-threading is set to true. When not set then the system decides about " +
-                       " how many threads will be used")]
+                       "how many threads will be used")]
         public int MaxConcurrencyLevel { get; set; }
 
         /// <summary>
@@ -228,6 +235,13 @@ namespace ChromeHtmlToPdf
         [Option("wait-for-window-status-timeout", Required = false, Default = 60000,
             HelpText = "The timeout when waiting for the parameter --wait-for-windows-status")]
         public int WaitForWindowStatusTimeOut { get; set; }
+        
+        /// <summary>
+        ///     The timeout in milliseconds before this application aborts the conversion
+        /// </summary>
+        [Option("timeout", Required = false,
+            HelpText = "The timeout in milliseconds before this application aborts the conversion")]
+        public int? Timeout { get; set; }
 
         /// <summary>
         ///     The files to wrap in a HTML file with a &lt;PRE&gt; tag
@@ -256,6 +270,32 @@ namespace ChromeHtmlToPdf
         [Option("image-rotate", Required = false, Default = false,
             HelpText = "Rotate images according to the EXIF orientation information")]
         public bool ImageRotate { get; set; }
+
+        /// <summary>
+        ///     The timeout in milliseconds before this application aborts the downloading
+        ///     of images when the option <see cref="ImageResize"/> and/or <see cref="ImageRotate"/>
+        ///     is being used
+        /// </summary>
+        [Option("imagedownloadtimeout", Required = false, Default = 30000,
+            HelpText = "The timeout in milliseconds before this application aborts the downloading " +
+                       "of images when the option --ImageResize and/or --ImageRotate is being used")]
+        public int? ImageDownloadTimeout { get; set; }
+
+        /// <summary>
+        ///     When set to <c>true</c> this will remove all HTML that can lead to XSS attacks
+        /// </summary>
+        [Option("sanitize-html", Required = false, Default = false,
+            HelpText = "When set to true this will remove all HTML that can lead to XSS attacks")]
+
+        public bool SanitizeHtml { get; set; }
+
+        /// <summary>
+        ///     When set then the logging gets written to this file instead of the console
+        /// </summary>
+        [Option("logfile", Required = false, Default = "",
+            HelpText = "When set then the logging gets written to this file instead of the console " +
+                       "(Wildcards {PID}, {DATE}, {TIME})")]
+        public string LogFile { get; set; }
         #endregion
     }
 }
