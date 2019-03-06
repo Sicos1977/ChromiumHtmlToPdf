@@ -213,6 +213,12 @@ namespace ChromeHtmlToPdfLib
         public int? ImageDownloadTimeout { get; set; }
 
         /// <summary>
+        ///     Runs the given javascript after the webpage has been loaded and before it is converted
+        ///     to PDF
+        /// </summary>
+        public string RunJavascript { get; set; }
+
+        /// <summary>
         ///     When set then this directory is used to store temporary files.
         ///     For example files that are made in combination with <see cref="PreWrapExtensions"/>
         /// </summary>
@@ -989,6 +995,12 @@ namespace ChromeHtmlToPdfLib
                 }
 
                 WriteToLog((inputUri.IsFile ? "File" : "Url") + " loaded");
+
+                if (!string.IsNullOrWhiteSpace(RunJavascript))
+                {
+                    WriteToLog("Running given javascript");
+
+                }
 
                 WriteToLog("Converting to PDF");
 

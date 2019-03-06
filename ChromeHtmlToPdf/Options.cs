@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using ChromeHtmlToPdfLib.Enums;
 using CommandLine;
+// ReSharper disable StringLiteralTypo
 
 namespace ChromeHtmlToPdf
 {
@@ -296,6 +297,13 @@ namespace ChromeHtmlToPdf
             HelpText = "When set then the logging gets written to this file instead of the console " +
                        "(Wildcards {PID}, {DATE}, {TIME})")]
         public string LogFile { get; set; }
+
+        /// <summary>
+        ///     Runs the given javascript after the webpage has been loaded
+        /// </summary>
+        [Option("run-javascript", Required = false, Default = "",
+            HelpText = "Runs the given javascript after the webpage has been loaded and before it is converted to PDF")]
+        public string RunJavaScript { get; set; }
         #endregion
     }
 }

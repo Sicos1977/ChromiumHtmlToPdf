@@ -186,6 +186,50 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
 
+        
+        #region WaitForWindowStatus
+        /// <summary>
+        ///     Runs the given javascript after the page has been fully loaded
+        /// </summary>
+        /// <param name="script">The javascript to run</param>
+        /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
+        public bool RunJavascript(string script)
+        {
+            var message = new Message {Method = "Runtime.evaluate"};
+            message.AddParameter("expression", script);
+            message.AddParameter("silent", true);
+            message.AddParameter("returnByValue", false);
+
+            var waitEvent = new ManualResetEvent(false);
+            var match = false;
+
+            void MessageReceived(object sender, string data)
+            {
+                var evaluate = Evaluate.FromJson(data);
+                if (evaluate.Result?.Result?.Value != status) return;
+                match = true;
+                waitEvent.Set();
+            }
+
+            _pageConnection.MessageReceived += MessageReceived;
+
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
+
+            while (!match)
+            {
+                _pageConnection.SendAsync(message).GetAwaiter();
+                waitEvent.WaitOne(10);
+                if (stopWatch.ElapsedMilliseconds >= timeout) break;
+            }
+
+            stopWatch.Stop();
+            _pageConnection.MessageReceived -= MessageReceived;
+
+            return match;
+        }
+        #endregion
+
         #region PrintToPdf
         /// <summary>
         ///     Instructs Chrome to print the page
