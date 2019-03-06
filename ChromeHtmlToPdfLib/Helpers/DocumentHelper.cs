@@ -141,12 +141,6 @@ namespace ChromeHtmlToPdfLib.Helpers
             if (inputUri.IsFile)
                 localDirectory = Path.GetDirectoryName(inputUri.OriginalString);
 
-            //var webpage = inputUri.IsFile
-            //    ? inputUri.Encoding != null
-            //        ? File.ReadAllText(inputUri.OriginalString, inputUri.Encoding)
-            //        : File.ReadAllText(inputUri.OriginalString)
-            //    : DownloadString(inputUri);
-
             using (var webpage = inputUri.IsFile
                 ? File.OpenRead(inputUri.OriginalString)
                 : DownloadStream(inputUri))
@@ -166,6 +160,9 @@ namespace ChromeHtmlToPdfLib.Helpers
                         .Result
                     : context.OpenAsync(m => m.Content(webpage)).Result;
                 // ReSharper restore AccessToDisposedClosure
+
+                var elements = document.QuerySelectorAll(".WordSection1>p");
+                elements[0].SetStyle("font-family:Arial !important; font-size: 20px;");
 
                 if (sanitizeHtml)
                 {
