@@ -303,7 +303,7 @@ namespace ChromeHtmlToPdf
         /// </summary>
         [Option("run-javascript", Required = false, Default = "",
             HelpText = "Runs the given javascript after the webpage has been loaded and before it is converted to PDF")]
-        public string RunJavaScript { get; set; }
+        public string RunJavascript { get; set; }
         #endregion
     }
 }
