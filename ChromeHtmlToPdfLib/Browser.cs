@@ -185,7 +185,6 @@ namespace ChromeHtmlToPdfLib
             return match;
         }
         #endregion
-
         
         #region WaitForWindowStatus
         /// <summary>
@@ -205,8 +204,13 @@ namespace ChromeHtmlToPdfLib
 
             void MessageReceived(object sender, string data)
             {
+                var evaluateError = EvaluateError.FromJson(data);
+
+                if (evaluateError.Result.ExceptionDetails != null)
+                    throw new ChromeException(evaluateError.Result.ExceptionDetails.Exception.Description);
+
                 var evaluate = Evaluate.FromJson(data);
-                //if (evaluate.Result?.Result?.Value != status) return;
+                if (evaluate.Result?.Result?.Value != string.Empty) return;
                 match = true;
                 waitEvent.Set();
             }

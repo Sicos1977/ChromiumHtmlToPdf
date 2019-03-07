@@ -64,7 +64,7 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// Returns an object when an exception occurs when Chrome evaluated the given epxression
         /// </summary>
         [JsonProperty("exceptionDetails")]
-        public ExceptionDetails ExceptionDetails { get; set; }
+        public ExpressionExceptionDetails ExceptionDetails { get; set; }
 
         /// <summary>
         /// Returns the results for the given expression
@@ -77,7 +77,7 @@ namespace ChromeHtmlToPdfLib.Protocol
     /// <summary>
     /// The exact exception details for the expression that is sent to Chrome
     /// </summary>
-    public class ExceptionDetails
+    public class ExpressionExceptionDetails
     {
         #region Properties
         /// <summary>

@@ -137,6 +137,7 @@
     <Compile Include="Helpers\Sanitizer\RemoveReason.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Protocol\Error.cs" />
+    <Compile Include="Protocol\EvaluateError.cs" />
     <Compile Include="Protocol\Evaluate.cs" />
     <Compile Include="Protocol\Expression.cs" />
     <Compile Include="Protocol\Message.cs" />
