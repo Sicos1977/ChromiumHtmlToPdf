@@ -186,7 +186,7 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
         
-        #region WaitForWindowStatus
+        #region RunJavascript
         /// <summary>
         ///     Runs the given javascript after the page has been fully loaded
         /// </summary>
@@ -207,7 +207,10 @@ namespace ChromeHtmlToPdfLib
                 var evaluateError = EvaluateError.FromJson(data);
 
                 if (evaluateError.Result.ExceptionDetails != null)
-                    throw new ChromeException(evaluateError.Result.ExceptionDetails.Exception.Description);
+                {
+                    var errorDescription = evaluateError.Result.ExceptionDetails.Exception.Description;
+                    throw new ChromeException(errorDescription);
+                }
 
                 var evaluate = Evaluate.FromJson(data);
                 if (evaluate.Result?.Result?.Value != string.Empty) return;
@@ -224,6 +227,7 @@ namespace ChromeHtmlToPdfLib
             {
                 _pageConnection.SendAsync(message).GetAwaiter();
                 waitEvent.WaitOne(10);
+                if (stopWatch.ElapsedMilliseconds >= 60000) break;
             }
 
             stopWatch.Stop();
