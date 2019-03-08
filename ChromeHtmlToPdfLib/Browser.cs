@@ -196,10 +196,8 @@ namespace ChromeHtmlToPdfLib
         {
             var message = new Message {Method = "Runtime.evaluate"};
             message.AddParameter("expression", script);
-            message.AddParameter("silent", true);
-            message.AddParameter("returnByValue", true);
-
-            var waitEvent = new ManualResetEvent(false);
+            message.AddParameter("silent", false);
+            message.AddParameter("returnByValue", false);
 
             var errorDescription = string.Empty;
 
@@ -207,20 +205,12 @@ namespace ChromeHtmlToPdfLib
             {
                 var evaluateError = EvaluateError.FromJson(data);
 
-                if (evaluateError.Result.ExceptionDetails != null)
-                {
+                if (evaluateError.Result?.ExceptionDetails != null)
                     errorDescription = evaluateError.Result.ExceptionDetails.Exception.Description;
-                    waitEvent.Set();
-                }
-
-                var evaluate = Evaluate.FromJson(data);
-                if (evaluate.Result?.Result?.Value != string.Empty) return;
-                waitEvent.Set();
             }
 
             _pageConnection.MessageReceived += MessageReceived;
-            _pageConnection.SendAsync(message).GetAwaiter();
-            waitEvent.WaitOne();
+            _pageConnection.SendAsync(message).GetAwaiter().GetResult();
             _pageConnection.MessageReceived -= MessageReceived;
 
             if (!string.IsNullOrEmpty(errorDescription))
