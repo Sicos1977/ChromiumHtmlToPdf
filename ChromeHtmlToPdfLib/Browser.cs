@@ -192,7 +192,7 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         /// <param name="script">The javascript to run</param>
         /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
-        public bool RunJavascript(string script)
+        public void RunJavascript(string script)
         {
             var message = new Message {Method = "Runtime.evaluate"};
             message.AddParameter("expression", script);
@@ -200,7 +200,8 @@ namespace ChromeHtmlToPdfLib
             message.AddParameter("returnByValue", true);
 
             var waitEvent = new ManualResetEvent(false);
-            var match = false;
+
+            var errorDescription = string.Empty;
 
             void MessageReceived(object sender, string data)
             {
@@ -208,32 +209,22 @@ namespace ChromeHtmlToPdfLib
 
                 if (evaluateError.Result.ExceptionDetails != null)
                 {
-                    var errorDescription = evaluateError.Result.ExceptionDetails.Exception.Description;
-                    throw new ChromeException(errorDescription);
+                    errorDescription = evaluateError.Result.ExceptionDetails.Exception.Description;
+                    waitEvent.Set();
                 }
 
                 var evaluate = Evaluate.FromJson(data);
                 if (evaluate.Result?.Result?.Value != string.Empty) return;
-                match = true;
                 waitEvent.Set();
             }
 
             _pageConnection.MessageReceived += MessageReceived;
-
-            var stopWatch = new Stopwatch();
-            stopWatch.Start();
-
-            while (!match)
-            {
-                _pageConnection.SendAsync(message).GetAwaiter();
-                waitEvent.WaitOne(10);
-                if (stopWatch.ElapsedMilliseconds >= 60000) break;
-            }
-
-            stopWatch.Stop();
+            _pageConnection.SendAsync(message).GetAwaiter();
+            waitEvent.WaitOne();
             _pageConnection.MessageReceived -= MessageReceived;
 
-            return match;
+            if (!string.IsNullOrEmpty(errorDescription))
+                throw new ChromeException(errorDescription);
         }
         #endregion
 
