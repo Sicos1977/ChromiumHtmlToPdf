@@ -998,8 +998,9 @@ namespace ChromeHtmlToPdfLib
 
                 if (!string.IsNullOrWhiteSpace(RunJavascript))
                 {
-                    WriteToLog("Running given javascript");
+                    WriteToLog("Start running javascript");
                     _browser.RunJavascript(RunJavascript);
+                    WriteToLog("Done running javascript");
                 }
 
                 WriteToLog("Converting to PDF");
