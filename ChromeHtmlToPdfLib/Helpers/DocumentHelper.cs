@@ -161,9 +161,6 @@ namespace ChromeHtmlToPdfLib.Helpers
                     : context.OpenAsync(m => m.Content(webpage)).Result;
                 // ReSharper restore AccessToDisposedClosure
 
-                var elements = document.QuerySelectorAll(".WordSection1>p");
-                elements[0].SetStyle("font-family:Arial !important; font-size: 20px;");
-
                 if (sanitizeHtml)
                 {
                     WriteToLog("Sanitizing HTML");

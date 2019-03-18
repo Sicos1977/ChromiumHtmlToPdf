@@ -947,8 +947,9 @@ namespace ChromeHtmlToPdfLib
                 }
                 else if (ImageResize || ImageRotate || SanitizeHtml)
                 {
-                    var documentHelper = new DocumentHelper(GetTempDirectory, _logStream, WebProxy, ImageDownloadTimeout)
-                    { InstanceId = InstanceId };
+                    var documentHelper =
+                        new DocumentHelper(GetTempDirectory, _logStream, WebProxy, ImageDownloadTimeout)
+                            {InstanceId = InstanceId};
                     if (!documentHelper.Validate(inputUri, ImageResize, ImageRotate, SanitizeHtml, pageSettings,
                         out var outputUri))
                         inputUri = outputUri;
