@@ -89,11 +89,14 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         /// <param name="uri"></param>
         /// <param name="countdownTimer">If a <see cref="CountdownTimer"/> is set then
-        /// the method will raise an <see cref="ConversionTimedOutException"/> if the 
-        /// <see cref="CountdownTimer"/> reaches zero before finishing navigation</param>
+        ///     the method will raise an <see cref="ConversionTimedOutException"/> if the 
+        ///     <see cref="CountdownTimer"/> reaches zero before finishing navigation</param>
+        /// <param name="mediaLoadTimeout">When set a timeout will be started after the DomContentLoaded
+        /// event has fired. After a timeout the NavigateTo method will exit as if the page
+        /// has been completely loaded</param>
         /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
         /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer"/> reaches zero</exception>
-        public void NavigateTo(Uri uri, CountdownTimer countdownTimer = null)
+        public void NavigateTo(Uri uri, CountdownTimer countdownTimer = null, int? mediaLoadTimeout = null)
         {
             _pageConnection.SendAsync(new Message {Method = "Page.enable"}).GetAwaiter();
 
@@ -101,34 +104,75 @@ namespace ChromeHtmlToPdfLib
             message.AddParameter("url", uri.ToString());
 
             var waitEvent = new ManualResetEvent(false);
+            Task mediaLoadTimeoutTask = null;
+            CancellationToken mediaLoadTimeoutCancellationToken;
 
-            void MessageReceived(object sender, string data)
+            async Task MessageReceived(string data)
             {
                 var page = PageEvent.FromJson(data);
-
-                System.IO.File.AppendAllText("d:\\log.txt", Environment.NewLine + DateTime.Now.ToString("O") + " - " + data);
 
                 if (!uri.IsFile)
                 {
                     switch (page.Method)
                     {
+                        // The DOMContentLoaded event is fired when the document has been completely loaded and parsed, without
+                        // waiting for stylesheets, images, and subframes to finish loading (the load event can be used to
+                        // detect a fully-loaded page).
                         case "Page.lifecycleEvent" when page.Params?.Name == "DOMContentLoaded":
+                            if (mediaLoadTimeout.HasValue)
+                            {
+                                mediaLoadTimeoutCancellationToken = new CancellationToken();
+                                mediaLoadTimeoutTask = Task.Delay(mediaLoadTimeout.Value,
+                                    mediaLoadTimeoutCancellationToken);
+                                if (mediaLoadTimeoutTask != null)
+                                    await mediaLoadTimeoutTask;
+
+                                Logger.WriteToLog($"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
+
+                                waitEvent.Set();
+                            }
+                            else
+                                waitEvent.Set();
+                            break;
+
                         case "Page.frameStoppedLoading":
                             waitEvent.Set();
                             break;
                     }
                 }
-                else if (page.Method == "Page.loadEventFired") 
-                    waitEvent.Set();
+                else
+                {
+                    switch (page.Method)
+                    {
+                        // The DOMContentLoaded event is fired when the document has been completely loaded and parsed, without
+                        // waiting for stylesheets, images, and subframes to finish loading (the load event can be used to
+                        // detect a fully-loaded page).
+                        case "Page.domContentEventFired":
+                        {
+                            if (mediaLoadTimeout.HasValue)
+                            {
+                                mediaLoadTimeoutCancellationToken = new CancellationToken();
+                                mediaLoadTimeoutTask = Task.Delay(mediaLoadTimeout.Value,
+                                    mediaLoadTimeoutCancellationToken);
+                                if (mediaLoadTimeoutTask != null)
+                                    await mediaLoadTimeoutTask;
 
-                // Page.loadEventFired
-                // The DOMContentLoaded event is fired when the document has been completely loaded and parsed, without
-                // waiting for stylesheets, images, and subframes to finish loading (the load event can be used to
-                // detect a fully-loaded page).
+                                Logger.WriteToLog($"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
 
+                                waitEvent.Set();
+                            }
+
+                            break;
+                        }
+
+                        case "Page.loadEventFired":
+                            waitEvent.Set();
+                            break;
+                    }
+                }
             }
 
-            _pageConnection.MessageReceived += MessageReceived;
+            _pageConnection.MessageReceived += async (sender, data) => await MessageReceived(data);
             _pageConnection.Closed += (sender, args) => waitEvent.Set();
             _pageConnection.SendAsync(message).GetAwaiter();
 
@@ -141,7 +185,11 @@ namespace ChromeHtmlToPdfLib
             else
                 waitEvent.WaitOne();
 
-            _pageConnection.MessageReceived -= MessageReceived;
+            if (mediaLoadTimeoutCancellationToken != null)
+                mediaLoadTimeoutTask?.Wait(mediaLoadTimeoutCancellationToken);
+
+            // ReSharper disable once EventUnsubscriptionViaAnonymousDelegate
+            _pageConnection.MessageReceived -= async (sender, data) => await MessageReceived(data);
 
             _pageConnection.SendAsync(new Message {Method = "Page.disable"}).GetAwaiter();
         }

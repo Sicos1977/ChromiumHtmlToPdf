@@ -29,7 +29,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Management;
-using System.Text;
 using ChromeHtmlToPdfLib.Settings;
 using Microsoft.Win32;
 using System.Net;
@@ -48,11 +47,6 @@ namespace ChromeHtmlToPdfLib
     public class Converter : IDisposable
     {
         #region Fields
-        /// <summary>
-        ///     When set then logging is written to this stream
-        /// </summary>
-        private Stream _logStream;
-
         /// <summary>
         ///     Chrome with it's full path
         /// </summary>
@@ -161,7 +155,11 @@ namespace ChromeHtmlToPdfLib
         ///     An unique id that can be used to identify the logging of the converter when
         ///     calling the code from multiple threads and writing all the logging to the same file
         /// </summary>
-        public string InstanceId { get; set; }
+        public string InstanceId
+        {
+            get => Logger.InstanceId;
+            set => Logger.InstanceId = value;
+        }
 
         /// <summary>
         ///     Used to add the extension of text based files that needed to be wrapped in an HTML PRE
@@ -184,7 +182,7 @@ namespace ChromeHtmlToPdfLib
             set
             {
                 _preWrapExtensions = value;
-                WriteToLog($"Setting pre wrap extension to '{string.Join(", ", value)}'");
+                Logger.WriteToLog($"Setting pre wrap extension to '{string.Join(", ", value)}'");
             } 
         }
 
@@ -377,7 +375,7 @@ namespace ChromeHtmlToPdfLib
                          Stream logStream = null)
         {
             _preWrapExtensions = new List<string>();
-            _logStream = logStream;
+            Logger.LogStream = logStream;
 
             ResetArguments();
 
@@ -421,15 +419,15 @@ namespace ChromeHtmlToPdfLib
         {
             if (IsChromeRunning)
             {
-                WriteToLog($"Chrome is already running on PID {_chromeProcess.Id}... skipped");
+                Logger.WriteToLog($"Chrome is already running on PID {_chromeProcess.Id}... skipped");
                 return;
             }
 
             _chromeEventException = null;
             var workingDirectory = Path.GetDirectoryName(_chromeExeFileName);
 
-            WriteToLog($"Starting Chrome from location '{_chromeExeFileName}' with working directory '{workingDirectory}'");
-            WriteToLog($"\"{_chromeExeFileName}\" {string.Join(" ", DefaultArguments)}");
+            Logger.WriteToLog($"Starting Chrome from location '{_chromeExeFileName}' with working directory '{workingDirectory}'");
+            Logger.WriteToLog($"\"{_chromeExeFileName}\" {string.Join(" ", DefaultArguments)}");
 
             _chromeProcess = new Process();
             var processStartInfo = new ProcessStartInfo
@@ -458,7 +456,7 @@ namespace ChromeHtmlToPdfLib
                     domain = _userName.Split('\\')[0];
                 }
 
-                WriteToLog($"Starting Chrome with username '{userName}' on domain '{domain}'");
+                Logger.WriteToLog($"Starting Chrome with username '{userName}' on domain '{domain}'");
 
                 processStartInfo.Domain = domain;
                 processStartInfo.UserName = userName;
@@ -487,11 +485,11 @@ namespace ChromeHtmlToPdfLib
             }
             catch (Exception exception)
             {
-                WriteToLog("Could not start the Chrome process due to the following reason: " + ExceptionHelpers.GetInnerException(exception));
+                Logger.WriteToLog("Could not start the Chrome process due to the following reason: " + ExceptionHelpers.GetInnerException(exception));
                 throw;
             }
 
-            WriteToLog("Chrome process started");
+            Logger.WriteToLog("Chrome process started");
 
             _chromeProcess.BeginErrorReadLine();
             _chromeProcess.BeginOutputReadLine();
@@ -503,11 +501,11 @@ namespace ChromeHtmlToPdfLib
 
             if (_chromeEventException != null)
             {
-                WriteToLog("Exception: " + ExceptionHelpers.GetInnerException(_chromeEventException));
+                Logger.WriteToLog("Exception: " + ExceptionHelpers.GetInnerException(_chromeEventException));
                 throw _chromeEventException;
             }
 
-            WriteToLog("Chrome started");
+            Logger.WriteToLog("Chrome started");
         }
 
         /// <summary>
@@ -521,12 +519,12 @@ namespace ChromeHtmlToPdfLib
             {
                 // ReSharper disable once AccessToModifiedClosure
                 if (_chromeProcess == null) return;
-                WriteToLog("Chrome exited unexpectedly, arguments used: " + string.Join(" ", DefaultArguments));
-                WriteToLog("Process id: " + _chromeProcess.Id);
-                WriteToLog("Process exit time: " + _chromeProcess.ExitTime.ToString("yyyy-MM-ddTHH:mm:ss.fff"));
+                Logger.WriteToLog("Chrome exited unexpectedly, arguments used: " + string.Join(" ", DefaultArguments));
+                Logger.WriteToLog("Process id: " + _chromeProcess.Id);
+                Logger.WriteToLog("Process exit time: " + _chromeProcess.ExitTime.ToString("yyyy-MM-ddTHH:mm:ss.fff"));
                 var exception =
                     ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromeProcess.ExitCode));
-                WriteToLog("Exception: " + exception);
+                Logger.WriteToLog("Exception: " + exception);
                 throw new ChromeException("Chrome exited unexpectedly, " + exception);
             }
             catch (Exception exception)
@@ -555,11 +553,11 @@ namespace ChromeHtmlToPdfLib
                     // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
                     var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
                     _browser = new Browser(uri);
-                    WriteToLog($"Connected to dev protocol on uri '{uri}'");
+                    Logger.WriteToLog($"Connected to dev protocol on uri '{uri}'");
                     _chromeWaitEvent.Set();
                 }
                 else if (!string.IsNullOrWhiteSpace(args.Data))
-                    WriteToLog($"Error: {args.Data}");
+                    Logger.WriteToLog($"Error: {args.Data}");
             }
             catch (Exception exception)
             {
@@ -579,7 +577,7 @@ namespace ChromeHtmlToPdfLib
             try
             {
                 if (!string.IsNullOrWhiteSpace(args.Data))
-                    WriteToLog($"Error: {args.Data}");
+                    Logger.WriteToLog($"Error: {args.Data}");
             }
             catch (Exception exception)
             {
@@ -901,6 +899,8 @@ namespace ChromeHtmlToPdfLib
         /// <param name="waitForWindowsStatusTimeout"></param>
         /// <param name="conversionTimeout">An conversion timeout in milliseconds, if the conversion fails
         ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException"/> is raised</param>
+        /// <param name="mediaLoadTimeout">When set a timeout will be started after the DomContentLoaded
+        /// event has fired. After a timeout the NavigateTo method will exit as if the page has been completely loaded</param>
         /// <param name="logStream">When set then this will give a logging for each conversion. Use the log stream
         /// option in the constructor if you want one log for all conversions</param>
         /// <exception cref="ConversionTimedOutException">Raised when <see cref="conversionTimeout"/> is set and the 
@@ -911,9 +911,10 @@ namespace ChromeHtmlToPdfLib
             string waitForWindowStatus = "",
             int waitForWindowsStatusTimeout = 60000,
             int? conversionTimeout = null,
+            int? mediaLoadTimeout = null,
             Stream logStream = null)
         {
-            _logStream = logStream;
+            Logger.LogStream = logStream;
             _conversionTimeout = conversionTimeout;
 
             if (inputUri.IsFile)
@@ -948,8 +949,7 @@ namespace ChromeHtmlToPdfLib
                 else if (ImageResize || ImageRotate || SanitizeHtml)
                 {
                     var documentHelper =
-                        new DocumentHelper(GetTempDirectory, _logStream, WebProxy, ImageDownloadTimeout)
-                            {InstanceId = InstanceId};
+                        new DocumentHelper(GetTempDirectory, WebProxy, ImageDownloadTimeout);
                     if (!documentHelper.Validate(inputUri, ImageResize, ImageRotate, SanitizeHtml, pageSettings,
                         out var outputUri))
                         inputUri = outputUri;
@@ -965,46 +965,46 @@ namespace ChromeHtmlToPdfLib
                         throw new ArgumentOutOfRangeException(
                             $"The value for {nameof(countdownTimer)} has to be a value equal to 1 or greater");
 
-                    WriteToLog($"Conversion timeout set to {conversionTimeout.Value} milliseconds");
+                    Logger.WriteToLog($"Conversion timeout set to {conversionTimeout.Value} milliseconds");
 
                     countdownTimer = new CountdownTimer(conversionTimeout.Value);
                     countdownTimer.Start();
                 }
 
-                WriteToLog("Loading " + (inputUri.IsFile ? "file " + inputUri.OriginalString : "url " + inputUri));
+                Logger.WriteToLog("Loading " + (inputUri.IsFile ? "file " + inputUri.OriginalString : "url " + inputUri));
 
-                _browser.NavigateTo(inputUri, countdownTimer);
+                _browser.NavigateTo(inputUri, countdownTimer, mediaLoadTimeout);
 
                 if (!string.IsNullOrWhiteSpace(waitForWindowStatus))
                 {
                     if (conversionTimeout.HasValue)
                     {
-                        WriteToLog("Conversion timeout paused because we are waiting for a window.status");
+                        Logger.WriteToLog("Conversion timeout paused because we are waiting for a window.status");
                         countdownTimer.Stop();
                     }
 
-                    WriteToLog(
+                    Logger.WriteToLog(
                         $"Waiting for window.status '{waitForWindowStatus}' or a timeout of {waitForWindowsStatusTimeout} milliseconds");
                     var match = _browser.WaitForWindowStatus(waitForWindowStatus, waitForWindowsStatusTimeout);
-                    WriteToLog(!match ? "Waiting timed out" : $"Window status equaled {waitForWindowStatus}");
+                    Logger.WriteToLog(!match ? "Waiting timed out" : $"Window status equaled {waitForWindowStatus}");
 
                     if (conversionTimeout.HasValue)
                     {
-                        WriteToLog("Conversion timeout started again because we are done waiting for a window.status");
+                        Logger.WriteToLog("Conversion timeout started again because we are done waiting for a window.status");
                         countdownTimer.Start();
                     }
                 }
 
-                WriteToLog((inputUri.IsFile ? "File" : "Url") + " loaded");
+                Logger.WriteToLog((inputUri.IsFile ? "File" : "Url") + " loaded");
 
                 if (!string.IsNullOrWhiteSpace(RunJavascript))
                 {
-                    WriteToLog("Start running javascript");
+                    Logger.WriteToLog("Start running javascript");
                     _browser.RunJavascript(RunJavascript);
-                    WriteToLog("Done running javascript");
+                    Logger.WriteToLog("Done running javascript");
                 }
 
-                WriteToLog("Converting to PDF");
+                Logger.WriteToLog("Converting to PDF");
 
                 using (var memoryStream = new MemoryStream(_browser.PrintToPdf(pageSettings, countdownTimer).GetAwaiter().GetResult().Bytes))
                 {
@@ -1012,11 +1012,11 @@ namespace ChromeHtmlToPdfLib
                     memoryStream.CopyTo(outputStream);
                 }
 
-                WriteToLog("Converted");
+                Logger.WriteToLog("Converted");
             }
             catch (Exception exception)
             {
-                WriteToLog($"Error: {ExceptionHelpers.GetInnerException(exception)}'");
+                Logger.WriteToLog($"Error: {ExceptionHelpers.GetInnerException(exception)}'");
                 throw;
             }
             finally
@@ -1026,7 +1026,7 @@ namespace ChromeHtmlToPdfLib
                     _currentTempDirectory.Refresh();
                     if (_currentTempDirectory.Exists)
                     {
-                        WriteToLog($"Deleting temporary folder '{_currentTempDirectory.FullName}'");
+                        Logger.WriteToLog($"Deleting temporary folder '{_currentTempDirectory.FullName}'");
                         _currentTempDirectory.Delete(true);
                     }
                 }
@@ -1043,9 +1043,11 @@ namespace ChromeHtmlToPdfLib
         ///     rendering the PDF</param>
         /// <param name="waitForWindowsStatusTimeout"></param>
         /// <param name="conversionTimeout">An conversion timeout in milliseconds, if the conversion fails
-        /// to finished in the set amount of time then an <see cref="ConversionTimedOutException"/> is raised</param>
+        ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException"/> is raised</param>
+        /// <param name="mediaLoadTimeout">When set a timeout will be started after the DomContentLoaded
+        /// event has fired. After a timeout the NavigateTo method will exit as if the page has been completely loaded</param>
         /// <param name="logStream">When set then this will give a logging for each conversion. Use the log stream
-        /// option in the constructor if you want one log for all conversions</param>
+        ///     option in the constructor if you want one log for all conversions</param>
         /// <exception cref="ConversionTimedOutException">Raised when <see cref="conversionTimeout"/> is set and the 
         /// conversion fails to finish in this amount of time</exception>
         /// <exception cref="DirectoryNotFoundException"></exception>
@@ -1055,13 +1057,14 @@ namespace ChromeHtmlToPdfLib
             string waitForWindowStatus = "",
             int waitForWindowsStatusTimeout = 60000,
             int? conversionTimeout = null,
+            int? mediaLoadTimeout = null,
             Stream logStream = null)
         {
             CheckIfOutputFolderExists(outputFile);
             using (var memoryStream = new MemoryStream())
             {
                 ConvertToPdf(inputUri, memoryStream, pageSettings, waitForWindowStatus,
-                    waitForWindowsStatusTimeout, conversionTimeout, logStream);
+                    waitForWindowsStatusTimeout, conversionTimeout, mediaLoadTimeout, logStream);
 
                 using (var fileStream = File.Open(outputFile, FileMode.Create))
                 {
@@ -1069,7 +1072,7 @@ namespace ChromeHtmlToPdfLib
                     memoryStream.CopyTo(fileStream);
                 }
 
-                WriteToLog($"PDF written to output file '{outputFile}'");
+                Logger.WriteToLog($"PDF written to output file '{outputFile}'");
             }
         }
 
@@ -1123,33 +1126,9 @@ namespace ChromeHtmlToPdfLib
             if (!PreWrapExtensions.Contains(ext, StringComparison.InvariantCultureIgnoreCase))
                 return false;
 
-            var preWrapper = new PreWrapper(GetTempDirectory, _logStream) {InstanceId = InstanceId};
+            var preWrapper = new PreWrapper(GetTempDirectory);
             outputFile = preWrapper.WrapFile(inputFile.LocalPath, inputFile.Encoding);
             return true;
-        }
-        #endregion
-
-        #region WriteToLog
-        /// <summary>
-        ///     Writes a line and linefeed to the <see cref="_logStream" />
-        /// </summary>
-        /// <param name="message">The message to write</param>
-        private void WriteToLog(string message)
-        {
-            if (_logStream == null) return;
-
-            try
-            {
-                var line = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + (InstanceId != null ? " - " + InstanceId : string.Empty) + " - " +
-                           message + Environment.NewLine;
-                var bytes = Encoding.UTF8.GetBytes(line);
-                _logStream.Write(bytes, 0, bytes.Length);
-                _logStream.Flush();
-            }
-            catch (ObjectDisposedException)
-            {
-                // Ignore
-            }
         }
         #endregion
 
@@ -1178,7 +1157,7 @@ namespace ChromeHtmlToPdfLib
             catch (Exception exception)
             {
                 if (!exception.Message.Contains("is not running"))
-                    WriteToLog(exception.Message);
+                    Logger.WriteToLog(exception.Message);
             }
         }
         #endregion
@@ -1205,9 +1184,9 @@ namespace ChromeHtmlToPdfLib
             }
 
             // Sometimes Chrome does not close all processes so kill them
-            WriteToLog("Stopping Chrome");
+            Logger.WriteToLog("Stopping Chrome");
             KillProcessAndChildren(_chromeProcess.Id);
-            WriteToLog("Chrome stopped");
+            Logger.WriteToLog("Chrome stopped");
 
             _chromeProcess = null;
         }

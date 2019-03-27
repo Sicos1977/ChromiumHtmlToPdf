@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Net;
-using System.Text;
 using System.Text.RegularExpressions;
 using AngleSharp;
 using AngleSharp.Css.Dom;
@@ -23,17 +22,6 @@ namespace ChromeHtmlToPdfLib.Helpers
     public class DocumentHelper
     {
         #region Fields
-        /// <summary>
-        ///     When set then logging is written to this stream
-        /// </summary>
-        private readonly Stream _logStream;
-
-        /// <summary>
-        ///     An unique id that can be used to identify the logging of the converter when
-        ///     calling the code from multiple threads and writing all the logging to the same file
-        /// </summary>
-        public string InstanceId { get; set; }
-
         /// <summary>
         ///     The temp folder
         /// </summary>
@@ -81,16 +69,13 @@ namespace ChromeHtmlToPdfLib.Helpers
         ///     Makes this object and sets its needed properties
         /// </summary>
         /// <param name="tempDirectory">When set then this directory will be used for temporary files</param>
-        /// <param name="logStream">When set then logging is written to this stream</param>
         /// <param name="webProxy">The web proxy to use when downloading</param>
         /// <param name="timeout"></param>
         public DocumentHelper(DirectoryInfo tempDirectory = null,
-                           Stream logStream = null,
-                           WebProxy webProxy = null,
-                           int? timeout = null)
+            WebProxy webProxy = null,
+            int? timeout = null)
         {
             _tempDirectory = tempDirectory;
-            _logStream = logStream;
             _webProxy = webProxy;
             _timeout = timeout ?? 30000;
         }
@@ -163,13 +148,13 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                 if (sanitizeHtml)
                 {
-                    WriteToLog("Sanitizing HTML");
+                    Logger.WriteToLog("Sanitizing HTML");
                     new HtmlSanitizer().DoSanitize(document as IHtmlDocument, document.DocumentElement);
                     htmlChanged = true;
-                    WriteToLog("HTML sanitized");
+                    Logger.WriteToLog("HTML sanitized");
                 }
 
-                WriteToLog("Validating all images if they need to be rotated and if they fit the page");
+                Logger.WriteToLog("Validating all images if they need to be rotated and if they fit the page");
                 var unchangedImages = new List<IHtmlImageElement>();
 
                 // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
@@ -179,7 +164,7 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                     if (string.IsNullOrWhiteSpace(htmlImage.Source))
                     {
-                        WriteToLog($"HTML image tag '{htmlImage.TagName}' has no image source '{htmlImage.Source}'");
+                        Logger.WriteToLog($"HTML image tag '{htmlImage.TagName}' has no image source '{htmlImage.Source}'");
                         continue;
                     }
 
@@ -205,7 +190,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                             {
                                 htmlImage.DisplayWidth = image.Width;
                                 htmlImage.DisplayHeight = image.Height;
-                                WriteToLog($"Image rotated and saved to location '{fileName}'");
+                                Logger.WriteToLog($"Image rotated and saved to location '{fileName}'");
                                 image.Save(fileName);
                                 htmlImage.DisplayWidth = image.Width;
                                 htmlImage.DisplayHeight = image.Height;
@@ -252,7 +237,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                                 if (image == null) continue;
 
                                 image = ScaleImage(image, (int) maxWidth);
-                                WriteToLog(
+                                Logger.WriteToLog(
                                     $"Image resized to width {image.Width} and height {image.Height} and saved to location '{fileName}'");
                                 image.Save(fileName);
                                 htmlImage.DisplayWidth = image.Width;
@@ -282,7 +267,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                     {
                         if (image == null)
                         {
-                            WriteToLog($"Could not load unchanged image from location '{unchangedImage.Source}'");
+                            Logger.WriteToLog($"Could not load unchanged image from location '{unchangedImage.Source}'");
                             continue;
                         }
 
@@ -291,7 +276,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                             : unchangedImage.Source);
                         var fileName = GetTempFile(extension);
 
-                        WriteToLog($"Unchanged image saved to location '{fileName}'");
+                        Logger.WriteToLog($"Unchanged image saved to location '{fileName}'");
                         image.Save(fileName);
                         unchangedImage.Source = new Uri(fileName).ToString();
                     }
@@ -319,7 +304,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                 }
                 catch (Exception exception)
                 {
-                    WriteToLog(
+                    Logger.WriteToLog(
                         $"Could not generate new html file '{outputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
                     return true;
                 }
@@ -338,7 +323,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         {
             if (imageSource.StartsWith("data:", StringComparison.InvariantCultureIgnoreCase))
             {
-                WriteToLog("Decoding image from base64 string");
+                Logger.WriteToLog("Decoding image from base64 string");
 
                 try
                 {
@@ -348,20 +333,20 @@ namespace ChromeHtmlToPdfLib.Helpers
                     using (var stream = new MemoryStream(binaryData))
                     {
                         var image = Image.FromStream(stream);
-                        WriteToLog("Image decoded");
+                        Logger.WriteToLog("Image decoded");
                         return image;
                     }
                 }
                 catch (Exception exception)
                 {
-                    WriteToLog($"Error decoding image: {ExceptionHelpers.GetInnerException(exception)}");
+                    Logger.WriteToLog($"Error decoding image: {ExceptionHelpers.GetInnerException(exception)}");
                     return null;
                 }
             }
 
             try
             {
-                WriteToLog($"Getting image from uri '{imageSource}'");
+                Logger.WriteToLog($"Getting image from uri '{imageSource}'");
 
                 var imageUri = new Uri(imageSource);
 
@@ -391,13 +376,13 @@ namespace ChromeHtmlToPdfLib.Helpers
                         break;
 
                     default:
-                        WriteToLog($"Unsupported scheme {imageUri.Scheme} to get image");
+                        Logger.WriteToLog($"Unsupported scheme {imageUri.Scheme} to get image");
                         return null;
                 }
             }
             catch (Exception exception)
             {
-                WriteToLog("Getting image failed with exception: " + ExceptionHelpers.GetInnerException(exception));
+                Logger.WriteToLog("Getting image failed with exception: " + ExceptionHelpers.GetInnerException(exception));
             }
 
             return null;
@@ -442,7 +427,7 @@ namespace ChromeHtmlToPdfLib.Helpers
 
             var item = image.GetPropertyItem(orientationId);
             RotateFlipType rotateFlipType;
-            WriteToLog("Checking image rotation");
+            Logger.WriteToLog("Checking image rotation");
 
             switch (item.Value[0])
             {
@@ -476,7 +461,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                 return false;
 
             image.RotateFlip(rotateFlipType);
-            WriteToLog($"Image rotated with {rotateFlipType}");
+            Logger.WriteToLog($"Image rotated with {rotateFlipType}");
                 
             // Remove Exif orientation tag (if requested)
             if (updateExifData) image.RemovePropertyItem(orientationId);
@@ -494,14 +479,14 @@ namespace ChromeHtmlToPdfLib.Helpers
         {
             try
             {
-                WriteToLog($"Downloading from uri '{sourceUri}'");
+                Logger.WriteToLog($"Downloading from uri '{sourceUri}'");
                 var result = WebClient.OpenReadTaskAsync(sourceUri).Timeout(_timeout).GetAwaiter().GetResult();
-                WriteToLog("Downloaded");
+                Logger.WriteToLog("Downloaded");
                 return result;
             }
             catch (Exception exception)
             {
-                WriteToLog("Downloading failed with exception: " + ExceptionHelpers.GetInnerException(exception));
+                Logger.WriteToLog("Downloading failed with exception: " + ExceptionHelpers.GetInnerException(exception));
                 return null;
             }
         }
@@ -517,22 +502,6 @@ namespace ChromeHtmlToPdfLib.Helpers
         {
             var tempFile = Guid.NewGuid() + extension;
             return Path.Combine(_tempDirectory?.FullName ?? Path.GetTempPath(), tempFile);
-        }
-        #endregion
-
-        #region WriteToLog
-        /// <summary>
-        ///     Writes a line and linefeed to the <see cref="_logStream" />
-        /// </summary>
-        /// <param name="message">The message to write</param>
-        private void WriteToLog(string message)
-        {
-            if (_logStream == null) return;
-            var line = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + (InstanceId != null ? " - " + InstanceId : string.Empty) + " - " +
-                       message + Environment.NewLine;
-            var bytes = Encoding.UTF8.GetBytes(line);
-            _logStream.Write(bytes, 0, bytes.Length);
-            _logStream.Flush();
         }
         #endregion
     }

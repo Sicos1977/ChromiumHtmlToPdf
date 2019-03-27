@@ -38,17 +38,6 @@ namespace ChromeHtmlToPdfLib.Helpers
     {
         #region Fields
         /// <summary>
-        ///     When set then logging is written to this stream
-        /// </summary>
-        private readonly Stream _logStream;
-
-        /// <summary>
-        ///     An unique id that can be used to identify the logging of the converter when
-        ///     calling the code from multiple threads and writing all the logging to the same file
-        /// </summary>
-        public string InstanceId { get; set; }
-
-        /// <summary>
         ///     The temp folder
         /// </summary>
         private readonly DirectoryInfo _tempDirectory;
@@ -100,12 +89,9 @@ namespace ChromeHtmlToPdfLib.Helpers
         ///     Makes this object and sets its needed properties
         /// </summary>
         /// <param name="tempDirectory">When set then this directory will be used for temporary files</param>
-        /// <param name="logStream"></param>
-        public PreWrapper(DirectoryInfo tempDirectory = null,
-                          Stream logStream = null)
+        public PreWrapper(DirectoryInfo tempDirectory = null)
         {
             _tempDirectory = tempDirectory;
-            _logStream = logStream;
         }
         #endregion
 
@@ -122,13 +108,13 @@ namespace ChromeHtmlToPdfLib.Helpers
             var title = WebUtility.HtmlEncode(temp);
             var tempFile = GetTempFile;
             
-            WriteToLog($"Reading text file '{inputFile}'");
+            Logger.WriteToLog($"Reading text file '{inputFile}'");
 
             var streamReader = encoding != null
                 ? new StreamReader(inputFile, encoding)
                 : new EncodingTools.Detector().OpenTextFile(inputFile);
 
-            WriteToLog($"File is '{streamReader.CurrentEncoding.WebName}' encoded");
+            Logger.WriteToLog($"File is '{streamReader.CurrentEncoding.WebName}' encoded");
 
             var writeEncoding = new UnicodeEncoding(!BitConverter.IsLittleEndian, true);
 
@@ -156,31 +142,15 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                 while (!streamReader.EndOfStream)
                     writer.WriteLine(streamReader.ReadLine());
-
+            
                 writer.WriteLine("</pre>");
                 writer.WriteLine("</body>");
                 writer.WriteLine("</html>");
             }
 
-            WriteToLog($"File pre wrapped and written to temporary file '{tempFile}'");
+            Logger.WriteToLog($"File pre wrapped and written to temporary file '{tempFile}'");
 
             return tempFile;
-        }
-        #endregion
-
-        #region WriteToLog
-        /// <summary>
-        ///     Writes a line and linefeed to the <see cref="_logStream" />
-        /// </summary>
-        /// <param name="message">The message to write</param>
-        private void WriteToLog(string message)
-        {
-            if (_logStream == null) return;
-            var line = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + (InstanceId != null ? " - " + InstanceId : string.Empty) + " - " +
-                       message + Environment.NewLine;
-            var bytes = Encoding.UTF8.GetBytes(line);
-            _logStream.Write(bytes, 0, bytes.Length);
-            _logStream.Flush();
         }
         #endregion
     }

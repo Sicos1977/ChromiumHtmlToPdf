@@ -245,6 +245,15 @@ namespace ChromeHtmlToPdf
         public int? Timeout { get; set; }
 
         /// <summary>
+        ///     The time to wait in milliseconds for media (stylesheets, images and subframes) to load after the dom content has
+        ///     been loaded. When the timeout is exceeded the tool will start the conversion.
+        /// </summary>
+        [Option("media-load-timeout", Required = false,
+            HelpText = "The time to wait in milliseconds for media (stylesheets, images and subframes) to load " +
+                       "after the dom content has been loaded. When the timeout is exceeded the tool will start the conversion.")]
+        public int? MediaLoadTimeout { get; set; }
+
+        /// <summary>
         ///     The files to wrap in a HTML file with a &lt;PRE&gt; tag
         /// </summary> 
         [Option("pre-wrap-file-extensions", Required = false,

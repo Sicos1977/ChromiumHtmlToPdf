@@ -333,7 +333,8 @@ namespace ChromeHtmlToPdf
                     pageSettings,
                     options.WaitForWindowStatus,
                     options.WaitForWindowStatusTimeOut,
-                    options.Timeout);
+                    options.Timeout,
+                    options.MediaLoadTimeout);
             }
         }
         #endregion
@@ -391,7 +392,9 @@ namespace ChromeHtmlToPdf
                     if (!_itemsToConvert.TryDequeue(out var itemToConvert)) continue;
                     try
                     {
-                        converter.ConvertToPdf(itemToConvert.InputUri, itemToConvert.OutputFile, pageSettings);
+                        converter.ConvertToPdf(itemToConvert.InputUri, itemToConvert.OutputFile, pageSettings,
+                            options.WaitForWindowStatus, options.WaitForWindowStatusTimeOut, options.Timeout,
+                            options.MediaLoadTimeout);
 
                         itemToConvert.SetStatus(ConversionItemStatus.Success);
                     }
