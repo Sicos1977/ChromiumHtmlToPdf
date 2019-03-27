@@ -106,6 +106,8 @@ namespace ChromeHtmlToPdfLib
             {
                 var page = PageEvent.FromJson(data);
 
+                System.IO.File.AppendAllText("d:\\log.txt", Environment.NewLine + DateTime.Now.ToString("O") + " - " + data);
+
                 if (!uri.IsFile)
                 {
                     switch (page.Method)
@@ -116,21 +118,25 @@ namespace ChromeHtmlToPdfLib
                             break;
                     }
                 }
-                else if (page.Method == "Page.loadEventFired") waitEvent.Set();
+                else if (page.Method == "Page.loadEventFired") 
+                    waitEvent.Set();
+
+                // Page.loadEventFired
+                // The DOMContentLoaded event is fired when the document has been completely loaded and parsed, without
+                // waiting for stylesheets, images, and subframes to finish loading (the load event can be used to
+                // detect a fully-loaded page).
+
             }
 
             _pageConnection.MessageReceived += MessageReceived;
-            _pageConnection.Closed += (sender, args) =>
-            {
-                waitEvent.Set();
-            };
+            _pageConnection.Closed += (sender, args) => waitEvent.Set();
             _pageConnection.SendAsync(message).GetAwaiter();
 
             if (countdownTimer != null)
             {
                 waitEvent.WaitOne(countdownTimer.MillisecondsLeft);
                 if (countdownTimer.MillisecondsLeft == 0)
-                    throw new ConversionTimedOutException($"The {nameof(NavigateTo)} method timedout");
+                    throw new ConversionTimedOutException($"The {nameof(NavigateTo)} method timed out");
             }
             else
                 waitEvent.WaitOne();
