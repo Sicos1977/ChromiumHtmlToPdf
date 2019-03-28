@@ -3,7 +3,7 @@
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
-// Copyright (c) 2017-2018 Magic-Sessions. (www.magic-sessions.com)
+// Copyright (c) 2017-2019 Magic-Sessions. (www.magic-sessions.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -111,6 +111,7 @@ namespace ChromeHtmlToPdfLib.Settings
         /// <summary>
         ///     Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled to fit the paper size.
         /// </summary>
+        // ReSharper disable once InconsistentNaming
         public bool PreferCSSPageSize { get; set; }
         #endregion
 

@@ -1,8 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Text;
-
-//
+﻿//
 // Logger.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
@@ -27,6 +23,10 @@ using System.Text;
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
+using System;
+using System.IO;
+using System.Text;
 
 namespace ChromeHtmlToPdfLib.Helpers
 {
