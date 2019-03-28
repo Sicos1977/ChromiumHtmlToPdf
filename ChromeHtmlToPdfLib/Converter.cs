@@ -30,7 +30,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Management;
 using ChromeHtmlToPdfLib.Settings;
-using Microsoft.Win32;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -101,11 +100,6 @@ namespace ChromeHtmlToPdfLib
         ///     The directory used for temporary files
         /// </summary>
         private DirectoryInfo _currentTempDirectory;
-
-        /// <summary>
-        ///     Returns the location of Chrome
-        /// </summary>
-        private string _chromeLocation;
 
         /// <summary>
         ///     The timeout for a conversion
@@ -252,56 +246,6 @@ namespace ChromeHtmlToPdfLib
         }
 
         /// <summary>
-        ///     Returns the path to Chrome, <c>null</c> will be returned if Chrome could not be found
-        /// </summary>
-        /// <returns></returns>
-        public string ChromePath
-        {
-            get
-            {
-                if (!string.IsNullOrEmpty(_chromeLocation))
-                    return _chromeLocation;
-
-                var currentPath =
-                    // ReSharper disable once AssignNullToNotNullAttribute
-                    new Uri(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase)).LocalPath;
-
-                // ReSharper disable once AssignNullToNotNullAttribute
-                var chrome = Path.Combine(currentPath, "chrome.exe");
-
-                if (File.Exists(chrome))
-                {
-                    _chromeLocation = currentPath;
-                    return _chromeLocation;
-                }
-
-                chrome = @"c:\Program Files (x86)\Google\Chrome\Application\chrome.exe";
-
-                if (File.Exists(chrome))
-                {
-                    _chromeLocation = @"c:\Program Files (x86)\Google\Chrome\Application\";
-                    return _chromeLocation;
-                }
-
-                var key = Registry.GetValue(
-                    @"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Google Chrome",
-                    "InstallLocation", string.Empty);
-
-                if (key != null)
-                {
-                    chrome = Path.Combine(key.ToString(), "chrome.exe");
-                    if (File.Exists(chrome))
-                    {
-                        _chromeLocation = key.ToString();
-                        return _chromeLocation;
-                    }
-                }
-
-                return null;
-            }
-        }
-
-        /// <summary>
         /// Returns a <see cref="WebProxy"/> object
         /// </summary>
         private WebProxy WebProxy
@@ -380,22 +324,20 @@ namespace ChromeHtmlToPdfLib
             ResetArguments();
 
             if (string.IsNullOrWhiteSpace(chromeExeFileName))
-                chromeExeFileName = Path.Combine(ChromePath, "chrome.exe");
+                chromeExeFileName = ChromeFinder.Find();
 
             if (!File.Exists(chromeExeFileName))
                 throw new FileNotFoundException("Could not find chrome.exe");
 
             _chromeExeFileName = chromeExeFileName;
 
-            if (!string.IsNullOrWhiteSpace(userProfile))
-            {
-                var userProfileDirectory = new DirectoryInfo(userProfile);
-                if (!userProfileDirectory.Exists)
-                    throw new DirectoryNotFoundException(
-                        $"The directory '{userProfileDirectory.FullName}' does not exists");
+            if (string.IsNullOrWhiteSpace(userProfile)) return;
+            var userProfileDirectory = new DirectoryInfo(userProfile);
+            if (!userProfileDirectory.Exists)
+                throw new DirectoryNotFoundException(
+                    $"The directory '{userProfileDirectory.FullName}' does not exists");
 
-                SetDefaultArgument("--user-data-dir", $"\"{userProfileDirectory.FullName}\"");
-            }
+            SetDefaultArgument("--user-data-dir", $"\"{userProfileDirectory.FullName}\"");
         }
 
         /// <summary>
