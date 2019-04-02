@@ -116,7 +116,7 @@ namespace ChromeHtmlToPdfLib
                     switch (page.Method)
                     {
                         // The DOMContentLoaded event is fired when the document has been completely loaded and parsed, without
-                        // waiting for stylesheets, images, and subframes to finish loading (the load event can be used to
+                        // waiting for stylesheets, images, and sub frames to finish loading (the load event can be used to
                         // detect a fully-loaded page).
                         case "Page.lifecycleEvent" when page.Params?.Name == "DOMContentLoaded":
                             if (mediaLoadTimeout.HasValue)
