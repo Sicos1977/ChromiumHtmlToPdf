@@ -36,7 +36,7 @@ using ChromeHtmlToPdfLib.Settings;
 namespace ChromeHtmlToPdfLib
 {
     /// <summary>
-    ///     Handles all the communication tasks with Chrome remote devtools
+    ///     Handles all the communication tasks with Chrome remote dev tools
     /// </summary>
     /// <remarks>
     ///     See https://chromium.googlesource.com/v8/v8/+/master/src/inspector/js_protocol.json
@@ -76,9 +76,11 @@ namespace ChromeHtmlToPdfLib
 
             var page = Page.FromJson(result);
             
+            // ReSharper disable CommentTypo
             // ws://localhost:9222/devtools/page/BA386DE8075EB19DDCE459B4B623FBE7
             // ws://127.0.0.1:50841/devtools/browser/9a919bf0-b243-479d-8396-ede653356e12
             var pageUrl = $"{browser.Scheme}://{browser.Host}:{browser.Port}/devtools/page/{page.Result.TargetId}";
+            // ReSharper restore CommentTypo
             _pageConnection = new Connection(pageUrl);
         }
         #endregion
@@ -325,7 +327,7 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         /// <param name="countdownTimer">If a <see cref="CountdownTimer"/> is set then
         /// the method will raise an <see cref="ConversionTimedOutException"/> in the 
-        /// <see cref="CountdownTimer"/> reaches zero before Chrome respons that it is going to close</param>    
+        /// <see cref="CountdownTimer"/> reaches zero before Chrome responses that it is going to close</param>    
         /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
         public void Close(CountdownTimer countdownTimer = null)
         {
