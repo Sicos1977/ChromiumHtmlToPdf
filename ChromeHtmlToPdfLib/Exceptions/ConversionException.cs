@@ -33,7 +33,7 @@ namespace ChromeHtmlToPdfLib.Exceptions
     /// Raised when the PDF conversion fails
     /// </summary>
     [Serializable]
-    internal class ConversionException : Exception
+    public class ConversionException : Exception
     {
         protected ConversionException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 
