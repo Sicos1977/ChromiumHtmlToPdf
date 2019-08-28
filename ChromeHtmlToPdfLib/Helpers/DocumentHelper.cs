@@ -195,9 +195,12 @@ namespace ChromeHtmlToPdfLib.Helpers
                     }
 
                     Image image = null;
-                    var extension = Path.GetExtension(htmlImage.Source.Contains("?")
+                    var source = htmlImage.Source.Contains("?")
                         ? htmlImage.Source.Split('?')[0]
-                        : htmlImage.Source);
+                        : htmlImage.Source;
+
+                    var extension = Path.GetExtension(FileManager.RemoveInvalidFileNameChars(source));
+
                     var fileName = GetTempFile(extension);
 
                     try

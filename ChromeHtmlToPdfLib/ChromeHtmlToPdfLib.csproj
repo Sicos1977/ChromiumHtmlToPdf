@@ -131,6 +131,7 @@
     <Compile Include="Helpers\ExceptionHelper.cs" />
     <Compile Include="Helpers\Extensions.cs" />
     <Compile Include="Helpers\DocumentHelper.cs" />
+    <Compile Include="Helpers\FileManager.cs" />
     <Compile Include="Helpers\Logger.cs" />
     <Compile Include="Helpers\PreWrapper.cs" />
     <Compile Include="Helpers\Sanitizer\EventArgs.cs" />
