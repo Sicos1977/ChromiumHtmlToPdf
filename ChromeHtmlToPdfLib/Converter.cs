@@ -845,7 +845,7 @@ namespace ChromeHtmlToPdfLib
         /// event has fired. After a timeout the NavigateTo method will exit as if the page has been completely loaded</param>
         /// <param name="logStream">When set then this will give a logging for each conversion. Use the log stream
         /// option in the constructor if you want one log for all conversions</param>
-        /// <exception cref="ConversionTimedOutException">Raised when <see cref="conversionTimeout"/> is set and the 
+        /// <exception cref="ConversionTimedOutException">Raised when <paramref name="conversionTimeout"/> is set and the 
         /// conversion fails to finish in this amount of time</exception>
         public void ConvertToPdf(ConvertUri inputUri,
             Stream outputStream,
@@ -871,6 +871,7 @@ namespace ChromeHtmlToPdfLib
                     case ".htm":
                     case ".html":
                     case ".svg":
+                    case ".xml":
                         // This is ok
                         break;
 
