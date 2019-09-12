@@ -960,7 +960,9 @@ namespace ChromeHtmlToPdfLib
             catch (Exception exception)
             {
                 Logger.WriteToLog($"Error: {ExceptionHelpers.GetInnerException(exception)}'");
-                throw;
+
+                if (exception.Message != "Input string was not in a correct format.")
+                    throw;
             }
             finally
             {

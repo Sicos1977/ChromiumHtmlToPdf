@@ -163,14 +163,24 @@ namespace ChromeHtmlToPdfLib.Helpers
                 var config = Configuration.Default.WithCss();
                 var context = BrowsingContext.New(config);
 
-                // ReSharper disable AccessToDisposedClosure
-                var document = inputUri.Encoding != null
-                    ? context.OpenAsync(m =>
-                            m.Content(webpage).Header("Content-Type",
-                                $"text/html; charset={inputUri.Encoding.WebName}"))
-                        .Result
-                    : context.OpenAsync(m => m.Content(webpage)).Result;
-                // ReSharper restore AccessToDisposedClosure
+                IDocument document;
+
+                try
+                {
+                    // ReSharper disable AccessToDisposedClosure
+                    document = inputUri.Encoding != null
+                        ? context.OpenAsync(m =>
+                                m.Content(webpage).Header("Content-Type",
+                                    $"text/html; charset={inputUri.Encoding.WebName}"))
+                            .Result
+                        : context.OpenAsync(m => m.Content(webpage)).Result;
+                    // ReSharper restore AccessToDisposedClosure
+                }
+                catch (Exception exception)
+                {
+                    Logger.WriteToLog($"Exception occured in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
+                    return true;
+                }
 
                 if (sanitizeHtml)
                 {
