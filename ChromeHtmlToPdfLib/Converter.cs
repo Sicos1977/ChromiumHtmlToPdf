@@ -1061,7 +1061,7 @@ namespace ChromeHtmlToPdfLib
         /// <returns></returns>
         private bool CheckForPreWrap(ConvertUri inputFile, out string outputFile)
         {
-            outputFile = inputFile.LocalPath;
+            outputFile = inputFile.OriginalString;
 
             if (PreWrapExtensions.Count == 0)
                 return false;
@@ -1072,7 +1072,7 @@ namespace ChromeHtmlToPdfLib
                 return false;
 
             var preWrapper = new PreWrapper(GetTempDirectory);
-            outputFile = preWrapper.WrapFile(inputFile.LocalPath, inputFile.Encoding);
+            outputFile = preWrapper.WrapFile(inputFile.OriginalString, inputFile.Encoding);
             return true;
         }
         #endregion
