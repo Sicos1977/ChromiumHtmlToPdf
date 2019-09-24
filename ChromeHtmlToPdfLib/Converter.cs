@@ -246,6 +246,24 @@ namespace ChromeHtmlToPdfLib
         }
 
         /// <summary>
+        ///     When set then the temp folders are NOT deleted after conversion
+        /// </summary>
+        /// <remarks>
+        ///     For debugging purposes
+        /// </remarks>
+        public bool DoNotDeleteTempDirectory { get; set; }
+
+        /// <summary>
+        ///     The directory used for temporary files
+        /// </summary>
+        public DirectoryInfo CurrentTempDirectory
+        {
+            get => _currentTempDirectory;
+            set => _currentTempDirectory = value;
+        }
+
+
+        /// <summary>
         /// Returns a <see cref="WebProxy"/> object
         /// </summary>
         private WebProxy WebProxy
@@ -969,7 +987,7 @@ namespace ChromeHtmlToPdfLib
                 if (_currentTempDirectory != null)
                 {
                     _currentTempDirectory.Refresh();
-                    if (_currentTempDirectory.Exists)
+                    if (_currentTempDirectory.Exists && !DoNotDeleteTempDirectory)
                     {
                         Logger.WriteToLog($"Deleting temporary folder '{_currentTempDirectory.FullName}'");
                         _currentTempDirectory.Delete(true);
