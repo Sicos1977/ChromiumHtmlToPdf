@@ -63,7 +63,7 @@ namespace ChromeHtmlToPdfLib
         {
             Encoding = !string.IsNullOrWhiteSpace(encoding)
                 ? Encoding.GetEncoding(encoding)
-                : Encoding.Unicode;
+                : null;
         }
 
 #pragma warning disable CS0618 // Type or member is obsolete
