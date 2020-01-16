@@ -79,6 +79,9 @@
     </Reference>
     <Reference Include="System.Xml" />
     <Reference Include="System.Xml.Linq" />
+    <Reference Include="websocket-sharp, Version=1.0.1.0, Culture=neutral, PublicKeyToken=5660b08a1845a91e, processorArchitecture=MSIL">
+      <HintPath>..\packages\WebSocketSharp-netstandard.1.0.1\lib\net45\websocket-sharp.dll</HintPath>
+    </Reference>
     <Reference Include="XmpCore.StrongName, Version=6.1.10.0, Culture=neutral, PublicKeyToken=961f4f366277b80e, processorArchitecture=MSIL">
       <HintPath>..\packages\XmpCore.StrongName.6.1.10\lib\net35\XmpCore.StrongName.dll</HintPath>
     </Reference>
