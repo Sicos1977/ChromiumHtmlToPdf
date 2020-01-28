@@ -588,8 +588,6 @@ namespace ChromeHtmlToPdfLib
             SetDefaultArgument("--no-first-run");
             SetDefaultArgument("--disable-crash-reporter");
             //SetDefaultArgument("--allow-insecure-localhost");
-            // ReSharper disable once StringLiteralTypo
-            SetDefaultArgument("--safebrowsing-disable-auto-update");
             //SetDefaultArgument("--no-sandbox");
             SetDefaultArgument("--remote-debugging-port", "0");
             SetWindowSize(WindowSize.HD_1366_768);
