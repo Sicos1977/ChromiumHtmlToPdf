@@ -8,7 +8,7 @@ I needed a replacement for wkHtmlToPdf, a great tool but the activity on this pr
 
 ## License Information
 
-ChromeHtmlToPdf is Copyright (C)2017-2019 Kees van Spelde and is licensed under the MIT license:
+ChromeHtmlToPdf is Copyright (C)2017-2020 Kees van Spelde and is licensed under the MIT license:
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
