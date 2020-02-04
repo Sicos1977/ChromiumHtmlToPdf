@@ -25,7 +25,9 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using ChromeHtmlToPdfLib.Exceptions;
@@ -100,17 +102,14 @@ namespace ChromeHtmlToPdfLib
         /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer"/> reaches zero</exception>
         public void NavigateTo(Uri uri, CountdownTimer countdownTimer = null, int? mediaLoadTimeout = null)
         {
-            _pageConnection.SendAsync(new Message {Method = "Page.enable"}).GetAwaiter();
-
-            var message = new Message {Method = "Page.navigate"};
-            message.AddParameter("url", uri.ToString());
-
             var waitEvent = new ManualResetEvent(false);
             Task mediaLoadTimeoutTask = null;
             CancellationToken mediaLoadTimeoutCancellationToken;
 
             async Task MessageReceived(string data)
             {
+                File.AppendAllText("d:\\logs.txt", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + data + Environment.NewLine);
+
                 var page = PageEvent.FromJson(data);
 
                 if (!uri.IsFile)
@@ -177,7 +176,22 @@ namespace ChromeHtmlToPdfLib
             }
 
             _pageConnection.MessageReceived += async (sender, data) => await MessageReceived(data);
+
+            var blockMessage = new Message
+            {
+                Method = "Network.setBlockedURLs"
+            };
+
+            blockMessage.Parameters.Add("urls", new List<string> {"*", "https://www.google.com/"}.ToArray());
+            File.AppendAllText("d:\\logs.txt", blockMessage.ToJson() + Environment.NewLine);
+            _pageConnection.SendAsync(blockMessage).GetAwaiter();
+            _pageConnection.SendAsync(new Message {Method = "Network.enable"}).GetAwaiter();
             _pageConnection.Closed += (sender, args) => waitEvent.Set();
+
+            _pageConnection.SendAsync(new Message {Method = "Page.enable"}).GetAwaiter();
+            var message = new Message {Method = "Page.navigate"};
+            message.AddParameter("url", uri.ToString());
+
             _pageConnection.SendAsync(message).GetAwaiter();
 
             if (countdownTimer != null)
