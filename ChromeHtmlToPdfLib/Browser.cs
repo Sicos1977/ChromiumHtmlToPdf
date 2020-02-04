@@ -39,7 +39,7 @@ namespace ChromeHtmlToPdfLib
     ///     Handles all the communication tasks with Chrome remote dev tools
     /// </summary>
     /// <remarks>
-    ///     See https://chromium.googlesource.com/v8/v8/+/master/src/inspector/js_protocol.json
+    ///     See https://chromedevtools.github.io/devtools-protocol/
     /// </remarks>
     internal class Browser : IDisposable
     {
@@ -127,6 +127,7 @@ namespace ChromeHtmlToPdfLib
                                 mediaLoadTimeoutTask = Task.Delay(mediaLoadTimeout.Value,
                                     mediaLoadTimeoutCancellationToken);
                                 if (mediaLoadTimeoutTask != null)
+                                    // ReSharper disable once PossibleNullReferenceException
                                     await mediaLoadTimeoutTask;
 
                                 Logger.WriteToLog($"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
@@ -157,6 +158,7 @@ namespace ChromeHtmlToPdfLib
                                 mediaLoadTimeoutTask = Task.Delay(mediaLoadTimeout.Value,
                                     mediaLoadTimeoutCancellationToken);
                                 if (mediaLoadTimeoutTask != null)
+                                    // ReSharper disable once PossibleNullReferenceException
                                     await mediaLoadTimeoutTask;
 
                                 Logger.WriteToLog($"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
