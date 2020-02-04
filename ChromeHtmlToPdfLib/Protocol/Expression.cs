@@ -118,6 +118,9 @@ namespace ChromeHtmlToPdfLib.Protocol
         #endregion
     }
 
+    /// <summary>
+    /// Part of the <see cref="ExpressionExceptionDetails"/> class
+    /// </summary>
     public class ExpressionInnerResult
     {
         #region Properties

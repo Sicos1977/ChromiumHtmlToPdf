@@ -28,6 +28,9 @@ using Newtonsoft.Json;
 
 namespace ChromeHtmlToPdfLib.Protocol
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class Evaluate : MessageBase
     {
         #region Properties
@@ -54,6 +57,9 @@ namespace ChromeHtmlToPdfLib.Protocol
         #endregion
     }
 
+    /// <summary>
+    /// Part of the <see cref="Evaluate"/> class
+    /// </summary>
     public class EvaluateResult
     {
         #region Propreties
@@ -61,7 +67,10 @@ namespace ChromeHtmlToPdfLib.Protocol
         public EvaluateInnerResult Result { get; set; }
         #endregion
     }
-
+    
+    /// <summary>
+    /// Part of the <see cref="EvaluateResult"/> class
+    /// </summary>
     public class EvaluateInnerResult
     {
         #region Properties

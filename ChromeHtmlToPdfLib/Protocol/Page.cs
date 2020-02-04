@@ -54,6 +54,9 @@ namespace ChromeHtmlToPdfLib.Protocol
         #endregion
     }
 
+    /// <summary>
+    /// Part of the <see cref="Page"/> class
+    /// </summary>
     public class Result
     {
         #region Propertie

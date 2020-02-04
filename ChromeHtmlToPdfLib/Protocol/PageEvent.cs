@@ -60,6 +60,9 @@ namespace ChromeHtmlToPdfLib.Protocol
         #endregion
     }
 
+    /// <summary>
+    /// Part of the <see cref="PageEvent"/> class
+    /// </summary>
     public class Params
     {
         #region Properties

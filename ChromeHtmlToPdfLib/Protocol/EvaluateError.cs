@@ -47,6 +47,9 @@ namespace ChromeHtmlToPdfLib.Protocol
         #endregion
     }
 
+    /// <summary>
+    /// Part of the <see cref="EvaluateError"/> class
+    /// </summary>
     public class EvaluateErrorResult
     {
         #region Properties
@@ -57,7 +60,10 @@ namespace ChromeHtmlToPdfLib.Protocol
         public ExceptionDetails ExceptionDetails { get; set; }
         #endregion
     }
-
+    
+    /// <summary>
+    /// Part of the <see cref="EvaluateError"/> class
+    /// </summary>
     public class ExceptionDetails
     {
         #region Properties
@@ -82,6 +88,9 @@ namespace ChromeHtmlToPdfLib.Protocol
         #endregion
     }
 
+    /// <summary>
+    /// Part of the <see cref="EvaluateError"/> class
+    /// </summary>
     public class ExceptionClass
     {
         #region Properties
