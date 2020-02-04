@@ -25,7 +25,6 @@
 //
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
@@ -110,67 +109,99 @@ namespace ChromeHtmlToPdfLib
             {
                 File.AppendAllText("d:\\logs.txt", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + data + Environment.NewLine);
 
-                var page = PageEvent.FromJson(data);
+                var message = Message.FromJson(data);
 
-                if (!uri.IsFile)
+                if (message.Method == "Fetch.requestPaused")
                 {
-                    switch (page.Method)
+                    var fetch = Fetch.FromJson(data);
+                    var requestId = fetch.Params.RequestId;
+                    var url = fetch.Params.Request.Url;
+
+                    if (!url.Contains(".txt"))
                     {
-                        // The DOMContentLoaded event is fired when the document has been completely loaded and parsed, without
-                        // waiting for stylesheets, images, and sub frames to finish loading (the load event can be used to
-                        // detect a fully-loaded page).
-                        case "Page.lifecycleEvent" when page.Params?.Name == "DOMContentLoaded":
-                            if (mediaLoadTimeout.HasValue)
-                            {
-                                mediaLoadTimeoutCancellationToken = new CancellationToken();
-                                mediaLoadTimeoutTask = Task.Delay(mediaLoadTimeout.Value,
-                                    mediaLoadTimeoutCancellationToken);
-                                if (mediaLoadTimeoutTask != null)
-                                    // ReSharper disable once PossibleNullReferenceException
-                                    await mediaLoadTimeoutTask;
-
-                                Logger.WriteToLog($"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
-
-                                waitEvent.Set();
-                            }
-                            else
-                                waitEvent.Set();
-                            break;
-
-                        case "Page.frameStoppedLoading":
-                            waitEvent.Set();
-                            break;
+                        var fetchContinue = new Message {Method = "Fetch.continueRequest"};
+                        fetchContinue.Parameters.Add("requestId", requestId);
+                        _pageConnection.SendAsync(fetchContinue).GetAwaiter();
                     }
+                    else
+                    {
+                        var fetchFail = new Message {Method = "Fetch.failRequest"};
+                        fetchFail.Parameters.Add("requestId", requestId);
+                        fetchFail.Parameters.Add("errorReason", "BlockedByClient");
+                        _pageConnection.SendAsync(fetchFail).GetAwaiter();
+                    }
+
+                    // Failed, Aborted, TimedOut, AccessDenied, ConnectionClosed, ConnectionReset, ConnectionRefused,
+                    // ConnectionAborted, ConnectionFailed, NameNotResolved, InternetDisconnected, AddressUnreachable,
+                    // BlockedByClient, BlockedByResponse
                 }
                 else
                 {
-                    switch (page.Method)
+                    var page = PageEvent.FromJson(data);
+
+                    if (!uri.IsFile)
                     {
-                        // The DOMContentLoaded event is fired when the document has been completely loaded and parsed, without
-                        // waiting for stylesheets, images, and subframes to finish loading (the load event can be used to
-                        // detect a fully-loaded page).
-                        case "Page.domContentEventFired":
+                        switch (page.Method)
                         {
-                            if (mediaLoadTimeout.HasValue)
-                            {
-                                mediaLoadTimeoutCancellationToken = new CancellationToken();
-                                mediaLoadTimeoutTask = Task.Delay(mediaLoadTimeout.Value,
-                                    mediaLoadTimeoutCancellationToken);
-                                if (mediaLoadTimeoutTask != null)
-                                    // ReSharper disable once PossibleNullReferenceException
-                                    await mediaLoadTimeoutTask;
+                            // The DOMContentLoaded event is fired when the document has been completely loaded and parsed, without
+                            // waiting for stylesheets, images, and sub frames to finish loading (the load event can be used to
+                            // detect a fully-loaded page).
+                            case "Page.lifecycleEvent" when page.Params?.Name == "DOMContentLoaded":
+                                if (mediaLoadTimeout.HasValue)
+                                {
+                                    mediaLoadTimeoutCancellationToken = new CancellationToken();
+                                    mediaLoadTimeoutTask = Task.Delay(mediaLoadTimeout.Value,
+                                        mediaLoadTimeoutCancellationToken);
+                                    if (mediaLoadTimeoutTask != null)
+                                        // ReSharper disable once PossibleNullReferenceException
+                                        await mediaLoadTimeoutTask;
 
-                                Logger.WriteToLog($"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
+                                    Logger.WriteToLog(
+                                        $"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
 
+                                    waitEvent.Set();
+                                }
+                                else
+                                    waitEvent.Set();
+
+                                break;
+
+                            case "Page.frameStoppedLoading":
                                 waitEvent.Set();
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        switch (page.Method)
+                        {
+                            // The DOMContentLoaded event is fired when the document has been completely loaded and parsed, without
+                            // waiting for stylesheets, images, and sub frames to finish loading (the load event can be used to
+                            // detect a fully-loaded page).
+                            case "Page.domContentEventFired":
+                            {
+                                if (mediaLoadTimeout.HasValue)
+                                {
+                                    mediaLoadTimeoutCancellationToken = new CancellationToken();
+                                    mediaLoadTimeoutTask = Task.Delay(mediaLoadTimeout.Value,
+                                        mediaLoadTimeoutCancellationToken);
+                                    if (mediaLoadTimeoutTask != null)
+                                        // ReSharper disable once PossibleNullReferenceException
+                                        await mediaLoadTimeoutTask;
+
+                                    Logger.WriteToLog(
+                                        $"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
+
+                                    waitEvent.Set();
+                                }
+
+                                break;
                             }
 
-                            break;
+                            case "Page.loadEventFired":
+                                waitEvent.Set();
+                                break;
                         }
-
-                        case "Page.loadEventFired":
-                            waitEvent.Set();
-                            break;
                     }
                 }
             }
@@ -195,16 +226,15 @@ namespace ChromeHtmlToPdfLib
             };
 
             //fetchMessage.Parameters.Add("urls", new List<string> { @"*test*" }.ToArray());
-            _pageConnection.SendAsync(fetchMessage).GetAwaiter().GetResult();
-
-
-            _pageConnection.SendAsync(new Message { Method = "Page.enable" }).GetAwaiter().GetResult();
+            _pageConnection.SendAsync(fetchMessage).GetAwaiter();
+            
+            _pageConnection.SendAsync(new Message { Method = "Page.enable" }).GetAwaiter();
             _pageConnection.Closed += (sender, args) => waitEvent.Set();
 
-            var message = new Message {Method = "Page.navigate"};
-            message.AddParameter("url", uri.ToString());
+            var pageNavigateMessage = new Message {Method = "Page.navigate"};
+            pageNavigateMessage.AddParameter("url", uri.ToString());
 
-            _pageConnection.SendAsync(message).GetAwaiter();
+            _pageConnection.SendAsync(pageNavigateMessage).GetAwaiter();
 
             if (countdownTimer != null)
             {

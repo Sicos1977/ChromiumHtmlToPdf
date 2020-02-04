@@ -70,5 +70,17 @@ namespace ChromeHtmlToPdfLib.Protocol
             Parameters.Add(name, value);   
         }
         #endregion
+
+        #region FromJson
+        /// <summary>
+        /// Returns this object deserialized from the given <paramref name="json"/> string
+        /// </summary>
+        /// <param name="json"></param>
+        /// <returns></returns>
+        public new static Message FromJson(string json)
+        {
+            return JsonConvert.DeserializeObject<Message>(json);
+        }
+        #endregion
     }
 }
