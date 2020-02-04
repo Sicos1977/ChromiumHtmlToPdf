@@ -177,18 +177,35 @@ namespace ChromeHtmlToPdfLib
 
             _pageConnection.MessageReceived += async (sender, data) => await MessageReceived(data);
 
+            var bypassMessage = new Message {Method = "Network.setBypassServiceWorker"};
+            bypassMessage.AddParameter("bypass", true);
+
+            _pageConnection.SendAsync(bypassMessage).GetAwaiter().GetResult();
+
+            /*
             var blockMessage = new Message
             {
                 Method = "Network.setBlockedURLs"
             };
 
-            blockMessage.Parameters.Add("urls", new List<string> {"*", "https://www.google.com/"}.ToArray());
-            File.AppendAllText("d:\\logs.txt", blockMessage.ToJson() + Environment.NewLine);
-            _pageConnection.SendAsync(blockMessage).GetAwaiter();
-            _pageConnection.SendAsync(new Message {Method = "Network.enable"}).GetAwaiter();
+            blockMessage.Parameters.Add("urls", new List<string> {@"*test*"}.ToArray());
+            _pageConnection.SendAsync(blockMessage).GetAwaiter().GetResult();
+            
+            _pageConnection.SendAsync(new Message {Method = "Network.enable"}).GetAwaiter().GetResult();
+            */
+
+            var fetchMessage = new Message
+            {
+                Method = "Fetch.enable"
+            };
+
+            //fetchMessage.Parameters.Add("urls", new List<string> { @"*test*" }.ToArray());
+            _pageConnection.SendAsync(fetchMessage).GetAwaiter().GetResult();
+
+
+            _pageConnection.SendAsync(new Message { Method = "Page.enable" }).GetAwaiter().GetResult();
             _pageConnection.Closed += (sender, args) => waitEvent.Set();
 
-            _pageConnection.SendAsync(new Message {Method = "Page.enable"}).GetAwaiter();
             var message = new Message {Method = "Page.navigate"};
             message.AddParameter("url", uri.ToString());
 
