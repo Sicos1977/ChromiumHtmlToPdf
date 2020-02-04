@@ -38,7 +38,7 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// <see cref="InnerError"/>
         /// </summary>
         [JsonProperty("error")]
-        public InnerError InnerError { get; set; }
+        public ErrorInnerError InnerError { get; set; }
         #endregion
 
         #region FromJson
@@ -57,7 +57,7 @@ namespace ChromeHtmlToPdfLib.Protocol
     /// <summary>
     /// The inner error
     /// </summary>
-    public class InnerError
+    public class ErrorInnerError
     {
         #region Properties
         /// <summary>

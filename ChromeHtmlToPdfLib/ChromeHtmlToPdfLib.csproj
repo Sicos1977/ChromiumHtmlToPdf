@@ -105,6 +105,7 @@
     <Compile Include="Protocol\EvaluateError.cs" />
     <Compile Include="Protocol\Evaluate.cs" />
     <Compile Include="Protocol\Expression.cs" />
+    <Compile Include="Protocol\Fetch.cs" />
     <Compile Include="Protocol\Message.cs" />
     <Compile Include="Protocol\MessageBase.cs" />
     <Compile Include="Protocol\Page.cs" />

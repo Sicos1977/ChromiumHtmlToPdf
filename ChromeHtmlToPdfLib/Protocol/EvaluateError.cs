@@ -57,14 +57,14 @@ namespace ChromeHtmlToPdfLib.Protocol
         public ExceptionClass Result { get; set; }
 
         [JsonProperty("exceptionDetails")]
-        public ExceptionDetails ExceptionDetails { get; set; }
+        public EvaluateErrorExceptionDetails ExceptionDetails { get; set; }
         #endregion
     }
     
     /// <summary>
     /// Part of the <see cref="EvaluateError"/> class
     /// </summary>
-    public class ExceptionDetails
+    public class EvaluateErrorExceptionDetails
     {
         #region Properties
         [JsonProperty("exceptionId")]
@@ -80,7 +80,7 @@ namespace ChromeHtmlToPdfLib.Protocol
         public long ColumnNumber { get; set; }
 
         [JsonProperty("scriptId")]
-        [JsonConverter(typeof(ParseStringConverter))]
+        [JsonConverter(typeof(EvaluateErrorParseStringConverter))]
         public long ScriptId { get; set; }
 
         [JsonProperty("exception")]
@@ -111,7 +111,7 @@ namespace ChromeHtmlToPdfLib.Protocol
         #endregion
     }
 
-    internal class ParseStringConverter : JsonConverter
+    internal class EvaluateErrorParseStringConverter : JsonConverter
     {
         #region Properties
         public override bool CanConvert(Type t)

@@ -177,11 +177,6 @@ namespace ChromeHtmlToPdfLib
 
             _pageConnection.MessageReceived += async (sender, data) => await MessageReceived(data);
 
-            var bypassMessage = new Message {Method = "Network.setBypassServiceWorker"};
-            bypassMessage.AddParameter("bypass", true);
-
-            _pageConnection.SendAsync(bypassMessage).GetAwaiter().GetResult();
-
             /*
             var blockMessage = new Message
             {

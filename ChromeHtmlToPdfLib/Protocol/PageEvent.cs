@@ -44,7 +44,7 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// The parameters used with this <see cref="Method"/>
         /// </summary>
         [JsonProperty("params")]
-        public Params Params { get; set; }
+        public PageEventParams Params { get; set; }
         #endregion
 
         #region FromJson
@@ -63,7 +63,7 @@ namespace ChromeHtmlToPdfLib.Protocol
     /// <summary>
     /// Part of the <see cref="PageEvent"/> class
     /// </summary>
-    public class Params
+    public class PageEventParams
     {
         #region Properties
         /// <summary>

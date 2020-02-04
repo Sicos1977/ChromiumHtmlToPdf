@@ -38,7 +38,7 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// The result
         /// </summary>
         [JsonProperty("result")]
-        public Result Result { get; set; }
+        public PageResult Result { get; set; }
         #endregion
 
         #region FromJson
@@ -57,7 +57,7 @@ namespace ChromeHtmlToPdfLib.Protocol
     /// <summary>
     /// Part of the <see cref="Page"/> class
     /// </summary>
-    public class Result
+    public class PageResult
     {
         #region Propertie
         [JsonProperty("targetId")]
