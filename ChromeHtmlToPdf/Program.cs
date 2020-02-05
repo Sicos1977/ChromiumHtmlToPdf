@@ -303,6 +303,12 @@ namespace ChromeHtmlToPdf
             converter.ImageDownloadTimeout = options.ImageDownloadTimeout;
             converter.SanitizeHtml = options.SanitizeHtml;
             converter.RunJavascript = options.RunJavascript;
+
+            if (!string.IsNullOrWhiteSpace(options.UrlBlacklist))
+            {
+                var urlBlacklist = options.UrlBlacklist.Split(';').ToList();
+                converter.SetUrlBlacklist(urlBlacklist);
+            }
         }
         #endregion
 

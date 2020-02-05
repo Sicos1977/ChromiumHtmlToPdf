@@ -313,6 +313,18 @@ namespace ChromeHtmlToPdf
         [Option("run-javascript", Required = false, Default = "",
             HelpText = "Runs the given javascript after the webpage has been loaded and before it is converted to PDF")]
         public string RunJavascript { get; set; }
+
+        /// <summary>
+        ///     This tells chrome to bypass any specified proxy for the given semi-colon-separated list of hosts. This flag must be
+        ///     used (or rather, only has an effect) in
+        ///     tandem with --proxy-server. For example "*.google.com;*foo.com;127.0.0.1:8080"
+        /// </summary>
+        [Option("url-blacklist", Required = false,
+            HelpText =
+                "This tells chrome to blacklist certain urls by blocking them. " +
+                "For example \"*.google.com;*foo.com;\""
+        )]
+        public string UrlBlacklist { get; set; }
         #endregion
     }
 }
