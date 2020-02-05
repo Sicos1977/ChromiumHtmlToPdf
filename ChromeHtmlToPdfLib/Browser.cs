@@ -129,7 +129,7 @@ namespace ChromeHtmlToPdfLib
 
             async Task MessageReceived(string data)
             {
-                File.AppendAllText("d:\\logs.txt", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + data + Environment.NewLine);
+                // File.AppendAllText("d:\\logs.txt", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + data + Environment.NewLine);
 
                 var message = Message.FromJson(data);
 
