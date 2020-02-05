@@ -27,8 +27,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -96,10 +94,21 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         /// <param name="patterns">A list with regular expression</param>
         /// <param name="value">The string where to find the match</param>
+        /// <param name="matchedPattern"></param>
         /// <returns></returns>
-        private bool IsRegExMatch(IEnumerable<string> patterns, string value)
+        private bool IsRegExMatch(IEnumerable<string> patterns, string value, out string matchedPattern)
         {
-            return patterns.Any(pattern => Regex.IsMatch(value, pattern, RegexOptions.IgnoreCase));
+            foreach (var pattern in patterns)
+            {
+                if (Regex.IsMatch(value, pattern, RegexOptions.IgnoreCase))
+                {
+                    matchedPattern = Regex.Unescape(pattern);
+                    return true;
+                }
+            }
+
+            matchedPattern = string.Empty;
+            return false;
         }
         #endregion
 
@@ -141,8 +150,7 @@ namespace ChromeHtmlToPdfLib
                         var requestId = fetch.Params.RequestId;
                         var url = fetch.Params.Request.Url;
 
-                        // ReSharper disable once AccessToModifiedClosure
-                        if (IsRegExMatch(urlBlacklist, url))
+                        if (!IsRegExMatch(urlBlacklist, url, out var matchedPattern) || string.Equals(uri.ToString(), url, StringComparison.InvariantCultureIgnoreCase))
                         {
                             var fetchContinue = new Message {Method = "Fetch.continueRequest"};
                             fetchContinue.Parameters.Add("requestId", requestId);
@@ -150,6 +158,8 @@ namespace ChromeHtmlToPdfLib
                         }
                         else
                         {
+                            Logger.WriteToLog($"The url '{url}' has been blocked by url blacklist pattern '{matchedPattern}'");
+
                             var fetchFail = new Message {Method = "Fetch.failRequest"};
                             fetchFail.Parameters.Add("requestId", requestId);
                             // Failed, Aborted, TimedOut, AccessDenied, ConnectionClosed, ConnectionReset, ConnectionRefused,

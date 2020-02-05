@@ -851,7 +851,7 @@ namespace ChromeHtmlToPdfLib
         /// <returns></returns>
         private List<string> ListToWildCardRegEx(IEnumerable<string> values)
         {
-            return values.Select(value => "^" + Regex.Escape(value).Replace("\\?", ".").Replace("\\*", ".*") + "$")
+            return values.Select(value => Regex.Escape(value).Replace("*", ".*"))
                 .ToList();
         }
         #endregion
