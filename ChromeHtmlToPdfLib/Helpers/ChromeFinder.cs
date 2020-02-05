@@ -75,6 +75,10 @@ namespace ChromeHtmlToPdfLib.Helpers
         #endregion
 
         #region Find
+        /// <summary>
+        /// Tries to find Chrome
+        /// </summary>
+        /// <returns></returns>
         public static string Find()
         {
             // For Windows we first check the registry. This is the safest

@@ -31,27 +31,48 @@ using ChromeHtmlToPdfLib.Protocol;
 namespace ChromeHtmlToPdfLib.Exceptions
 {
     /// <summary>
-    /// Raised when an error is returned from Chrome
+    ///     Raised when an error is returned from Chrome
     /// </summary>
     [Serializable]
     public class ChromeException : Exception
     {
         /// <summary>
-        /// Returns the error code that is returned from Chrome
+        ///     Returns the error code that is returned from Chrome
         /// </summary>
         public double Code { get; }
 
+        /// <summary>
+        ///     Raised when an error is returned from Chrome
+        /// </summary>
+        /// <param name="info"></param>
+        /// <param name="context"></param>
         protected ChromeException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 
+        /// <summary>
+        ///     Raised when an error is returned from Chrome
+        /// </summary>
         public ChromeException() { }
 
+        /// <summary>
+        ///     Raised when an error is returned from Chrome
+        /// </summary>
+        /// <param name="error"></param>
         public ChromeException(Error error) : base(error.InnerError.Message)
         {
             Code = error.InnerError.Code;
         }
 
+        /// <summary>
+        ///     Raised when an error is returned from Chrome
+        /// </summary>
+        /// <param name="message"></param>
         public ChromeException(string message) : base(message) { }
 
+        /// <summary>
+        ///     Raised when an error is returned from Chrome
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="innerException"></param>
         public ChromeException(string message, Exception innerException) : base(message, innerException) { }
     }
 }
