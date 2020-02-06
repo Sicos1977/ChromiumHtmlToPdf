@@ -28,11 +28,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Management;
 using ChromeHtmlToPdfLib.Settings;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Text.RegularExpressions;
 using System.Threading;
 using ChromeHtmlToPdfLib.Enums;
 using ChromeHtmlToPdfLib.Exceptions;
@@ -97,11 +99,6 @@ namespace ChromeHtmlToPdfLib
         private string _tempDirectory;
 
         /// <summary>
-        ///     The directory used for temporary files
-        /// </summary>
-        private DirectoryInfo _currentTempDirectory;
-
-        /// <summary>
         ///     The timeout for a conversion
         /// </summary>
         private int? _conversionTimeout;
@@ -121,6 +118,11 @@ namespace ChromeHtmlToPdfLib
         ///     Exceptions thrown from a Chrome startup event
         /// </summary>
         private Exception _chromeEventException;
+
+        /// <summary>
+        ///     A list with urls to blacklist
+        /// </summary>
+        private List<string> _urlBlacklist;
         #endregion
 
         #region Properties
@@ -234,14 +236,14 @@ namespace ChromeHtmlToPdfLib
         {
             get
             {
-                _currentTempDirectory = _tempDirectory == null
+                CurrentTempDirectory = _tempDirectory == null
                     ? new DirectoryInfo(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()))
                     : new DirectoryInfo(Path.Combine(_tempDirectory, Guid.NewGuid().ToString()));
 
-                if (!_currentTempDirectory.Exists)
-                    _currentTempDirectory.Create();
+                if (!CurrentTempDirectory.Exists)
+                    CurrentTempDirectory.Create();
 
-                return _currentTempDirectory;
+                return CurrentTempDirectory;
             }
         }
 
@@ -256,11 +258,7 @@ namespace ChromeHtmlToPdfLib
         /// <summary>
         ///     The directory used for temporary files
         /// </summary>
-        public DirectoryInfo CurrentTempDirectory
-        {
-            get => _currentTempDirectory;
-            set => _currentTempDirectory = value;
-        }
+        public DirectoryInfo CurrentTempDirectory { get; set; }
 
 
         /// <summary>
@@ -845,6 +843,33 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
 
+        #region WildCardToRegEx
+        /// <summary>
+        /// Converts a list of strings like test*.txt to a form that can be used in a regular expression
+        /// </summary>
+        /// <param name="values"></param>
+        /// <returns></returns>
+        private List<string> ListToWildCardRegEx(IEnumerable<string> values)
+        {
+            return values.Select(value => Regex.Escape(value).Replace("*", ".*"))
+                .ToList();
+        }
+        #endregion
+
+        #region SetUrlBlacklist
+        /// <summary>
+        ///     Sets one or more urls to blacklist when converting a page or file to PDF
+        /// </summary>
+        /// <remarks>
+        ///     Use * as a wildcard, e.g. myurltoblacklist*
+        /// </remarks>
+        /// <param name="urls"></param>
+        public void SetUrlBlacklist(IList<string> urls)
+        {
+            _urlBlacklist = ListToWildCardRegEx(urls);
+        }
+        #endregion
+
         #region ConvertToPdf
         /// <summary>
         ///     Converts the given <paramref name="inputUri" /> to PDF
@@ -932,7 +957,7 @@ namespace ChromeHtmlToPdfLib
 
                 Logger.WriteToLog("Loading " + (inputUri.IsFile ? "file " + inputUri.OriginalString : "url " + inputUri));
 
-                _browser.NavigateTo(inputUri, countdownTimer, mediaLoadTimeout);
+                _browser.NavigateTo(inputUri, countdownTimer, mediaLoadTimeout, _urlBlacklist);
 
                 if (!string.IsNullOrWhiteSpace(waitForWindowStatus))
                 {
@@ -982,13 +1007,13 @@ namespace ChromeHtmlToPdfLib
             }
             finally
             {
-                if (_currentTempDirectory != null)
+                if (CurrentTempDirectory != null)
                 {
-                    _currentTempDirectory.Refresh();
-                    if (_currentTempDirectory.Exists && !DoNotDeleteTempDirectory)
+                    CurrentTempDirectory.Refresh();
+                    if (CurrentTempDirectory.Exists && !DoNotDeleteTempDirectory)
                     {
-                        Logger.WriteToLog($"Deleting temporary folder '{_currentTempDirectory.FullName}'");
-                        _currentTempDirectory.Delete(true);
+                        Logger.WriteToLog($"Deleting temporary folder '{CurrentTempDirectory.FullName}'");
+                        CurrentTempDirectory.Delete(true);
                     }
                 }
             }

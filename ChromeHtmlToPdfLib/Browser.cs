@@ -25,8 +25,9 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using ChromeHtmlToPdfLib.Exceptions;
@@ -86,6 +87,31 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
 
+        #region IsRegExMatch
+        /// <summary>
+        /// Returns <c>true</c> when a match in <paramref name="patterns"/> has been
+        /// found for <paramref name="value"/>
+        /// </summary>
+        /// <param name="patterns">A list with regular expression</param>
+        /// <param name="value">The string where to find the match</param>
+        /// <param name="matchedPattern"></param>
+        /// <returns></returns>
+        private bool IsRegExMatch(IEnumerable<string> patterns, string value, out string matchedPattern)
+        {
+            foreach (var pattern in patterns)
+            {
+                if (Regex.IsMatch(value, pattern, RegexOptions.IgnoreCase))
+                {
+                    matchedPattern = Regex.Unescape(pattern);
+                    return true;
+                }
+            }
+
+            matchedPattern = string.Empty;
+            return false;
+        }
+        #endregion
+
         #region NavigateTo
         /// <summary>
         ///     Instructs Chrome to navigate to the given <paramref name="uri" />
@@ -95,11 +121,16 @@ namespace ChromeHtmlToPdfLib
         ///     the method will raise an <see cref="ConversionTimedOutException"/> if the 
         ///     <see cref="CountdownTimer"/> reaches zero before finishing navigation</param>
         /// <param name="mediaLoadTimeout">When set a timeout will be started after the DomContentLoaded
-        /// event has fired. After a timeout the NavigateTo method will exit as if the page
-        /// has been completely loaded</param>
+        ///     event has fired. After a timeout the NavigateTo method will exit as if the page
+        ///     has been completely loaded</param>
+        /// <param name="urlBlacklist">A list of URL's that need to be blocked (use * as a wildcard)</param>
         /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
         /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer"/> reaches zero</exception>
-        public void NavigateTo(Uri uri, CountdownTimer countdownTimer = null, int? mediaLoadTimeout = null)
+        public void NavigateTo(
+            Uri uri, 
+            CountdownTimer countdownTimer = null, 
+            int? mediaLoadTimeout = null,
+            List<string> urlBlacklist = null)
         {
             var waitEvent = new ManualResetEvent(false);
             Task mediaLoadTimeoutTask = null;
@@ -107,127 +138,123 @@ namespace ChromeHtmlToPdfLib
 
             async Task MessageReceived(string data)
             {
-                File.AppendAllText("d:\\logs.txt", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + data + Environment.NewLine);
+                // File.AppendAllText("d:\\logs.txt", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + data + Environment.NewLine);
 
                 var message = Message.FromJson(data);
 
-                if (message.Method == "Fetch.requestPaused")
+                switch (message.Method)
                 {
-                    var fetch = Fetch.FromJson(data);
-                    var requestId = fetch.Params.RequestId;
-                    var url = fetch.Params.Request.Url;
-
-                    if (!url.Contains(".txt"))
+                    case "Fetch.requestPaused":
                     {
-                        var fetchContinue = new Message {Method = "Fetch.continueRequest"};
-                        fetchContinue.Parameters.Add("requestId", requestId);
-                        _pageConnection.SendAsync(fetchContinue).GetAwaiter();
-                    }
-                    else
-                    {
-                        var fetchFail = new Message {Method = "Fetch.failRequest"};
-                        fetchFail.Parameters.Add("requestId", requestId);
-                        fetchFail.Parameters.Add("errorReason", "BlockedByClient");
-                        _pageConnection.SendAsync(fetchFail).GetAwaiter();
-                    }
+                        var fetch = Fetch.FromJson(data);
+                        var requestId = fetch.Params.RequestId;
+                        var url = fetch.Params.Request.Url;
 
-                    // Failed, Aborted, TimedOut, AccessDenied, ConnectionClosed, ConnectionReset, ConnectionRefused,
-                    // ConnectionAborted, ConnectionFailed, NameNotResolved, InternetDisconnected, AddressUnreachable,
-                    // BlockedByClient, BlockedByResponse
-                }
-                else
-                {
-                    var page = PageEvent.FromJson(data);
-
-                    if (!uri.IsFile)
-                    {
-                        switch (page.Method)
+                        if (!IsRegExMatch(urlBlacklist, url, out var matchedPattern) || string.Equals(uri.ToString(), url, StringComparison.InvariantCultureIgnoreCase))
                         {
-                            // The DOMContentLoaded event is fired when the document has been completely loaded and parsed, without
-                            // waiting for stylesheets, images, and sub frames to finish loading (the load event can be used to
-                            // detect a fully-loaded page).
-                            case "Page.lifecycleEvent" when page.Params?.Name == "DOMContentLoaded":
-                                if (mediaLoadTimeout.HasValue)
-                                {
-                                    mediaLoadTimeoutCancellationToken = new CancellationToken();
-                                    mediaLoadTimeoutTask = Task.Delay(mediaLoadTimeout.Value,
-                                        mediaLoadTimeoutCancellationToken);
-                                    if (mediaLoadTimeoutTask != null)
-                                        // ReSharper disable once PossibleNullReferenceException
-                                        await mediaLoadTimeoutTask;
-
-                                    Logger.WriteToLog(
-                                        $"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
-
-                                    waitEvent.Set();
-                                }
-                                else
-                                    waitEvent.Set();
-
-                                break;
-
-                            case "Page.frameStoppedLoading":
-                                waitEvent.Set();
-                                break;
+                            var fetchContinue = new Message {Method = "Fetch.continueRequest"};
+                            fetchContinue.Parameters.Add("requestId", requestId);
+                            _pageConnection.SendAsync(fetchContinue).GetAwaiter();
                         }
-                    }
-                    else
-                    {
-                        switch (page.Method)
+                        else
                         {
-                            // The DOMContentLoaded event is fired when the document has been completely loaded and parsed, without
-                            // waiting for stylesheets, images, and sub frames to finish loading (the load event can be used to
-                            // detect a fully-loaded page).
-                            case "Page.domContentEventFired":
+                            Logger.WriteToLog($"The url '{url}' has been blocked by url blacklist pattern '{matchedPattern}'");
+
+                            var fetchFail = new Message {Method = "Fetch.failRequest"};
+                            fetchFail.Parameters.Add("requestId", requestId);
+                            // Failed, Aborted, TimedOut, AccessDenied, ConnectionClosed, ConnectionReset, ConnectionRefused,
+                            // ConnectionAborted, ConnectionFailed, NameNotResolved, InternetDisconnected, AddressUnreachable,
+                            // BlockedByClient, BlockedByResponse
+                            fetchFail.Parameters.Add("errorReason", "BlockedByClient");
+                            _pageConnection.SendAsync(fetchFail).GetAwaiter();
+                        }
+
+                        break;
+                    }
+
+                    default:
+                    {
+                        var page = PageEvent.FromJson(data);
+
+                        if (!uri.IsFile)
+                        {
+                            switch (page.Method)
                             {
-                                if (mediaLoadTimeout.HasValue)
-                                {
-                                    mediaLoadTimeoutCancellationToken = new CancellationToken();
-                                    mediaLoadTimeoutTask = Task.Delay(mediaLoadTimeout.Value,
-                                        mediaLoadTimeoutCancellationToken);
-                                    if (mediaLoadTimeoutTask != null)
-                                        // ReSharper disable once PossibleNullReferenceException
-                                        await mediaLoadTimeoutTask;
+                                // The DOMContentLoaded event is fired when the document has been completely loaded and parsed, without
+                                // waiting for stylesheets, images, and sub frames to finish loading (the load event can be used to
+                                // detect a fully-loaded page).
+                                case "Page.lifecycleEvent" when page.Params?.Name == "DOMContentLoaded":
+                                    if (mediaLoadTimeout.HasValue)
+                                    {
+                                        mediaLoadTimeoutCancellationToken = new CancellationToken();
+                                        mediaLoadTimeoutTask = Task.Delay(mediaLoadTimeout.Value,
+                                            mediaLoadTimeoutCancellationToken);
+                                        if (mediaLoadTimeoutTask != null)
+                                            // ReSharper disable once PossibleNullReferenceException
+                                            await mediaLoadTimeoutTask;
 
-                                    Logger.WriteToLog(
-                                        $"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
+                                        Logger.WriteToLog(
+                                            $"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
 
+                                        waitEvent.Set();
+                                    }
+                                    else
+                                        waitEvent.Set();
+
+                                    break;
+
+                                case "Page.frameStoppedLoading":
                                     waitEvent.Set();
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            switch (page.Method)
+                            {
+                                // The DOMContentLoaded event is fired when the document has been completely loaded and parsed, without
+                                // waiting for stylesheets, images, and sub frames to finish loading (the load event can be used to
+                                // detect a fully-loaded page).
+                                case "Page.domContentEventFired":
+                                {
+                                    if (mediaLoadTimeout.HasValue)
+                                    {
+                                        mediaLoadTimeoutCancellationToken = new CancellationToken();
+                                        mediaLoadTimeoutTask = Task.Delay(mediaLoadTimeout.Value,
+                                            mediaLoadTimeoutCancellationToken);
+                                        if (mediaLoadTimeoutTask != null)
+                                            // ReSharper disable once PossibleNullReferenceException
+                                            await mediaLoadTimeoutTask;
+
+                                        Logger.WriteToLog(
+                                            $"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
+
+                                        waitEvent.Set();
+                                    }
+
+                                    break;
                                 }
 
-                                break;
+                                case "Page.loadEventFired":
+                                    waitEvent.Set();
+                                    break;
                             }
-
-                            case "Page.loadEventFired":
-                                waitEvent.Set();
-                                break;
                         }
+
+                        break;
                     }
                 }
             }
 
             _pageConnection.MessageReceived += async (sender, data) => await MessageReceived(data);
 
-            /*
-            var blockMessage = new Message
+            // Enable Fetch when we want to blacklist certain URL's
+            if (urlBlacklist?.Count > 0)
             {
-                Method = "Network.setBlockedURLs"
-            };
+                Logger.WriteToLog("Enabling Fetch to block url's that are in the url blacklist'");
+                _pageConnection.SendAsync(new Message {Method = "Fetch.enable"}).GetAwaiter();
+            }
 
-            blockMessage.Parameters.Add("urls", new List<string> {@"*test*"}.ToArray());
-            _pageConnection.SendAsync(blockMessage).GetAwaiter().GetResult();
-            
-            _pageConnection.SendAsync(new Message {Method = "Network.enable"}).GetAwaiter().GetResult();
-            */
-
-            var fetchMessage = new Message
-            {
-                Method = "Fetch.enable"
-            };
-
-            //fetchMessage.Parameters.Add("urls", new List<string> { @"*test*" }.ToArray());
-            _pageConnection.SendAsync(fetchMessage).GetAwaiter();
-            
             _pageConnection.SendAsync(new Message { Method = "Page.enable" }).GetAwaiter();
             _pageConnection.Closed += (sender, args) => waitEvent.Set();
 
@@ -250,6 +277,10 @@ namespace ChromeHtmlToPdfLib
 
             // ReSharper disable once EventUnsubscriptionViaAnonymousDelegate
             _pageConnection.MessageReceived -= async (sender, data) => await MessageReceived(data);
+
+            // Disable Fetch again if it was enabled
+            if (urlBlacklist?.Count > 0)
+                _pageConnection.SendAsync(new Message {Method = "Fetch.disable"}).GetAwaiter();
 
             _pageConnection.SendAsync(new Message {Method = "Page.disable"}).GetAwaiter();
         }
