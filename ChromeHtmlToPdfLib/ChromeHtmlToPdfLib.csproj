@@ -112,6 +112,7 @@
     <Compile Include="Protocol\Page.cs" />
     <Compile Include="Protocol\PageEvent.cs" />
     <Compile Include="Protocol\PrintToPdfResponse.cs" />
+    <Compile Include="Protocol\SnapshotResponse.cs" />
     <Compile Include="Settings\PageSettings.cs" />
     <Compile Include="Enums\PaperFormats.cs" />
     <Compile Include="Enums\WindowSize.cs" />

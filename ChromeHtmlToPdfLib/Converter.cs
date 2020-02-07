@@ -310,6 +310,19 @@ namespace ChromeHtmlToPdfLib
                 }
             }
         }
+
+        /// <summary>
+        ///     When set to <c>true</c> then a snapshot of the page is written to the
+        ///     <see cref="SnapshotStream"/> property before the loaded page is converted
+        ///     to PDF
+        /// </summary>
+        public bool CaptureSnapshot { get; set; }
+        
+        /// <summary>
+        ///     The <see cref="Stream"/> where to write the page snapshot when <see cref="CaptureSnapshot"/>
+        ///     is set to <c>true</c>
+        /// </summary>
+        public Stream SnapshotStream { get; set; }
         #endregion
 
         #region Constructor & Destructor
@@ -883,11 +896,15 @@ namespace ChromeHtmlToPdfLib
         /// <param name="conversionTimeout">An conversion timeout in milliseconds, if the conversion fails
         ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException"/> is raised</param>
         /// <param name="mediaLoadTimeout">When set a timeout will be started after the DomContentLoaded
-        /// event has fired. After a timeout the NavigateTo method will exit as if the page has been completely loaded</param>
+        ///     event has fired. After a timeout the NavigateTo method will exit as if the page has been completely loaded</param>
         /// <param name="logStream">When set then this will give a logging for each conversion. Use the log stream
-        /// option in the constructor if you want one log for all conversions</param>
+        ///     option in the constructor if you want one log for all conversions</param>
         /// <exception cref="ConversionTimedOutException">Raised when <paramref name="conversionTimeout"/> is set and the 
         /// conversion fails to finish in this amount of time</exception>
+        /// <remarks>
+        ///     When the property <see cref="CaptureSnapshot"/> has been set then the snapshot is saved to the
+        ///     property <see cref="SnapshotStream"/>
+        /// </remarks>
         public void ConvertToPdf(ConvertUri inputUri,
             Stream outputStream,
             PageSettings pageSettings,
@@ -911,6 +928,7 @@ namespace ChromeHtmlToPdfLib
                 {
                     case ".htm":
                     case ".html":
+                    case ".mhtml":
                     case ".svg":
                     case ".xml":
                         // This is ok
@@ -988,6 +1006,22 @@ namespace ChromeHtmlToPdfLib
                     Logger.WriteToLog("Done running javascript");
                 }
 
+                if (CaptureSnapshot)
+                {
+                    if (SnapshotStream == null)
+                        throw new ConversionException("The property CaptureSnapshot has been set to true but there is no stream assigned to the SnapshotStream");
+
+                    Logger.WriteToLog("Taking snapshot of the page");
+
+                    using (var memoryStream = new MemoryStream(_browser.CaptureSnapshot(countdownTimer).GetAwaiter().GetResult().Bytes))
+                    {
+                        memoryStream.Position = 0;
+                        memoryStream.CopyTo(SnapshotStream);
+                    }
+
+                    Logger.WriteToLog("Taken");
+                }
+
                 Logger.WriteToLog("Converting to PDF");
 
                 using (var memoryStream = new MemoryStream(_browser.PrintToPdf(pageSettings, countdownTimer).GetAwaiter().GetResult().Bytes))
@@ -1037,6 +1071,12 @@ namespace ChromeHtmlToPdfLib
         /// <exception cref="ConversionTimedOutException">Raised when <see cref="conversionTimeout"/> is set and the 
         /// conversion fails to finish in this amount of time</exception>
         /// <exception cref="DirectoryNotFoundException"></exception>
+        /// /// <remarks>
+        ///     When the property <see cref="CaptureSnapshot"/> has been set then the snapshot is saved to the
+        ///     property <see cref="SnapshotStream"/> and after that automatic saved to the <paramref name="outputFile"/>
+        ///     (the extension will automatic be replaced with .mhtml)
+        /// </remarks>
+
         public void ConvertToPdf(ConvertUri inputUri,
             string outputFile,
             PageSettings pageSettings,
@@ -1047,6 +1087,9 @@ namespace ChromeHtmlToPdfLib
             Stream logStream = null)
         {
             CheckIfOutputFolderExists(outputFile);
+            if (CaptureSnapshot)
+                SnapshotStream = new MemoryStream();
+
             using (var memoryStream = new MemoryStream())
             {
                 ConvertToPdf(inputUri, memoryStream, pageSettings, waitForWindowStatus,
@@ -1059,6 +1102,22 @@ namespace ChromeHtmlToPdfLib
                 }
 
                 Logger.WriteToLog($"PDF written to output file '{outputFile}'");
+            }
+
+            if (CaptureSnapshot)
+            {
+                var snapshotOutputFile = Path.ChangeExtension(outputFile, ".mhtml");
+
+                // ReSharper disable once AssignNullToNotNullAttribute
+                using (var fileStream = File.Open(snapshotOutputFile, FileMode.Create))
+                {
+                    SnapshotStream.Position = 0;
+                    SnapshotStream.CopyTo(fileStream);
+                }
+
+                SnapshotStream.Dispose();
+
+                Logger.WriteToLog($"Page snapshot written to output file '{snapshotOutputFile}'");
             }
         }
 

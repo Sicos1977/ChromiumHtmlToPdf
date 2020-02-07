@@ -27,6 +27,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -363,6 +364,29 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
 
+        #region CaptureSnapshot
+        /// <summary>
+        ///     Instructs Chrome to capture a snapshot from the loaded page
+        /// </summary>
+        /// <param name="countdownTimer">If a <see cref="CountdownTimer"/> is set then
+        /// the method will raise an <see cref="ConversionTimedOutException"/> in the 
+        /// <see cref="CountdownTimer"/> reaches zero before finishing the printing to pdf</param>        
+        /// <remarks>
+        ///     See https://chromedevtools.github.io/devtools-protocol/tot/Page#method-captureSnapshot
+        /// </remarks>
+        /// <returns></returns>
+        internal async Task<SnapshotResponse> CaptureSnapshot(CountdownTimer countdownTimer = null)
+        {
+            var message = new Message { Method = "Page.captureSnapshot" };
+
+            var result = countdownTimer == null
+                ? await _pageConnection.SendAsync(message)
+                : await _pageConnection.SendAsync(message).Timeout(countdownTimer.MillisecondsLeft);
+
+            return SnapshotResponse.FromJson(result);
+        }
+        #endregion
+
         #region PrintToPdf
         /// <summary>
         ///     Instructs Chrome to print the page
@@ -376,7 +400,9 @@ namespace ChromeHtmlToPdfLib
         /// </remarks>
         /// <exception cref="ConversionException">Raised when Chrome returns an empty string</exception>
         /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer"/> reaches zero</exception>
-        internal async Task<PrintToPdfResponse> PrintToPdf(PageSettings pageSettings, CountdownTimer countdownTimer = null)
+        internal async Task<PrintToPdfResponse> PrintToPdf(
+            PageSettings pageSettings, 
+            CountdownTimer countdownTimer = null)
         {
             var message = new Message {Method = "Page.printToPDF"};
             message.AddParameter("landscape", pageSettings.Landscape);

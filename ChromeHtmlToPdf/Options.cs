@@ -327,16 +327,16 @@ namespace ChromeHtmlToPdf
         public string UrlBlacklist { get; set; }
 
         /// <summary>
-        ///     This will generate a snapshot of the webpage (before it is converted to PDF) and save this to disk with
+        ///     This will capture a snapshot of the webpage (before it is converted to PDF) and save this to disk with
         ///     the same name (but different extension .mhtml) that is selected for the --output parameter
         /// </summary>
         [Option("snapshot", Required = false,
             HelpText =
-                "This will generate a snapshot of the webpage (before it is converted to PDF) and " +
+                "This will capture a snapshot of the webpage (before it is converted to PDF) and " +
                 "save this to disk with the same name (but different extension .mhtml) that is " +
                 "selected for the --output parameter, e.g. --output test.pdf --> test.mhtml"
         )]
-        public string Snapshot { get; set; }
+        public bool Snapshot { get; set; }
         #endregion
     }
 }

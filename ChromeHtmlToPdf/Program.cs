@@ -309,6 +309,8 @@ namespace ChromeHtmlToPdf
                 var urlBlacklist = options.UrlBlacklist.Split(';').ToList();
                 converter.SetUrlBlacklist(urlBlacklist);
             }
+
+            converter.CaptureSnapshot = options.Snapshot;
         }
         #endregion
 
