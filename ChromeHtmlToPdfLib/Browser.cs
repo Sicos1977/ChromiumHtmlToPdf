@@ -135,13 +135,12 @@ namespace ChromeHtmlToPdfLib
             var waitEvent = new ManualResetEvent(false);
             Task mediaLoadTimeoutTask = null;
             CancellationToken mediaLoadTimeoutCancellationToken;
+            var asyncLogging = new List<string>();
 
-            Logger.WriteToLog("Test");
 
             async Task MessageReceived(string data)
             {
                 //System.IO.File.AppendAllText("e:\\logs.txt", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + data + Environment.NewLine);
-
                 var message = Message.FromJson(data);
 
                 switch (message.Method)
@@ -154,14 +153,14 @@ namespace ChromeHtmlToPdfLib
 
                         if (!IsRegExMatch(urlBlacklist, url, out var matchedPattern) || string.Equals(uri.AbsoluteUri, url, StringComparison.InvariantCultureIgnoreCase))
                         {
-                            Logger.WriteToLog($"The url '{url}' has been allowed");
+                            asyncLogging.Add($"The url '{url}' has been allowed");
                             var fetchContinue = new Message {Method = "Fetch.continueRequest"};
                             fetchContinue.Parameters.Add("requestId", requestId);
                             _pageConnection.SendAsync(fetchContinue).GetAwaiter();
                         }
                         else
                         {
-                            Logger.WriteToLog($"The url '{url}' has been blocked by url blacklist pattern '{matchedPattern}'");
+                            asyncLogging.Add($"The url '{url}' has been blocked by url blacklist pattern '{matchedPattern}'");
 
                             var fetchFail = new Message {Method = "Fetch.failRequest"};
                             fetchFail.Parameters.Add("requestId", requestId);
@@ -229,8 +228,7 @@ namespace ChromeHtmlToPdfLib
                                             // ReSharper disable once PossibleNullReferenceException
                                             await mediaLoadTimeoutTask;
 
-                                        Logger.WriteToLog(
-                                            $"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
+                                        asyncLogging.Add($"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
 
                                         waitEvent.Set();
                                     }
@@ -277,6 +275,9 @@ namespace ChromeHtmlToPdfLib
 
             if (mediaLoadTimeoutCancellationToken != null)
                 mediaLoadTimeoutTask?.Wait(mediaLoadTimeoutCancellationToken);
+
+            foreach(var message in asyncLogging)
+                Logger.WriteToLog(message);
 
             // ReSharper disable once EventUnsubscriptionViaAnonymousDelegate
             _pageConnection.MessageReceived -= async (sender, data) => await MessageReceived(data);
