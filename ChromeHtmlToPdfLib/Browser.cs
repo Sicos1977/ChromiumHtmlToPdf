@@ -136,8 +136,7 @@ namespace ChromeHtmlToPdfLib
             Task mediaLoadTimeoutTask = null;
             CancellationToken mediaLoadTimeoutCancellationToken;
             var asyncLogging = new List<string>();
-
-
+            
             async Task MessageReceived(string data)
             {
                 //System.IO.File.AppendAllText("e:\\logs.txt", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + data + Environment.NewLine);
