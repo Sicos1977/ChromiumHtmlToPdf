@@ -136,9 +136,11 @@ namespace ChromeHtmlToPdfLib
             Task mediaLoadTimeoutTask = null;
             CancellationToken mediaLoadTimeoutCancellationToken;
 
+            Logger.WriteToLog("Test");
+
             async Task MessageReceived(string data)
             {
-                // File.AppendAllText("d:\\logs.txt", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + data + Environment.NewLine);
+                //System.IO.File.AppendAllText("e:\\logs.txt", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + data + Environment.NewLine);
 
                 var message = Message.FromJson(data);
 
@@ -150,8 +152,9 @@ namespace ChromeHtmlToPdfLib
                         var requestId = fetch.Params.RequestId;
                         var url = fetch.Params.Request.Url;
 
-                        if (!IsRegExMatch(urlBlacklist, url, out var matchedPattern) || string.Equals(uri.ToString(), url, StringComparison.InvariantCultureIgnoreCase))
+                        if (!IsRegExMatch(urlBlacklist, url, out var matchedPattern) || string.Equals(uri.AbsoluteUri, url, StringComparison.InvariantCultureIgnoreCase))
                         {
+                            Logger.WriteToLog($"The url '{url}' has been allowed");
                             var fetchContinue = new Message {Method = "Fetch.continueRequest"};
                             fetchContinue.Parameters.Add("requestId", requestId);
                             _pageConnection.SendAsync(fetchContinue).GetAwaiter();

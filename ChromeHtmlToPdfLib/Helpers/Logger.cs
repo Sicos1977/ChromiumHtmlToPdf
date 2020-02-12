@@ -37,32 +37,32 @@ namespace ChromeHtmlToPdfLib.Helpers
         ///     When set then logging is written to this stream
         /// </summary>
         [ThreadStatic]
-        internal static Stream LogStream;
+        internal static Stream logStream;
 
         /// <summary>
         ///     An unique id that can be used to identify the logging of the converter when
         ///     calling the code from multiple threads and writing all the logging to the same file
         /// </summary>
         [ThreadStatic] 
-        internal static string InstanceId;
+        internal static string instanceId;
         #endregion
 
         #region WriteToLog
         /// <summary>
-        ///     Writes a line and linefeed to the <see cref="LogStream" />
+        ///     Writes a line and linefeed to the <see cref="logStream" />
         /// </summary>
         /// <param name="message">The message to write</param>
         internal static void WriteToLog(string message)
         {
             try
             {
-                if (LogStream == null || !LogStream.CanWrite) return;
+                if (logStream == null || !logStream.CanWrite) return;
                 var line = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") +
-                           (InstanceId != null ? " - " + InstanceId : string.Empty) + " - " +
+                           (instanceId != null ? " - " + instanceId : string.Empty) + " - " +
                            message + Environment.NewLine;
                 var bytes = Encoding.UTF8.GetBytes(line);
-                LogStream.Write(bytes, 0, bytes.Length);
-                LogStream.Flush();
+                logStream.Write(bytes, 0, bytes.Length);
+                logStream.Flush();
             }
             catch (ObjectDisposedException)
             {

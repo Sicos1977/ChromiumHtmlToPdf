@@ -153,8 +153,8 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         public string InstanceId
         {
-            get => Logger.InstanceId;
-            set => Logger.InstanceId = value;
+            get => Logger.instanceId;
+            set => Logger.instanceId = value;
         }
 
         /// <summary>
@@ -348,7 +348,7 @@ namespace ChromeHtmlToPdfLib
                          Stream logStream = null)
         {
             _preWrapExtensions = new List<string>();
-            Logger.LogStream = logStream;
+            Logger.logStream = logStream;
 
             ResetArguments();
 
@@ -914,7 +914,9 @@ namespace ChromeHtmlToPdfLib
             int? mediaLoadTimeout = null,
             Stream logStream = null)
         {
-            Logger.LogStream = logStream;
+            if (logStream != null)
+                Logger.logStream = logStream;
+
             _conversionTimeout = conversionTimeout;
 
             if (inputUri.IsFile)
