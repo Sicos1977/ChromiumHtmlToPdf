@@ -28,6 +28,7 @@ using System;
 using System.IO;
 using System.Net;
 using System.Text;
+using System.Web;
 
 namespace ChromeHtmlToPdfLib.Helpers
 {
@@ -115,7 +116,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                 Ude.CharsetDetector charsetDetector = new Ude.CharsetDetector();
                 using (var fileStream = File.OpenRead(inputFile))
                 {
-                    Logger.WriteToLog($"Trying to detect encoding");
+                    Logger.WriteToLog("Trying to detect encoding");
                     charsetDetector.Feed(fileStream);
                     charsetDetector.DataEnd();
                     if (charsetDetector.Charset != null)
@@ -167,8 +168,12 @@ namespace ChromeHtmlToPdfLib.Helpers
                 writer.WriteLine("<pre>");
 
                 while (!streamReader.EndOfStream)
-                    writer.WriteLine(streamReader.ReadLine());
-            
+                {
+                    var line = streamReader.ReadLine();
+                    if (line != null)
+                        writer.WriteLine(HttpUtility.HtmlEncode(line));
+                }
+
                 writer.WriteLine("</pre>");
                 writer.WriteLine("</body>");
                 writer.WriteLine("</html>");
