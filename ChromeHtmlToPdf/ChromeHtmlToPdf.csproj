@@ -1,14 +1,23 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <StartupObject>ChromeHtmlToPdf.Program</StartupObject>
+    <ApplicationIcon />
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <Version>2.0.0</Version>
+    <Company>Magic-Sessions</Company>
+    <Authors>Kees van Spelde</Authors>
+    <Copyright>(C)2017-2020 Kees van Spelde</Copyright>
+    <PackageProjectUrl>(C)2017-2020 Kees van Spelde</PackageProjectUrl>
+    <PackageIcon>Chrome-icon.png</PackageIcon>
+    <PackageIconUrl />
+    <RepositoryUrl>https://www.nuget.org/packages/ChromeHtmlToPdf/</RepositoryUrl>
+    <RepositoryType>NuGet</RepositoryType>
+    <PackageTags>convert html pdf chrome</PackageTags>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Ude.NetStandard" Version="1.2.0" />
-    <PackageReference Include="WebSocketSharp-netstandard" Version="1.0.1" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ChromeHtmlToPdfLib\ChromeHtmlToPdfLib.csproj" />
@@ -16,6 +25,17 @@
 
   <ItemGroup>
     <Folder Include="Properties\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommandLineParser" Version="2.7.82" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Chrome-icon.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>

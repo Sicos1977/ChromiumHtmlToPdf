@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChromeHtmlToPdf", "ChromeHt
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChromeHtmlToPdfLib", "ChromeHtmlToPdfLib\ChromeHtmlToPdfLib.csproj", "{DA656B95-A59B-457A-BA26-2860160B76CB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChromeHtmlToPDFWebApi", "ChromeHtmlToPDFWebApi\ChromeHtmlToPDFWebApi.csproj", "{4726A663-6D5D-46BC-AB68-991F9668B5BE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChromeHtmlToPDFWebApi", "ChromeHtmlToPDFWebApi\ChromeHtmlToPDFWebApi.csproj", "{4726A663-6D5D-46BC-AB68-991F9668B5BE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
