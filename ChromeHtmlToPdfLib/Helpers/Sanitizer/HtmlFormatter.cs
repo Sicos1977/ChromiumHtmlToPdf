@@ -114,6 +114,11 @@ namespace ChromeHtmlToPdfLib.Helpers.Sanitizer
         {
             return HtmlMarkupFormatter.Instance.Processing(processing);
         }
+
+        public string LiteralText(ICharacterData text)
+        {
+            throw new System.NotImplementedException();
+        }
 #pragma warning restore 1591
     }
 }

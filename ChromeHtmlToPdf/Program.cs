@@ -167,9 +167,9 @@ namespace ChromeHtmlToPdf
             });
 
             var parserResult = parser.ParseArguments<Options>(args).WithNotParsed(notParsed =>
-                {
-                    errors = notParsed.Any();
-                }
+            {
+                errors = notParsed.Any();
+            }
             ).WithParsed(parsed =>
             {
                 tempOptions = parsed;
@@ -379,7 +379,7 @@ namespace ChromeHtmlToPdf
         /// </summary>
         /// <param name="options"></param>
         /// <param name="instanceId"></param>
-        private static void ConvertWithTask(Options options, 
+        private static void ConvertWithTask(Options options,
                                             string instanceId)
         {
             var pageSettings = GetPageSettings(options);

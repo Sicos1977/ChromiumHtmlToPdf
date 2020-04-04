@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27004.2009
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29905.134
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChromeHtmlToPdfLib", "ChromeHtmlToPdfLib\ChromeHtmlToPdfLib.csproj", "{0E189418-89F1-4842-8329-033949D8AA6F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChromeHtmlToPdf", "ChromeHtmlToPdf\ChromeHtmlToPdf.csproj", "{DE46975D-0EA1-4326-A358-7E3A5B6EFD43}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChromeHtmlToPdf", "ChromeHtmlToPdf\ChromeHtmlToPdf.csproj", "{6B9BBCF3-BAE4-47CB-BF46-B616C734947D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChromeHtmlToPdfLib", "ChromeHtmlToPdfLib\ChromeHtmlToPdfLib.csproj", "{DA656B95-A59B-457A-BA26-2860160B76CB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChromeHtmlToPDFWebApi", "ChromeHtmlToPDFWebApi\ChromeHtmlToPDFWebApi.csproj", "{4726A663-6D5D-46BC-AB68-991F9668B5BE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,14 +15,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{0E189418-89F1-4842-8329-033949D8AA6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0E189418-89F1-4842-8329-033949D8AA6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0E189418-89F1-4842-8329-033949D8AA6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0E189418-89F1-4842-8329-033949D8AA6F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6B9BBCF3-BAE4-47CB-BF46-B616C734947D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6B9BBCF3-BAE4-47CB-BF46-B616C734947D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6B9BBCF3-BAE4-47CB-BF46-B616C734947D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6B9BBCF3-BAE4-47CB-BF46-B616C734947D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE46975D-0EA1-4326-A358-7E3A5B6EFD43}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE46975D-0EA1-4326-A358-7E3A5B6EFD43}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE46975D-0EA1-4326-A358-7E3A5B6EFD43}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE46975D-0EA1-4326-A358-7E3A5B6EFD43}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DA656B95-A59B-457A-BA26-2860160B76CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DA656B95-A59B-457A-BA26-2860160B76CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DA656B95-A59B-457A-BA26-2860160B76CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DA656B95-A59B-457A-BA26-2860160B76CB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4726A663-6D5D-46BC-AB68-991F9668B5BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4726A663-6D5D-46BC-AB68-991F9668B5BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4726A663-6D5D-46BC-AB68-991F9668B5BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4726A663-6D5D-46BC-AB68-991F9668B5BE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
