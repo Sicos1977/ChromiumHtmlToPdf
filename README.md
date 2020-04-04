@@ -69,7 +69,7 @@ ChromeHtmlToPdf.exe --input https://www.google.com --output c:\google.pdf
 
 0 = successful, 1 = an error occurred
 
-### Pre compiled Windows binaries
+### Pre compiled binaries
 
 You can find pre compiled binaries for Windows, Unix and macOS over here 
 
