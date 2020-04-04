@@ -7,10 +7,13 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using AngleSharp;
-using AngleSharp.Dom.Html;
+using AngleSharp.Dom;
+using AngleSharp.Xhtml;
+using AngleSharp.Html.Dom;
 using ChromeHtmlToPdfLib.Settings;
 using Ganss.XSS;
 using Image = System.Drawing.Image;
+using AngleSharp.Xml;
 
 namespace ChromeHtmlToPdfLib.Helpers
 {
