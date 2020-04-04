@@ -10,13 +10,15 @@
     <Company>Magic-Sessions</Company>
     <Authors>Kees van Spelde</Authors>
     <Copyright>(C)2017-2020 Kees van Spelde</Copyright>
-    <PackageProjectUrl>(C)2017-2020 Kees van Spelde</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/Sicos1977/ChromeHtmlToPdf</PackageProjectUrl>
     <PackageIcon>Chrome-icon.png</PackageIcon>
     <PackageIconUrl />
     <RepositoryUrl>https://www.nuget.org/packages/ChromeHtmlToPdf/</RepositoryUrl>
     <RepositoryType>NuGet</RepositoryType>
     <PackageTags>convert html pdf chrome</PackageTags>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageReleaseNotes>- Upgraded to support .netstandard 2.0 (.net core and .net framework)</PackageReleaseNotes>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
