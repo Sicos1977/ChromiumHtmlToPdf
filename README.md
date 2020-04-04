@@ -71,10 +71,9 @@ ChromeHtmlToPdf.exe --input https://www.google.com --output c:\google.pdf
 
 ### Pre compiled Windows binaries
 
-You can find pre compiled Windows binaries over here 
+You can find pre compiled binaries for Windows, Unix and macOS over here 
 
-https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/1.4/ChromeHtmlToPdf-Windows.zip
-https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/1.5.3/ChromeHtmlToPdf.zip
+https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.0/ChromeHtmlTopdf.zip
 
 Core Team
 =========
