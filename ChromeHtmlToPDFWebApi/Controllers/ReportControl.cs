@@ -1,18 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.IO;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using ChromeHtmlToPdfLib;
 using ChromeHtmlToPdfLib.Settings;
-using System.Net.Http;
-using System.IO;
-using System.Net;
-using System.Net.Mime;
-using System.Net.Http.Headers;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
-namespace PDFConverter.Controllers
+namespace ChromeHtmlToPDFWebApi.Controllers
 {
     [ApiController]
     [Route("[controller]")]
