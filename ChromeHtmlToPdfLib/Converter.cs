@@ -39,6 +39,8 @@ using System.Threading;
 using ChromeHtmlToPdfLib.Enums;
 using ChromeHtmlToPdfLib.Exceptions;
 using ChromeHtmlToPdfLib.Helpers;
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable MemberCanBePrivate.Global
 
 namespace ChromeHtmlToPdfLib
 {
