@@ -7,8 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChromeHtmlToPdf", "ChromeHt
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChromeHtmlToPdfLib", "ChromeHtmlToPdfLib\ChromeHtmlToPdfLib.csproj", "{DA656B95-A59B-457A-BA26-2860160B76CB}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChromeHtmlToPDFWebApi", "ChromeHtmlToPDFWebApi\ChromeHtmlToPDFWebApi.csproj", "{4726A663-6D5D-46BC-AB68-991F9668B5BE}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,10 +21,6 @@ Global
 		{DA656B95-A59B-457A-BA26-2860160B76CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DA656B95-A59B-457A-BA26-2860160B76CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DA656B95-A59B-457A-BA26-2860160B76CB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4726A663-6D5D-46BC-AB68-991F9668B5BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4726A663-6D5D-46BC-AB68-991F9668B5BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4726A663-6D5D-46BC-AB68-991F9668B5BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4726A663-6D5D-46BC-AB68-991F9668B5BE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
