@@ -33,89 +33,42 @@ using System.Text.RegularExpressions;
 namespace ChromeHtmlToPdf
 {
     /// <summary>
-    /// Deze classe bevat bestand en folder gerelateerde hulp methodes
+    ///     Folder and file related helper methods
     /// </summary>
     public static class FileManager
     {
         #region Consts
         /// <summary>
-        /// De maximale pad lengte in Windows
+        /// The max length for a path and filename
         /// </summary>
-        private const int MaxPath = 248;
+        private const int MaxPath = 259;
+
+        /// <summary>
+        /// The max length for a filename
+        /// </summary>
+        private const int MaxFileNameLength = 255;
         #endregion
 
-        #region CheckForBackSlash
+        #region CheckForDirectorySeparator
         /// <summary>
-        /// Deze functie controleert of er aan het einde van de string een backslash staat en zo
-        /// nee dan wordt deze er achter geplaatst
+        /// Check if there is a directory separator char at the end of the string and if not add it
         /// </summary>
         /// <param name="line"></param>
-        /// <returns>De regel met daarachter een slash "\"</returns>
-        public static string CheckForBackSlash(string line)
+        /// <returns></returns>
+        public static string CheckForDirectorySeparator(string line)
         {
-            if (string.IsNullOrEmpty(line))
-                throw new ArgumentNullException(line);
+            var separator = Path.DirectorySeparatorChar.ToString();
 
-            if (line.EndsWith("\\", StringComparison.Ordinal))
+            if (line.EndsWith(separator))
                 return line;
 
-            return line + "\\";
-        }
-        #endregion
-
-        #region FileExistsMakeNew
-        /// <summary>
-        /// Checks if a file already exists and if so adds a number until the file is unique
-        /// </summary>
-        /// <param name="fileName">The file to check</param>
-        /// <param name="validateLongFileName">When true validation will be performed on the max path lengt</param>
-        /// <param name="extraTruncateSize"></param>
-        /// <returns></returns>
-        /// <exception cref="ArgumentException">Raised when no path or file name is given in the <paramref name="fileName"/></exception>
-        /// <exception cref="PathTooLongException">Raised when it is not possible to truncate the <paramref name="fileName"/></exception>
-        public static string FileExistsMakeNew(string fileName, bool validateLongFileName = true, int extraTruncateSize = -1)
-        {
-            var fileNameWithoutExtension = GetFileNameWithoutExtension(fileName);
-            var extension = GetExtension(fileName);
-            var path = CheckForBackSlash(GetDirectoryName(fileName));
-
-            var tempFileName = validateLongFileName ? ValidateLongFileName(fileName, extraTruncateSize) : fileName;
-
-            var i = 2;
-            while (File.Exists(tempFileName))
-            {
-                tempFileName = path + fileNameWithoutExtension + "_" + i + extension;
-                tempFileName = validateLongFileName ? ValidateLongFileName(tempFileName, extraTruncateSize) : tempFileName;
-                i += 1;
-            }
-
-            return tempFileName;
-        }
-        #endregion
-
-        #region RemoveInvalidCharsFromFileName
-        /// <summary>
-        /// Removes illegal filename characters
-        /// </summary>
-        /// <param name="fileName"></param>
-        /// <returns></returns>
-        public static string RemoveInvalidFileNameChars(string fileName)
-        {
-            if (string.IsNullOrEmpty(fileName))
-                return fileName;
-
-            var result = Path.GetInvalidFileNameChars()
-                .Aggregate(fileName, (current, c) => current.Replace(c.ToString(CultureInfo.InvariantCulture), "_"));
-
-            return result;
+            return line + separator;
         }
         #endregion
 
         #region ValidateLongFileName
         /// <summary>
-        /// Validates the length of <paramref name="fileName"/>, when this is longer then
-        /// 260 chars it will be truncated.
-        /// zodat deze wel past
+        /// Validates the length of <paramref name="fileName"/>, when this is longer then <see cref="MaxPath"/> chars it will be truncated.
         /// </summary>
         /// <param name="fileName">The filename with path</param>
         /// <param name="extraTruncateSize">Optional extra truncate size, when not used the filename is truncated until it fits</param>
@@ -127,7 +80,7 @@ namespace ChromeHtmlToPdf
             var fileNameWithoutExtension = GetFileNameWithoutExtension(fileName);
 
             if (string.IsNullOrWhiteSpace(fileNameWithoutExtension))
-                throw new ArgumentException(@"No file name is given, e.g. c:\temp\temp.txt", "fileName");
+                throw new ArgumentException(@"No file name is given, e.g. c:\temp\temp.txt", nameof(fileName));
 
             var extension = GetExtension(fileName);
 
@@ -137,9 +90,9 @@ namespace ChromeHtmlToPdf
             var path = GetDirectoryName(fileName);
 
             if (string.IsNullOrWhiteSpace(path))
-                throw new ArgumentException(@"No path is given, e.g. c:\temp\temp.txt", "fileName");
+                throw new ArgumentException(@"No path is given, e.g. c:\temp\temp.txt", nameof(fileName));
 
-            path = CheckForBackSlash(path);
+            path = CheckForDirectorySeparator(path);
 
             if (fileName.Length <= MaxPath)
                 return fileName;
@@ -189,7 +142,7 @@ namespace ChromeHtmlToPdf
         public static string GetFileNameWithoutExtension(string path)
         {
             if (string.IsNullOrWhiteSpace(path))
-                throw new ArgumentException(@"No path given", "path");
+                throw new ArgumentException(@"No path given", nameof(path));
 
             var splittedPath = path.Split(Path.DirectorySeparatorChar);
             var fileName = splittedPath[splittedPath.Length - 1];
@@ -227,10 +180,58 @@ namespace ChromeHtmlToPdf
         }
         #endregion
 
+        #region FileExistsMakeNew
+        /// <summary>
+        /// Checks if a file already exists and if so adds a number until the file is unique
+        /// </summary>
+        /// <param name="fileName">The file to check</param>
+        /// <param name="validateLongFileName">When true validation will be performed on the max path lengt</param>
+        /// <param name="extraTruncateSize"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException">Raised when no path or file name is given in the <paramref name="fileName"/></exception>
+        /// <exception cref="PathTooLongException">Raised when it is not possible to truncate the <paramref name="fileName"/></exception>
+        public static string FileExistsMakeNew(string fileName, bool validateLongFileName = true, int extraTruncateSize = -1)
+        {
+            var tempFileName = fileName;
+            var fileNameWithoutExtension = GetFileNameWithoutExtension(fileName);
+            var extension = GetExtension(fileName);
+            var path = CheckForDirectorySeparator(GetDirectoryName(fileName));
+
+            if (fileNameWithoutExtension.Length + extension.Length > MaxFileNameLength)
+            {
+                fileNameWithoutExtension = fileNameWithoutExtension.Substring(0, MaxFileNameLength - extension.Length);
+                tempFileName = path + fileNameWithoutExtension + extension;
+            }
+
+            tempFileName = validateLongFileName ? ValidateLongFileName(tempFileName, extraTruncateSize) : tempFileName;
+
+            var i = 2;
+            while (File.Exists(tempFileName))
+            {
+                tempFileName = path + fileNameWithoutExtension + "_" + i + extension;
+                tempFileName = validateLongFileName ? ValidateLongFileName(tempFileName, extraTruncateSize) : tempFileName;
+                i += 1;
+            }
+
+            return tempFileName;
+        }
+        #endregion
+
+        #region RemoveInvalidFileNameChars
+        /// <summary>
+        /// Removes illegal filename characters
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <returns></returns>
+        public static string RemoveInvalidFileNameChars(string fileName)
+        {
+            return Path.GetInvalidFileNameChars().Aggregate(fileName, (current, c) => current.Replace(c.ToString(CultureInfo.InvariantCulture), string.Empty));
+        }
+        #endregion
+
         #region IsValidPath
         /// <summary>
-        /// Controleert of het opgegeven pad valide is. Er wordt niet gecontroleerd of het pad ook
-        /// echt bestaat
+        ///     Returns <c>true</c> when a syntax valid path has been given
         /// </summary>
         /// <param name="path"></param>
         /// <returns></returns>
@@ -240,7 +241,6 @@ namespace ChromeHtmlToPdf
             var result = regex.IsMatch(path);
 
             if (result)
-            {
                 try
                 {
                     // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
@@ -250,7 +250,6 @@ namespace ChromeHtmlToPdf
                 {
                     return false;
                 }
-            }
 
             return result;
         }

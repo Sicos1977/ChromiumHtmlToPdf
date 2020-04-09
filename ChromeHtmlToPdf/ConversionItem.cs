@@ -3,6 +3,7 @@ using ChromeHtmlToPdfLib;
 
 namespace ChromeHtmlToPdf
 {
+    #region Enum ConversionItemStatus
     internal enum ConversionItemStatus
     {
         /// <summary>
@@ -20,6 +21,7 @@ namespace ChromeHtmlToPdf
         /// </summary>
         Failed
     }
+    #endregion
 
     /// <summary>
     /// Used as a place holder when converting multiple items 

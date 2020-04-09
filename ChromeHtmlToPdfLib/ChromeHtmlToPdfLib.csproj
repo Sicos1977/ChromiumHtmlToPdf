@@ -1,126 +1,24 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{0E189418-89F1-4842-8329-033949D8AA6F}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ChromeHtmlToPdfLib</RootNamespace>
-    <AssemblyName>ChromeHtmlToPdfLib</AssemblyName>
-    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
+    <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <DocumentationFile>bin\Release\ChromeHtmlToPdfLib.xml</DocumentationFile>
-  </PropertyGroup>
-  <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyOriginatorKeyFile>ChromeHtmlToPdf.snk</AssemblyOriginatorKeyFile>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="AngleSharp, Version=0.13.0.0, Culture=neutral, PublicKeyToken=e83494dcdc6d31ea, processorArchitecture=MSIL">
-      <HintPath>..\packages\AngleSharp.0.13.0\lib\net46\AngleSharp.dll</HintPath>
-    </Reference>
-    <Reference Include="AngleSharp.Css, Version=0.13.0.0, Culture=neutral, PublicKeyToken=e83494dcdc6d31ea, processorArchitecture=MSIL">
-      <HintPath>..\packages\AngleSharp.Css.0.13.0\lib\net46\AngleSharp.Css.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Collections.Specialized, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Collections.Specialized.4.3.0\lib\net46\System.Collections.Specialized.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Core" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Management" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.6.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.7.0\lib\netstandard2.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime.Extensions, Version=4.1.1.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Runtime.Extensions.4.3.1\lib\net462\System.Runtime.Extensions.dll</HintPath>
-      <Private>True</Private>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Text.Encoding.CodePages, Version=4.1.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Text.Encoding.CodePages.4.7.0\lib\net461\System.Text.Encoding.CodePages.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Web" />
-    <Reference Include="Ude, Version=0.1.1.0, Culture=neutral, PublicKeyToken=dd537652db4726a9, processorArchitecture=MSIL">
-      <HintPath>..\packages\Ude.Signed.0.1.1\lib\net40\Ude.dll</HintPath>
-    </Reference>
-    <Reference Include="websocket-sharp, Version=1.0.1.0, Culture=neutral, PublicKeyToken=5660b08a1845a91e, processorArchitecture=MSIL">
-      <HintPath>..\packages\WebSocketSharp-netstandard.1.0.1\lib\net45\websocket-sharp.dll</HintPath>
-    </Reference>
+    <PackageReference Include="AngleSharp" Version="0.14.0" />
+    <PackageReference Include="AngleSharp.Css" Version="0.13.0" />
+    <PackageReference Include="AngleSharp.Xml" Version="0.14.0" />
+    <PackageReference Include="HtmlSanitizer" Version="5.0.304" />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="4.7.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="System.Drawing.Common" Version="4.7.0" />
+    <PackageReference Include="System.Management" Version="4.7.0" />
+    <PackageReference Include="Ude.NetStandard" Version="1.2.0" />
+    <PackageReference Include="WebSocketSharp-netstandard" Version="1.0.1" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="Exceptions\ChromeException.cs" />
-    <Compile Include="Browser.cs" />
-    <Compile Include="Connection.cs" />
-    <Compile Include="Exceptions\ConversionException.cs" />
-    <Compile Include="Exceptions\TaskTimedOutException.cs" />
-    <Compile Include="Exceptions\ConverionTimedOutException.cs" />
-    <Compile Include="Converter.cs" />
-    <Compile Include="ConvertUri.cs" />
-    <Compile Include="Helpers\ChromeFinder.cs" />
-    <Compile Include="Helpers\CountdownTimer.cs" />
-    <Compile Include="Helpers\ExceptionHelper.cs" />
-    <Compile Include="Helpers\Extensions.cs" />
-    <Compile Include="Helpers\DocumentHelper.cs" />
-    <Compile Include="Helpers\FileManager.cs" />
-    <Compile Include="Helpers\Logger.cs" />
-    <Compile Include="Helpers\PreWrapper.cs" />
-    <Compile Include="Helpers\Sanitizer\EventArgs.cs" />
-    <Compile Include="Helpers\Sanitizer\HtmlFormatter.cs" />
-    <Compile Include="Helpers\Sanitizer\HtmlSanitizer.cs" />
-    <Compile Include="Helpers\Sanitizer\Iri.cs" />
-    <Compile Include="Helpers\Sanitizer\RemoveReason.cs" />
-    <Compile Include="Helpers\StringExtensions.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Protocol\Error.cs" />
-    <Compile Include="Protocol\EvaluateError.cs" />
-    <Compile Include="Protocol\Evaluate.cs" />
-    <Compile Include="Protocol\Expression.cs" />
-    <Compile Include="Protocol\Fetch.cs" />
-    <Compile Include="Protocol\Message.cs" />
-    <Compile Include="Protocol\MessageBase.cs" />
-    <Compile Include="Protocol\Page.cs" />
-    <Compile Include="Protocol\PageEvent.cs" />
-    <Compile Include="Protocol\PrintToPdfResponse.cs" />
-    <Compile Include="Protocol\SnapshotResponse.cs" />
-    <Compile Include="Settings\PageSettings.cs" />
-    <Compile Include="Enums\PaperFormats.cs" />
-    <Compile Include="Enums\WindowSize.cs" />
+    <Folder Include="Properties\" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="app.config" />
-    <None Include="ChromeHtmlToPdf.snk" />
-    <None Include="packages.config" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
 </Project>
