@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ChromeHtmlToPdf": {
+      "commandName": "Project",
+      "commandLineArgs": "--input http://www.blablae4qwesd.nl --output d:\\test.pdf"
+    }
+  }
+}

@@ -39,12 +39,12 @@ namespace ChromeHtmlToPdfLib
     {
         #region Events
         /// <summary>
-        /// Triggered when a connection to the <see cref="WebSocket"/> is closed
+        /// Triggered when a connection to the <see cref="_webSocket"/> is closed
         /// </summary>
         public event EventHandler Closed;
 
         /// <summary>
-        /// Triggered when a new message is received on the <see cref="WebSocket"/>
+        /// Triggered when a new message is received on the <see cref="_webSocket"/>
         /// </summary>
         public event EventHandler<string> MessageReceived;
         #endregion
@@ -52,18 +52,11 @@ namespace ChromeHtmlToPdfLib
         #region Fields
         private int _messageId;
         private TaskCompletionSource<string> _response;
-        #endregion
-
-        #region Properties
-        /// <summary>
-        /// Returns the websocket url
-        /// </summary>
-        public string Url { get; set; }
 
         /// <summary>
         /// The websocket
         /// </summary>
-        public WebSocket WebSocket { get; set; }
+        private readonly WebSocket _webSocket;
         #endregion
 
         #region Constructor
@@ -73,18 +66,17 @@ namespace ChromeHtmlToPdfLib
         /// <param name="url">The url</param>
         internal Connection(string url)
         {
-            Url = url;
-            WebSocket = new WebSocket(url)
+            _webSocket = new WebSocket(url)
             {
                 EmitOnPing = false,
                 EnableRedirection = true,
                 Log = {Output = (_, __) => { }}
             };
 
-            WebSocket.OnMessage += Websocket_OnMessage;
-            WebSocket.OnClose += Websocket_OnClose;
-            WebSocket.OnError += Websocket_OnError;
-            WebSocket.Connect();
+            _webSocket.OnMessage += Websocket_OnMessage;
+            _webSocket.OnClose += Websocket_OnClose;
+            _webSocket.OnError += Websocket_OnError;
+            _webSocket.Connect();
         }
         #endregion
 
@@ -120,7 +112,7 @@ namespace ChromeHtmlToPdfLib
 
         #region SendAsync
         /// <summary>
-        /// Sends a message asynchronously to the <see cref="WebSocket"/>
+        /// Sends a message asynchronously to the <see cref="_webSocket"/>
         /// </summary>
         /// <param name="message">The message to send</param>
         /// <returns></returns>
@@ -129,7 +121,12 @@ namespace ChromeHtmlToPdfLib
             _messageId += 1;
             message.Id = _messageId;
             _response = new TaskCompletionSource<string>();
-            WebSocket.Send(message.ToJson());
+            
+            // Reconnect to the websocket when it is not alive anymore
+            //if (!_webSocket.IsAlive)
+            //    _webSocket.Connect();
+
+            _webSocket.Send(message.ToJson());            
             return await _response.Task;
         }
         #endregion
@@ -154,9 +151,9 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         public void Dispose()
         {
-            WebSocket.OnMessage -= Websocket_OnMessage;
-            WebSocket.OnClose -= Websocket_OnClose;
-            WebSocket.OnError -= Websocket_OnError;
+            _webSocket.OnMessage -= Websocket_OnMessage;
+            _webSocket.OnClose -= Websocket_OnClose;
+            _webSocket.OnError -= Websocket_OnError;
 
             //if (WebSocket.ReadyState == WebSocketState.Open)
             //    WebSocket.Close();

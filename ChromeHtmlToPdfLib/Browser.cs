@@ -152,7 +152,6 @@ namespace ChromeHtmlToPdfLib
                         var requestId = fetch.Params.RequestId;
                         var url = fetch.Params.Request.Url;
 
-
                         if (!IsRegExMatch(urlBlacklist, url, out var matchedPattern) || url.StartsWith(absoluteUri, StringComparison.InvariantCultureIgnoreCase))
                         {
                             asyncLogging.Enqueue($"The url '{url}' has been allowed");
@@ -263,7 +262,9 @@ namespace ChromeHtmlToPdfLib
             var pageNavigateMessage = new Message {Method = "Page.navigate"};
             pageNavigateMessage.AddParameter("url", uri.ToString());
 
-            _pageConnection.SendAsync(pageNavigateMessage).GetAwaiter();
+            var pageNavigateResponse = PageNavigateResponse.FromJson(_pageConnection.SendAsync(pageNavigateMessage).GetAwaiter().GetResult());
+            if (!string.IsNullOrWhiteSpace(pageNavigateResponse.Result.ErrorText))
+                throw new ChromeNavigationException($"{pageNavigateResponse.Result.ErrorText} occured when navigating to the page '{uri}'");
 
             if (countdownTimer != null)
             {

@@ -16,9 +16,10 @@
     <RepositoryUrl>https://www.nuget.org/packages/ChromeHtmlToPdf/</RepositoryUrl>
     <RepositoryType>NuGet</RepositoryType>
     <PackageTags>convert html pdf chrome</PackageTags>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageReleaseNotes>- Upgraded to support .netstandard 2.0 (.net core and .net framework)</PackageReleaseNotes>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PackageReleaseNotes></PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageId />
   </PropertyGroup>
 
   <ItemGroup>

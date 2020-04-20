@@ -45,7 +45,6 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// Returns <see cref="PrintToPdfResult.Data"/> as array of bytes
         /// </summary>
         public byte[] Bytes => Convert.FromBase64String(Result.Data);
-
         #endregion
 
         #region FromJson
