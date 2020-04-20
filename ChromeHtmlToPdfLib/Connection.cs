@@ -154,9 +154,6 @@ namespace ChromeHtmlToPdfLib
             _webSocket.OnMessage -= Websocket_OnMessage;
             _webSocket.OnClose -= Websocket_OnClose;
             _webSocket.OnError -= Websocket_OnError;
-
-            //if (WebSocket.ReadyState == WebSocketState.Open)
-            //    WebSocket.Close();
         }
         #endregion
     }
