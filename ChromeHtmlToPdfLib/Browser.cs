@@ -264,7 +264,11 @@ namespace ChromeHtmlToPdfLib
 
             var pageNavigateResponse = PageNavigateResponse.FromJson(_pageConnection.SendAsync(pageNavigateMessage).GetAwaiter().GetResult());
             if (!string.IsNullOrWhiteSpace(pageNavigateResponse.Result.ErrorText))
-                throw new ChromeNavigationException($"{pageNavigateResponse.Result.ErrorText} occured when navigating to the page '{uri}'");
+            {
+                var message = $"{pageNavigateResponse.Result.ErrorText} occured when navigating to the page '{uri}'";
+                Logger.WriteToLog(message);
+                throw new ChromeNavigationException(message);
+            }
 
             if (countdownTimer != null)
             {
