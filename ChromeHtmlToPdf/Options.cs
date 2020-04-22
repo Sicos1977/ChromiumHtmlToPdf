@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using ChromeHtmlToPdfLib.Enums;
 using CommandLine;
 // ReSharper disable StringLiteralTypo
@@ -8,6 +9,7 @@ namespace ChromeHtmlToPdf
     /// <summary>
     ///     The parameters that can be used when calling this application
     /// </summary>
+    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
     public class Options
     {
         #region Properties

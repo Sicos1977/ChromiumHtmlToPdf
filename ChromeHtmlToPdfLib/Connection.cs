@@ -121,11 +121,6 @@ namespace ChromeHtmlToPdfLib
             _messageId += 1;
             message.Id = _messageId;
             _response = new TaskCompletionSource<string>();
-            
-            // Reconnect to the websocket when it is not alive anymore
-            //if (!_webSocket.IsAlive)
-            //    _webSocket.Connect();
-
             _webSocket.Send(message.ToJson());            
             return await _response.Task;
         }

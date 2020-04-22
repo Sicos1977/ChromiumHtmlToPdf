@@ -135,13 +135,13 @@ namespace ChromeHtmlToPdfLib
         {
             var waitEvent = new ManualResetEvent(false);
             Task mediaLoadTimeoutTask = null;
-            CancellationToken mediaLoadTimeoutCancellationToken;
+            var mediaLoadTimeoutCancellationTokenSource = new CancellationTokenSource();
             var asyncLogging = new ConcurrentQueue<string>();
             var absoluteUri = uri.AbsoluteUri.Substring(0, uri.AbsoluteUri.LastIndexOf('/') + 1);
 
             async Task MessageReceived(string data)
             {
-                //System.IO.File.AppendAllText("e:\\logs.txt", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + data + Environment.NewLine);
+                //System.IO.File.AppendAllText("d:\\logs.txt", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + data + Environment.NewLine);
                 var message = Message.FromJson(data);
 
                 switch (message.Method)
@@ -179,67 +179,42 @@ namespace ChromeHtmlToPdfLib
                     {
                         var page = PageEvent.FromJson(data);
 
-                        if (!uri.IsFile)
+                        switch (page.Method)
                         {
-                            switch (page.Method)
-                            {
-                                // The DOMContentLoaded event is fired when the document has been completely loaded and parsed, without
-                                // waiting for stylesheets, images, and sub frames to finish loading (the load event can be used to
-                                // detect a fully-loaded page).
-                                case "Page.lifecycleEvent" when page.Params?.Name == "DOMContentLoaded":
-                                    if (mediaLoadTimeout.HasValue)
-                                    {
-                                        mediaLoadTimeoutCancellationToken = new CancellationToken();
-                                        mediaLoadTimeoutTask = Task.Delay(mediaLoadTimeout.Value,
-                                            mediaLoadTimeoutCancellationToken);
-                                        if (mediaLoadTimeoutTask != null)
-                                            // ReSharper disable once PossibleNullReferenceException
-                                            await mediaLoadTimeoutTask;
-
-                                        asyncLogging.Enqueue($"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
-
-                                        waitEvent.Set();
-                                    }
-                                    else
-                                        waitEvent.Set();
-
-                                    break;
-
-                                case "Page.frameStoppedLoading":
-                                    waitEvent.Set();
-                                    break;
-                            }
-                        }
-                        else
-                        {
-                            switch (page.Method)
-                            {
-                                // The DOMContentLoaded event is fired when the document has been completely loaded and parsed, without
-                                // waiting for stylesheets, images, and sub frames to finish loading (the load event can be used to
-                                // detect a fully-loaded page).
-                                case "Page.domContentEventFired":
+                            // The DOMContentLoaded event is fired when the document has been completely loaded and parsed, without
+                            // waiting for stylesheets, images, and sub frames to finish loading (the load event can be used to
+                            // detect a fully-loaded page).
+                            case "Page.lifecycleEvent" when page.Params?.Name == "DOMContentLoaded":
+                                if (mediaLoadTimeout.HasValue && mediaLoadTimeoutTask == null)
                                 {
-                                    if (mediaLoadTimeout.HasValue)
-                                    {
-                                        mediaLoadTimeoutCancellationToken = new CancellationToken();
-                                        mediaLoadTimeoutTask = Task.Delay(mediaLoadTimeout.Value,
-                                            mediaLoadTimeoutCancellationToken);
-                                        if (mediaLoadTimeoutTask != null)
-                                            // ReSharper disable once PossibleNullReferenceException
-                                            await mediaLoadTimeoutTask;
+                                    mediaLoadTimeoutTask = Task.Delay(mediaLoadTimeout.Value, mediaLoadTimeoutCancellationTokenSource.Token);
 
-                                        asyncLogging.Enqueue($"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
+                                    try
+                                    {
+                                        // ReSharper disable once PossibleNullReferenceException
+                                        await mediaLoadTimeoutTask;
+                                    }
+                                    catch 
+                                    {
+                                        // Ignore
+                                    }
+
+                                    if (!mediaLoadTimeoutCancellationTokenSource.IsCancellationRequested)
+                                    {
+                                        _pageConnection.SendAsync(new Message {Method = "Page.stopLoading"}).GetAwaiter();
+
+                                        asyncLogging.Enqueue(
+                                            $"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
 
                                         waitEvent.Set();
                                     }
-
-                                    break;
                                 }
 
-                                case "Page.loadEventFired":
-                                    waitEvent.Set();
-                                    break;
-                            }
+                                break;
+
+                            case "Page.loadEventFired":
+                                waitEvent.Set();
+                                break;
                         }
 
                         break;
@@ -257,6 +232,11 @@ namespace ChromeHtmlToPdfLib
             }
 
             _pageConnection.SendAsync(new Message { Method = "Page.enable" }).GetAwaiter();
+
+            var lifecycleEventEnabledMessage = new Message { Method = "Page.setLifecycleEventsEnabled" };
+            lifecycleEventEnabledMessage.AddParameter("enabled", true);
+            _pageConnection.SendAsync(lifecycleEventEnabledMessage).GetAwaiter();
+
             _pageConnection.Closed += (sender, args) => waitEvent.Set();
 
             var pageNavigateMessage = new Message {Method = "Page.navigate"};
@@ -279,8 +259,8 @@ namespace ChromeHtmlToPdfLib
             else
                 waitEvent.WaitOne();
 
-            if (mediaLoadTimeoutCancellationToken != null)
-                mediaLoadTimeoutTask?.Wait(mediaLoadTimeoutCancellationToken);
+            if (mediaLoadTimeoutTask != null)
+                mediaLoadTimeoutCancellationTokenSource.Cancel();
 
             while (asyncLogging.TryDequeue(out var message))
                 Logger.WriteToLog(message);
@@ -293,6 +273,10 @@ namespace ChromeHtmlToPdfLib
                 _pageConnection.SendAsync(new Message {Method = "Fetch.disable"}).GetAwaiter();
 
             _pageConnection.SendAsync(new Message {Method = "Page.disable"}).GetAwaiter();
+
+            var lifecycleEventDisableddMessage = new Message { Method = "Page.setLifecycleEventsEnabled" };
+            lifecycleEventDisableddMessage.AddParameter("enabled", false);
+            _pageConnection.SendAsync(lifecycleEventDisableddMessage).GetAwaiter();
         }
         #endregion
 
