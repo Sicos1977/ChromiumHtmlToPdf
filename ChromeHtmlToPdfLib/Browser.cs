@@ -133,150 +133,163 @@ namespace ChromeHtmlToPdfLib
             int? mediaLoadTimeout = null,
             List<string> urlBlacklist = null)
         {
-            var waitEvent = new ManualResetEvent(false);
-            Task mediaLoadTimeoutTask = null;
-            var mediaLoadTimeoutCancellationTokenSource = new CancellationTokenSource();
-            var asyncLogging = new ConcurrentQueue<string>();
-            var absoluteUri = uri.AbsoluteUri.Substring(0, uri.AbsoluteUri.LastIndexOf('/') + 1);
-
-            async Task MessageReceived(string data)
+            using (var waitEvent = new ManualResetEvent(false))
             {
-                //System.IO.File.AppendAllText("d:\\logs.txt", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + data + Environment.NewLine);
-                var message = Message.FromJson(data);
+                Task mediaLoadTimeoutTask = null;
+                var mediaLoadTimeoutCancellationTokenSource = new CancellationTokenSource();
+                var asyncLogging = new ConcurrentQueue<string>();
+                var absoluteUri = uri.AbsoluteUri.Substring(0, uri.AbsoluteUri.LastIndexOf('/') + 1);
 
-                switch (message.Method)
+                async Task MessageReceived(string data)
                 {
-                    case "Fetch.requestPaused":
+                    //System.IO.File.AppendAllText("d:\\logs.txt", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + data + Environment.NewLine);
+                    var message = Message.FromJson(data);
+
+                    switch (message.Method)
                     {
-                        var fetch = Fetch.FromJson(data);
-                        var requestId = fetch.Params.RequestId;
-                        var url = fetch.Params.Request.Url;
-
-                        if (!IsRegExMatch(urlBlacklist, url, out var matchedPattern) || url.StartsWith(absoluteUri, StringComparison.InvariantCultureIgnoreCase))
+                        case "Fetch.requestPaused":
                         {
-                            asyncLogging.Enqueue($"The url '{url}' has been allowed");
-                            var fetchContinue = new Message {Method = "Fetch.continueRequest"};
-                            fetchContinue.Parameters.Add("requestId", requestId);
-                            _pageConnection.SendAsync(fetchContinue).GetAwaiter();
-                        }
-                        else
-                        {
-                            asyncLogging.Enqueue($"The url '{url}' has been blocked by url blacklist pattern '{matchedPattern}'");
+                            var fetch = Fetch.FromJson(data);
+                            var requestId = fetch.Params.RequestId;
+                            var url = fetch.Params.Request.Url;
 
-                            var fetchFail = new Message {Method = "Fetch.failRequest"};
-                            fetchFail.Parameters.Add("requestId", requestId);
-                            // Failed, Aborted, TimedOut, AccessDenied, ConnectionClosed, ConnectionReset, ConnectionRefused,
-                            // ConnectionAborted, ConnectionFailed, NameNotResolved, InternetDisconnected, AddressUnreachable,
-                            // BlockedByClient, BlockedByResponse
-                            fetchFail.Parameters.Add("errorReason", "BlockedByClient");
-                            _pageConnection.SendAsync(fetchFail).GetAwaiter();
-                        }
+                            if (!IsRegExMatch(urlBlacklist, url, out var matchedPattern) ||
+                                url.StartsWith(absoluteUri, StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                asyncLogging.Enqueue($"The url '{url}' has been allowed");
+                                var fetchContinue = new Message {Method = "Fetch.continueRequest"};
+                                fetchContinue.Parameters.Add("requestId", requestId);
+                                _pageConnection.SendAsync(fetchContinue).GetAwaiter();
+                            }
+                            else
+                            {
+                                asyncLogging.Enqueue(
+                                    $"The url '{url}' has been blocked by url blacklist pattern '{matchedPattern}'");
 
-                        break;
-                    }
+                                var fetchFail = new Message {Method = "Fetch.failRequest"};
+                                fetchFail.Parameters.Add("requestId", requestId);
+                                // Failed, Aborted, TimedOut, AccessDenied, ConnectionClosed, ConnectionReset, ConnectionRefused,
+                                // ConnectionAborted, ConnectionFailed, NameNotResolved, InternetDisconnected, AddressUnreachable,
+                                // BlockedByClient, BlockedByResponse
+                                fetchFail.Parameters.Add("errorReason", "BlockedByClient");
+                                _pageConnection.SendAsync(fetchFail).GetAwaiter();
+                            }
 
-                    default:
-                    {
-                        var page = PageEvent.FromJson(data);
-
-                        switch (page.Method)
-                        {
-                            // The DOMContentLoaded event is fired when the document has been completely loaded and parsed, without
-                            // waiting for stylesheets, images, and sub frames to finish loading (the load event can be used to
-                            // detect a fully-loaded page).
-                            case "Page.lifecycleEvent" when page.Params?.Name == "DOMContentLoaded":
-                                if (mediaLoadTimeout.HasValue && mediaLoadTimeoutTask == null)
-                                {
-                                    mediaLoadTimeoutTask = Task.Delay(mediaLoadTimeout.Value, mediaLoadTimeoutCancellationTokenSource.Token);
-
-                                    try
-                                    {
-                                        // ReSharper disable once PossibleNullReferenceException
-                                        await mediaLoadTimeoutTask;
-                                    }
-                                    catch 
-                                    {
-                                        // Ignore
-                                    }
-
-                                    if (!mediaLoadTimeoutCancellationTokenSource.IsCancellationRequested)
-                                    {
-                                        _pageConnection.SendAsync(new Message {Method = "Page.stopLoading"}).GetAwaiter();
-
-                                        asyncLogging.Enqueue(
-                                            $"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
-
-                                        waitEvent.Set();
-                                    }
-                                }
-
-                                break;
-
-                            case "Page.loadEventFired":
-                                waitEvent.Set();
-                                break;
+                            break;
                         }
 
-                        break;
+                        default:
+                        {
+                            var page = PageEvent.FromJson(data);
+
+                            switch (page.Method)
+                            {
+                                // The DOMContentLoaded event is fired when the document has been completely loaded and parsed, without
+                                // waiting for stylesheets, images, and sub frames to finish loading (the load event can be used to
+                                // detect a fully-loaded page).
+                                case "Page.lifecycleEvent" when page.Params?.Name == "DOMContentLoaded":
+                                    if (mediaLoadTimeout.HasValue && mediaLoadTimeoutTask == null)
+                                    {
+                                        mediaLoadTimeoutTask = Task.Delay(mediaLoadTimeout.Value,
+                                            mediaLoadTimeoutCancellationTokenSource.Token);
+
+                                        try
+                                        {
+                                            // ReSharper disable once PossibleNullReferenceException
+                                            await mediaLoadTimeoutTask;
+                                        }
+                                        catch
+                                        {
+                                            // Ignore
+                                        }
+
+                                        if (!mediaLoadTimeoutCancellationTokenSource.IsCancellationRequested)
+                                        {
+                                            _pageConnection.SendAsync(new Message {Method = "Page.stopLoading"})
+                                                .GetAwaiter();
+
+                                            asyncLogging.Enqueue(
+                                                $"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
+
+                                            waitEvent.Set();
+                                        }
+                                    }
+
+                                    break;
+
+                                case "Page.loadEventFired":
+                                    waitEvent.Set();
+                                    break;
+                            }
+
+                            break;
+                        }
                     }
                 }
+
+                _pageConnection.MessageReceived += async (sender, data) => await MessageReceived(data);
+
+                // Enable Fetch when we want to blacklist certain URL's
+                if (urlBlacklist?.Count > 0)
+                {
+                    Logger.WriteToLog("Enabling Fetch to block url's that are in the url blacklist'");
+                    _pageConnection.SendAsync(new Message {Method = "Fetch.enable"}).GetAwaiter();
+                }
+
+                _pageConnection.SendAsync(new Message {Method = "Page.enable"}).GetAwaiter();
+
+                var lifecycleEventEnabledMessage = new Message {Method = "Page.setLifecycleEventsEnabled"};
+                lifecycleEventEnabledMessage.AddParameter("enabled", true);
+                _pageConnection.SendAsync(lifecycleEventEnabledMessage).GetAwaiter();
+
+                _pageConnection.Closed += (sender, args) => waitEvent.Set();
+
+                var pageNavigateMessage = new Message {Method = "Page.navigate"};
+                pageNavigateMessage.AddParameter("url", uri.ToString());
+
+                var pageNavigateResponse =
+                    PageNavigateResponse.FromJson(_pageConnection.SendAsync(pageNavigateMessage).GetAwaiter()
+                        .GetResult());
+                if (!string.IsNullOrWhiteSpace(pageNavigateResponse.Result.ErrorText))
+                {
+                    var message =
+                        $"{pageNavigateResponse.Result.ErrorText} occured when navigating to the page '{uri}'";
+                    Logger.WriteToLog(message);
+                    throw new ChromeNavigationException(message);
+                }
+
+                if (countdownTimer != null)
+                {
+                    waitEvent.WaitOne(countdownTimer.MillisecondsLeft);
+                    if (countdownTimer.MillisecondsLeft == 0)
+                        throw new ConversionTimedOutException($"The {nameof(NavigateTo)} method timed out");
+                }
+                else
+                    waitEvent.WaitOne();
+
+                if (mediaLoadTimeoutTask != null)
+                {
+                    mediaLoadTimeoutCancellationTokenSource.Cancel();
+                    mediaLoadTimeoutCancellationTokenSource.Dispose();
+                    mediaLoadTimeoutTask?.Dispose();
+                }
+
+                while (asyncLogging.TryDequeue(out var message))
+                    Logger.WriteToLog(message);
+
+                // ReSharper disable once EventUnsubscriptionViaAnonymousDelegate
+                _pageConnection.MessageReceived -= async (sender, data) => await MessageReceived(data);
+
+                // Disable Fetch again if it was enabled
+                if (urlBlacklist?.Count > 0)
+                    _pageConnection.SendAsync(new Message {Method = "Fetch.disable"}).GetAwaiter();
+
+                _pageConnection.SendAsync(new Message {Method = "Page.disable"}).GetAwaiter();
+
+                var lifecycleEventDisableddMessage = new Message {Method = "Page.setLifecycleEventsEnabled"};
+                lifecycleEventDisableddMessage.AddParameter("enabled", false);
+                _pageConnection.SendAsync(lifecycleEventDisableddMessage).GetAwaiter();
             }
-
-            _pageConnection.MessageReceived += async (sender, data) => await MessageReceived(data);
-
-            // Enable Fetch when we want to blacklist certain URL's
-            if (urlBlacklist?.Count > 0)
-            {
-                Logger.WriteToLog("Enabling Fetch to block url's that are in the url blacklist'");
-                _pageConnection.SendAsync(new Message {Method = "Fetch.enable"}).GetAwaiter();
-            }
-
-            _pageConnection.SendAsync(new Message { Method = "Page.enable" }).GetAwaiter();
-
-            var lifecycleEventEnabledMessage = new Message { Method = "Page.setLifecycleEventsEnabled" };
-            lifecycleEventEnabledMessage.AddParameter("enabled", true);
-            _pageConnection.SendAsync(lifecycleEventEnabledMessage).GetAwaiter();
-
-            _pageConnection.Closed += (sender, args) => waitEvent.Set();
-
-            var pageNavigateMessage = new Message {Method = "Page.navigate"};
-            pageNavigateMessage.AddParameter("url", uri.ToString());
-
-            var pageNavigateResponse = PageNavigateResponse.FromJson(_pageConnection.SendAsync(pageNavigateMessage).GetAwaiter().GetResult());
-            if (!string.IsNullOrWhiteSpace(pageNavigateResponse.Result.ErrorText))
-            {
-                var message = $"{pageNavigateResponse.Result.ErrorText} occured when navigating to the page '{uri}'";
-                Logger.WriteToLog(message);
-                throw new ChromeNavigationException(message);
-            }
-
-            if (countdownTimer != null)
-            {
-                waitEvent.WaitOne(countdownTimer.MillisecondsLeft);
-                if (countdownTimer.MillisecondsLeft == 0)
-                    throw new ConversionTimedOutException($"The {nameof(NavigateTo)} method timed out");
-            }
-            else
-                waitEvent.WaitOne();
-
-            if (mediaLoadTimeoutTask != null)
-                mediaLoadTimeoutCancellationTokenSource.Cancel();
-
-            while (asyncLogging.TryDequeue(out var message))
-                Logger.WriteToLog(message);
-
-            // ReSharper disable once EventUnsubscriptionViaAnonymousDelegate
-            _pageConnection.MessageReceived -= async (sender, data) => await MessageReceived(data);
-
-            // Disable Fetch again if it was enabled
-            if (urlBlacklist?.Count > 0)
-                _pageConnection.SendAsync(new Message {Method = "Fetch.disable"}).GetAwaiter();
-
-            _pageConnection.SendAsync(new Message {Method = "Page.disable"}).GetAwaiter();
-
-            var lifecycleEventDisableddMessage = new Message { Method = "Page.setLifecycleEventsEnabled" };
-            lifecycleEventDisableddMessage.AddParameter("enabled", false);
-            _pageConnection.SendAsync(lifecycleEventDisableddMessage).GetAwaiter();
         }
         #endregion
 

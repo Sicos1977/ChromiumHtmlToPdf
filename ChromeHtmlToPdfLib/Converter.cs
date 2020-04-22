@@ -1191,23 +1191,25 @@ namespace ChromeHtmlToPdfLib
         {
             if (processId == 0) return;
 
-            var managedObjects = new ManagementObjectSearcher($"Select * From Win32_Process Where ParentProcessID={processId}").Get();
+            using (var managedObjects =
+                new ManagementObjectSearcher($"Select * From Win32_Process Where ParentProcessID={processId}").Get())
+            {
+                if (managedObjects.Count > 0)
+                {
+                    foreach (var managedObject in managedObjects)
+                        KillProcessAndChildren(Convert.ToInt32(managedObject["ProcessID"]));
+                }
 
-            if (managedObjects.Count > 0)
-            {
-                foreach (var managedObject in managedObjects)
-                    KillProcessAndChildren(Convert.ToInt32(managedObject["ProcessID"]));
-            }
-
-            try
-            {
-                var process = Process.GetProcessById(processId);
-                process.Kill();
-            }
-            catch (Exception exception)
-            {
-                if (!exception.Message.Contains("is not running"))
-                    Logger.WriteToLog(exception.Message);
+                try
+                {
+                    var process = Process.GetProcessById(processId);
+                    process.Kill();
+                }
+                catch (Exception exception)
+                {
+                    if (!exception.Message.Contains("is not running"))
+                        Logger.WriteToLog(exception.Message);
+                }
             }
         }
         #endregion
@@ -1238,6 +1240,7 @@ namespace ChromeHtmlToPdfLib
             KillProcessAndChildren(_chromeProcess.Id);
             Logger.WriteToLog("Chrome stopped");
 
+            _chromeWaitEvent?.Dispose();
             _chromeProcess = null;
         }
         #endregion
