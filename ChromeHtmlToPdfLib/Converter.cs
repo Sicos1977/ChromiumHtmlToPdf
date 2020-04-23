@@ -469,9 +469,13 @@ namespace ChromeHtmlToPdfLib
             _chromeProcess.BeginOutputReadLine();
 
             if (_conversionTimeout.HasValue)
-                _chromeWaitEvent?.WaitOne(_conversionTimeout.Value);
-            else
-                _chromeWaitEvent?.WaitOne();
+            {
+                if (!_chromeWaitEvent.WaitOne(_conversionTimeout.Value))
+                    throw new ChromeException(
+                        $"A timeout of '{_conversionTimeout.Value}' milliseconds exceeded, could not make a connection to the Chrome dev tools");
+            }
+
+            _chromeWaitEvent.WaitOne();
 
             if (_chromeEventException != null)
             {
@@ -491,7 +495,6 @@ namespace ChromeHtmlToPdfLib
         {
             try
             {
-                // ReSharper disable once AccessToModifiedClosure
                 if (_chromeProcess == null) return;
                 Logger.WriteToLog("Chrome exited unexpectedly, arguments used: " + string.Join(" ", DefaultArguments));
                 Logger.WriteToLog("Process id: " + _chromeProcess.Id);
@@ -505,7 +508,7 @@ namespace ChromeHtmlToPdfLib
                 _chromeEventException = exception;
                 if (_chromeProcess != null) 
                     _chromeProcess.Exited -= _chromeProcess_Exited;
-                _chromeWaitEvent?.Set();
+                _chromeWaitEvent.Set();
             }
         }
 
@@ -520,14 +523,17 @@ namespace ChromeHtmlToPdfLib
             {
                 if (args.Data == null) return;
 
+                Logger.WriteToLog($"Error data received from Chrome: {args.Data}");
+
                 if (args.Data.StartsWith("DevTools listening on"))
                 {
                     // ReSharper disable once CommentTypo
                     // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
                     var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
+                    Logger.WriteToLog($"Connecting to dev protocol on uri '{uri}'");
                     _browser = new Browser(uri);
-                    Logger.WriteToLog($"Connected to dev protocol on uri '{uri}'");
-                    _chromeWaitEvent?.Set();
+                    Logger.WriteToLog("Connected");
+                    _chromeWaitEvent.Set();
                 }
                 else if (!string.IsNullOrWhiteSpace(args.Data))
                     Logger.WriteToLog($"Error: {args.Data}");
@@ -536,7 +542,7 @@ namespace ChromeHtmlToPdfLib
             {
                 _chromeEventException = exception;
                 _chromeProcess.ErrorDataReceived -= _chromeProcess_ErrorDataReceived;
-                _chromeWaitEvent?.Set();
+                _chromeWaitEvent.Set();
             }
         }
 
@@ -556,7 +562,7 @@ namespace ChromeHtmlToPdfLib
             {
                 _chromeEventException = exception;
                 _chromeProcess.OutputDataReceived -= _chromeProcess_OutputDataReceived;
-                _chromeWaitEvent?.Set();
+                _chromeWaitEvent.Set();
             }
         }
         #endregion

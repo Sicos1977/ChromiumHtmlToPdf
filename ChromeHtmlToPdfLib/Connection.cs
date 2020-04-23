@@ -134,8 +134,10 @@ namespace ChromeHtmlToPdfLib
         private void CheckForError(string message)
         {
             var error = Error.FromJson(message);
+
             // ReSharper disable once CompareOfFloatsByEqualityOperator
-            if (error.InnerError != null && error.InnerError.Code != 0)
+            if (error.InnerError != null && error.InnerError.Code != 0 &&
+                !string.IsNullOrEmpty(error.InnerError.Message))
                 throw new ChromeException(error.InnerError.Message);
         }
         #endregion

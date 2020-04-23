@@ -131,12 +131,12 @@ namespace ChromeHtmlToPdfLib
             List<string> urlBlacklist = null)
         {
             var waitEvent = new ManualResetEvent(false);
-            Task mediaLoadTimeoutTask = null;
             var mediaLoadTimeoutCancellationTokenSource = new CancellationTokenSource();
             var asyncLogging = new ConcurrentQueue<string>();
             var absoluteUri = uri.AbsoluteUri.Substring(0, uri.AbsoluteUri.LastIndexOf('/') + 1);
             var navigationError = string.Empty;
             var waitforNetworkIdle = false;
+            var mediaTimeoutTaskSet = false;
 
             var messageHandler = new EventHandler<string>(delegate(object sender, string data)
             {
@@ -186,33 +186,34 @@ namespace ChromeHtmlToPdfLib
                             // waiting for stylesheets, images, and sub frames to finish loading (the load event can be used to
                             // detect a fully-loaded page).
                             case "Page.lifecycleEvent" when page.Params?.Name == "DOMContentLoaded":
-                                if (mediaLoadTimeout.HasValue && mediaLoadTimeoutTask == null)
+                                if (mediaLoadTimeout.HasValue && !mediaTimeoutTaskSet)
                                 {
-                                    mediaLoadTimeoutTask = Task.Delay(mediaLoadTimeout.Value,
-                                        mediaLoadTimeoutCancellationTokenSource.Token);
-
                                     try
                                     {
                                         Task.Run(async delegate
                                         {
-                                            await Task.Delay(mediaLoadTimeout.Value);
+                                            await Task.Delay(mediaLoadTimeout.Value, mediaLoadTimeoutCancellationTokenSource.Token);
                                             asyncLogging.Enqueue($"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
                                             waitEvent?.Set();
                                         }, mediaLoadTimeoutCancellationTokenSource.Token);
+
+                                        mediaTimeoutTaskSet = true;
                                     }
-                                    catch(Exception exception)
+                                    catch 
                                     {
-                                        Console.WriteLine(exception.Message);
+                                        // Ignore
                                     }
                                 }
 
                                 break;
 
                             case "Page.frameNavigated":
+                                asyncLogging.Enqueue("The 'Page.frameNavigated' event has been fired, waiting for the 'Page.lifecycleEvent' with name 'networkIdle'");
                                 waitforNetworkIdle = true;
                                 break;
 
                             case "Page.lifecycleEvent" when page.Params?.Name == "networkIdle" && waitforNetworkIdle:
+                                asyncLogging.Enqueue("The 'Page.lifecycleEvent' event with name 'networkIdle' has been fired, the page is now fully loaded");
                                 waitEvent?.Set();
                                 break;
 
@@ -267,11 +268,10 @@ namespace ChromeHtmlToPdfLib
 
             _pageConnection.MessageReceived -= messageHandler;
 
-            if (mediaLoadTimeoutTask != null)
+            if (mediaTimeoutTaskSet)
             {
                 mediaLoadTimeoutCancellationTokenSource.Cancel();
                 mediaLoadTimeoutCancellationTokenSource.Dispose();
-                mediaLoadTimeoutTask?.Dispose();
             }
 
             while (asyncLogging.TryDequeue(out var message))
