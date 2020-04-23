@@ -121,13 +121,11 @@ namespace ChromeHtmlToPdf
                         }
 
                         // Write conversion information to output file
-                        using (var output = File.OpenWrite(options.Output))
+                        using var output = File.OpenWrite(options.Output);
+                        foreach (var itemConverted in _itemsConverted)
                         {
-                            foreach (var itemConverted in _itemsConverted)
-                            {
-                                var bytes = new UTF8Encoding(true).GetBytes(itemConverted.OutputLine);
-                                output.Write(bytes, 0, bytes.Length);
-                            }
+                            var bytes = new UTF8Encoding(true).GetBytes(itemConverted.OutputLine);
+                            output.Write(bytes, 0, bytes.Length);
                         }
                     }
                     else
@@ -306,7 +304,7 @@ namespace ChromeHtmlToPdf
 
             if (!string.IsNullOrWhiteSpace(options.UrlBlacklist))
             {
-                var urlBlacklist = options.UrlBlacklist.Split(';').ToList();
+                var urlBlacklist = options.UrlBlacklist.Split(';', StringSplitOptions.RemoveEmptyEntries).ToList();
                 converter.SetUrlBlacklist(urlBlacklist);
             }
 
@@ -333,17 +331,15 @@ namespace ChromeHtmlToPdf
         {
             var pageSettings = GetPageSettings(options);
 
-            using (var converter = new Converter(options.ChromeLocation, options.ChromeUserProfile, _logStream))
-            {
-                SetConverterSettings(converter, options);
-                converter.ConvertToPdf(CheckInput(options),
-                    options.Output,
-                    pageSettings,
-                    options.WaitForWindowStatus,
-                    options.WaitForWindowStatusTimeOut,
-                    options.Timeout,
-                    options.MediaLoadTimeout);
-            }
+            using var converter = new Converter(options.ChromeLocation, options.ChromeUserProfile, _logStream);
+            SetConverterSettings(converter, options);
+            converter.ConvertToPdf(CheckInput(options),
+                options.Output,
+                pageSettings,
+                options.WaitForWindowStatus,
+                options.WaitForWindowStatusTimeOut,
+                options.Timeout,
+                options.MediaLoadTimeout);
         }
         #endregion
 
@@ -389,9 +385,11 @@ namespace ChromeHtmlToPdf
                 : File.OpenWrite(ReplaceWildCards(options.LogFile));
 
             using (logStream)
-            using (var converter = new Converter(options.ChromeLocation, options.ChromeUserProfile, logStream))
             {
-                converter.InstanceId = instanceId;
+                using var converter = new Converter(options.ChromeLocation, options.ChromeUserProfile, logStream)
+                {
+                    InstanceId = instanceId
+                };
 
                 SetConverterSettings(converter, options);
 
