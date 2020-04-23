@@ -76,14 +76,9 @@ namespace ChromeHtmlToPdfLib
             message.Parameters.Add("url", "about:blank");
 
             var result = _browserConnection.SendAsync(message).Result;
-
             var page = Page.FromJson(result);
-            
-            // ReSharper disable CommentTypo
-            // ws://localhost:9222/devtools/page/BA386DE8075EB19DDCE459B4B623FBE7
-            // ws://127.0.0.1:50841/devtools/browser/9a919bf0-b243-479d-8396-ede653356e12
             var pageUrl = $"{browser.Scheme}://{browser.Host}:{browser.Port}/devtools/page/{page.Result.TargetId}";
-            // ReSharper restore CommentTypo
+
             _pageConnection = new Connection(pageUrl);
         }
         #endregion
@@ -221,7 +216,6 @@ namespace ChromeHtmlToPdfLib
                                     break;
 
                                 case "Page.loadEventFired":
-                                    asyncLogging.Enqueue("Page fully loaded");
                                     waitEvent.Set();
                                     break;
 
