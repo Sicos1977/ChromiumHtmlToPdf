@@ -128,8 +128,8 @@ namespace ChromeHtmlToPdfLib
         /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
         /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer"/> reaches zero</exception>
         public void NavigateTo(
-            Uri uri, 
-            CountdownTimer countdownTimer = null, 
+            Uri uri,
+            CountdownTimer countdownTimer = null,
             int? mediaLoadTimeout = null,
             List<string> urlBlacklist = null)
         {
@@ -139,7 +139,9 @@ namespace ChromeHtmlToPdfLib
                 var mediaLoadTimeoutCancellationTokenSource = new CancellationTokenSource();
                 var asyncLogging = new ConcurrentQueue<string>();
                 var absoluteUri = uri.AbsoluteUri.Substring(0, uri.AbsoluteUri.LastIndexOf('/') + 1);
+                var navigationError = string.Empty;
 
+                // ReSharper disable AccessToDisposedClosure
                 async Task MessageReceived(string data)
                 {
                     //System.IO.File.AppendAllText("d:\\logs.txt", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + data + Environment.NewLine);
@@ -168,6 +170,7 @@ namespace ChromeHtmlToPdfLib
 
                                 var fetchFail = new Message {Method = "Fetch.failRequest"};
                                 fetchFail.Parameters.Add("requestId", requestId);
+
                                 // Failed, Aborted, TimedOut, AccessDenied, ConnectionClosed, ConnectionReset, ConnectionRefused,
                                 // ConnectionAborted, ConnectionFailed, NameNotResolved, InternetDisconnected, AddressUnreachable,
                                 // BlockedByClient, BlockedByResponse
@@ -218,7 +221,18 @@ namespace ChromeHtmlToPdfLib
                                     break;
 
                                 case "Page.loadEventFired":
+                                    asyncLogging.Enqueue("Page fully loaded");
                                     waitEvent.Set();
+                                    break;
+
+                                default:
+                                    var pageNavigateResponse = PageNavigateResponse.FromJson(data);
+                                    if (!string.IsNullOrEmpty(pageNavigateResponse.Result?.ErrorText))
+                                    {
+                                        navigationError = $"{pageNavigateResponse.Result.ErrorText} occured when navigating to the page '{uri}'";
+                                        waitEvent.Set();
+                                    }
+
                                     break;
                             }
 
@@ -228,6 +242,8 @@ namespace ChromeHtmlToPdfLib
                 }
 
                 _pageConnection.MessageReceived += async (sender, data) => await MessageReceived(data);
+                _pageConnection.Closed += (sender, args) => waitEvent.Set();
+                // ReSharper restore AccessToDisposedClosure
 
                 // Enable Fetch when we want to blacklist certain URL's
                 if (urlBlacklist?.Count > 0)
@@ -242,21 +258,10 @@ namespace ChromeHtmlToPdfLib
                 lifecycleEventEnabledMessage.AddParameter("enabled", true);
                 _pageConnection.SendAsync(lifecycleEventEnabledMessage).GetAwaiter();
 
-                _pageConnection.Closed += (sender, args) => waitEvent.Set();
-
                 var pageNavigateMessage = new Message {Method = "Page.navigate"};
                 pageNavigateMessage.AddParameter("url", uri.ToString());
 
-                var pageNavigateResponse =
-                    PageNavigateResponse.FromJson(_pageConnection.SendAsync(pageNavigateMessage).GetAwaiter()
-                        .GetResult());
-                if (!string.IsNullOrWhiteSpace(pageNavigateResponse.Result.ErrorText))
-                {
-                    var message =
-                        $"{pageNavigateResponse.Result.ErrorText} occured when navigating to the page '{uri}'";
-                    Logger.WriteToLog(message);
-                    throw new ChromeNavigationException(message);
-                }
+                _pageConnection.SendAsync(pageNavigateMessage).GetAwaiter();
 
                 if (countdownTimer != null)
                 {
@@ -265,7 +270,12 @@ namespace ChromeHtmlToPdfLib
                         throw new ConversionTimedOutException($"The {nameof(NavigateTo)} method timed out");
                 }
                 else
+                {
                     waitEvent.WaitOne();
+                }
+
+                // ReSharper disable once EventUnsubscriptionViaAnonymousDelegate
+                _pageConnection.MessageReceived -= async (sender, data) => await MessageReceived(data);
 
                 if (mediaLoadTimeoutTask != null)
                 {
@@ -277,9 +287,6 @@ namespace ChromeHtmlToPdfLib
                 while (asyncLogging.TryDequeue(out var message))
                     Logger.WriteToLog(message);
 
-                // ReSharper disable once EventUnsubscriptionViaAnonymousDelegate
-                _pageConnection.MessageReceived -= async (sender, data) => await MessageReceived(data);
-
                 // Disable Fetch again if it was enabled
                 if (urlBlacklist?.Count > 0)
                     _pageConnection.SendAsync(new Message {Method = "Fetch.disable"}).GetAwaiter();
@@ -289,6 +296,12 @@ namespace ChromeHtmlToPdfLib
                 var lifecycleEventDisableddMessage = new Message {Method = "Page.setLifecycleEventsEnabled"};
                 lifecycleEventDisableddMessage.AddParameter("enabled", false);
                 _pageConnection.SendAsync(lifecycleEventDisableddMessage).GetAwaiter();
+
+                if (!string.IsNullOrEmpty(navigationError))
+                {
+                    Logger.WriteToLog(navigationError);
+                    throw new ChromeNavigationException(navigationError);
+                }
             }
         }
         #endregion

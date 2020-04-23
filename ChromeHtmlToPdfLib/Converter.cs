@@ -469,9 +469,9 @@ namespace ChromeHtmlToPdfLib
             _chromeProcess.BeginOutputReadLine();
 
             if (_conversionTimeout.HasValue)
-                _chromeWaitEvent.WaitOne(_conversionTimeout.Value);
+                _chromeWaitEvent?.WaitOne(_conversionTimeout.Value);
             else
-                _chromeWaitEvent.WaitOne();
+                _chromeWaitEvent?.WaitOne();
 
             if (_chromeEventException != null)
             {
@@ -496,8 +496,7 @@ namespace ChromeHtmlToPdfLib
                 Logger.WriteToLog("Chrome exited unexpectedly, arguments used: " + string.Join(" ", DefaultArguments));
                 Logger.WriteToLog("Process id: " + _chromeProcess.Id);
                 Logger.WriteToLog("Process exit time: " + _chromeProcess.ExitTime.ToString("yyyy-MM-ddTHH:mm:ss.fff"));
-                var exception =
-                    ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromeProcess.ExitCode));
+                var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromeProcess.ExitCode));
                 Logger.WriteToLog("Exception: " + exception);
                 throw new ChromeException("Chrome exited unexpectedly, " + exception);
             }
@@ -506,7 +505,7 @@ namespace ChromeHtmlToPdfLib
                 _chromeEventException = exception;
                 if (_chromeProcess != null) 
                     _chromeProcess.Exited -= _chromeProcess_Exited;
-                _chromeWaitEvent.Set();
+                _chromeWaitEvent?.Set();
             }
         }
 
@@ -528,7 +527,7 @@ namespace ChromeHtmlToPdfLib
                     var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
                     _browser = new Browser(uri);
                     Logger.WriteToLog($"Connected to dev protocol on uri '{uri}'");
-                    _chromeWaitEvent.Set();
+                    _chromeWaitEvent?.Set();
                 }
                 else if (!string.IsNullOrWhiteSpace(args.Data))
                     Logger.WriteToLog($"Error: {args.Data}");
@@ -537,7 +536,7 @@ namespace ChromeHtmlToPdfLib
             {
                 _chromeEventException = exception;
                 _chromeProcess.ErrorDataReceived -= _chromeProcess_ErrorDataReceived;
-                _chromeWaitEvent.Set();
+                _chromeWaitEvent?.Set();
             }
         }
 
@@ -557,7 +556,7 @@ namespace ChromeHtmlToPdfLib
             {
                 _chromeEventException = exception;
                 _chromeProcess.OutputDataReceived -= _chromeProcess_OutputDataReceived;
-                _chromeWaitEvent.Set();
+                _chromeWaitEvent?.Set();
             }
         }
         #endregion
@@ -1191,8 +1190,7 @@ namespace ChromeHtmlToPdfLib
         {
             if (processId == 0) return;
 
-            using (var managedObjects =
-                new ManagementObjectSearcher($"Select * From Win32_Process Where ParentProcessID={processId}").Get())
+            using (var managedObjects = new ManagementObjectSearcher($"Select * From Win32_Process Where ParentProcessID={processId}").Get())
             {
                 if (managedObjects.Count > 0)
                 {
@@ -1241,6 +1239,7 @@ namespace ChromeHtmlToPdfLib
             Logger.WriteToLog("Chrome stopped");
 
             _chromeWaitEvent?.Dispose();
+            _chromeWaitEvent = null;
             _chromeProcess = null;
         }
         #endregion
