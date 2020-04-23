@@ -1051,7 +1051,14 @@ namespace ChromeHtmlToPdfLib
                     if (CurrentTempDirectory.Exists && !DoNotDeleteTempDirectory)
                     {
                         Logger.WriteToLog($"Deleting temporary folder '{CurrentTempDirectory.FullName}'");
-                        CurrentTempDirectory.Delete(true);
+                        try
+                        {
+                            CurrentTempDirectory.Delete(true);
+                        }
+                        catch (Exception e)
+                        {
+                            Logger.WriteToLog($"Error '{ExceptionHelpers.GetInnerException(e)}'");
+                        }
                     }
                 }
             }

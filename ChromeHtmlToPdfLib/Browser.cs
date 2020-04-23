@@ -35,6 +35,8 @@ using ChromeHtmlToPdfLib.Exceptions;
 using ChromeHtmlToPdfLib.Helpers;
 using ChromeHtmlToPdfLib.Protocol;
 using ChromeHtmlToPdfLib.Settings;
+// ReSharper disable AccessToDisposedClosure
+// ReSharper disable AccessToModifiedClosure
 
 namespace ChromeHtmlToPdfLib
 {
@@ -134,10 +136,9 @@ namespace ChromeHtmlToPdfLib
             var asyncLogging = new ConcurrentQueue<string>();
             var absoluteUri = uri.AbsoluteUri.Substring(0, uri.AbsoluteUri.LastIndexOf('/') + 1);
             var navigationError = string.Empty;
+            var waitforNetworkIdle = false;
 
-            // ReSharper disable AccessToModifiedClosure
-            // ReSharper disable AccessToDisposedClosure
-            async Task MessageReceived(string data)
+            var messageHandler = new EventHandler<string>(delegate(object sender, string data)
             {
                 //System.IO.File.AppendAllText("d:\\logs.txt", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + data + Environment.NewLine);
                 var message = Message.FromJson(data);
@@ -160,8 +161,7 @@ namespace ChromeHtmlToPdfLib
                         }
                         else
                         {
-                            asyncLogging.Enqueue(
-                                $"The url '{url}' has been blocked by url blacklist pattern '{matchedPattern}'");
+                            asyncLogging.Enqueue($"The url '{url}' has been blocked by url blacklist pattern '{matchedPattern}'");
 
                             var fetchFail = new Message {Method = "Fetch.failRequest"};
                             fetchFail.Parameters.Add("requestId", requestId);
@@ -193,35 +193,33 @@ namespace ChromeHtmlToPdfLib
 
                                     try
                                     {
-                                        // ReSharper disable once PossibleNullReferenceException
-                                        await mediaLoadTimeoutTask;
+                                        Task.Run(async delegate
+                                        {
+                                            await Task.Delay(mediaLoadTimeout.Value);
+                                            asyncLogging.Enqueue($"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
+                                            waitEvent?.Set();
+                                        }, mediaLoadTimeoutCancellationTokenSource.Token);
                                     }
-                                    catch
+                                    catch(Exception exception)
                                     {
-                                        // Ignore
-                                    }
-
-                                    if (!mediaLoadTimeoutCancellationTokenSource.IsCancellationRequested)
-                                    {
-                                        _pageConnection.SendAsync(new Message {Method = "Page.stopLoading"})
-                                            .GetAwaiter();
-
-                                        asyncLogging.Enqueue(
-                                            $"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
-
-                                        waitEvent?.Set();
+                                        Console.WriteLine(exception.Message);
                                     }
                                 }
 
                                 break;
 
-                            case "Page.loadEventFired":
+                            case "Page.frameNavigated":
+                                waitforNetworkIdle = true;
+                                break;
+
+                            case "Page.lifecycleEvent" when page.Params?.Name == "networkIdle" && waitforNetworkIdle:
                                 waitEvent?.Set();
                                 break;
 
                             default:
                                 var pageNavigateResponse = PageNavigateResponse.FromJson(data);
-                                if (!string.IsNullOrEmpty(pageNavigateResponse.Result?.ErrorText) && !pageNavigateResponse.Result.ErrorText.Contains("net::ERR_BLOCKED_BY_CLIENT"))
+                                if (!string.IsNullOrEmpty(pageNavigateResponse.Result?.ErrorText) &&
+                                    !pageNavigateResponse.Result.ErrorText.Contains("net::ERR_BLOCKED_BY_CLIENT"))
                                 {
                                     navigationError = $"{pageNavigateResponse.Result.ErrorText} occured when navigating to the page '{uri}'";
                                     waitEvent?.Set();
@@ -233,12 +231,10 @@ namespace ChromeHtmlToPdfLib
                         break;
                     }
                 }
-            }
+            });
 
-            _pageConnection.MessageReceived += async (sender, data) => await MessageReceived(data);
+            _pageConnection.MessageReceived += messageHandler;
             _pageConnection.Closed += (sender, args) => waitEvent?.Set();
-            // ReSharper restore AccessToDisposedClosure
-            // ReSharper restore AccessToModifiedClosure
 
             // Enable Fetch when we want to blacklist certain URL's
             if (urlBlacklist?.Count > 0)
@@ -269,8 +265,7 @@ namespace ChromeHtmlToPdfLib
                 waitEvent.WaitOne();
             }
 
-            // ReSharper disable once EventUnsubscriptionViaAnonymousDelegate
-            _pageConnection.MessageReceived -= async (sender, data) => await MessageReceived(data);
+            _pageConnection.MessageReceived -= messageHandler;
 
             if (mediaLoadTimeoutTask != null)
             {
@@ -282,15 +277,15 @@ namespace ChromeHtmlToPdfLib
             while (asyncLogging.TryDequeue(out var message))
                 Logger.WriteToLog(message);
 
+            var lifecycleEventDisableddMessage = new Message {Method = "Page.setLifecycleEventsEnabled"};
+            lifecycleEventDisableddMessage.AddParameter("enabled", false);
+
+            _pageConnection.SendAsync(lifecycleEventDisableddMessage).GetAwaiter();
+            _pageConnection.SendAsync(new Message {Method = "Page.disable"}).GetAwaiter();
+
             // Disable Fetch again if it was enabled
             if (urlBlacklist?.Count > 0)
                 _pageConnection.SendAsync(new Message {Method = "Fetch.disable"}).GetAwaiter();
-
-            _pageConnection.SendAsync(new Message {Method = "Page.disable"}).GetAwaiter();
-
-            var lifecycleEventDisableddMessage = new Message {Method = "Page.setLifecycleEventsEnabled"};
-            lifecycleEventDisableddMessage.AddParameter("enabled", false);
-            _pageConnection.SendAsync(lifecycleEventDisableddMessage).GetAwaiter();
 
             waitEvent.Dispose();
             waitEvent = null;

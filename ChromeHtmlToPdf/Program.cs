@@ -333,13 +333,18 @@ namespace ChromeHtmlToPdf
 
             using var converter = new Converter(options.ChromeLocation, options.ChromeUserProfile, _logStream);
             SetConverterSettings(converter, options);
-            converter.ConvertToPdf(CheckInput(options),
-                options.Output,
-                pageSettings,
-                options.WaitForWindowStatus,
-                options.WaitForWindowStatusTimeOut,
-                options.Timeout,
-                options.MediaLoadTimeout);
+
+            for (var i = 1; i < 100; i++)
+            {
+                WriteToLog($"Run {i}");
+                converter.ConvertToPdf(CheckInput(options),
+                    $"d:\\test{i:00}.pdf",
+                    pageSettings,
+                    options.WaitForWindowStatus,
+                    options.WaitForWindowStatusTimeOut,
+                    options.Timeout,
+                    options.MediaLoadTimeout);
+            }
         }
         #endregion
 

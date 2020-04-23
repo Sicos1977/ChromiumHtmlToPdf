@@ -2,7 +2,7 @@
   "profiles": {
     "ChromeHtmlToPdf": {
       "commandName": "Project",
-      "commandLineArgs": "--input \"d:\\test.txt\" --output d:\\test.pdf --media-load-timeout 5000 --url-blacklist \"*.google.com;*foo.com\""
+      "commandLineArgs": "--input \"d:\\R213064649 _ ASR_ 7542096301-1 [Sotgiu].htm\" --output d:\\test.pdf --media-load-timeout 5000 --url-blacklist \"*.google.com;*foo.com\""
     }
   }
 }
