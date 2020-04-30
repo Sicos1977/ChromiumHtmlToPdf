@@ -29,6 +29,9 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Web;
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
 
 namespace ChromeHtmlToPdfLib.Helpers
 {
@@ -39,12 +42,25 @@ namespace ChromeHtmlToPdfLib.Helpers
     {
         #region Fields
         /// <summary>
+        ///     When set then logging is written to this stream
+        /// </summary>
+        private readonly Stream _logStream;
+
+        /// <summary>
         ///     The temp folder
         /// </summary>
         private readonly DirectoryInfo _tempDirectory;
         #endregion
 
         #region Properties
+        /// <summary>
+        ///     An unique id that can be used to identify the logging of the converter when
+        ///     calling the code from multiple threads and writing all the logging to the same file
+        /// </summary>
+        // ReSharper disable once UnusedAutoPropertyAccessor.Global
+        // ReSharper disable once MemberCanBePrivate.Global
+        public string InstanceId { get; set; }
+
         /// <summary>
         ///     When set then this option will be used for white space wrapping
         /// </summary>
@@ -90,9 +106,11 @@ namespace ChromeHtmlToPdfLib.Helpers
         ///     Makes this object and sets its needed properties
         /// </summary>
         /// <param name="tempDirectory">When set then this directory will be used for temporary files</param>
-        public PreWrapper(DirectoryInfo tempDirectory = null)
+        /// <param name="logStream"></param>
+        public PreWrapper(DirectoryInfo tempDirectory, Stream logStream)
         {
             _tempDirectory = tempDirectory;
+            _logStream = logStream;
         }
         #endregion
 
@@ -109,14 +127,14 @@ namespace ChromeHtmlToPdfLib.Helpers
             var title = WebUtility.HtmlEncode(temp);
             var tempFile = GetTempFile;
             
-            Logger.WriteToLog($"Reading text file '{inputFile}'");
+            WriteToLog($"Reading text file '{inputFile}'");
 
             if (encoding == null)
             {
                 Ude.CharsetDetector charsetDetector = new Ude.CharsetDetector();
                 using (var fileStream = File.OpenRead(inputFile))
                 {
-                    Logger.WriteToLog("Trying to detect encoding");
+                    WriteToLog("Trying to detect encoding");
                     charsetDetector.Feed(fileStream);
                     charsetDetector.DataEnd();
                     if (charsetDetector.Charset != null)
@@ -141,7 +159,7 @@ namespace ChromeHtmlToPdfLib.Helpers
 
             var streamReader = new StreamReader(inputFile, encoding);
 
-            Logger.WriteToLog($"File is '{streamReader.CurrentEncoding.WebName}' encoded");
+            WriteToLog($"File is '{streamReader.CurrentEncoding.WebName}' encoded");
 
             var writeEncoding = new UnicodeEncoding(!BitConverter.IsLittleEndian, true);
 
@@ -179,9 +197,33 @@ namespace ChromeHtmlToPdfLib.Helpers
                 writer.WriteLine("</html>");
             }
 
-            Logger.WriteToLog($"File pre wrapped and written to temporary file '{tempFile}'");
+            WriteToLog($"File pre wrapped and written to temporary file '{tempFile}'");
 
             return tempFile;
+        }
+        #endregion
+
+        #region WriteToLog
+        /// <summary>
+        ///     Writes a line and linefeed to the <see cref="_logStream" />
+        /// </summary>
+        /// <param name="message">The message to write</param>
+        private void WriteToLog(string message)
+        {
+            try
+            {
+                if (_logStream == null || !_logStream.CanWrite) return;
+                var line = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") +
+                           (InstanceId != null ? " - " + InstanceId : string.Empty) + " - " +
+                           message + Environment.NewLine;
+                var bytes = Encoding.UTF8.GetBytes(line);
+                _logStream.Write(bytes, 0, bytes.Length);
+                _logStream.Flush();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Ignore
+            }
         }
         #endregion
     }

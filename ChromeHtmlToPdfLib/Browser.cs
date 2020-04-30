@@ -25,9 +25,10 @@
 //
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -35,6 +36,9 @@ using ChromeHtmlToPdfLib.Exceptions;
 using ChromeHtmlToPdfLib.Helpers;
 using ChromeHtmlToPdfLib.Protocol;
 using ChromeHtmlToPdfLib.Settings;
+// ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+
 // ReSharper disable AccessToDisposedClosure
 // ReSharper disable AccessToModifiedClosure
 
@@ -50,6 +54,16 @@ namespace ChromeHtmlToPdfLib
     {
         #region Fields
         /// <summary>
+        ///     Used to make the logging thread safe
+        /// </summary>
+        private readonly object _lock = new object();
+
+        /// <summary>
+        ///     When set then logging is written to this stream
+        /// </summary>
+        private readonly Stream _logStream;
+
+        /// <summary>
         ///     A connection to the browser (Chrome)
         /// </summary>
         private readonly Connection _browserConnection;
@@ -60,13 +74,24 @@ namespace ChromeHtmlToPdfLib
         private readonly Connection _pageConnection;
         #endregion
 
+        #region Properties
+        /// <summary>
+        ///     An unique id that can be used to identify the logging of the converter when
+        ///     calling the code from multiple threads and writing all the logging to the same file
+        /// </summary>
+        public string InstanceId { get; set; }
+        #endregion
+
         #region Constructor & destructor
         /// <summary>
         ///     Makes this object and sets the Chrome remote debugging url
         /// </summary>
         /// <param name="browser">The websocket to the browser</param>
-        internal Browser(Uri browser)
+        /// <param name="logStream">When set then logging is written to this tream</param>
+        internal Browser(Uri browser, Stream logStream)
         {
+            _logStream = logStream;
+
             // Open a websocket to the browser
             _browserConnection = new Connection(browser.ToString());
 
@@ -132,7 +157,6 @@ namespace ChromeHtmlToPdfLib
         {
             var waitEvent = new ManualResetEvent(false);
             var mediaLoadTimeoutCancellationTokenSource = new CancellationTokenSource();
-            var asyncLogging = new ConcurrentQueue<string>();
             var absoluteUri = uri.AbsoluteUri.Substring(0, uri.AbsoluteUri.LastIndexOf('/') + 1);
             var navigationError = string.Empty;
             var waitforNetworkIdle = false;
@@ -154,14 +178,14 @@ namespace ChromeHtmlToPdfLib
                         if (!IsRegExMatch(urlBlacklist, url, out var matchedPattern) ||
                             url.StartsWith(absoluteUri, StringComparison.InvariantCultureIgnoreCase))
                         {
-                            asyncLogging.Enqueue($"The url '{url}' has been allowed");
+                            WriteToLog($"The url '{url}' has been allowed");
                             var fetchContinue = new Message {Method = "Fetch.continueRequest"};
                             fetchContinue.Parameters.Add("requestId", requestId);
                             _pageConnection.SendAsync(fetchContinue).GetAwaiter();
                         }
                         else
                         {
-                            asyncLogging.Enqueue($"The url '{url}' has been blocked by url blacklist pattern '{matchedPattern}'");
+                            WriteToLog($"The url '{url}' has been blocked by url blacklist pattern '{matchedPattern}'");
 
                             var fetchFail = new Message {Method = "Fetch.failRequest"};
                             fetchFail.Parameters.Add("requestId", requestId);
@@ -193,7 +217,7 @@ namespace ChromeHtmlToPdfLib
                                         Task.Run(async delegate
                                         {
                                             await Task.Delay(mediaLoadTimeout.Value, mediaLoadTimeoutCancellationTokenSource.Token);
-                                            asyncLogging.Enqueue($"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
+                                            WriteToLog($"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
                                             waitEvent?.Set();
                                         }, mediaLoadTimeoutCancellationTokenSource.Token);
 
@@ -208,12 +232,12 @@ namespace ChromeHtmlToPdfLib
                                 break;
 
                             case "Page.frameNavigated":
-                                asyncLogging.Enqueue("The 'Page.frameNavigated' event has been fired, waiting for the 'Page.lifecycleEvent' with name 'networkIdle'");
+                                WriteToLog("The 'Page.frameNavigated' event has been fired, waiting for the 'Page.lifecycleEvent' with name 'networkIdle'");
                                 waitforNetworkIdle = true;
                                 break;
 
                             case "Page.lifecycleEvent" when page.Params?.Name == "networkIdle" && waitforNetworkIdle:
-                                asyncLogging.Enqueue("The 'Page.lifecycleEvent' event with name 'networkIdle' has been fired, the page is now fully loaded");
+                                WriteToLog("The 'Page.lifecycleEvent' event with name 'networkIdle' has been fired, the page is now fully loaded");
                                 waitEvent?.Set();
                                 break;
 
@@ -240,7 +264,7 @@ namespace ChromeHtmlToPdfLib
             // Enable Fetch when we want to blacklist certain URL's
             if (urlBlacklist?.Count > 0)
             {
-                Logger.WriteToLog("Enabling Fetch to block url's that are in the url blacklist'");
+                WriteToLog("Enabling Fetch to block url's that are in the url blacklist'");
                 _pageConnection.SendAsync(new Message {Method = "Fetch.enable"}).GetAwaiter();
             }
 
@@ -274,9 +298,6 @@ namespace ChromeHtmlToPdfLib
                 mediaLoadTimeoutCancellationTokenSource.Dispose();
             }
 
-            while (asyncLogging.TryDequeue(out var message))
-                Logger.WriteToLog(message);
-
             var lifecycleEventDisableddMessage = new Message {Method = "Page.setLifecycleEventsEnabled"};
             lifecycleEventDisableddMessage.AddParameter("enabled", false);
 
@@ -292,7 +313,7 @@ namespace ChromeHtmlToPdfLib
 
             if (!string.IsNullOrEmpty(navigationError))
             {
-                Logger.WriteToLog(navigationError);
+                WriteToLog(navigationError);
                 throw new ChromeNavigationException(navigationError);
             }
         }
@@ -463,6 +484,33 @@ namespace ChromeHtmlToPdfLib
                 _browserConnection.SendAsync(message).Timeout(countdownTimer.MillisecondsLeft).GetAwaiter();
             else
                 _browserConnection.SendAsync(message).GetAwaiter();
+        }
+        #endregion
+
+        #region WriteToLog
+        /// <summary>
+        ///     Writes a line and linefeed to the <see cref="_logStream" />
+        /// </summary>
+        /// <param name="message">The message to write</param>
+        internal void WriteToLog(string message)
+        {
+            lock (_lock)
+            {
+                try
+                {
+                    if (_logStream == null || !_logStream.CanWrite) return;
+                    var line = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") +
+                               (InstanceId != null ? " - " + InstanceId : string.Empty) + " - " +
+                               message + Environment.NewLine;
+                    var bytes = Encoding.UTF8.GetBytes(line);
+                    _logStream.Write(bytes, 0, bytes.Length);
+                    _logStream.Flush();
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Ignore
+                }
+            }
         }
         #endregion
 
