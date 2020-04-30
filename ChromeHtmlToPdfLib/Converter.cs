@@ -539,7 +539,7 @@ namespace ChromeHtmlToPdfLib
                     var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
                     WriteToLog($"Connecting to dev protocol on uri '{uri}'");
                     _browser = new Browser(uri, _logStream);
-                    WriteToLog("Connected");
+                    WriteToLog("Connected to dev protocol");
                     _chromeWaitEvent.Set();
                 }
             }
