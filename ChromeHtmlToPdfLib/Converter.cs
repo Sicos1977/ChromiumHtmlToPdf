@@ -58,11 +58,6 @@ namespace ChromeHtmlToPdfLib
         private readonly object _loggerLock = new object();
 
         /// <summary>
-        ///     An object to synchronize the event that is comming form the Error data event
-        /// </summary>
-        private readonly object _chromeErrorDateReceivedLock = new object();
-
-        /// <summary>
         ///     When set then logging is written to this stream
         /// </summary>
         private Stream _logStream;
@@ -488,12 +483,9 @@ namespace ChromeHtmlToPdfLib
 
             _chromeWaitEvent.WaitOne();
 
-            if (_chromeProcess != null)
-            {
-                _chromeProcess.OutputDataReceived -= _chromeProcess_OutputDataReceived;
-                _chromeProcess.ErrorDataReceived -= _chromeProcess_ErrorDataReceived;
-                _chromeProcess.Exited -= _chromeProcess_Exited;
-            }
+            _chromeProcess.OutputDataReceived -= _chromeProcess_OutputDataReceived;
+            _chromeProcess.ErrorDataReceived -= _chromeProcess_ErrorDataReceived;
+            _chromeProcess.Exited -= _chromeProcess_Exited;
 
             if (_chromeEventException != null)
             {
@@ -537,28 +529,25 @@ namespace ChromeHtmlToPdfLib
         {
             try
             {
-                lock (_chromeErrorDateReceivedLock)
+                if (args.Data == null || string.IsNullOrEmpty(args.Data)) return;
+
+                WriteToLog($"Received Chrome error data: '{args.Data}'");
+
+                if (args.Data.StartsWith("DevTools listening on"))
                 {
-                    if (args.Data == null || string.IsNullOrEmpty(args.Data)) return;
-
-                    WriteToLog($"Received Chrome error data: '{args.Data}'");
-
-                    if (args.Data.StartsWith("DevTools listening on"))
-                    {
-                        // ReSharper disable once CommentTypo
-                        // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
-                        var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
-                        WriteToLog($"Connecting to dev protocol on uri '{uri}'");
-                        _browser = new Browser(uri, _logStream);
-                        WriteToLog("Connected to dev protocol");
-                        _chromeWaitEvent.Set();
-                    }
+                    // ReSharper disable once CommentTypo
+                    // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
+                    var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
+                    WriteToLog($"Connecting to dev protocol on uri '{uri}'");
+                    _browser = new Browser(uri, _logStream);
+                    WriteToLog("Connected to dev protocol");
+                    _chromeProcess.ErrorDataReceived -= _chromeProcess_ErrorDataReceived;
+                    _chromeWaitEvent.Set();
                 }
             }
             catch (Exception exception)
             {
                 _chromeEventException = exception;
-                _chromeProcess.ErrorDataReceived -= _chromeProcess_ErrorDataReceived;
                 _chromeWaitEvent.Set();
             }
         }
@@ -578,7 +567,6 @@ namespace ChromeHtmlToPdfLib
             catch (Exception exception)
             {
                 _chromeEventException = exception;
-                _chromeProcess.OutputDataReceived -= _chromeProcess_OutputDataReceived;
                 _chromeWaitEvent.Set();
             }
         }
