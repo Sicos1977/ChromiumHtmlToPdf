@@ -944,6 +944,7 @@ namespace ChromeHtmlToPdfLib
                 {
                     case ".htm":
                     case ".html":
+                    case ".mht":
                     case ".mhtml":
                     case ".svg":
                     case ".xml":
