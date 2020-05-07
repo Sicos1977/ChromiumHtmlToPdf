@@ -375,7 +375,7 @@ namespace ChromeHtmlToPdfLib
                 throw new DirectoryNotFoundException(
                     $"The directory '{userProfileDirectory.FullName}' does not exists");
 
-            SetDefaultArgument("--user-data-dir", $"\"{userProfileDirectory.FullName}\"");
+            SetDefaultArgument("--user-data-dir", userProfileDirectory.FullName);
         }
 
         /// <summary>
@@ -763,7 +763,6 @@ namespace ChromeHtmlToPdfLib
         {
             if (IsChromeRunning)
                 throw new ChromeException($"Chrome is already running, you need to set the parameter '{argument}' before staring Chrome");
-
 
             for (var i = 0; i < DefaultArguments.Count; i++)
             {
