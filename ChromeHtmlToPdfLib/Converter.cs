@@ -43,6 +43,7 @@ using System.Text;
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable UnusedMember.Global
+// ReSharper disable UnusedMember.Local
 
 namespace ChromeHtmlToPdfLib
 {
@@ -892,6 +893,16 @@ namespace ChromeHtmlToPdfLib
         public void SetUrlBlacklist(IList<string> urls)
         {
             _urlBlacklist = ListToWildCardRegEx(urls);
+        }
+        #endregion
+
+        #region ClearUrlBlackList
+        /// <summary>
+        ///     Clears the url blacklist
+        /// </summary>
+        private void ClearUrlBlackList()
+        {
+            _urlBlacklist = new List<string>();
         }
         #endregion
 
