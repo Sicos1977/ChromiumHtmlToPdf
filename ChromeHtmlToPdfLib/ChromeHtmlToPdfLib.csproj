@@ -2,16 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>2.0.16</Version>
+    <Version>2.0.17</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>ChromeHtmlToPdf is a 100% managed C# .NETStandard 2.0 library that can be used to convert HTML to PDF format with the use of Google Chrome</Description>
     <Copyright>(C)2017-2020 Kees van Spelde</Copyright>
-    <PackageReleaseNotes>- Remove unused code
-- Remove Logger class
-- Rewrite code so that a threadstatic logging stream is not needed anymore
-- Added locking code on Chrome error data received event
-- Update code so that logging written from Chrome events is also present in the logging stream
-- Add mht extension</PackageReleaseNotes>
+    <PackageReleaseNotes>- Ignore lines that are written to stderr that start with a [ , they sometimes prevent us from getting the dec protocol connection string</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/Sicos1977/ChromeHtmlToPdf</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Sicos1977/ChromeHtmlToPdf</RepositoryUrl>
     <RepositoryType>GitHub</RepositoryType>
@@ -24,8 +19,8 @@
     <Company>Magic-Sessions</Company>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>ChromeHtmlToPdf.snk</AssemblyOriginatorKeyFile>
-    <AssemblyVersion>2.0.16.0</AssemblyVersion>
-    <FileVersion>2.0.16.0</FileVersion>
+    <AssemblyVersion>2.0.17.0</AssemblyVersion>
+    <FileVersion>2.0.17.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>

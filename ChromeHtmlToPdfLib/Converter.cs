@@ -529,7 +529,7 @@ namespace ChromeHtmlToPdfLib
         {
             try
             {
-                if (args.Data == null || string.IsNullOrEmpty(args.Data)) return;
+                if (args.Data == null || string.IsNullOrEmpty(args.Data) || args.Data.StartsWith("[")) return;
 
                 WriteToLog($"Received Chrome error data: '{args.Data}'");
 
