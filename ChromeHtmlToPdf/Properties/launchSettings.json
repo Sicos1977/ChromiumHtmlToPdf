@@ -2,7 +2,7 @@
   "profiles": {
     "ChromeHtmlToPdf": {
       "commandName": "Project",
-      "commandLineArgs": "--input \"d:\\test.html\" --output d:\\test.pdf --media-load-timeout 5000 --url-blacklist \"*.google.com;*foo.com\""
+      "commandLineArgs": "--input \"d:\\test.html\" --output d:\\test.pdf --media-load-timeout 5000 --url-blacklist \"*.google.com;*foo.com\" --chrome-userprofile \"d:\\test\""
     }
   }
 }

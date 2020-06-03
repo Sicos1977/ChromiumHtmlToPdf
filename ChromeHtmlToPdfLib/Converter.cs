@@ -138,6 +138,16 @@ namespace ChromeHtmlToPdfLib
         ///     A list with urls to blacklist
         /// </summary>
         private List<string> _urlBlacklist;
+
+        /// <summary>
+        ///     A flag to keep track if a user-data-dir has been set
+        /// </summary>
+        private readonly bool _userProfileSet;
+
+        /// <summary>
+        ///     The file that Chrome creates to tell us on what port it is listening with the devtools
+        /// </summary>
+        private readonly string _devToolsActivePortFile;
         #endregion
 
         #region Properties
@@ -376,6 +386,8 @@ namespace ChromeHtmlToPdfLib
                 throw new DirectoryNotFoundException(
                     $"The directory '{userProfileDirectory.FullName}' does not exists");
 
+            _userProfileSet = true;
+            _devToolsActivePortFile = Path.Combine(userProfileDirectory.FullName, "DevToolsActivePort");
             SetDefaultArgument("--user-data-dir", userProfileDirectory.FullName);
         }
 
@@ -451,14 +463,16 @@ namespace ChromeHtmlToPdfLib
             }
 
             _chromeProcess.StartInfo = processStartInfo;
-
-            _chromeWaitEvent = new ManualResetEvent(false);
-            
-            _chromeProcess.OutputDataReceived += _chromeProcess_OutputDataReceived;
-            _chromeProcess.ErrorDataReceived += _chromeProcess_ErrorDataReceived;
             _chromeProcess.Exited += _chromeProcess_Exited;
 
-            _chromeProcess.EnableRaisingEvents = true;
+            if (!_userProfileSet)
+            {
+                _chromeWaitEvent = new ManualResetEvent(false);
+                _chromeProcess.ErrorDataReceived += _chromeProcess_ErrorDataReceived;
+                _chromeProcess.EnableRaisingEvents = true;
+            }
+            else if (File.Exists(_devToolsActivePortFile))
+                File.Delete(_devToolsActivePortFile);
 
             try
             {
@@ -472,27 +486,37 @@ namespace ChromeHtmlToPdfLib
 
             WriteToLog("Chrome process started");
 
-            _chromeProcess.BeginErrorReadLine();
-            _chromeProcess.BeginOutputReadLine();
-
-            if (_conversionTimeout.HasValue)
+            if (!_userProfileSet)
             {
-                if (!_chromeWaitEvent.WaitOne(_conversionTimeout.Value))
-                    throw new ChromeException(
-                        $"A timeout of '{_conversionTimeout.Value}' milliseconds exceeded, could not make a connection to the Chrome dev tools");
+                _chromeProcess.BeginErrorReadLine();
+                _chromeProcess.BeginOutputReadLine();
+
+                if (_conversionTimeout.HasValue)
+                {
+                    if (!_chromeWaitEvent.WaitOne(_conversionTimeout.Value))
+                        throw new ChromeException(
+                            $"A timeout of '{_conversionTimeout.Value}' milliseconds exceeded, could not make a connection to the Chrome dev tools");
+                }
+
+                _chromeWaitEvent.WaitOne();
+
+                _chromeProcess.ErrorDataReceived -= _chromeProcess_ErrorDataReceived;
+
+                if (_chromeEventException != null)
+                {
+                    WriteToLog("Exception: " + ExceptionHelpers.GetInnerException(_chromeEventException));
+                    throw _chromeEventException;
+                }
+            }
+            else
+            {
+                WaitForDevToolsActiveFile();
+                var lines = File.ReadAllLines(_devToolsActivePortFile);
+                var uri = new Uri($"ws://127.0.0.1:{lines[0]}{lines[1]}");
+                ConnectToDevProtocol(uri);
             }
 
-            _chromeWaitEvent.WaitOne();
-
-            _chromeProcess.OutputDataReceived -= _chromeProcess_OutputDataReceived;
-            _chromeProcess.ErrorDataReceived -= _chromeProcess_ErrorDataReceived;
             _chromeProcess.Exited -= _chromeProcess_Exited;
-
-            if (_chromeEventException != null)
-            {
-                WriteToLog("Exception: " + ExceptionHelpers.GetInnerException(_chromeEventException));
-                throw _chromeEventException;
-            }
 
             WriteToLog("Chrome started");
         }
@@ -521,6 +545,33 @@ namespace ChromeHtmlToPdfLib
             }
         }
 
+        private void WaitForDevToolsActiveFile()
+        {
+            var remeberTimeout = _conversionTimeout ?? 10000;
+            var timeout = remeberTimeout;
+
+            while (true)
+            {
+                if (!File.Exists(_devToolsActivePortFile))
+                {
+                    timeout -= 5;
+                    Thread.Sleep(5);
+                    if (timeout <= 0)
+                        throw new ChromeException(
+                            $"A timeout of '{remeberTimeout}' milliseconds exceeded, could not make a connection to the Chrome dev tools");
+                }
+                else
+                    break;
+            }
+        }
+
+        private void ConnectToDevProtocol(Uri uri)
+        {
+            WriteToLog($"Connecting to dev protocol on uri '{uri}'");
+            _browser = new Browser(uri, _logStream);
+            WriteToLog("Connected to dev protocol");
+        }
+
         /// <summary>
         ///     Raised when Chrome sends data to the error output
         /// </summary>
@@ -539,31 +590,10 @@ namespace ChromeHtmlToPdfLib
                     // ReSharper disable once CommentTypo
                     // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
                     var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
-                    WriteToLog($"Connecting to dev protocol on uri '{uri}'");
-                    _browser = new Browser(uri, _logStream);
-                    WriteToLog("Connected to dev protocol");
+                    ConnectToDevProtocol(uri);
                     _chromeProcess.ErrorDataReceived -= _chromeProcess_ErrorDataReceived;
                     _chromeWaitEvent.Set();
                 }
-            }
-            catch (Exception exception)
-            {
-                _chromeEventException = exception;
-                _chromeWaitEvent.Set();
-            }
-        }
-
-        /// <summary>
-        ///     Raised when Chrome send data to the standard output
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="args"></param>
-        private void _chromeProcess_OutputDataReceived(object sender, DataReceivedEventArgs args)
-        {
-            try
-            {
-                if (!string.IsNullOrWhiteSpace(args.Data))
-                    WriteToLog($"Received Chrome output data: '{args.Data}'");
             }
             catch (Exception exception)
             {

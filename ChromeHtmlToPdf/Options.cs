@@ -10,6 +10,7 @@ namespace ChromeHtmlToPdf
     ///     The parameters that can be used when calling this application
     /// </summary>
     [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
+    // ReSharper disable once ClassNeverInstantiated.Global
     public class Options
     {
         #region Properties
