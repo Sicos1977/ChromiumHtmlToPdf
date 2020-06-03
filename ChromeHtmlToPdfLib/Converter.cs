@@ -510,8 +510,7 @@ namespace ChromeHtmlToPdfLib
             }
             else
             {
-                WaitForDevToolsActiveFile();
-                var lines = File.ReadAllLines(_devToolsActivePortFile);
+                var lines = ReadDevToolsActiveFile();
                 var uri = new Uri($"ws://127.0.0.1:{lines[0]}{lines[1]}");
                 ConnectToDevProtocol(uri);
             }
@@ -545,7 +544,11 @@ namespace ChromeHtmlToPdfLib
             }
         }
 
-        private void WaitForDevToolsActiveFile()
+        /// <summary>
+        /// Tries to read the content of the DevToolsActiveFile
+        /// </summary>
+        /// <returns></returns>
+        private string[] ReadDevToolsActiveFile()
         {
             var remeberTimeout = _conversionTimeout ?? 10000;
             var timeout = remeberTimeout;
@@ -558,10 +561,23 @@ namespace ChromeHtmlToPdfLib
                     Thread.Sleep(5);
                     if (timeout <= 0)
                         throw new ChromeException(
-                            $"A timeout of '{remeberTimeout}' milliseconds exceeded, could not make a connection to the Chrome dev tools");
+                            $"A timeout of '{remeberTimeout}' milliseconds exceeded, the file '{_devToolsActivePortFile}' did not exist");
                 }
                 else
-                    break;
+                {
+                    try
+                    {
+                        return File.ReadAllLines(_devToolsActivePortFile);
+                    }
+                    catch (Exception exception)
+                    {
+                        timeout -= 5;
+                        Thread.Sleep(5);
+                        if (timeout <= 0)
+                            throw new ChromeException(
+                                $"A timeout of '{remeberTimeout}' milliseconds exceeded, could not read the file '{_devToolsActivePortFile}'", exception);
+                    }
+                }
             }
         }
 
