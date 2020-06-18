@@ -292,16 +292,12 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                                 if (image == null) continue;
 
-                                image = ScaleImage(image, (int) maxWidth);
-                                WriteToLog(
-                                    $"Image resized to width {image.Width} and height {image.Height} and saved to location '{fileName}'");
-                                image.Save(fileName);
-                                htmlImage.DisplayWidth = image.Width;
-                                htmlImage.DisplayHeight = image.Height;
+                                ScaleImage(image, (int) maxWidth, out var newWidth, out var newHeight);
+                                WriteToLog($"Image rescaled to width {newWidth} and height {newHeight}");
+                                htmlImage.DisplayWidth = newWidth;
+                                htmlImage.DisplayHeight = newHeight;
                                 htmlImage.SetStyle(string.Empty);
-                                htmlImage.Source = new Uri(fileName).ToString();
                                 htmlChanged = true;
-                                imageChanged = true;
                             }
                         }
                     }
@@ -449,21 +445,17 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// Scales the image to the preferred max width
         /// </summary>
         /// <param name="image"></param>
-        /// <param name="maxWidth"></param>
+        /// <param name="maxWidth">The maximum width</param>
+        /// <param name="newWidth">Returns the new width</param>
+        /// <param name="newHeight">Return the new height</param>
         /// <returns></returns>
-        private Image ScaleImage(Image image, double maxWidth)
+        private void ScaleImage(Image image, double maxWidth, out int newWidth, out int newHeight)
         {
             var ratio = maxWidth / image.Width;
-            var newWidth = (int)(image.Width * ratio);
+            newWidth = (int)(image.Width * ratio);
             if (newWidth == 0) newWidth = 1;
-            var newHeight = (int)(image.Height * ratio);
+            newHeight = (int)(image.Height * ratio);
             if (newHeight == 0) newHeight = 1;
-            var newImage = new Bitmap(newWidth, newHeight);
-
-            using (var graphic = Graphics.FromImage(newImage))
-                graphic.DrawImage(image, 0, 0, newWidth, newHeight);
-
-            return newImage;
         }
         #endregion
 
