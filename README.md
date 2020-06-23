@@ -58,6 +58,8 @@ System.Diagnostics.Process.Start(@"c:\google.pdf");
 
 Thats it.
 
+If you get strange errors when starting Chrome than this is due to the account that is used to run your site. I had a simular problem and solved it by hosting ChromeHtmlToPdf in a Windows service and making calls to it with a WCF service.
+
 ### Converting from the command line
 
 ```csharp
