@@ -427,15 +427,7 @@ namespace ChromeHtmlToPdfLib
             {
                 FileName = _chromeExeFileName,
                 Arguments = string.Join(" ", DefaultArguments),
-                UseShellExecute = false,
                 CreateNoWindow = true,
-                ErrorDialog = false,
-                WindowStyle = ProcessWindowStyle.Hidden,
-                // ReSharper disable once AssignNullToNotNullAttribute
-                WorkingDirectory = workingDirectory,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                LoadUserProfile = false
             };
 
             if (!string.IsNullOrWhiteSpace(_userName))
@@ -462,17 +454,18 @@ namespace ChromeHtmlToPdfLib
                 processStartInfo.LoadUserProfile = true;
             }
 
-            _chromeProcess.StartInfo = processStartInfo;
-            _chromeProcess.Exited += _chromeProcess_Exited;
-
             if (!_userProfileSet)
             {
-                _chromeWaitEvent = new ManualResetEvent(false);
                 _chromeProcess.ErrorDataReceived += _chromeProcess_ErrorDataReceived;
                 _chromeProcess.EnableRaisingEvents = true;
+                processStartInfo.UseShellExecute = false;
+                processStartInfo.RedirectStandardError = true;
             }
             else if (File.Exists(_devToolsActivePortFile))
                 File.Delete(_devToolsActivePortFile);
+
+            _chromeProcess.StartInfo = processStartInfo;
+            _chromeProcess.Exited += _chromeProcess_Exited;
 
             try
             {
@@ -488,6 +481,7 @@ namespace ChromeHtmlToPdfLib
 
             if (!_userProfileSet)
             {
+                _chromeWaitEvent = new ManualResetEvent(false);
                 _chromeProcess.BeginErrorReadLine();
                 _chromeProcess.BeginOutputReadLine();
 

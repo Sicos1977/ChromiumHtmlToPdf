@@ -2,11 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>2.0.20</Version>
+    <Version>2.0.21</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>ChromeHtmlToPdf is a 100% managed C# .NETStandard 2.0 library that can be used to convert HTML to PDF format with the use of Google Chrome</Description>
     <Copyright>(C)2017-2020 Kees van Spelde</Copyright>
-    <PackageReleaseNotes>- Just change the img settings in the html instead of resizing the image</PackageReleaseNotes>
+    <PackageReleaseNotes>- Change code a little bit to prevent the error that the DevToolsActivePort cant be found</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/Sicos1977/ChromeHtmlToPdf</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Sicos1977/ChromeHtmlToPdf</RepositoryUrl>
     <RepositoryType>GitHub</RepositoryType>
@@ -19,8 +19,8 @@
     <Company>Magic-Sessions</Company>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>ChromeHtmlToPdf.snk</AssemblyOriginatorKeyFile>
-    <AssemblyVersion>2.0.20.0</AssemblyVersion>
-    <FileVersion>2.0.20.0</FileVersion>
+    <AssemblyVersion>2.0.21.0</AssemblyVersion>
+    <FileVersion>2.0.21.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
