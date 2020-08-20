@@ -4,9 +4,12 @@ using System.ComponentModel;
 using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable CollectionNeverUpdated.Global
 
 namespace ChromeHtmlToPdfLib.Helpers.Sanitizer
 {
+    #region Internal class PostProcessDomEventArgs
     /// <summary>
     /// Provides data for the <see cref="HtmlSanitizer.PostProcessDom"/> event.
     /// </summary>
@@ -20,7 +23,9 @@ namespace ChromeHtmlToPdfLib.Helpers.Sanitizer
         /// </value>
         public IHtmlDocument Document { get; set; }
     }
+    #endregion
 
+    #region Internal class PostProcessNodeEventArgs
     /// <summary>
     /// Provides data for the <see cref="HtmlSanitizer.PostProcessNode"/> event.
     /// </summary>
@@ -58,7 +63,9 @@ namespace ChromeHtmlToPdfLib.Helpers.Sanitizer
             ReplacementNodes = new List<INode>();
         }
     }
+    #endregion
 
+    #region Internal class RemovingTagEventArgs
     /// <summary>
     /// Provides data for the <see cref="HtmlSanitizer.RemovingTag"/> event.
     /// </summary>
@@ -80,7 +87,9 @@ namespace ChromeHtmlToPdfLib.Helpers.Sanitizer
         /// </value>
         public RemoveReason Reason { get; set; }
     }
+    #endregion
 
+    #region Internal class RemovingAttributeEventArgs
     /// <summary>
     /// Provides data for the <see cref="HtmlSanitizer.RemovingAttribute"/> event.
     /// </summary>
@@ -110,7 +119,9 @@ namespace ChromeHtmlToPdfLib.Helpers.Sanitizer
         /// </value>
         public RemoveReason Reason { get; set; }
     }
+    #endregion
 
+    #region Internal class RemovingStyleEventArgs
     /// <summary>
     /// Provides data for the <see cref="HtmlSanitizer.RemovingStyle"/> event.
     /// </summary>
@@ -140,7 +151,9 @@ namespace ChromeHtmlToPdfLib.Helpers.Sanitizer
         /// </value>
         public RemoveReason Reason { get; set; }
     }
+    #endregion
 
+    #region Internal class RemovingAtRuleEventArgs
     /// <summary>
     /// Provides data for the <see cref="HtmlSanitizer.RemovingAtRule"/> event.
     /// </summary>
@@ -162,7 +175,9 @@ namespace ChromeHtmlToPdfLib.Helpers.Sanitizer
         /// </value>
         public ICssRule Rule { get; set; }
     }
+    #endregion
 
+    #region Internal class RemovingCommentEventArgs
     /// <summary>
     /// Provides data for the <see cref="HtmlSanitizer.RemovingComment"/> event.
     /// </summary>
@@ -176,7 +191,9 @@ namespace ChromeHtmlToPdfLib.Helpers.Sanitizer
         /// </value>
         public IComment Comment { get; set; }
     }
+    #endregion
 
+    #region Internal class RemovingCssClassEventArgs
     /// <summary>
     /// Provides data for the <see cref="HtmlSanitizer.RemovingCssClass"/> event.
     /// </summary>
@@ -206,7 +223,9 @@ namespace ChromeHtmlToPdfLib.Helpers.Sanitizer
         /// </value>
         public RemoveReason Reason { get; set; }
     }
+    #endregion
 
+    #region Internal class FilterUrlEventArgs
     /// <summary>
     /// Provides data for the <see cref="HtmlSanitizer.FilterUrl"/> event.
     /// </summary>
@@ -228,4 +247,5 @@ namespace ChromeHtmlToPdfLib.Helpers.Sanitizer
         /// </value>
         public string SanitizedUrl { get; set; }
     }
+    #endregion
 }

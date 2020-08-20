@@ -2,6 +2,9 @@
 using AngleSharp;
 using AngleSharp.Dom;
 using AngleSharp.Html;
+// ReSharper disable InheritdocConsiderUsage
+// ReSharper disable ClassWithVirtualMembersNeverInherited.Global
+// ReSharper disable MemberCanBeProtected.Global
 
 namespace ChromeHtmlToPdfLib.Helpers.Sanitizer
 {

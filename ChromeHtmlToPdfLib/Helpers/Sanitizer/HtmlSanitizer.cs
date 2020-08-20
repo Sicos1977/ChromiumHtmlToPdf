@@ -9,6 +9,10 @@ using AngleSharp.Dom;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
 // ReSharper disable UnusedMember.Global
+// ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
+// ReSharper disable ClassWithVirtualMembersNeverInherited.Global
 
 namespace ChromeHtmlToPdfLib.Helpers.Sanitizer
 {
@@ -799,8 +803,7 @@ namespace ChromeHtmlToPdfLib.Helpers.Sanitizer
             return r;
         }
         #endregion
-
-
+        
         #region GetSafeIri
         /// <summary>
         /// Tries to create a safe <see cref="Iri"/> object from a string.
