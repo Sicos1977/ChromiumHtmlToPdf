@@ -274,34 +274,42 @@ namespace ChromeHtmlToPdfLib.Helpers.Sanitizer
         /// Occurs after sanitizing the document and post processing nodes.
         /// </summary>
         public event EventHandler<PostProcessDomEventArgs> PostProcessDom;
+
         /// <summary>
         /// Occurs for every node after sanitizing.
         /// </summary>
         public event EventHandler<PostProcessNodeEventArgs> PostProcessNode;
+
         /// <summary>
         /// Occurs before a tag is removed.
         /// </summary>
         public event EventHandler<RemovingTagEventArgs> RemovingTag;
+
         /// <summary>
         /// Occurs before an attribute is removed.
         /// </summary>
         public event EventHandler<RemovingAttributeEventArgs> RemovingAttribute;
+
         /// <summary>
         /// Occurs before a style is removed.
         /// </summary>
         public event EventHandler<RemovingStyleEventArgs> RemovingStyle;
+
         /// <summary>
         /// Occurs before an at-rule is removed.
         /// </summary>
         public event EventHandler<RemovingAtRuleEventArgs> RemovingAtRule;
+
         /// <summary>
         /// Occurs before a comment is removed.
         /// </summary>
         public event EventHandler<RemovingCommentEventArgs> RemovingComment;
+
         /// <summary>
         /// Occurs before a CSS class is removed.
         /// </summary>
         public event EventHandler<RemovingCssClassEventArgs> RemovingCssClass;
+
         /// <summary>
         /// Occurs when a URL is being sanitized.
         /// </summary>

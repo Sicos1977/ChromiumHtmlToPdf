@@ -202,7 +202,10 @@ namespace ChromeHtmlToPdfLib.Helpers
                 if (sanitizeHtml)
                 {
                     WriteToLog("Sanitizing HTML");
-                    new HtmlSanitizer().DoSanitize(document as IHtmlDocument, document.DocumentElement);
+                    var sanitizer = new HtmlSanitizer();
+                    sanitizer.FilterUrl += delegate(object sender, FilterUrlEventArgs args) { WriteToLog( $"URL sanitized from '{args.OriginalUrl}' to '{args.SanitizedUrl}'"); };
+                    sanitizer.RemovingAtRule += delegate(object sender, RemovingAtRuleEventArgs args) { args. };
+                    sanitizer.DoSanitize(document as IHtmlDocument, document.DocumentElement);
                     htmlChanged = true;
                     WriteToLog("HTML sanitized");
                 }
