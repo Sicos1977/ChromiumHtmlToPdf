@@ -199,6 +199,8 @@ namespace ChromeHtmlToPdfLib.Helpers
                     return true;
                 }
 
+                Console.WriteLine("************2 " + sanitizeHtml);
+                
                 if (sanitizeHtml)
                 {
                     WriteToLog("Sanitizing HTML");
@@ -211,37 +213,38 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                     sanitizer.FilterUrl += delegate(object sender, FilterUrlEventArgs args)
                     {
-                        WriteToLog($"URL sanitized from '{args.OriginalUrl}' to '{args.SanitizedUrl}'");
+                        if (args.OriginalUrl != args.SanitizedUrl)
+                            WriteToLog($"URL sanitized from '{args.OriginalUrl}' to '{args.SanitizedUrl}'");
                     };
 
                     sanitizer.RemovingAtRule += delegate(object sender, RemovingAtRuleEventArgs args)
                     {
-                        WriteToLog($"Removing CSS at-rule '{args.Rule}' from tag '{args.Tag}'");
+                        WriteToLog($"Removing CSS at-rule '{args.Rule.CssText}' from tag '{args.Tag.TagName}'");
                     };
 
                     sanitizer.RemovingAttribute += delegate(object sender, RemovingAttributeEventArgs args)
                     {
-                        WriteToLog($"Removing attribute '{args.Attribute}' from tag '{args.Tag}', reason '{args.Reason}'");
+                        WriteToLog($"Removing attribute '{args.Attribute.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
                     };
 
                     sanitizer.RemovingComment += delegate(object sender, RemovingCommentEventArgs args)
                     {
-                        WriteToLog($"Removing comment '{args.Comment}'");
+                        WriteToLog($"Removing comment '{args.Comment.TextContent}'");
                     };
 
                     sanitizer.RemovingCssClass += delegate(object sender, RemovingCssClassEventArgs args)
                     {
-                        WriteToLog($"Removing CSS class '{args.CssClass}' from tag '{args.Tag}', reason '{args.Reason}'");
+                        WriteToLog($"Removing CSS class '{args.CssClass}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
                     };
 
                     sanitizer.RemovingStyle += delegate(object sender, RemovingStyleEventArgs args)
                     {
-                        WriteToLog($"Removing style '{args.Style}' from tag '{args.Tag}', reason '{args.Reason}'");
+                        WriteToLog($"Removing style '{args.Style.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
                     };
 
                     sanitizer.RemovingTag += delegate(object sender, RemovingTagEventArgs args)
                     {
-                        WriteToLog($"Removing tag '{args.Tag}', reason '{args.Reason}'");
+                        WriteToLog($"Removing tag '{args.Tag.TagName}', reason '{args.Reason}'");
                     };
 
                     sanitizer.SanitizeDom(document as IHtmlDocument);

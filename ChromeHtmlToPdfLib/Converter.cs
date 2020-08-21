@@ -483,7 +483,6 @@ namespace ChromeHtmlToPdfLib
             {
                 _chromeWaitEvent = new ManualResetEvent(false);
                 _chromeProcess.BeginErrorReadLine();
-                _chromeProcess.BeginOutputReadLine();
 
                 if (_conversionTimeout.HasValue)
                 {
@@ -827,8 +826,7 @@ namespace ChromeHtmlToPdfLib
         /// <param name="width">The width</param>
         /// <param name="height">The height</param>
         /// <exception cref="ArgumentOutOfRangeException">
-        ///     Raised when <paramref name="width" /> or
-        ///     <paramref name="height" /> is smaller then or zero
+        ///     Raised when <paramref name="width" /> or <paramref name="height" /> is smaller then or zero
         /// </exception>
         public void SetWindowSize(int width, int height)
         {
@@ -1015,9 +1013,10 @@ namespace ChromeHtmlToPdfLib
                 {
                     inputUri = new ConvertUri(preWrapFile);
                 }
-                else if (ImageResize || ImageRotate || SanitizeHtml)
+                
+                if (ImageResize || ImageRotate || SanitizeHtml)
                 {
-                    var documentHelper = new DocumentHelper(GetTempDirectory, WebProxy, ImageDownloadTimeout, logStream) { InstanceId = InstanceId };
+                    var documentHelper = new DocumentHelper(GetTempDirectory, WebProxy, ImageDownloadTimeout, _logStream) { InstanceId = InstanceId };
                     if (!documentHelper.Validate(inputUri, ImageResize, ImageRotate, SanitizeHtml, pageSettings,
                         out var outputUri))
                         inputUri = outputUri;

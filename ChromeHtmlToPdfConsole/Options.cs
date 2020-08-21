@@ -298,7 +298,7 @@ namespace ChromeHtmlToPdfConsole
         ///     When set to <c>true</c> this will remove all HTML that can lead to XSS attacks
         /// </summary>
         [Option("sanitize-html", Required = false, Default = false,
-            HelpText = "When set to true this will remove all HTML that can lead to XSS attacks")]
+            HelpText = "When set this will remove all HTML that can lead to XSS attacks")]
 
         public bool SanitizeHtml { get; set; }
 
