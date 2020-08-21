@@ -199,13 +199,12 @@ namespace ChromeHtmlToPdfLib.Helpers
                     return true;
                 }
 
-                Console.WriteLine("************2 " + sanitizeHtml);
-                
                 if (sanitizeHtml)
                 {
                     WriteToLog("Sanitizing HTML");
 
                     var sanitizer = new HtmlSanitizer();
+                    //sanitizer.AllowedClasses
 
                     sanitizer.AllowedSchemes.Add("mailto");
                     sanitizer.AllowedSchemes.Add("cid");
