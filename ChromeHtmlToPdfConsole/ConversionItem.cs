@@ -1,7 +1,7 @@
 ﻿using System;
 using ChromeHtmlToPdfLib;
 
-namespace ChromeHtmlToPdf
+namespace ChromeHtmlToPdfConsole
 {
     #region Enum ConversionItemStatus
     internal enum ConversionItemStatus

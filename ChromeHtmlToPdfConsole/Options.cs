@@ -4,7 +4,7 @@ using ChromeHtmlToPdfLib.Enums;
 using CommandLine;
 // ReSharper disable StringLiteralTypo
 
-namespace ChromeHtmlToPdf
+namespace ChromeHtmlToPdfConsole
 {
     /// <summary>
     ///     The parameters that can be used when calling this application

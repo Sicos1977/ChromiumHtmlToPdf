@@ -13,7 +13,7 @@ using ChromeHtmlToPdfLib.Settings;
 using CommandLine;
 using CommandLine.Text;
 
-namespace ChromeHtmlToPdf
+namespace ChromeHtmlToPdfConsole
 {
     class Program
     {
