@@ -37,8 +37,8 @@ using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
 using AngleSharp.Html;
 using AngleSharp.Html.Dom;
-using ChromeHtmlToPdfLib.Helpers.Sanitizer;
 using ChromeHtmlToPdfLib.Settings;
+using Ganss.XSS;
 using Image = System.Drawing.Image;
 
 namespace ChromeHtmlToPdfLib.Helpers
@@ -202,7 +202,13 @@ namespace ChromeHtmlToPdfLib.Helpers
                 if (sanitizeHtml)
                 {
                     WriteToLog("Sanitizing HTML");
+
                     var sanitizer = new HtmlSanitizer();
+
+                    sanitizer.AllowedSchemes.Add("mailto");
+                    sanitizer.AllowedSchemes.Add("cid");
+                    sanitizer.AllowedAttributes.Add("class");
+
                     sanitizer.FilterUrl += delegate(object sender, FilterUrlEventArgs args)
                     {
                         WriteToLog($"URL sanitized from '{args.OriginalUrl}' to '{args.SanitizedUrl}'");
@@ -238,7 +244,8 @@ namespace ChromeHtmlToPdfLib.Helpers
                         WriteToLog($"Removing tag '{args.Tag}', reason '{args.Reason}'");
                     };
 
-                    sanitizer.DoSanitize(document as IHtmlDocument, document.DocumentElement);
+                    sanitizer.SanitizeDom(document as IHtmlDocument);
+
                     htmlChanged = true;
                     WriteToLog("HTML sanitized");
                 }

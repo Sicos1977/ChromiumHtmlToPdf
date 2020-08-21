@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29905.134
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChromeHtmlToPdf", "ChromeHtmlToPdf\ChromeHtmlToPdf.csproj", "{DE46975D-0EA1-4326-A358-7E3A5B6EFD43}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChromeHtmlToPdfConsole", "ChromeHtmlToPdf\ChromeHtmlToPdfConsole.csproj", "{DE46975D-0EA1-4326-A358-7E3A5B6EFD43}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChromeHtmlToPdfLib", "ChromeHtmlToPdfLib\ChromeHtmlToPdfLib.csproj", "{DA656B95-A59B-457A-BA26-2860160B76CB}"
 EndProject
