@@ -40,6 +40,8 @@ using ChromeHtmlToPdfLib.Enums;
 using ChromeHtmlToPdfLib.Exceptions;
 using ChromeHtmlToPdfLib.Helpers;
 using System.Text;
+using Ganss.XSS;
+
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable UnusedMember.Global
@@ -215,10 +217,23 @@ namespace ChromeHtmlToPdfLib
         public bool ImageRotate { get; set; }
 
         /// <summary>
-        ///     When set to <c>true</c> then the HTML is sanitized. All not allowed attributes
+        ///     When set to <c>true</c>  the HTML is sanitized. All not allowed attributes
         ///     will be removed
         /// </summary>
+        /// <remarks>
+        ///     See https://github.com/mganss/HtmlSanitizer for all the default settings,<br/>
+        ///     Use <see cref="Sanitizer"/> if you want to control the sanitizer yourself
+        /// </remarks>
         public bool SanitizeHtml { get; set; }
+
+        /// <summary>
+        ///     When set then these settings will be used when <see cref="SanitizeHtml"/> is
+        ///     set to <c>true</c>
+        /// </summary>
+        /// <remarks>
+        ///     See https://github.com/mganss/HtmlSanitizer for all the default settings
+        /// </remarks>
+        public HtmlSanitizer Sanitizer { get; set; }
 
         /// <summary>
         ///     The timeout in milliseconds before this application aborts the downloading
@@ -1017,7 +1032,7 @@ namespace ChromeHtmlToPdfLib
                 if (ImageResize || ImageRotate || SanitizeHtml)
                 {
                     var documentHelper = new DocumentHelper(GetTempDirectory, WebProxy, ImageDownloadTimeout, _logStream) { InstanceId = InstanceId };
-                    if (!documentHelper.Validate(inputUri, ImageResize, ImageRotate, SanitizeHtml, pageSettings,
+                    if (!documentHelper.Validate(inputUri, ImageResize, ImageRotate, SanitizeHtml, Sanitizer, pageSettings,
                         out var outputUri))
                         inputUri = outputUri;
                 }

@@ -150,6 +150,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <param name="rotate">When set to <c>true</c> then the EXIF information of an
         ///     image is read and when needed the image is automatic rotated</param>
         /// <param name="sanitizeHtml">When set to <c>true</c> then the HTML with get sanitized</param>
+        /// <param name="sanitizer"><see cref="HtmlSanitizer"/></param>
         /// <param name="pageSettings"><see cref="PageSettings"/></param>
         /// <param name="outputUri">The outputUri when this method returns <c>false</c> otherwise
         ///     <c>null</c> is returned</param>
@@ -159,6 +160,7 @@ namespace ChromeHtmlToPdfLib.Helpers
             bool resize,
             bool rotate,
             bool sanitizeHtml,
+            HtmlSanitizer sanitizer,
             PageSettings pageSettings,
             out ConvertUri outputUri)
         {
@@ -186,10 +188,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                 {
                     // ReSharper disable AccessToDisposedClosure
                     document = inputUri.Encoding != null
-                        ? context.OpenAsync(m =>
-                                m.Content(webpage).Header("Content-Type",
-                                    $"text/html; charset={inputUri.Encoding.WebName}"))
-                            .Result
+                        ? context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}")).Result
                         : context.OpenAsync(m => m.Content(webpage)).Result;
                     // ReSharper restore AccessToDisposedClosure
                 }
@@ -203,12 +202,10 @@ namespace ChromeHtmlToPdfLib.Helpers
                 {
                     WriteToLog("Sanitizing HTML");
 
-                    var sanitizer = new HtmlSanitizer();
-                    //sanitizer.AllowedClasses
+                    if (sanitizer == null)
+                        sanitizer = new HtmlSanitizer();
 
-                    sanitizer.AllowedSchemes.Add("mailto");
                     sanitizer.AllowedSchemes.Add("cid");
-                    sanitizer.AllowedAttributes.Add("class");
 
                     sanitizer.FilterUrl += delegate(object sender, FilterUrlEventArgs args)
                     {
