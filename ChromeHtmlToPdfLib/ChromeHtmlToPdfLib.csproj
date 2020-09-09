@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>2.0.22</Version>
+    <Version>2.0.23</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>ChromeHtmlToPdf is a 100% managed C# .NETStandard 2.0 library that can be used to convert HTML to PDF format with the use of Google Chrome</Description>
     <Copyright>(C)2017-2020 Kees van Spelde</Copyright>
