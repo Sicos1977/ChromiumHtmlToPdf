@@ -121,6 +121,10 @@ namespace ChromeHtmlToPdfLib
             _messageId += 1;
             message.Id = _messageId;
             _response = new TaskCompletionSource<string>();
+
+            if (_webSocket.ReadyState == WebSocketState.Closed)
+                _webSocket.Connect();
+
             _webSocket.Send(message.ToJson());            
             return await _response.Task;
         }
