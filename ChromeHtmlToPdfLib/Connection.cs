@@ -28,7 +28,9 @@ using System;
 using System.Threading.Tasks;
 using ChromeHtmlToPdfLib.Exceptions;
 using ChromeHtmlToPdfLib.Protocol;
-using WebSocketSharp;
+using SuperSocket.ClientEngine;
+using WebSocket4Net;
+//using WebSocketSharp;
 
 namespace ChromeHtmlToPdfLib
 {
@@ -66,38 +68,18 @@ namespace ChromeHtmlToPdfLib
         /// <param name="url">The url</param>
         internal Connection(string url)
         {
-            _webSocket = new WebSocket(url)
-            {
-                EmitOnPing = false,
-                EnableRedirection = true,
-                Log = {Output = (_, __) => { }}
-            };
-
-            _webSocket.OnMessage += Websocket_OnMessage;
-            _webSocket.OnClose += Websocket_OnClose;
-            _webSocket.OnError += Websocket_OnError;
-            _webSocket.Connect();
+            _webSocket = new WebSocket(url);
+            _webSocket.MessageReceived += WebSocketOnMessageReceived;
+            _webSocket.Error += WebSocketOnError;
+            _webSocket.Closed += WebSocketOnClosed;
+            _webSocket.Open();
         }
         #endregion
 
         #region Websocket events
-        private void Websocket_OnError(object sender, ErrorEventArgs e)
+        private void WebSocketOnMessageReceived(object sender, MessageReceivedEventArgs e)
         {
-            if (_response.Task.Status != TaskStatus.RanToCompletion)
-                _response.SetResult(string.Empty);
-            throw new ChromeException(e.Message, e.Exception);
-        }
-
-        private void Websocket_OnClose(object sender, CloseEventArgs e)
-        {
-            if (_response.Task.Status != TaskStatus.RanToCompletion)
-                _response.SetResult(string.Empty);
-            Closed?.Invoke(this, e);
-        }
-
-        private void Websocket_OnMessage(object sender, MessageEventArgs e)
-        {
-            var response = e.Data;
+            var response = e.Message;
 
             CheckForError(response);
 
@@ -107,6 +89,20 @@ namespace ChromeHtmlToPdfLib
                 _response.SetResult(response);
 
             MessageReceived?.Invoke(this, response);
+        }
+
+        private void WebSocketOnError(object sender, ErrorEventArgs e)
+        {
+            if (_response.Task.Status != TaskStatus.RanToCompletion)
+                _response.SetResult(string.Empty);
+            throw new ChromeException(e.Exception.Message);
+        }
+
+        private void WebSocketOnClosed(object sender, EventArgs e)
+        {
+            if (_response.Task.Status != TaskStatus.RanToCompletion)
+                _response.SetResult(string.Empty);
+            Closed?.Invoke(this, e);
         }
         #endregion
 
@@ -122,8 +118,8 @@ namespace ChromeHtmlToPdfLib
             message.Id = _messageId;
             _response = new TaskCompletionSource<string>();
 
-            if (_webSocket.ReadyState == WebSocketState.Closed)
-                _webSocket.Connect();
+            if(_webSocket.State == WebSocketState.Closed)
+                _webSocket.Open();
 
             _webSocket.Send(message.ToJson());            
             return await _response.Task;
@@ -152,9 +148,12 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         public void Dispose()
         {
-            _webSocket.OnMessage -= Websocket_OnMessage;
-            _webSocket.OnClose -= Websocket_OnClose;
-            _webSocket.OnError -= Websocket_OnError;
+            if(_webSocket.State == WebSocketState.Open)
+                _webSocket.Close();
+
+            _webSocket.MessageReceived -= WebSocketOnMessageReceived;
+            _webSocket.Error -= WebSocketOnError;
+            _webSocket.Closed -= WebSocketOnClosed;
         }
         #endregion
     }
