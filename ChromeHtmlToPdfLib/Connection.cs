@@ -25,12 +25,12 @@
 //
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using ChromeHtmlToPdfLib.Exceptions;
 using ChromeHtmlToPdfLib.Protocol;
 using SuperSocket.ClientEngine;
 using WebSocket4Net;
-//using WebSocketSharp;
 
 namespace ChromeHtmlToPdfLib
 {
@@ -72,9 +72,33 @@ namespace ChromeHtmlToPdfLib
             _webSocket.MessageReceived += WebSocketOnMessageReceived;
             _webSocket.Error += WebSocketOnError;
             _webSocket.Closed += WebSocketOnClosed;
-            _webSocket.Open();
+            OpenWebSocket();
         }
         #endregion
+
+        #region OpenWebSocket
+        private void OpenWebSocket()
+        {
+            if (_webSocket.State == WebSocketState.Open)
+                return;
+
+            var connected = false;
+            var i = 0;
+
+            _webSocket.Opened += delegate { connected = true; };
+            _webSocket.Open();
+
+            while (!connected)
+            {
+                Thread.Sleep(1);
+                i += 1;
+
+                if (i == 30000)
+                    throw new ChromeException("Websocket connection timed out after 30 seconds");
+            }
+        }
+        #endregion
+
 
         #region Websocket events
         private void WebSocketOnMessageReceived(object sender, MessageReceivedEventArgs e)
@@ -117,10 +141,7 @@ namespace ChromeHtmlToPdfLib
             _messageId += 1;
             message.Id = _messageId;
             _response = new TaskCompletionSource<string>();
-
-            if(_webSocket.State == WebSocketState.Closed)
-                _webSocket.Open();
-
+            OpenWebSocket();
             _webSocket.Send(message.ToJson());            
             return await _response.Task;
         }
@@ -148,12 +169,14 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         public void Dispose()
         {
-            if(_webSocket.State == WebSocketState.Open)
-                _webSocket.Close();
-
             _webSocket.MessageReceived -= WebSocketOnMessageReceived;
             _webSocket.Error -= WebSocketOnError;
             _webSocket.Closed -= WebSocketOnClosed;
+
+            if(_webSocket.State == WebSocketState.Open)
+                _webSocket.Close();
+
+            _webSocket.Dispose();
         }
         #endregion
     }
