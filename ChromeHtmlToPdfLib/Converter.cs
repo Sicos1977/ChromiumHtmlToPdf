@@ -1079,48 +1079,12 @@ namespace ChromeHtmlToPdfLib
 
                 WriteToLog((inputUri.IsFile ? "File" : "Url") + " loaded");
 
-                var script = "var classElm = document.getElementsByClassName('MsoNormal');" + Environment.NewLine +
-                             "if (classElm != undefined) {" + Environment.NewLine +
-                             "    for (var i = 0; i < classElm.length; i++) {" + Environment.NewLine +
-                             "        classElm[i].style.fontFamily = 'Arial';" + Environment.NewLine +
-                             "        var spanElm = classElm[i].getElementsByTagName('span');" + Environment.NewLine +
-                             "        if (spanElm != undefined) {" + Environment.NewLine +
-                             "            if (spanElm[0] != undefined) {" + Environment.NewLine +
-                             "                spanElm[0].removeAttribute('style');" + Environment.NewLine +
-                             "            };" + Environment.NewLine +
-                             "        };" + Environment.NewLine +
-                             "    };" + Environment.NewLine +
-                             "};" + Environment.NewLine +
-                             "" + Environment.NewLine +
-                             "var wordSections = document.getElementsByClassName('WordSection1'); " +
-                             Environment.NewLine +
-                             "if (wordSections != undefined) {" + Environment.NewLine +
-                             "    for (var i = 0; i < wordSections.length; i++) {" + Environment.NewLine +
-                             "        wordSections[i].classList.remove('WordSection1');" + Environment.NewLine +
-                             "    };" + Environment.NewLine +
-                             "};" + Environment.NewLine +
-                             "" + Environment.NewLine +
-                             "document.body.style.cssText = null;" + Environment.NewLine +
-                             "" + Environment.NewLine +
-                             "function cssEngine(rule) {" + Environment.NewLine +
-                             "    var css = document.createElement('style');" + Environment.NewLine +
-                             "    css.type = 'text/css';" + Environment.NewLine +
-                             "    css.appendChild(document.createTextNode(rule));" + Environment.NewLine +
-                             "    document.getElementsByTagName('head')[0].appendChild(css);" + Environment.NewLine +
-                             "};" + Environment.NewLine +
-                             "" + Environment.NewLine +
-                             "// CSS rule" + Environment.NewLine +
-                             "var rule  = 'pre {white-space:pre-line;}';" + Environment.NewLine +
-                             "" + Environment.NewLine +
-                             "//Injecteer de rule in het dom object" + Environment.NewLine +
-                             "cssEngine(rule);";
-
-                //if (!string.IsNullOrWhiteSpace(RunJavascript))
-                //{
+                if (!string.IsNullOrWhiteSpace(RunJavascript))
+                {
                     WriteToLog("Start running javascript");
-                    _browser.RunJavascript(script);
+                    _browser.RunJavascript(RunJavascript);
                     WriteToLog("Done running javascript");
-                //}
+                }
 
                 if (CaptureSnapshot)
                 {
