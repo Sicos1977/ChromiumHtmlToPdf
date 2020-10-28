@@ -1273,6 +1273,12 @@ namespace ChromeHtmlToPdfLib
         {
             if (processId == 0) return;
 
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                KillProcess(processId);
+                return;
+            }
+
             using (var managedObjects = new ManagementObjectSearcher($"Select * From Win32_Process Where ParentProcessID={processId}").Get())
             {
                 if (managedObjects.Count > 0)
@@ -1281,16 +1287,21 @@ namespace ChromeHtmlToPdfLib
                         KillProcessAndChildren(Convert.ToInt32(managedObject["ProcessID"]));
                 }
 
-                try
-                {
-                    var process = Process.GetProcessById(processId);
-                    process.Kill();
-                }
-                catch (Exception exception)
-                {
-                    if (!exception.Message.Contains("is not running"))
-                        WriteToLog(exception.Message);
-                }
+                KillProcess(processId);
+            }
+        }
+
+        private void KillProcess(int processId)
+        {
+            try
+            {
+                var process = Process.GetProcessById(processId);
+                process.Kill();
+            }
+            catch (Exception exception)
+            {
+                if (!exception.Message.Contains("is not running"))
+                    WriteToLog(exception.Message);
             }
         }
         #endregion
