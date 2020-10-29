@@ -1273,24 +1273,15 @@ namespace ChromeHtmlToPdfLib
         {
             if (processId == 0) return;
 
-            using (var managedObjects = new ManagementObjectSearcher($"Select * From Win32_Process Where ParentProcessID={processId}").Get())
+            try
             {
-                if (managedObjects.Count > 0)
-                {
-                    foreach (var managedObject in managedObjects)
-                        KillProcessAndChildren(Convert.ToInt32(managedObject["ProcessID"]));
-                }
-
-                try
-                {
-                    var process = Process.GetProcessById(processId);
-                    process.Kill();
-                }
-                catch (Exception exception)
-                {
-                    if (!exception.Message.Contains("is not running"))
-                        WriteToLog(exception.Message);
-                }
+                var process = Process.GetProcessById(processId);
+                process.Kill(true);
+            }
+            catch (Exception exception)
+            {
+                if (!exception.Message.Contains("is not running"))
+                    WriteToLog(exception.Message);
             }
         }
         #endregion
