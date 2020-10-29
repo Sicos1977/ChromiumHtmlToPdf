@@ -154,6 +154,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <param name="pageSettings"><see cref="PageSettings"/></param>
         /// <param name="outputUri">The outputUri when this method returns <c>false</c> otherwise
         ///     <c>null</c> is returned</param>
+        /// <param name="urlBlacklist">A list of URL's that need to be blocked (use * as a wildcard)</param>
         /// <returns>Returns <c>false</c> when the images dit not fit the page, otherwise <c>true</c></returns>
         /// <exception cref="WebException">Raised when the webpage from <paramref name="inputUri"/> could not be downloaded</exception>
         public bool Validate(ConvertUri inputUri,
@@ -162,7 +163,8 @@ namespace ChromeHtmlToPdfLib.Helpers
             bool sanitizeHtml,
             HtmlSanitizer sanitizer,
             PageSettings pageSettings,
-            out ConvertUri outputUri)
+            out ConvertUri outputUri,
+            List<string> urlBlacklist = null)
         {
             outputUri = null;
 
@@ -251,6 +253,7 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                 WriteToLog("Validating all images if they need to be rotated and if they fit the page");
                 var unchangedImages = new List<IHtmlImageElement>();
+                var absoluteUri = inputUri.AbsoluteUri.Substring(0, inputUri.AbsoluteUri.LastIndexOf('/') + 1);
 
                 // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
                 foreach (var htmlImage in document.Images)
@@ -267,6 +270,17 @@ namespace ChromeHtmlToPdfLib.Helpers
                     var source = htmlImage.Source.Contains("?")
                         ? htmlImage.Source.Split('?')[0]
                         : htmlImage.Source;
+
+                    if (!RegularExpression.IsRegExMatch(urlBlacklist, source, out var matchedPattern) ||
+                        source.StartsWith(absoluteUri, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        WriteToLog($"The url '{source}' has been allowed");
+                    }
+                    else
+                    {
+                        WriteToLog($"The url '{source}' has been blocked by url blacklist pattern '{matchedPattern}'");
+                        continue;
+                    }
 
                     var extension = Path.GetExtension(FileManager.RemoveInvalidFileNameChars(source));
 

@@ -29,7 +29,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using ChromeHtmlToPdfLib.Exceptions;
@@ -38,7 +37,6 @@ using ChromeHtmlToPdfLib.Protocol;
 using ChromeHtmlToPdfLib.Settings;
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable UnusedAutoPropertyAccessor.Global
-
 // ReSharper disable AccessToDisposedClosure
 // ReSharper disable AccessToModifiedClosure
 
@@ -110,31 +108,6 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
 
-        #region IsRegExMatch
-        /// <summary>
-        /// Returns <c>true</c> when a match in <paramref name="patterns"/> has been
-        /// found for <paramref name="value"/>
-        /// </summary>
-        /// <param name="patterns">A list with regular expression</param>
-        /// <param name="value">The string where to find the match</param>
-        /// <param name="matchedPattern"></param>
-        /// <returns></returns>
-        private bool IsRegExMatch(IEnumerable<string> patterns, string value, out string matchedPattern)
-        {
-            foreach (var pattern in patterns)
-            {
-                if (Regex.IsMatch(value, pattern, RegexOptions.IgnoreCase))
-                {
-                    matchedPattern = Regex.Unescape(pattern);
-                    return true;
-                }
-            }
-
-            matchedPattern = string.Empty;
-            return false;
-        }
-        #endregion
-
         #region NavigateTo
         /// <summary>
         ///     Instructs Chrome to navigate to the given <paramref name="uri" />
@@ -175,7 +148,7 @@ namespace ChromeHtmlToPdfLib
                         var requestId = fetch.Params.RequestId;
                         var url = fetch.Params.Request.Url;
 
-                        if (!IsRegExMatch(urlBlacklist, url, out var matchedPattern) ||
+                        if (!RegularExpression.IsRegExMatch(urlBlacklist, url, out var matchedPattern) ||
                             url.StartsWith(absoluteUri, StringComparison.InvariantCultureIgnoreCase))
                         {
                             WriteToLog($"The url '{url}' has been allowed");

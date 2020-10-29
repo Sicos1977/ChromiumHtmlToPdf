@@ -29,7 +29,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Management;
 using ChromeHtmlToPdfLib.Settings;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -1032,8 +1031,7 @@ namespace ChromeHtmlToPdfLib
                 if (ImageResize || ImageRotate || SanitizeHtml)
                 {
                     var documentHelper = new DocumentHelper(GetTempDirectory, WebProxy, ImageDownloadTimeout, _logStream) { InstanceId = InstanceId };
-                    if (!documentHelper.Validate(inputUri, ImageResize, ImageRotate, SanitizeHtml, Sanitizer, pageSettings,
-                        out var outputUri))
+                    if (!documentHelper.Validate(inputUri, ImageResize, ImageRotate, SanitizeHtml, Sanitizer, pageSettings, out var outputUri, _urlBlacklist))
                         inputUri = outputUri;
                 }
 
@@ -1276,7 +1274,7 @@ namespace ChromeHtmlToPdfLib
             try
             {
                 var process = Process.GetProcessById(processId);
-                process.Kill(true);
+                process.Kill();
             }
             catch (Exception exception)
             {
