@@ -207,8 +207,6 @@ namespace ChromeHtmlToPdfLib.Helpers
                     if (sanitizer == null)
                         sanitizer = new HtmlSanitizer();
 
-                    sanitizer.AllowedSchemes.Add("cid");
-
                     sanitizer.FilterUrl += delegate(object sender, FilterUrlEventArgs args)
                     {
                         if (args.OriginalUrl != args.SanitizedUrl)
