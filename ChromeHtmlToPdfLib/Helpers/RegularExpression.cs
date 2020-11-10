@@ -16,6 +16,11 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <returns></returns>
         public static bool IsRegExMatch(IEnumerable<string> patterns, string value, out string matchedPattern)
         {
+            matchedPattern = string.Empty;
+
+            if (patterns == null)
+                return false;
+
             foreach (var pattern in patterns)
             {
                 if (Regex.IsMatch(value, pattern, RegexOptions.IgnoreCase))
@@ -25,7 +30,6 @@ namespace ChromeHtmlToPdfLib.Helpers
                 }
             }
 
-            matchedPattern = string.Empty;
             return false;
         }
         #endregion
