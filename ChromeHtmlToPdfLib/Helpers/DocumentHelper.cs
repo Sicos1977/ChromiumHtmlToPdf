@@ -190,8 +190,8 @@ namespace ChromeHtmlToPdfLib.Helpers
                 {
                     // ReSharper disable AccessToDisposedClosure
                     document = inputUri.Encoding != null
-                        ? context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}")).Result
-                        : context.OpenAsync(m => m.Content(webpage)).Result;
+                        ? context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString())).Result
+                        : context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString())).Result;
                     // ReSharper restore AccessToDisposedClosure
                 }
                 catch (Exception exception)
@@ -455,12 +455,12 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                 var imageUri = new Uri(imageSource);
 
-                if (imageUri.IsLoopback || imageUri.IsFile)
+                if (imageUri.IsFile)
                 {
-                    var fileName = imageUri.OriginalString;
+                    var fileName = imageUri.LocalPath;
 
                     if (!File.Exists(fileName))
-                        fileName = Path.Combine(localDirectory, imageUri.AbsolutePath.Trim('/'));
+                        fileName = Path.Combine(localDirectory, Path.GetFileName(imageUri.LocalPath));
 
                     if (File.Exists(fileName))
                     {
