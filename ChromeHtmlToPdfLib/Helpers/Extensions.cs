@@ -123,13 +123,11 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <returns></returns>
         public static async Task<TResult> Timeout<TResult>(this Task<TResult> task, int timeout)
         {
-            using (var timeoutCancellationTokenSource = new CancellationTokenSource())
-            {
-                var completedTask = await Task.WhenAny(task, Task.Delay(timeout, timeoutCancellationTokenSource.Token));
-                if (completedTask != task) throw new TaskTimedOutException("The task timed out");
-                timeoutCancellationTokenSource.Cancel();
-                return await task;
-            }
+            using var timeoutCancellationTokenSource = new CancellationTokenSource();
+            var completedTask = await Task.WhenAny(task, Task.Delay(timeout, timeoutCancellationTokenSource.Token));
+            if (completedTask != task) throw new TaskTimedOutException("The task timed out");
+            timeoutCancellationTokenSource.Cancel();
+            return await task;
         }
         #endregion
     }

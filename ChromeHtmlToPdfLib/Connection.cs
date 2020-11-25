@@ -99,7 +99,6 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
 
-
         #region Websocket events
         private void WebSocketOnMessageReceived(object sender, MessageReceivedEventArgs e)
         {

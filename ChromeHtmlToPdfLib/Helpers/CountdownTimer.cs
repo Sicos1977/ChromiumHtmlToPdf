@@ -69,6 +69,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         }
         #endregion
 
+        #region Reset
         /// <summary>
         ///     Stops the countdown and reset 
         /// </summary>
@@ -76,7 +77,9 @@ namespace ChromeHtmlToPdfLib.Helpers
         {
             _stopwatch.Reset();
         }
+        #endregion
 
+        #region Restart
         /// <summary>
         ///     Stops time interval measurement, resets the elapsed time to zero, and starts measuring elapsed time.
         /// </summary>
@@ -84,7 +87,9 @@ namespace ChromeHtmlToPdfLib.Helpers
         {
             _stopwatch.Restart();
         }
+        #endregion
 
+        #region Start
         /// <summary>
         ///     Starts, or resumes, measuring elapsed time for an interval.
         /// </summary>
@@ -92,7 +97,9 @@ namespace ChromeHtmlToPdfLib.Helpers
         {
             _stopwatch.Start();
         }
+        #endregion
 
+        #region Stop
         /// <summary>
         ///     Stops measuring elapsed time for an interval.
         /// </summary>
@@ -100,5 +107,6 @@ namespace ChromeHtmlToPdfLib.Helpers
         {
             _stopwatch.Stop();
         }
+        #endregion
     }
 }

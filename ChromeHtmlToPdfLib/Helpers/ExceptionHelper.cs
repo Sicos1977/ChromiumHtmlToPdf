@@ -46,14 +46,17 @@ namespace ChromeHtmlToPdfLib.Helpers
 
             var stackframe = new StackFrame(2, true);
 
-            var s = assembly.FullName.Split(',');
+            if (assembly.FullName != null)
+            {
+                var s = assembly.FullName.Split(',');
 
-            var reflectedType = stackframe.GetMethod().ReflectedType;
-            if (reflectedType != null)
-                return s[0] + "::" +
-                       reflectedType.Name
-                       + "."
-                       + stackframe.GetMethod().Name + "()";
+                var reflectedType = stackframe.GetMethod()?.ReflectedType;
+                if (reflectedType != null)
+                    return s[0] + "::" +
+                           reflectedType.Name
+                           + "."
+                           + stackframe.GetMethod()?.Name + "()";
+            }
 
             return string.Empty;
         }
