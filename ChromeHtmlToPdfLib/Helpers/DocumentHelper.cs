@@ -210,43 +210,103 @@ namespace ChromeHtmlToPdfLib.Helpers
                     sanitizer.FilterUrl += delegate(object sender, FilterUrlEventArgs args)
                     {
                         if (args.OriginalUrl != args.SanitizedUrl)
+                        {
                             WriteToLog($"URL sanitized from '{args.OriginalUrl}' to '{args.SanitizedUrl}'");
+                            htmlChanged = true;
+                        }
                     };
 
                     sanitizer.RemovingAtRule += delegate(object sender, RemovingAtRuleEventArgs args)
                     {
                         WriteToLog($"Removing CSS at-rule '{args.Rule.CssText}' from tag '{args.Tag.TagName}'");
+                        htmlChanged = true;
                     };
 
                     sanitizer.RemovingAttribute += delegate(object sender, RemovingAttributeEventArgs args)
                     {
                         WriteToLog($"Removing attribute '{args.Attribute.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                        htmlChanged = true;
                     };
 
                     sanitizer.RemovingComment += delegate(object sender, RemovingCommentEventArgs args)
                     {
                         WriteToLog($"Removing comment '{args.Comment.TextContent}'");
+                        htmlChanged = true;
                     };
 
                     sanitizer.RemovingCssClass += delegate(object sender, RemovingCssClassEventArgs args)
                     {
                         WriteToLog($"Removing CSS class '{args.CssClass}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                        htmlChanged = true;
                     };
 
                     sanitizer.RemovingStyle += delegate(object sender, RemovingStyleEventArgs args)
                     {
                         WriteToLog($"Removing style '{args.Style.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                        htmlChanged = true;
                     };
 
                     sanitizer.RemovingTag += delegate(object sender, RemovingTagEventArgs args)
                     {
                         WriteToLog($"Removing tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                        htmlChanged = true;
                     };
 
                     sanitizer.SanitizeDom(document as IHtmlDocument);
 
-                    htmlChanged = true;
                     WriteToLog("HTML sanitized");
+
+                    if (htmlChanged)
+                    {
+                        var sanitizedOutputFile = GetTempFile(".htm");
+
+                        try
+                        {
+                            WriteToLog($"Writing sanitized webpage to '{sanitizedOutputFile}'");
+
+                            using (var fileStream = new FileStream(sanitizedOutputFile, FileMode.CreateNew, FileAccess.Write))
+                            {
+                                if (inputUri.Encoding != null)
+                                {
+                                    using (var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
+                                        document.ToHtml(textWriter, new HtmlMarkupFormatter());
+                                }
+                                else
+                                    using (var textWriter = new StreamWriter(fileStream))
+                                        document.ToHtml(textWriter, new HtmlMarkupFormatter());
+                            }
+
+                            WriteToLog("Written");
+                        }
+                        catch (Exception exception)
+                        {
+                            WriteToLog($"Could not generate new html file '{sanitizedOutputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
+                            return true;
+                        }
+
+                        try
+                        {
+                            using (var sanitizedWebpage = File.OpenRead(sanitizedOutputFile))
+                            {
+                                WriteToLog($"Loading sanitized webpage from '{sanitizedOutputFile}'");
+
+                                // ReSharper disable AccessToDisposedClosure
+                                document = inputUri.Encoding != null
+                                    ? context.OpenAsync(m => m.Content(sanitizedWebpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString())).Result
+                                    : context.OpenAsync(m => m.Content(sanitizedWebpage).Address(inputUri.ToString())).Result;
+                                // ReSharper restore AccessToDisposedClosure
+
+                                WriteToLog("Loaded");
+                            }
+                        }
+                        catch (Exception exception)
+                        {
+                            WriteToLog($"Exception occured in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
+                            return true;
+                        }
+
+                        htmlChanged = false;
+                    }
                 }
 
                 WriteToLog("Validating all images if they need to be rotated and if they fit the page");
@@ -393,6 +453,8 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                 try
                 {
+                    WriteToLog($"Writing changed webpage to '{outputFile}'");
+
                     using (var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write))
                     {
                         if (inputUri.Encoding != null)
@@ -405,6 +467,8 @@ namespace ChromeHtmlToPdfLib.Helpers
                                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
 
                     }
+
+                    WriteToLog("Written");
 
                     return false;
                 }
