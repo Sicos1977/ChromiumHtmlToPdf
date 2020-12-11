@@ -27,63 +27,68 @@
 namespace ChromeHtmlToPdfLib.Enums
 {
     /// <summary>
-    /// The paper formats to use when converting to PDF
+    ///     The paper formats to use when converting to PDF
     /// </summary>
     public enum PaperFormat
     {
         /// <summary>
-        /// Letter format
+        ///     Letter format
         /// </summary>
         Letter,
 
         /// <summary>
-        /// Legal format
+        ///     Legal format
         /// </summary>
         Legal,
 
         /// <summary>
-        /// Tabloid format
+        ///     Tabloid format
         /// </summary>
         Tabloid,
 
         /// <summary>
-        /// Ledger format
+        ///     Ledger format
         /// </summary>
         Ledger,
 
         /// <summary>
-        /// A0 format
+        ///     A0 format
         /// </summary>
         A0,
 
         /// <summary>
-        /// A1 format
+        ///     A1 format
         /// </summary>
         A1,
 
         /// <summary>
-        /// A2 format
+        ///     A2 format
         /// </summary>
         A2,
 
         /// <summary>
-        /// A3 format
+        ///     A3 format
         /// </summary>
         A3,
 
         /// <summary>
-        /// A4 format
+        ///     A4 format
         /// </summary>
         A4,
 
         /// <summary>
-        /// A5 format
+        ///     A5 format
         /// </summary>
         A5,
 
         /// <summary>
-        /// A6 format
+        ///     A6 format
         /// </summary>
-        A6
+        A6,
+
+        /// <summary>
+        ///     Fit the page to the width and height of the content it is displaying
+        /// </summary>
+        FitPageToContent
     }
 }
