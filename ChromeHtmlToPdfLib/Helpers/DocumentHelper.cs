@@ -46,7 +46,7 @@ using Image = System.Drawing.Image;
 namespace ChromeHtmlToPdfLib.Helpers
 {
     /// <summary>
-    ///     This class contains helper methods for image
+    ///     This class contains helper methods
     /// </summary>
     public class DocumentHelper
     {
@@ -272,6 +272,91 @@ namespace ChromeHtmlToPdfLib.Helpers
             }
         }
         #endregion
+
+        /// <summary>
+        /// Sanitizes the HTML by removing all forbidden elements
+        /// </summary>
+        /// <param name="inputUri">The uri of the webpage</param>
+        /// <param name="sanitizer"><see cref="HtmlSanitizer"/></param>
+        /// <param name="outputUri">The outputUri when this method returns <c>false</c> otherwise
+        ///     <c>null</c> is returned</param>
+        /// <returns></returns>
+        public void FitPageToContent(
+            ConvertUri inputUri,
+            HtmlSanitizer sanitizer,
+            out ConvertUri outputUri)
+        {
+            outputUri = null;
+
+            using (var webpage = inputUri.IsFile
+                ? File.OpenRead(inputUri.OriginalString)
+                : DownloadStream(inputUri))
+            {
+                var config = Configuration.Default.WithCss();
+                var context = BrowsingContext.New(config);
+
+                try
+                {
+                    // ReSharper disable AccessToDisposedClosure
+                    var document = inputUri.Encoding != null
+                        ? context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString())).Result
+                        : context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString())).Result;
+                    // ReSharper restore AccessToDisposedClosure
+
+                    var styleElement = new HtmlElement(document as Document, null)
+                    {
+                        InnerHtml = "<style>" + Environment.NewLine +
+                                    "   html, body " + Environment.NewLine +
+                                    "   {" + Environment.NewLine +
+                                    "      width:  fit-content;" + Environment.NewLine +
+                                    "      height: fit-content;" + Environment.NewLine +
+                                    "      margin:  0px;" + Environment.NewLine +
+                                    "      padding: 0px;" + Environment.NewLine +
+                                    "   }" + Environment.NewLine +
+                                    "</style>" + Environment.NewLine +
+                                    "" + Environment.NewLine +
+                                    "<style id=\"pagestyle\">" + Environment.NewLine +
+                                    "   @page " + Environment.NewLine +
+                                    "   { " + Environment.NewLine +
+                                    "      size: 100px 100px ; " + Environment.NewLine +
+                                    "      margin : 0px " + Environment.NewLine +
+                                    "   }" + Environment.NewLine +
+                                    "</style>"
+                    };
+
+                    document.Head.AppendElement(styleElement);
+
+                    var pageElement = new HtmlElement(document as Document, null)
+                    {
+                        InnerHtml = "<script>" + Environment.NewLine +
+                                    "window.onload(fixpage);" + Environment.NewLine +
+                                    "" + Environment.NewLine +
+                                    "function fixpage() {" + Environment.NewLine +
+                                    "" + Environment.NewLine +
+                                    "   renderBlock = document.getElementsByTagName('html')[0];" + Environment.NewLine +
+                                    "   renderBlockInfo = window.getComputedStyle(renderBlock);" +
+                                    Environment.NewLine +
+                                    "" + Environment.NewLine +
+                                    "    // Fix chrome page bug" + Environment.NewLine +
+                                    "    fixHeight = parseInt(renderBlockInfo.height) + 1 + 'px';" +
+                                    Environment.NewLine +
+                                    "" + Environment.NewLine +
+                                    "    pageCss = `@page { size: \\${renderBlockInfo.width} \\${fixHeight} ; margin:0; }`" +
+                                    Environment.NewLine +
+                                    "    document.getElementById('pagestyle').innerHTML = pageCss;" + Environment.NewLine +
+                                    "}" + Environment.NewLine +
+                                    "</script>"
+                    };
+
+                    document.Body.AppendElement(pageElement);
+                }
+                catch (Exception exception)
+                {
+                    WriteToLog($"Exception occured in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
+                    return;
+                }
+            }
+        }
 
         #region ValidateImages
         /// <summary>
