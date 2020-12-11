@@ -1031,8 +1031,18 @@ namespace ChromeHtmlToPdfLib
                 if (ImageResize || ImageRotate || SanitizeHtml)
                 {
                     var documentHelper = new DocumentHelper(GetTempDirectory, WebProxy, ImageDownloadTimeout, _logStream) { InstanceId = InstanceId };
-                    if (!documentHelper.Validate(inputUri, ImageResize, ImageRotate, SanitizeHtml, Sanitizer, pageSettings, out var outputUri, _urlBlacklist))
-                        inputUri = outputUri;
+
+                    if (SanitizeHtml)
+                    {
+                        if (documentHelper.SanitizeHtml(inputUri, Sanitizer, out var outputUri))
+                            inputUri = outputUri;
+                    }
+                    
+                    if (ImageResize || ImageRotate)
+                    {
+                        if (documentHelper.ValidateImages(inputUri, ImageResize, ImageRotate, pageSettings, out var outputUri, _urlBlacklist))
+                            inputUri = outputUri;
+                    }
                 }
 
                 StartChromeHeadless();

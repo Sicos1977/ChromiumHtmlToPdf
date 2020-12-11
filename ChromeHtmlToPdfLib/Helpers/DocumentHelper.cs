@@ -40,6 +40,8 @@ using AngleSharp.Html.Dom;
 using ChromeHtmlToPdfLib.Settings;
 using Ganss.XSS;
 using Image = System.Drawing.Image;
+// ReSharper disable ConvertToUsingDeclaration
+// ReSharper disable ConvertIfStatementToNullCoalescingAssignment
 
 namespace ChromeHtmlToPdfLib.Helpers
 {
@@ -138,47 +140,26 @@ namespace ChromeHtmlToPdfLib.Helpers
         }
         #endregion
 
-        #region ValidateImages
+        #region SanitizeHtml
         /// <summary>
-        /// Validates all images if they are rotated correctly (when <paramref name="rotate"/> is set
-        /// to <c>true</c>) and fit on the given <paramref name="pageSettings"/>.
-        /// If an image does need to be rotated or does not fit then a local copy is made of 
-        /// the <paramref name="inputUri"/> file.
+        /// Sanitizes the HTML by removing all forbidden elements
         /// </summary>
         /// <param name="inputUri">The uri of the webpage</param>
-        /// <param name="resize">When set to <c>true</c> then an image is resized when needed</param>
-        /// <param name="rotate">When set to <c>true</c> then the EXIF information of an
-        ///     image is read and when needed the image is automatic rotated</param>
-        /// <param name="sanitizeHtml">When set to <c>true</c> then the HTML with get sanitized</param>
         /// <param name="sanitizer"><see cref="HtmlSanitizer"/></param>
-        /// <param name="pageSettings"><see cref="PageSettings"/></param>
         /// <param name="outputUri">The outputUri when this method returns <c>false</c> otherwise
         ///     <c>null</c> is returned</param>
-        /// <param name="urlBlacklist">A list of URL's that need to be blocked (use * as a wildcard)</param>
-        /// <returns>Returns <c>false</c> when the images dit not fit the page, otherwise <c>true</c></returns>
-        /// <exception cref="WebException">Raised when the webpage from <paramref name="inputUri"/> could not be downloaded</exception>
-        public bool Validate(ConvertUri inputUri,
-            bool resize,
-            bool rotate,
-            bool sanitizeHtml,
-            HtmlSanitizer sanitizer,
-            PageSettings pageSettings,
-            out ConvertUri outputUri,
-            List<string> urlBlacklist = null)
+        /// <returns></returns>
+        public bool SanitizeHtml(
+            ConvertUri inputUri,
+            HtmlSanitizer sanitizer, 
+            out ConvertUri outputUri)
         {
             outputUri = null;
-
-            string localDirectory = null;
-
-            if (inputUri.IsFile)
-                localDirectory = Path.GetDirectoryName(inputUri.OriginalString);
 
             using (var webpage = inputUri.IsFile
                 ? File.OpenRead(inputUri.OriginalString)
                 : DownloadStream(inputUri))
             {
-                var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft - pageSettings.MarginRight) * 96.0;
-                var maxHeight = (pageSettings.PaperHeight - pageSettings.MarginTop - pageSettings.MarginBottom) * 96.0;
 
                 var htmlChanged = false;
                 var config = Configuration.Default.WithCss();
@@ -197,116 +178,158 @@ namespace ChromeHtmlToPdfLib.Helpers
                 catch (Exception exception)
                 {
                     WriteToLog($"Exception occured in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
-                    return true;
+                    return false;
                 }
 
-                if (sanitizeHtml)
+                WriteToLog("Sanitizing HTML");
+
+                if (sanitizer == null)
+                    sanitizer = new HtmlSanitizer();
+
+                sanitizer.FilterUrl += delegate(object sender, FilterUrlEventArgs args)
                 {
-                    WriteToLog("Sanitizing HTML");
-
-                    if (sanitizer == null)
-                        sanitizer = new HtmlSanitizer();
-
-                    sanitizer.FilterUrl += delegate(object sender, FilterUrlEventArgs args)
+                    if (args.OriginalUrl != args.SanitizedUrl)
                     {
-                        if (args.OriginalUrl != args.SanitizedUrl)
-                        {
-                            WriteToLog($"URL sanitized from '{args.OriginalUrl}' to '{args.SanitizedUrl}'");
-                            htmlChanged = true;
-                        }
-                    };
-
-                    sanitizer.RemovingAtRule += delegate(object sender, RemovingAtRuleEventArgs args)
-                    {
-                        WriteToLog($"Removing CSS at-rule '{args.Rule.CssText}' from tag '{args.Tag.TagName}'");
+                        WriteToLog($"URL sanitized from '{args.OriginalUrl}' to '{args.SanitizedUrl}'");
                         htmlChanged = true;
-                    };
-
-                    sanitizer.RemovingAttribute += delegate(object sender, RemovingAttributeEventArgs args)
-                    {
-                        WriteToLog($"Removing attribute '{args.Attribute.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
-                        htmlChanged = true;
-                    };
-
-                    sanitizer.RemovingComment += delegate(object sender, RemovingCommentEventArgs args)
-                    {
-                        WriteToLog($"Removing comment '{args.Comment.TextContent}'");
-                        htmlChanged = true;
-                    };
-
-                    sanitizer.RemovingCssClass += delegate(object sender, RemovingCssClassEventArgs args)
-                    {
-                        WriteToLog($"Removing CSS class '{args.CssClass}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
-                        htmlChanged = true;
-                    };
-
-                    sanitizer.RemovingStyle += delegate(object sender, RemovingStyleEventArgs args)
-                    {
-                        WriteToLog($"Removing style '{args.Style.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
-                        htmlChanged = true;
-                    };
-
-                    sanitizer.RemovingTag += delegate(object sender, RemovingTagEventArgs args)
-                    {
-                        WriteToLog($"Removing tag '{args.Tag.TagName}', reason '{args.Reason}'");
-                        htmlChanged = true;
-                    };
-
-                    sanitizer.SanitizeDom(document as IHtmlDocument);
-
-                    WriteToLog("HTML sanitized");
-
-                    if (htmlChanged)
-                    {
-                        var sanitizedOutputFile = GetTempFile(".htm");
-
-                        try
-                        {
-                            WriteToLog($"Writing sanitized webpage to '{sanitizedOutputFile}'");
-
-                            using (var fileStream = new FileStream(sanitizedOutputFile, FileMode.CreateNew, FileAccess.Write))
-                            {
-                                if (inputUri.Encoding != null)
-                                {
-                                    using (var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
-                                        document.ToHtml(textWriter, new HtmlMarkupFormatter());
-                                }
-                                else
-                                    using (var textWriter = new StreamWriter(fileStream))
-                                        document.ToHtml(textWriter, new HtmlMarkupFormatter());
-                            }
-
-                            WriteToLog("Written");
-                        }
-                        catch (Exception exception)
-                        {
-                            WriteToLog($"Could not generate new html file '{sanitizedOutputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
-                            return true;
-                        }
-
-                        try
-                        {
-                            using (var sanitizedWebpage = File.OpenRead(sanitizedOutputFile))
-                            {
-                                WriteToLog($"Loading sanitized webpage from '{sanitizedOutputFile}'");
-
-                                // ReSharper disable AccessToDisposedClosure
-                                document = inputUri.Encoding != null
-                                    ? context.OpenAsync(m => m.Content(sanitizedWebpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString())).Result
-                                    : context.OpenAsync(m => m.Content(sanitizedWebpage).Address(inputUri.ToString())).Result;
-                                // ReSharper restore AccessToDisposedClosure
-
-                                WriteToLog("Loaded");
-                            }
-                        }
-                        catch (Exception exception)
-                        {
-                            WriteToLog($"Exception occured in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
-                            return true;
-                        }
-
-                        htmlChanged = false;
                     }
+                };
+
+                sanitizer.RemovingAtRule += delegate(object sender, RemovingAtRuleEventArgs args)
+                {
+                    WriteToLog($"Removing CSS at-rule '{args.Rule.CssText}' from tag '{args.Tag.TagName}'");
+                    htmlChanged = true;
+                };
+
+                sanitizer.RemovingAttribute += delegate(object sender, RemovingAttributeEventArgs args)
+                {
+                    WriteToLog(
+                        $"Removing attribute '{args.Attribute.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                    htmlChanged = true;
+                };
+
+                sanitizer.RemovingComment += delegate(object sender, RemovingCommentEventArgs args)
+                {
+                    WriteToLog($"Removing comment '{args.Comment.TextContent}'");
+                    htmlChanged = true;
+                };
+
+                sanitizer.RemovingCssClass += delegate(object sender, RemovingCssClassEventArgs args)
+                {
+                    WriteToLog(
+                        $"Removing CSS class '{args.CssClass}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                    htmlChanged = true;
+                };
+
+                sanitizer.RemovingStyle += delegate(object sender, RemovingStyleEventArgs args)
+                {
+                    WriteToLog(
+                        $"Removing style '{args.Style.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                    htmlChanged = true;
+                };
+
+                sanitizer.RemovingTag += delegate(object sender, RemovingTagEventArgs args)
+                {
+                    WriteToLog($"Removing tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                    htmlChanged = true;
+                };
+
+                sanitizer.SanitizeDom(document as IHtmlDocument);
+
+                WriteToLog("HTML sanitized");
+
+                if (!htmlChanged)
+                    return false;
+
+                var sanitizedOutputFile = GetTempFile(".htm");
+
+                try
+                {
+                    WriteToLog($"Writing sanitized webpage to '{sanitizedOutputFile}'");
+
+                    using (var fileStream =
+                        new FileStream(sanitizedOutputFile, FileMode.CreateNew, FileAccess.Write))
+                    {
+                        if (inputUri.Encoding != null)
+                        {
+                            using (var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
+                                document.ToHtml(textWriter, new HtmlMarkupFormatter());
+                        }
+                        else
+                            using (var textWriter = new StreamWriter(fileStream))
+                                document.ToHtml(textWriter, new HtmlMarkupFormatter());
+                    }
+
+                    WriteToLog("Sanitized webpage written");
+
+                    return true;
+                }
+                catch (Exception exception)
+                {
+                    WriteToLog($"Could not write new html file '{sanitizedOutputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
+                    return false;
+                }
+            }
+        }
+        #endregion
+
+        #region ValidateImages
+        /// <summary>
+        /// Validates all images if they are rotated correctly (when <paramref name="rotate"/> is set
+        /// to <c>true</c>) and fit on the given <paramref name="pageSettings"/>.
+        /// If an image does need to be rotated or does not fit then a local copy is made of 
+        /// the <paramref name="inputUri"/> file.
+        /// </summary>
+        /// <param name="inputUri">The uri of the webpage</param>
+        /// <param name="resize">When set to <c>true</c> then an image is resized when needed</param>
+        /// <param name="rotate">When set to <c>true</c> then the EXIF information of an
+        ///     image is read and when needed the image is automatic rotated</param>
+        /// <param name="pageSettings"><see cref="PageSettings"/></param>
+        /// <param name="outputUri">The outputUri when this method returns <c>true</c> otherwise
+        ///     <c>null</c> is returned</param>
+        /// <param name="urlBlacklist">A list of URL's that need to be blocked (use * as a wildcard)</param>
+        /// <returns>Returns <c>false</c> when the images dit not fit the page, otherwise <c>true</c></returns>
+        /// <exception cref="WebException">Raised when the webpage from <paramref name="inputUri"/> could not be downloaded</exception>
+        public bool ValidateImages(
+            ConvertUri inputUri,
+            bool resize,
+            bool rotate,
+            PageSettings pageSettings,
+            out ConvertUri outputUri,
+            List<string> urlBlacklist = null)
+        {
+            outputUri = null;
+
+            using (var webpage = inputUri.IsFile
+                ? File.OpenRead(inputUri.OriginalString)
+                : DownloadStream(inputUri))
+            {
+                var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft - pageSettings.MarginRight) * 96.0;
+                var maxHeight = (pageSettings.PaperHeight - pageSettings.MarginTop - pageSettings.MarginBottom) * 96.0;
+
+                string localDirectory = null;
+
+                if (inputUri.IsFile)
+                    localDirectory = Path.GetDirectoryName(inputUri.OriginalString);
+
+                var htmlChanged = false;
+                var config = Configuration.Default.WithCss();
+                var context = BrowsingContext.New(config);
+
+                IDocument document;
+
+                try
+                {
+                    // ReSharper disable AccessToDisposedClosure
+                    document = inputUri.Encoding != null
+                        ? context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString())).Result
+                        : context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString())).Result;
+                    // ReSharper restore AccessToDisposedClosure
+                }
+                catch (Exception exception)
+                {
+                    WriteToLog($"Exception occured in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
+                    return false;
                 }
 
                 WriteToLog("Validating all images if they need to be rotated and if they fit the page");
@@ -350,6 +373,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                         var width = htmlImage.DisplayWidth;
                         var height = htmlImage.DisplayHeight;
 
+                       
                         if (rotate)
                         {
                             image = GetImage(htmlImage.Source, localDirectory);
@@ -425,7 +449,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                 }
                 
                 if (!htmlChanged)
-                    return true;
+                    return false;
 
                 foreach (var unchangedImage in unchangedImages)
                 {
@@ -468,14 +492,14 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                     }
 
-                    WriteToLog("Written");
+                    WriteToLog("Changed webpage written");
 
-                    return false;
+                    return true;
                 }
                 catch (Exception exception)
                 {
-                    WriteToLog($"Could not generate new html file '{outputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
-                    return true;
+                    WriteToLog($"Could not write new html file '{outputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
+                    return false;
                 }
             }
         }
