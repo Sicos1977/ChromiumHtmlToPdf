@@ -242,6 +242,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                     return false;
 
                 var sanitizedOutputFile = GetTempFile(".htm");
+                outputUri = new ConvertUri(sanitizedOutputFile, inputUri.Encoding);
 
                 try
                 {
@@ -261,7 +262,6 @@ namespace ChromeHtmlToPdfLib.Helpers
                     }
 
                     WriteToLog("Sanitized webpage written");
-
                     return true;
                 }
                 catch (Exception exception)
@@ -273,18 +273,15 @@ namespace ChromeHtmlToPdfLib.Helpers
         }
         #endregion
 
+        #region FitPageToContent
         /// <summary>
         /// Sanitizes the HTML by removing all forbidden elements
         /// </summary>
         /// <param name="inputUri">The uri of the webpage</param>
-        /// <param name="sanitizer"><see cref="HtmlSanitizer"/></param>
         /// <param name="outputUri">The outputUri when this method returns <c>false</c> otherwise
         ///     <c>null</c> is returned</param>
         /// <returns></returns>
-        public void FitPageToContent(
-            ConvertUri inputUri,
-            HtmlSanitizer sanitizer,
-            out ConvertUri outputUri)
+        public bool FitPageToContent(ConvertUri inputUri, out ConvertUri outputUri)
         {
             outputUri = null;
 
@@ -295,57 +292,58 @@ namespace ChromeHtmlToPdfLib.Helpers
                 var config = Configuration.Default.WithCss();
                 var context = BrowsingContext.New(config);
 
+                IDocument document;
+
                 try
                 {
                     // ReSharper disable AccessToDisposedClosure
-                    var document = inputUri.Encoding != null
+                    document = inputUri.Encoding != null
                         ? context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString())).Result
                         : context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString())).Result;
                     // ReSharper restore AccessToDisposedClosure
 
-                    var styleElement = new HtmlElement(document as Document, null)
+                    var styleElement = new HtmlElement(document as Document, "style")
                     {
-                        InnerHtml = "<style>" + Environment.NewLine +
-                                    "   html, body " + Environment.NewLine +
-                                    "   {" + Environment.NewLine +
-                                    "      width:  fit-content;" + Environment.NewLine +
-                                    "      height: fit-content;" + Environment.NewLine +
-                                    "      margin:  0px;" + Environment.NewLine +
-                                    "      padding: 0px;" + Environment.NewLine +
-                                    "   }" + Environment.NewLine +
-                                    "</style>" + Environment.NewLine +
-                                    "" + Environment.NewLine +
-                                    "<style id=\"pagestyle\">" + Environment.NewLine +
-                                    "   @page " + Environment.NewLine +
-                                    "   { " + Environment.NewLine +
-                                    "      size: 100px 100px ; " + Environment.NewLine +
-                                    "      margin : 0px " + Environment.NewLine +
-                                    "   }" + Environment.NewLine +
-                                    "</style>"
+                        InnerHtml = "html, body " + Environment.NewLine +
+                                    "{" + Environment.NewLine +
+                                    "   width:  fit-content;" + Environment.NewLine +
+                                    "   height: fit-content;" + Environment.NewLine +
+                                    "   margin:  0px;" + Environment.NewLine +
+                                    "   padding: 0px;" + Environment.NewLine +
+                                    "}" + Environment.NewLine
+
                     };
 
                     document.Head.AppendElement(styleElement);
 
-                    var pageElement = new HtmlElement(document as Document, null)
+                    var pageStyleElement = new HtmlElement(document as Document, "style")
                     {
-                        InnerHtml = "<script>" + Environment.NewLine +
-                                    "window.onload(fixpage);" + Environment.NewLine +
-                                    "" + Environment.NewLine +
-                                    "function fixpage() {" + Environment.NewLine +
+                        Id = "pagestyle",
+                        InnerHtml = "@page " + Environment.NewLine +
+                                    "{ " + Environment.NewLine +
+                                    "   size: 100px 100px ; " + Environment.NewLine +
+                                    "   margin : 0px " + Environment.NewLine +
+                                    "}" + Environment.NewLine
+
+                    };
+
+                    document.Head.AppendElement(pageStyleElement);
+                    
+                    var pageElement = new HtmlElement(document as Document, "script")
+                    {
+                        InnerHtml = "window.onload = function fixpage() {" + Environment.NewLine +
                                     "" + Environment.NewLine +
                                     "   renderBlock = document.getElementsByTagName('html')[0];" + Environment.NewLine +
-                                    "   renderBlockInfo = window.getComputedStyle(renderBlock);" +
-                                    Environment.NewLine +
+                                    "   renderBlockInfo = window.getComputedStyle(renderBlock);" + Environment.NewLine +
                                     "" + Environment.NewLine +
                                     "    // Fix chrome page bug" + Environment.NewLine +
-                                    "    fixHeight = parseInt(renderBlockInfo.height) + 1 + 'px';" +
+                                    "    fixHeight = parseInt(renderBlockInfo.height) + 'px';" +
                                     Environment.NewLine +
                                     "" + Environment.NewLine +
-                                    "    pageCss = `@page { size: \\${renderBlockInfo.width} \\${fixHeight} ; margin:0; }`" +
+                                    "    pageCss = '@page { size: ' + renderBlockInfo.width + ' ' + fixHeight + '; margin: 0; }'" +
                                     Environment.NewLine +
                                     "    document.getElementById('pagestyle').innerHTML = pageCss;" + Environment.NewLine +
-                                    "}" + Environment.NewLine +
-                                    "</script>"
+                                    "}" + Environment.NewLine
                     };
 
                     document.Body.AppendElement(pageElement);
@@ -353,10 +351,40 @@ namespace ChromeHtmlToPdfLib.Helpers
                 catch (Exception exception)
                 {
                     WriteToLog($"Exception occured in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
-                    return;
+                    return false;
+                }
+
+                var outputFile = GetTempFile(".htm");
+                outputUri = new ConvertUri(outputFile, inputUri.Encoding);
+
+                try
+                {
+                    WriteToLog($"Writing changed webpage to '{outputFile}'");
+
+                    using (var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write))
+                    {
+                        if (inputUri.Encoding != null)
+                        {
+                            using (var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
+                                document.ToHtml(textWriter, new HtmlMarkupFormatter());
+                        }
+                        else
+                            using (var textWriter = new StreamWriter(fileStream))
+                                document.ToHtml(textWriter, new HtmlMarkupFormatter());
+
+                    }
+
+                    WriteToLog("Changed webpage written");
+                    return true;
+                }
+                catch (Exception exception)
+                {
+                    WriteToLog($"Could not write new html file '{outputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
+                    return false;
                 }
             }
         }
+        #endregion
 
         #region ValidateImages
         /// <summary>

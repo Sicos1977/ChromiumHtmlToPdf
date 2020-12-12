@@ -26,6 +26,7 @@
 
 using System;
 using ChromeHtmlToPdfLib.Enums;
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 
 namespace ChromeHtmlToPdfLib.Settings
 {
@@ -113,6 +114,11 @@ namespace ChromeHtmlToPdfLib.Settings
         /// </summary>
         // ReSharper disable once InconsistentNaming
         public bool PreferCSSPageSize { get; set; }
+
+        /// <summary>
+        ///     The paperformat
+        /// </summary>
+        internal PaperFormat PaperFormat { get; }
         #endregion
 
         #region PageSettings
@@ -120,7 +126,7 @@ namespace ChromeHtmlToPdfLib.Settings
         /// Makes this object and sets all the settings to it's default values
         /// </summary>
         /// <remarks>
-        /// Default paper settings are set to <see cref="PaperFormat.A4"/>
+        /// Default paper settings are set to <see cref="Enums.PaperFormat.A4"/>
         /// </remarks>
         public PageSettings()
         {
@@ -131,12 +137,13 @@ namespace ChromeHtmlToPdfLib.Settings
         /// Makes this object and sets all the settings to it's default values
         /// </summary>
         /// <remarks>
-        /// Default paper settings are set to <see cref="PaperFormat.A4"/>
+        /// Default paper settings are set to <see cref="Enums.PaperFormat.A4"/>
         /// </remarks>
         /// <param name="paperFormat"></param>
         public PageSettings(PaperFormat paperFormat)
         {
             ResetToDefaultSettings();
+            PaperFormat = paperFormat;
             SetPaperFormat(paperFormat);
         }
         #endregion
@@ -173,46 +180,62 @@ namespace ChromeHtmlToPdfLib.Settings
                     PaperWidth = 8.5;
                     PaperHeight = 11;
                     break;
+
                 case PaperFormat.Legal:
                     PaperWidth = 8.5;
                     PaperHeight = 14;
                     break;
+
                 case PaperFormat.Tabloid:
                     PaperWidth = 11;
                     PaperHeight = 17;
                     break;
+
                 case PaperFormat.Ledger:
                     PaperWidth = 17;
                     PaperHeight = 11;
                     break;
+
                 case PaperFormat.A0:
                     PaperWidth = 33.1;
                     PaperHeight = 46.8;
                     break;
+
                 case PaperFormat.A1:
                     PaperWidth = 23.4;
                     PaperHeight = 33.1;
                     break;
+
                 case PaperFormat.A2:
                     PaperWidth = 16.5;
                     PaperHeight = 23.4;
                     break;
+
                 case PaperFormat.A3:
                     PaperWidth = 11.7;
                     PaperHeight = 16.5;
                     break;
+
                 case PaperFormat.A4:
                     PaperWidth = 8.27;
                     PaperHeight = 11.7;
                     break;
+
                 case PaperFormat.A5:
                     PaperWidth = 5.83;
                     PaperHeight = 8.27;
                     break;
+
                 case PaperFormat.A6:
                     PaperWidth = 4.13;
                     PaperHeight = 5.83;
                     break;
+
+                case PaperFormat.FitPageToContent:
+                    PreferCSSPageSize = true;
+                    PageRanges = "1";
+                    break;
+
                 default:
                     throw new ArgumentOutOfRangeException(nameof(paperFormat), paperFormat, null);
             }

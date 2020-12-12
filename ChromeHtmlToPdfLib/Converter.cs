@@ -1028,7 +1028,7 @@ namespace ChromeHtmlToPdfLib
                     inputUri = new ConvertUri(preWrapFile);
                 }
                 
-                if (ImageResize || ImageRotate || SanitizeHtml)
+                if (ImageResize || ImageRotate || SanitizeHtml || pageSettings.PaperFormat == PaperFormat.FitPageToContent)
                 {
                     var documentHelper = new DocumentHelper(GetTempDirectory, WebProxy, ImageDownloadTimeout, _logStream) { InstanceId = InstanceId };
 
@@ -1037,7 +1037,11 @@ namespace ChromeHtmlToPdfLib
                         if (documentHelper.SanitizeHtml(inputUri, Sanitizer, out var outputUri))
                             inputUri = outputUri;
                     }
-                    
+
+                    if (pageSettings.PaperFormat == PaperFormat.FitPageToContent)
+                        if (documentHelper.FitPageToContent(inputUri, out var outputUri))
+                            inputUri = outputUri;
+
                     if (ImageResize || ImageRotate)
                     {
                         if (documentHelper.ValidateImages(inputUri, ImageResize, ImageRotate, pageSettings, out var outputUri, _urlBlacklist))
