@@ -306,9 +306,9 @@ namespace ChromeHtmlToPdfLib.Helpers
                     {
                         InnerHtml = "html, body " + Environment.NewLine +
                                     "{" + Environment.NewLine +
-                                    "   width:  fit-content;" + Environment.NewLine +
+                                    "   width: fit-content;" + Environment.NewLine +
                                     "   height: fit-content;" + Environment.NewLine +
-                                    "   margin:  0px;" + Environment.NewLine +
+                                    "   margin: 0px;" + Environment.NewLine +
                                     "   padding: 0px;" + Environment.NewLine +
                                     "}" + Environment.NewLine
 
@@ -321,8 +321,8 @@ namespace ChromeHtmlToPdfLib.Helpers
                         Id = "pagestyle",
                         InnerHtml = "@page " + Environment.NewLine +
                                     "{ " + Environment.NewLine +
-                                    "   size: 100px 100px ; " + Environment.NewLine +
-                                    "   margin : 0px " + Environment.NewLine +
+                                    "   size: 595px 842px ; " + Environment.NewLine +
+                                    "   margin: 0px " + Environment.NewLine +
                                     "}" + Environment.NewLine
 
                     };
@@ -331,16 +331,15 @@ namespace ChromeHtmlToPdfLib.Helpers
                     
                     var pageElement = new HtmlElement(document as Document, "script")
                     {
-                        InnerHtml = "window.onload = function fixpage() {" + Environment.NewLine +
+                        InnerHtml = "window.onload = function () {" + Environment.NewLine +
                                     "" + Environment.NewLine +
-                                    "   renderBlock = document.getElementsByTagName('html')[0];" + Environment.NewLine +
-                                    "   renderBlockInfo = window.getComputedStyle(renderBlock);" + Environment.NewLine +
+                                    "   var page = document.getElementsByTagName('html')[0];" + Environment.NewLine +
+                                    "   var pageInfo = window.getComputedStyle(page);" + Environment.NewLine +
                                     "" + Environment.NewLine +
-                                    "    // Fix chrome page bug" + Environment.NewLine +
-                                    "    fixHeight = parseInt(renderBlockInfo.height) + 'px';" +
+                                    "    var height = parseInt(pageInfo.height) + 10 + 'px';" +
                                     Environment.NewLine +
                                     "" + Environment.NewLine +
-                                    "    pageCss = '@page { size: ' + renderBlockInfo.width + ' ' + fixHeight + '; margin: 0; }'" +
+                                    "    var pageCss = '@page { size: ' + pageInfo.width + ' ' + height + '; margin: 0; }'" +
                                     Environment.NewLine +
                                     "    document.getElementById('pagestyle').innerHTML = pageCss;" + Environment.NewLine +
                                     "}" + Environment.NewLine

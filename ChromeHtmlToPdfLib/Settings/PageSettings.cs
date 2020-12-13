@@ -233,7 +233,6 @@ namespace ChromeHtmlToPdfLib.Settings
 
                 case PaperFormat.FitPageToContent:
                     PreferCSSPageSize = true;
-                    PageRanges = "1";
                     break;
 
                 default:
