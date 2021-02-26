@@ -28,11 +28,11 @@
     <PackageReference Include="AngleSharp.Css" Version="0.14.2" />
     <PackageReference Include="AngleSharp.Io" Version="0.14.0" />
     <PackageReference Include="AngleSharp.Xml" Version="0.14.0" />
-    <PackageReference Include="HtmlSanitizer" Version="5.0.343" />
-    <PackageReference Include="Microsoft.Win32.Registry" Version="4.7.0" />
+    <PackageReference Include="HtmlSanitizer" Version="5.0.376" />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-    <PackageReference Include="System.Drawing.Common" Version="4.7.0" />
-    <PackageReference Include="System.Management" Version="4.7.0" />
+    <PackageReference Include="System.Drawing.Common" Version="5.0.1" />
+    <PackageReference Include="System.Management" Version="5.0.0" />
     <PackageReference Include="Ude.NetStandard" Version="1.2.0" />
     <PackageReference Include="WebSocket4Net" Version="0.15.2" />
   </ItemGroup>
