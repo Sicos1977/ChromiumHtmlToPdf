@@ -30,6 +30,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Text.RegularExpressions;
 using AngleSharp;
@@ -425,7 +426,23 @@ namespace ChromeHtmlToPdfLib.Helpers
                     localDirectory = Path.GetDirectoryName(inputUri.OriginalString);
 
                 var htmlChanged = false;
-                var config = Configuration.Default.WithCss();
+
+                IConfiguration config = null;
+
+                if (_webProxy != null)
+                {
+                    var httpClientHandler = new HttpClientHandler
+                    {
+                        Proxy = _webProxy,
+                        PreAuthenticate = true,
+                        UseDefaultCredentials = false,
+                    };
+
+                    Configuration.Default.WithCss().WithRequesters(httpClientHandler);
+                }
+                else
+                    config = Configuration.Default.WithCss();
+
                 var context = BrowsingContext.New(config);
 
                 IDocument document;
