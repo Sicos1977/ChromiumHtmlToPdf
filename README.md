@@ -8,7 +8,7 @@ I needed a replacement for wkHtmlToPdf, a great tool but the activity on this pr
 
 ## License Information
 
-ChromeHtmlToPdf is Copyright (C)2017-2020 Kees van Spelde and is licensed under the MIT license:
+ChromeHtmlToPdf is Copyright (C)2017-2021 Kees van Spelde and is licensed under the MIT license:
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -76,6 +76,7 @@ ChromeHtmlToPdf.exe --input https://www.google.com --output c:\google.pdf
 You can find pre compiled binaries for Windows, Unix and macOS over here 
 
 https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.0.11/ChromeHtmlToPdf_211.zip
+https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.1.6/ChromeHtmlToPdf_216.zip
 
 Core Team
 =========
