@@ -33,7 +33,7 @@ namespace ChromeHtmlToPdfLib.Settings
     /// <summary>
     /// The page settings to use when converting to PDF
     /// </summary>
-    public class PageSettings
+    public class PageSettings : ICloneable
     {
         #region Properties
         /// <summary>
@@ -172,7 +172,7 @@ namespace ChromeHtmlToPdfLib.Settings
         /// Set the given <paramref name="paperFormat"/>
         /// </summary>
         /// <param name="paperFormat"><see cref="PaperFormat"/></param>
-        private void SetPaperFormat(PaperFormat paperFormat)
+        public void SetPaperFormat(PaperFormat paperFormat)
         {
             switch (paperFormat)
             {
@@ -238,6 +238,34 @@ namespace ChromeHtmlToPdfLib.Settings
                 default:
                     throw new ArgumentOutOfRangeException(nameof(paperFormat), paperFormat, null);
             }
+        }
+        #endregion
+
+        #region Clone
+        /// <summary>
+        /// Creates a new object that is a copy of the current instance.
+        /// </summary>
+        /// <returns>A new object that is a copy of this instance.</returns>
+        public object Clone()
+        {
+            return new PageSettings(PaperFormat)
+            {
+                Landscape = Landscape,
+                DisplayHeaderFooter = DisplayHeaderFooter,
+                HeaderTemplate = HeaderTemplate,
+                FooterTemplate = FooterTemplate,
+                PrintBackground = PrintBackground,
+                Scale = Scale,
+                PaperWidth = PaperWidth,
+                PaperHeight = PaperHeight,
+                MarginTop = MarginTop,
+                MarginBottom = MarginBottom,
+                MarginLeft = MarginLeft,
+                MarginRight = MarginRight,
+                PageRanges = PageRanges,
+                IgnoreInvalidPageRanges = IgnoreInvalidPageRanges,
+                PreferCSSPageSize = PreferCSSPageSize
+            };
         }
         #endregion
     }
