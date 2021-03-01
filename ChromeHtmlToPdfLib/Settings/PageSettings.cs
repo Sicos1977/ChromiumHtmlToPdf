@@ -27,6 +27,7 @@
 using System;
 using ChromeHtmlToPdfLib.Enums;
 // ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable MemberCanBePrivate.Global
 
 namespace ChromeHtmlToPdfLib.Settings
 {
@@ -118,7 +119,7 @@ namespace ChromeHtmlToPdfLib.Settings
         /// <summary>
         ///     The paperformat
         /// </summary>
-        internal PaperFormat PaperFormat { get; }
+        public PaperFormat PaperFormat { get; private set; }
         #endregion
 
         #region PageSettings
@@ -174,6 +175,8 @@ namespace ChromeHtmlToPdfLib.Settings
         /// <param name="paperFormat"><see cref="PaperFormat"/></param>
         public void SetPaperFormat(PaperFormat paperFormat)
         {
+            PaperFormat = paperFormat;
+
             switch (paperFormat)
             {
                 case PaperFormat.Letter:

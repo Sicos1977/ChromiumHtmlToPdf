@@ -335,14 +335,11 @@ namespace ChromeHtmlToPdfLib.Helpers
                         InnerHtml = "window.onload = function () {" + Environment.NewLine +
                                     "" + Environment.NewLine +
                                     "   var page = document.getElementsByTagName('html')[0];" + Environment.NewLine +
-                                    "   var pageInfo = window.getComputedStyle(page);" + Environment.NewLine +
+                                    "   var pageInfo = window.getComputedStyle(page);" + Environment.NewLine + "" + Environment.NewLine +
+                                    "   var height = parseInt(pageInfo.height) + 10 + 'px';" + Environment.NewLine +
                                     "" + Environment.NewLine +
-                                    "    var height = parseInt(pageInfo.height) + 10 + 'px';" +
-                                    Environment.NewLine +
-                                    "" + Environment.NewLine +
-                                    "    var pageCss = '@page { size: ' + pageInfo.width + ' ' + height + '; margin: 0; }'" +
-                                    Environment.NewLine +
-                                    "    document.getElementById('pagestyle').innerHTML = pageCss;" + Environment.NewLine +
+                                    "   var pageCss = '@page { size: ' + pageInfo.width + ' ' + height + '; margin: 0; }'" + Environment.NewLine +
+                                    "   document.getElementById('pagestyle').innerHTML = pageCss;" + Environment.NewLine +
                                     "}" + Environment.NewLine
                     };
 
