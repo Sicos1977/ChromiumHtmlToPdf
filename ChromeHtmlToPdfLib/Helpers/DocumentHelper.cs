@@ -29,6 +29,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -157,11 +158,8 @@ namespace ChromeHtmlToPdfLib.Helpers
         {
             outputUri = null;
 
-            using (var webpage = inputUri.IsFile
-                ? File.OpenRead(inputUri.OriginalString)
-                : DownloadStream(inputUri))
+            using (var webpage = inputUri.IsFile ? File.OpenRead(inputUri.OriginalString) : DownloadStream(inputUri))
             {
-
                 var htmlChanged = false;
                 var config = Configuration.Default.WithCss();
                 var context = BrowsingContext.New(config);
@@ -204,8 +202,7 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                 sanitizer.RemovingAttribute += delegate(object sender, RemovingAttributeEventArgs args)
                 {
-                    WriteToLog(
-                        $"Removing attribute '{args.Attribute.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                    WriteToLog($"Removing attribute '{args.Attribute.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
                     htmlChanged = true;
                 };
 
@@ -217,15 +214,13 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                 sanitizer.RemovingCssClass += delegate(object sender, RemovingCssClassEventArgs args)
                 {
-                    WriteToLog(
-                        $"Removing CSS class '{args.CssClass}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                    WriteToLog($"Removing CSS class '{args.CssClass}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
                     htmlChanged = true;
                 };
 
                 sanitizer.RemovingStyle += delegate(object sender, RemovingStyleEventArgs args)
                 {
-                    WriteToLog(
-                        $"Removing style '{args.Style.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                    WriteToLog($"Removing style '{args.Style.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
                     htmlChanged = true;
                 };
 
@@ -237,20 +232,36 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                 sanitizer.SanitizeDom(document as IHtmlDocument);
 
-                WriteToLog("HTML sanitized");
-
                 if (!htmlChanged)
+                {
+                    WriteToLog("HTML did not need any sanitization");
                     return false;
+                }
+
+                WriteToLog("HTML sanitized");
 
                 var sanitizedOutputFile = GetTempFile(".htm");
                 outputUri = new ConvertUri(sanitizedOutputFile, inputUri.Encoding);
 
                 try
                 {
+                    if (document.BaseUrl.Scheme.StartsWith("file"))
+                    {
+                        var images = document.DocumentElement.Descendents()
+                            .Where(x => x.NodeType == NodeType.Element)
+                            .OfType<IHtmlImageElement>();
+
+                        foreach (var image in images)
+                        {
+                            var src = image.Source;
+                            WriteToLog($"Updating image source to '{src}'");
+                            image.Source = src;
+                        }
+                    }
+
                     WriteToLog($"Writing sanitized webpage to '{sanitizedOutputFile}'");
 
-                    using (var fileStream =
-                        new FileStream(sanitizedOutputFile, FileMode.CreateNew, FileAccess.Write))
+                    using (var fileStream = new FileStream(sanitizedOutputFile, FileMode.CreateNew, FileAccess.Write))
                     {
                         if (inputUri.Encoding != null)
                         {
