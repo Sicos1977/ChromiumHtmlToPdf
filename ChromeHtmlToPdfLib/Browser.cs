@@ -119,18 +119,19 @@ namespace ChromeHtmlToPdfLib
         /// <param name="mediaLoadTimeout">When set a timeout will be started after the DomContentLoaded
         ///     event has fired. After a timeout the NavigateTo method will exit as if the page
         ///     has been completely loaded</param>
-        /// <param name="urlBlacklist">A list of URL's that need to be blocked (use * as a wildcard)</param>
+        /// <param name="urlBlacklist">A list with URL's that need to be blocked (use * as a wildcard)</param>
+        /// <param name="safeUrls">A list with URL's that are safe to load</param>
         /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
         /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer"/> reaches zero</exception>
         public void NavigateTo(
             Uri uri,
+            List<string> safeUrls,
             CountdownTimer countdownTimer = null,
             int? mediaLoadTimeout = null,
             List<string> urlBlacklist = null)
         {
             var waitEvent = new ManualResetEvent(false);
             var mediaLoadTimeoutCancellationTokenSource = new CancellationTokenSource();
-            var absoluteUri = uri.AbsoluteUri.Substring(0, uri.AbsoluteUri.LastIndexOf('/') + 1);
             var navigationError = string.Empty;
             var waitforNetworkIdle = false;
             var mediaTimeoutTaskSet = false;
@@ -147,11 +148,11 @@ namespace ChromeHtmlToPdfLib
                         var fetch = Fetch.FromJson(data);
                         var requestId = fetch.Params.RequestId;
                         var url = fetch.Params.Request.Url;
+                        var isSafeUrl = safeUrls.Contains(url);
 
-                        if (!RegularExpression.IsRegExMatch(urlBlacklist, url, out var matchedPattern) ||
-                            url.StartsWith(absoluteUri, StringComparison.InvariantCultureIgnoreCase))
+                        if (!RegularExpression.IsRegExMatch(urlBlacklist, url, out var matchedPattern) || isSafeUrl)
                         {
-                            WriteToLog($"The url '{url}' has been allowed");
+                            WriteToLog($"The url '{url}' has been allowed{(isSafeUrl ? " because it is on the safe url list" : string.Empty)}");
                             var fetchContinue = new Message {Method = "Fetch.continueRequest"};
                             fetchContinue.Parameters.Add("requestId", requestId);
                             _pageConnection.SendAsync(fetchContinue).GetAwaiter();

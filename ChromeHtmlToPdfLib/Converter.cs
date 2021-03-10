@@ -136,7 +136,7 @@ namespace ChromeHtmlToPdfLib
         private Exception _chromeEventException;
 
         /// <summary>
-        ///     A list with urls to blacklist
+        ///     A list with URL's to blacklist
         /// </summary>
         private List<string> _urlBlacklist;
 
@@ -995,6 +995,8 @@ namespace ChromeHtmlToPdfLib
 
             _conversionTimeout = conversionTimeout;
 
+            var safeUrls = new List<string>();
+
             if (inputUri.IsFile)
             {
                 if (!File.Exists(inputUri.OriginalString))
@@ -1024,9 +1026,7 @@ namespace ChromeHtmlToPdfLib
             try
             {
                 if (inputUri.IsFile && CheckForPreWrap(inputUri, out var preWrapFile))
-                {
                     inputUri = new ConvertUri(preWrapFile);
-                }
                 
                 if (ImageResize || ImageRotate || SanitizeHtml || pageSettings.PaperFormat == PaperFormat.FitPageToContent)
                 {
@@ -1034,8 +1034,11 @@ namespace ChromeHtmlToPdfLib
 
                     if (SanitizeHtml)
                     {
-                        if (documentHelper.SanitizeHtml(inputUri, Sanitizer, out var outputUri))
+                        if (documentHelper.SanitizeHtml(inputUri, Sanitizer, out var outputUri, out var sanitizeHtmlSafeUrls))
+                        {
                             inputUri = outputUri;
+                            safeUrls.AddRange(sanitizeHtmlSafeUrls);
+                        }
                     }
 
                     if (pageSettings.PaperFormat == PaperFormat.FitPageToContent)
@@ -1047,8 +1050,17 @@ namespace ChromeHtmlToPdfLib
 
                     if (ImageResize || ImageRotate)
                     {
-                        if (documentHelper.ValidateImages(inputUri, ImageResize, ImageRotate, pageSettings, out var outputUri, _urlBlacklist))
+                        if (documentHelper.ValidateImages(
+                            inputUri,
+                            ImageResize,
+                            ImageRotate,
+                            pageSettings,
+                            out var outputUri,
+                            out var validateImagesSafeUrls))
+                        {
+                            safeUrls.AddRange(validateImagesSafeUrls);
                             inputUri = outputUri;
+                        }
                     }
                 }
 
@@ -1070,7 +1082,7 @@ namespace ChromeHtmlToPdfLib
 
                 WriteToLog("Loading " + (inputUri.IsFile ? "file " + inputUri.OriginalString : "url " + inputUri));
 
-                _browser.NavigateTo(inputUri, countdownTimer, mediaLoadTimeout, _urlBlacklist);
+                _browser.NavigateTo(inputUri, safeUrls, countdownTimer, mediaLoadTimeout, _urlBlacklist);
 
                 if (!string.IsNullOrWhiteSpace(waitForWindowStatus))
                 {

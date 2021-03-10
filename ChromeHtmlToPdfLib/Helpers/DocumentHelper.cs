@@ -150,13 +150,16 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <param name="sanitizer"><see cref="HtmlSanitizer"/></param>
         /// <param name="outputUri">The outputUri when this method returns <c>false</c> otherwise
         ///     <c>null</c> is returned</param>
+        /// <param name="safeUrls">A list of safe URL's</param>
         /// <returns></returns>
         public bool SanitizeHtml(
             ConvertUri inputUri,
             HtmlSanitizer sanitizer, 
-            out ConvertUri outputUri)
+            out ConvertUri outputUri,
+            out List<string> safeUrls)
         {
             outputUri = null;
+            safeUrls = new List<string>();
 
             using (var webpage = inputUri.IsFile ? File.OpenRead(inputUri.OriginalString) : DownloadStream(inputUri))
             {
@@ -242,6 +245,7 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                 var sanitizedOutputFile = GetTempFile(".htm");
                 outputUri = new ConvertUri(sanitizedOutputFile, inputUri.Encoding);
+                safeUrls.Add(outputUri.ToString());
 
                 try
                 {
@@ -255,6 +259,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                         {
                             var src = image.Source;
                             WriteToLog($"Updating image source to '{src}'");
+                            safeUrls.Add(src);
                             image.Source = src;
                         }
                     }
@@ -409,6 +414,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <param name="outputUri">The outputUri when this method returns <c>true</c> otherwise
         ///     <c>null</c> is returned</param>
         /// <param name="urlBlacklist">A list of URL's that need to be blocked (use * as a wildcard)</param>
+        /// <param name="safeUrls">A list with URL's that are safe to load</param>
         /// <returns>Returns <c>false</c> when the images dit not fit the page, otherwise <c>true</c></returns>
         /// <exception cref="WebException">Raised when the webpage from <paramref name="inputUri"/> could not be downloaded</exception>
         public bool ValidateImages(
@@ -417,9 +423,11 @@ namespace ChromeHtmlToPdfLib.Helpers
             bool rotate,
             PageSettings pageSettings,
             out ConvertUri outputUri,
+            out List<string> safeUrls,
             List<string> urlBlacklist = null)
         {
             outputUri = null;
+            safeUrls = new List<string>();
 
             using (var webpage = inputUri.IsFile
                 ? File.OpenRead(inputUri.OriginalString)
@@ -526,7 +534,9 @@ namespace ChromeHtmlToPdfLib.Helpers
                                 htmlImage.DisplayWidth = image.Width;
                                 htmlImage.DisplayHeight = image.Height;
                                 htmlImage.SetStyle(string.Empty);
-                                htmlImage.Source = new Uri(fileName).ToString();
+                                var newSrc = new Uri(fileName).ToString();
+                                safeUrls.Add(newSrc);
+                                htmlImage.Source = newSrc;
                                 htmlChanged = true;
                                 imageChanged = true;
                             }
@@ -605,12 +615,15 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                         WriteToLog($"Unchanged image saved to location '{fileName}'");
                         image.Save(fileName);
-                        unchangedImage.Source = new Uri(fileName).ToString();
+                        var newSrc = new Uri(fileName).ToString();
+                        safeUrls.Add(newSrc);
+                        unchangedImage.Source = newSrc;
                     }
                 }
 
                 var outputFile = GetTempFile(".htm");
                 outputUri = new ConvertUri(outputFile, inputUri.Encoding);
+                safeUrls.Add(outputUri.ToString());
 
                 try
                 {
