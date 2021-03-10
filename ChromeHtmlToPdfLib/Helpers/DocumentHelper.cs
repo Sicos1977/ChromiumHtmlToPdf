@@ -694,6 +694,10 @@ namespace ChromeHtmlToPdfLib.Helpers
                         }
                         break;
 
+                    case "file":
+                        WriteToLog("Ignoring local file");
+                        break;
+
                     default:
                         WriteToLog($"Unsupported scheme {imageUri.Scheme} to get image");
                         return null;
@@ -741,6 +745,13 @@ namespace ChromeHtmlToPdfLib.Helpers
             if (!((IList) image.PropertyIdList).Contains(orientationId)) return false;
 
             var item = image.GetPropertyItem(orientationId);
+
+            if (item?.Value == null)
+            {
+                WriteToLog("Could not get orientation information from exif");
+                return false;
+            }
+
             RotateFlipType rotateFlipType;
             WriteToLog("Checking image rotation");
 
