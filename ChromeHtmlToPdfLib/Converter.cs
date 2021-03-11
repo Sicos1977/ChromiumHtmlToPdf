@@ -1026,8 +1026,11 @@ namespace ChromeHtmlToPdfLib
             try
             {
                 if (inputUri.IsFile && CheckForPreWrap(inputUri, out var preWrapFile))
+                {
                     inputUri = new ConvertUri(preWrapFile);
-                
+                    safeUrls.Add(inputUri.ToString());
+                }
+
                 if (ImageResize || ImageRotate || SanitizeHtml || pageSettings.PaperFormat == PaperFormat.FitPageToContent)
                 {
                     var documentHelper = new DocumentHelper(GetTempDirectory, WebProxy, ImageDownloadTimeout, _logStream) { InstanceId = InstanceId };
