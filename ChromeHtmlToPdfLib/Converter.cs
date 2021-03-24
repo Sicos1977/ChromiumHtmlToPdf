@@ -1028,6 +1028,7 @@ namespace ChromeHtmlToPdfLib
                 if (inputUri.IsFile && CheckForPreWrap(inputUri, out var preWrapFile))
                 {
                     inputUri = new ConvertUri(preWrapFile);
+                    WriteToLog($"Adding url '{inputUri}' to the safe url list");
                     safeUrls.Add(inputUri.ToString());
                 }
 
@@ -1040,7 +1041,11 @@ namespace ChromeHtmlToPdfLib
                         if (documentHelper.SanitizeHtml(inputUri, Sanitizer, out var outputUri, out var sanitizeHtmlSafeUrls))
                         {
                             inputUri = outputUri;
-                            safeUrls.AddRange(sanitizeHtmlSafeUrls);
+                            foreach (var sanitizeHtmlSafeUrl in sanitizeHtmlSafeUrls)
+                            {
+                                WriteToLog($"Adding url '{sanitizeHtmlSafeUrl}' to the safe url list");
+                                safeUrls.Add(sanitizeHtmlSafeUrl);
+                            }
                         }
                     }
 
@@ -1061,7 +1066,12 @@ namespace ChromeHtmlToPdfLib
                             out var outputUri,
                             out var validateImagesSafeUrls))
                         {
-                            safeUrls.AddRange(validateImagesSafeUrls);
+                            foreach (var validateImagesSafeUrl in validateImagesSafeUrls)
+                            {
+                                WriteToLog($"Adding url '{validateImagesSafeUrl}' to the safe url list");
+                                safeUrls.Add(validateImagesSafeUrl);
+                            }
+
                             inputUri = outputUri;
                         }
                     }

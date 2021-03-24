@@ -131,7 +131,7 @@ namespace ChromeHtmlToPdfLib.Helpers
 
             if (encoding == null)
             {
-                Ude.CharsetDetector charsetDetector = new Ude.CharsetDetector();
+                var charsetDetector = new Ude.CharsetDetector();
                 using (var fileStream = File.OpenRead(inputFile))
                 {
                     WriteToLog("Trying to detect encoding");
