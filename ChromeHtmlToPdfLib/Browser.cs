@@ -97,20 +97,20 @@ namespace ChromeHtmlToPdfLib
             message.Parameters.Add("url", "about:blank");
 
             var result = _browserConnection.SendAsync(message).GetAwaiter().GetResult();
-            var page = Page.FromJson(result);
+            var page = Protocol.Page.Page.FromJson(result);
             var pageUrl = $"{browser.Scheme}://{browser.Host}:{browser.Port}/devtools/page/{page.Result.TargetId}";
 
             _pageConnection = new Connection(pageUrl);
 
-            //var networkMessage = new Message {Method = "Network.enable"};
-            //result = _pageConnection.SendAsync(networkMessage).GetAwaiter().GetResult();
-            //_pageConnection.MessageReceived += _pageConnection_MessageReceived;
+            var networkMessage = new Message { Method = "Network.enable" };
+            result = _pageConnection.SendAsync(networkMessage).GetAwaiter().GetResult();
+            _pageConnection.MessageReceived += _pageConnection_MessageReceived;
         }
 
-        //private void _pageConnection_MessageReceived(object sender, string data)
-        //{
-        //    File.AppendAllText("d:\\logs.txt", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + data + Environment.NewLine);
-        //}
+        private void _pageConnection_MessageReceived(object sender, string data)
+        {
+            File.AppendAllText("d:\\logs.txt", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + data + Environment.NewLine);
+        }
         #endregion
 
         #region NavigateTo
@@ -181,7 +181,7 @@ namespace ChromeHtmlToPdfLib
 
                     default:
                     {
-                        var page = PageEvent.FromJson(data);
+                        var page = Protocol.Page.Event.FromJson(data);
 
                         switch (page.Method)
                         {
@@ -221,7 +221,7 @@ namespace ChromeHtmlToPdfLib
                                 break;
 
                             default:
-                                var pageNavigateResponse = PageNavigateResponse.FromJson(data);
+                                var pageNavigateResponse = Protocol.Page.NavigateResponse.FromJson(data);
                                 if (!string.IsNullOrEmpty(pageNavigateResponse.Result?.ErrorText) &&
                                     !pageNavigateResponse.Result.ErrorText.Contains("net::ERR_BLOCKED_BY_CLIENT"))
                                 {

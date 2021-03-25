@@ -1,5 +1,5 @@
 ﻿//
-// SnapshotResponse.cs
+// NavigateResponse.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
@@ -24,27 +24,19 @@
 // THE SOFTWARE.
 //
 
-using System.Text;
+
 using Newtonsoft.Json;
 
-namespace ChromeHtmlToPdfLib.Protocol
+namespace ChromeHtmlToPdfLib.Protocol.Page
 {
     /// <summary>
-    ///     Placeholder for the result of a page snapshot
+    /// The JSON object that is returned from Chrome when navigation to a page
     /// </summary>
-    public class SnapshotResponse
+    public class NavigateResponse : MessageBase
     {
         #region Properties
-        [JsonProperty("id")]
-        public long Id { get; set; }
-
         [JsonProperty("result")]
-        public SnapshotResult Result { get; set; }
-
-        /// <summary>
-        /// Returns <see cref="PrintToPdfResult.Data"/> as array of bytes
-        /// </summary>
-        public byte[] Bytes => Encoding.ASCII.GetBytes(Result.Data);
+        public NavigateResponseResult Result { get; set; }
         #endregion
 
         #region FromJson
@@ -53,18 +45,21 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// </summary>
         /// <param name="json"></param>
         /// <returns></returns>
-        public static SnapshotResponse FromJson(string json) => JsonConvert.DeserializeObject<SnapshotResponse>(json);
+        public new static NavigateResponse FromJson(string json) => JsonConvert.DeserializeObject<NavigateResponse>(json);
         #endregion
     }
 
-    /// <summary>
-    ///     Part of the <see cref="SnapshotResponse"/> class
-    /// </summary>
-    public class SnapshotResult
+    public class NavigateResponseResult
     {
         #region Properties
-        [JsonProperty("data")]
-        public string Data { get; set; }
+        [JsonProperty("frameId")]
+        public string FrameId { get; set; }
+
+        [JsonProperty("loaderId")]
+        public string LoaderId { get; set; }
+
+        [JsonProperty("errorText")]
+        public string ErrorText { get; set; }
         #endregion
     }
 }

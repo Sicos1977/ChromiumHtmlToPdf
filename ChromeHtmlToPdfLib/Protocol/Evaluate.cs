@@ -50,10 +50,7 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// </summary>
         /// <param name="json"></param>
         /// <returns></returns>
-        public new static Evaluate FromJson(string json)
-        {
-            return JsonConvert.DeserializeObject<Evaluate>(json);
-        }
+        public new static Evaluate FromJson(string json) => JsonConvert.DeserializeObject<Evaluate>(json);
         #endregion
     }
 

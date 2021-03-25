@@ -47,10 +47,7 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// </summary>
         /// <param name="json"></param>
         /// <returns></returns>
-        public static MessageBase FromJson(string json)
-        {
-            return JsonConvert.DeserializeObject<MessageBase>(json);
-        }
+        public static MessageBase FromJson(string json) => JsonConvert.DeserializeObject<MessageBase>(json);
         #endregion
 
         #region ToJson
@@ -58,10 +55,7 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// Returns this object as a JSON string
         /// </summary>
         /// <returns></returns>
-        public string ToJson()
-        {
-            return JsonConvert.SerializeObject(this);
-        }
+        public string ToJson() => JsonConvert.SerializeObject(this);
         #endregion
     }
 }

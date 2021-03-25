@@ -47,10 +47,7 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// </summary>
         /// <param name="json"></param>
         /// <returns></returns>
-        public new static Expression FromJson(string json)
-        {
-            return JsonConvert.DeserializeObject<Expression>(json);
-        }
+        public new static Expression FromJson(string json) => JsonConvert.DeserializeObject<Expression>(json);
         #endregion
     }
 

@@ -40,10 +40,7 @@ namespace ChromeHtmlToPdfLib.Protocol
         #endregion
 
         #region FromJson
-        public new static EvaluateError FromJson(string json)
-        {
-            return JsonConvert.DeserializeObject<EvaluateError>(json);
-        }
+        public new static EvaluateError FromJson(string json) => JsonConvert.DeserializeObject<EvaluateError>(json);
         #endregion
     }
 

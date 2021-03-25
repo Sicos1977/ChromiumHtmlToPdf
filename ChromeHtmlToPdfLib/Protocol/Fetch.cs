@@ -48,10 +48,7 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// </summary>
         /// <param name="json"></param>
         /// <returns></returns>
-        public static Fetch FromJson(string json)
-        {
-            return JsonConvert.DeserializeObject<Fetch>(json);
-        }
+        public static Fetch FromJson(string json) => JsonConvert.DeserializeObject<Fetch>(json);
         #endregion
     }
 

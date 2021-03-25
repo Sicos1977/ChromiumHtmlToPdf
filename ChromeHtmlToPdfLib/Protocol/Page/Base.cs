@@ -1,5 +1,5 @@
 ﻿//
-// SnapshotResponse.cs
+// Base.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
@@ -24,27 +24,21 @@
 // THE SOFTWARE.
 //
 
-using System.Text;
 using Newtonsoft.Json;
 
-namespace ChromeHtmlToPdfLib.Protocol
+namespace ChromeHtmlToPdfLib.Protocol.Page
 {
     /// <summary>
-    ///     Placeholder for the result of a page snapshot
+    /// The base
     /// </summary>
-    public class SnapshotResponse
+    public class Base
     {
         #region Properties
-        [JsonProperty("id")]
-        public long Id { get; set; }
-
-        [JsonProperty("result")]
-        public SnapshotResult Result { get; set; }
-
         /// <summary>
-        /// Returns <see cref="PrintToPdfResult.Data"/> as array of bytes
+        /// The method executed by Chrome
         /// </summary>
-        public byte[] Bytes => Encoding.ASCII.GetBytes(Result.Data);
+        [JsonProperty("method")]
+        public string Method { get; set; }
         #endregion
 
         #region FromJson
@@ -53,18 +47,10 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// </summary>
         /// <param name="json"></param>
         /// <returns></returns>
-        public static SnapshotResponse FromJson(string json) => JsonConvert.DeserializeObject<SnapshotResponse>(json);
-        #endregion
-    }
-
-    /// <summary>
-    ///     Part of the <see cref="SnapshotResponse"/> class
-    /// </summary>
-    public class SnapshotResult
-    {
-        #region Properties
-        [JsonProperty("data")]
-        public string Data { get; set; }
+        public static MessageBase FromJson(string json)
+        {
+            return JsonConvert.DeserializeObject<MessageBase>(json);
+        }
         #endregion
     }
 }

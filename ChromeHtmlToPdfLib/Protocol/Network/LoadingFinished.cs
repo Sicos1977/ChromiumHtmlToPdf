@@ -1,5 +1,5 @@
 ﻿//
-// Page.cs
+// LoadingFinished.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
@@ -24,21 +24,17 @@
 // THE SOFTWARE.
 //
 
+using System.Globalization;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
-namespace ChromeHtmlToPdfLib.Protocol
+namespace ChromeHtmlToPdfLib.Protocol.Network
 {
-    /// <summary>
-    /// The JSON object that is returned when we create a new Target (page)
-    /// </summary>
-    public class Page : MessageBase
+    public class LoadingFinished : Base
     {
         #region Properties
-        /// <summary>
-        /// The result
-        /// </summary>
-        [JsonProperty("result")]
-        public PageResult Result { get; set; }
+        [JsonProperty("params")]
+        public LoadingFinishedParams Params { get; set; }
         #endregion
 
         #region FromJson
@@ -47,21 +43,36 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// </summary>
         /// <param name="json"></param>
         /// <returns></returns>
-        public new static Page FromJson(string json)
-        {
-            return JsonConvert.DeserializeObject<Page>(json);
-        }
+        public new static LoadingFinished FromJson(string json) => JsonConvert.DeserializeObject<LoadingFinished>(json, LoadingFinishedConverter.Settings);
         #endregion
     }
 
-    /// <summary>
-    /// Part of the <see cref="Page"/> class
-    /// </summary>
-    public class PageResult
+    public class LoadingFinishedParams
     {
-        #region Propertie
-        [JsonProperty("targetId")]
-        public string TargetId { get; set; }
+        #region Properties
+        [JsonProperty("requestId")]
+        public string RequestId { get; set; }
+
+        [JsonProperty("timestamp")]
+        public double Timestamp { get; set; }
+
+        [JsonProperty("encodedDataLength")]
+        public long EncodedDataLength { get; set; }
+
+        [JsonProperty("shouldReportCorbBlocking")]
+        public bool ShouldReportCorbBlocking { get; set; }
         #endregion
     }
+
+    #region Static class LoadingFinishedConverter
+    internal static class LoadingFinishedConverter
+    {
+        public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings
+        {
+            MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
+            DateParseHandling = DateParseHandling.None,
+            Converters = {new IsoDateTimeConverter {DateTimeStyles = DateTimeStyles.AssumeUniversal}}
+        };
+    }
+    #endregion
 }

@@ -1,5 +1,5 @@
 ﻿//
-// PageEvent.cs
+// Page.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
@@ -26,25 +26,19 @@
 
 using Newtonsoft.Json;
 
-namespace ChromeHtmlToPdfLib.Protocol
+namespace ChromeHtmlToPdfLib.Protocol.Page
 {
     /// <summary>
-    /// The JSON object that is returned when we asked Chrome to send page events
+    /// The JSON object that is returned when we create a new Target (page)
     /// </summary>
-    public class PageEvent
+    public class Page
     {
         #region Properties
         /// <summary>
-        /// The method executed by Chrome
+        /// The result
         /// </summary>
-        [JsonProperty("method")]
-        public string Method { get; set; }
-
-        /// <summary>
-        /// The parameters used with this <see cref="Method"/>
-        /// </summary>
-        [JsonProperty("params")]
-        public PageEventParams Params { get; set; }
+        [JsonProperty("result")]
+        public PageResult Result { get; set; }
         #endregion
 
         #region FromJson
@@ -53,30 +47,18 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// </summary>
         /// <param name="json"></param>
         /// <returns></returns>
-        public static PageEvent FromJson(string json)
-        {
-            return JsonConvert.DeserializeObject<PageEvent>(json);
-        }
+        public static Page FromJson(string json) => JsonConvert.DeserializeObject<Page>(json);
         #endregion
     }
 
     /// <summary>
-    /// Part of the <see cref="PageEvent"/> class
+    /// Part of the <see cref="Page"/> class
     /// </summary>
-    public class PageEventParams
+    public class PageResult
     {
-        #region Properties
-        /// <summary>
-        /// The parameters name
-        /// </summary>
-        [JsonProperty("name")]
-        public string Name { get; set; }
-
-        /// <summary>
-        /// The timestamp
-        /// </summary>
-        [JsonProperty("timestamp")]
-        public long Timestamp { get; set; }
+        #region Propertie
+        [JsonProperty("targetId")]
+        public string TargetId { get; set; }
         #endregion
     }
 }

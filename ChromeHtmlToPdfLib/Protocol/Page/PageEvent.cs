@@ -1,5 +1,5 @@
 ﻿//
-// SnapshotResponse.cs
+// PageEvent.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
@@ -24,27 +24,21 @@
 // THE SOFTWARE.
 //
 
-using System.Text;
 using Newtonsoft.Json;
 
-namespace ChromeHtmlToPdfLib.Protocol
+namespace ChromeHtmlToPdfLib.Protocol.Page
 {
     /// <summary>
-    ///     Placeholder for the result of a page snapshot
+    /// The JSON object that is returned when we asked Chrome to send page events
     /// </summary>
-    public class SnapshotResponse
+    public class Event : Base
     {
         #region Properties
-        [JsonProperty("id")]
-        public long Id { get; set; }
-
-        [JsonProperty("result")]
-        public SnapshotResult Result { get; set; }
-
         /// <summary>
-        /// Returns <see cref="PrintToPdfResult.Data"/> as array of bytes
+        /// The parameters used with this <see cref="Method"/>
         /// </summary>
-        public byte[] Bytes => Encoding.ASCII.GetBytes(Result.Data);
+        [JsonProperty("params")]
+        public EventParams Params { get; set; }
         #endregion
 
         #region FromJson
@@ -53,18 +47,27 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// </summary>
         /// <param name="json"></param>
         /// <returns></returns>
-        public static SnapshotResponse FromJson(string json) => JsonConvert.DeserializeObject<SnapshotResponse>(json);
+        public new static Event FromJson(string json) => JsonConvert.DeserializeObject<Event>(json);
         #endregion
     }
 
     /// <summary>
-    ///     Part of the <see cref="SnapshotResponse"/> class
+    /// Part of the <see cref="Event"/> class
     /// </summary>
-    public class SnapshotResult
+    public class EventParams
     {
         #region Properties
-        [JsonProperty("data")]
-        public string Data { get; set; }
+        /// <summary>
+        /// The parameters name
+        /// </summary>
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        /// <summary>
+        /// The timestamp
+        /// </summary>
+        [JsonProperty("timestamp")]
+        public long Timestamp { get; set; }
         #endregion
     }
 }

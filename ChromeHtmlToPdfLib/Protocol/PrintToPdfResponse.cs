@@ -53,10 +53,7 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// </summary>
         /// <param name="json"></param>
         /// <returns></returns>
-        public static PrintToPdfResponse FromJson(string json)
-        {
-            return JsonConvert.DeserializeObject<PrintToPdfResponse>(json);
-        }
+        public static PrintToPdfResponse FromJson(string json) => JsonConvert.DeserializeObject<PrintToPdfResponse>(json);
         #endregion
     }
 

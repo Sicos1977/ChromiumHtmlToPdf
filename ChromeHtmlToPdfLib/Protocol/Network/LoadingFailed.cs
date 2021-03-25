@@ -1,5 +1,5 @@
 ﻿//
-// SnapshotResponse.cs
+// LoadingFailed.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
@@ -24,27 +24,17 @@
 // THE SOFTWARE.
 //
 
-using System.Text;
+using System.Globalization;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
-namespace ChromeHtmlToPdfLib.Protocol
+namespace ChromeHtmlToPdfLib.Protocol.Network
 {
-    /// <summary>
-    ///     Placeholder for the result of a page snapshot
-    /// </summary>
-    public class SnapshotResponse
+    public class LoadingFailed : Base
     {
         #region Properties
-        [JsonProperty("id")]
-        public long Id { get; set; }
-
-        [JsonProperty("result")]
-        public SnapshotResult Result { get; set; }
-
-        /// <summary>
-        /// Returns <see cref="PrintToPdfResult.Data"/> as array of bytes
-        /// </summary>
-        public byte[] Bytes => Encoding.ASCII.GetBytes(Result.Data);
+        [JsonProperty("params")]
+        public LoadingFailedParams Params { get; set; }
         #endregion
 
         #region FromJson
@@ -53,18 +43,39 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// </summary>
         /// <param name="json"></param>
         /// <returns></returns>
-        public static SnapshotResponse FromJson(string json) => JsonConvert.DeserializeObject<SnapshotResponse>(json);
+        public new static LoadingFailed FromJson(string json) => JsonConvert.DeserializeObject<LoadingFailed>(json, LoadingFailedConverter.Settings);
         #endregion
     }
 
-    /// <summary>
-    ///     Part of the <see cref="SnapshotResponse"/> class
-    /// </summary>
-    public class SnapshotResult
+    public class LoadingFailedParams
     {
         #region Properties
-        [JsonProperty("data")]
-        public string Data { get; set; }
+        [JsonProperty("requestId")]
+        public string RequestId { get; set; }
+
+        [JsonProperty("timestamp")]
+        public double Timestamp { get; set; }
+
+        [JsonProperty("type")]
+        public string Type { get; set; }
+
+        [JsonProperty("errorText")]
+        public string ErrorText { get; set; }
+
+        [JsonProperty("canceled")]
+        public bool Canceled { get; set; }
         #endregion
     }
+
+    #region Static class LoadingFailedConverter
+    internal static class LoadingFailedConverter
+    {
+        public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings
+        {
+            MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
+            DateParseHandling = DateParseHandling.None,
+            Converters = {new IsoDateTimeConverter {DateTimeStyles = DateTimeStyles.AssumeUniversal}}
+        };
+    }
+    #endregion
 }
