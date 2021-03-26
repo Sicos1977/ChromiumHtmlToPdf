@@ -6,8 +6,8 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>ChromeHtmlToPdf is a 100% managed C# .NETStandard 2.0 library that can be used to convert HTML to PDF format with the use of Google Chrome</Description>
     <Copyright>(C)2017-2021 Kees van Spelde</Copyright>
-    <PackageReleaseNotes>- Also add PreWrap uri to safeUrl list
-- Log urls added to the safeUrl list</PackageReleaseNotes>
+    <PackageReleaseNotes>- Added option to also log Chrome's network traffic to the log stream
+- Updated nuget packages</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/Sicos1977/ChromeHtmlToPdf</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Sicos1977/ChromeHtmlToPdf</RepositoryUrl>
     <RepositoryType>GitHub</RepositoryType>
