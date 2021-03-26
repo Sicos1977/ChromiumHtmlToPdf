@@ -34,6 +34,7 @@ using System.Threading.Tasks;
 using ChromeHtmlToPdfLib.Exceptions;
 using ChromeHtmlToPdfLib.Helpers;
 using ChromeHtmlToPdfLib.Protocol;
+using ChromeHtmlToPdfLib.Protocol.Network;
 using ChromeHtmlToPdfLib.Settings;
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable UnusedAutoPropertyAccessor.Global
@@ -62,6 +63,11 @@ namespace ChromeHtmlToPdfLib
         private readonly Stream _logStream;
 
         /// <summary>
+        ///      When enabled network traffic is also logged
+        /// </summary>
+        private readonly bool _logNetworkTraffic;
+
+        /// <summary>
         ///     A connection to the browser (Chrome)
         /// </summary>
         private readonly Connection _browserConnection;
@@ -86,9 +92,11 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         /// <param name="browser">The websocket to the browser</param>
         /// <param name="logStream">When set then logging is written to this tream</param>
-        internal Browser(Uri browser, Stream logStream)
+        /// <param name="logNetworkTraffic">When enabled network traffic is also logged</param>
+        internal Browser(Uri browser, Stream logStream, bool logNetworkTraffic)
         {
             _logStream = logStream;
+            _logNetworkTraffic = logNetworkTraffic;
 
             // Open a websocket to the browser
             _browserConnection = new Connection(browser.ToString());
@@ -102,14 +110,71 @@ namespace ChromeHtmlToPdfLib
 
             _pageConnection = new Connection(pageUrl);
 
-            var networkMessage = new Message { Method = "Network.enable" };
-            result = _pageConnection.SendAsync(networkMessage).GetAwaiter().GetResult();
-            _pageConnection.MessageReceived += _pageConnection_MessageReceived;
+            if (logNetworkTraffic)
+            {
+                var networkMessage = new Message {Method = "Network.enable"};
+                _pageConnection.SendAsync(networkMessage).GetAwaiter().GetResult();
+                _pageConnection.MessageReceived += _pageConnection_MessageReceived;
+            }
         }
+        #endregion
 
+        #region Network traffic
+        /// <summary>
+        ///     Event used to log the network traffic when <see cref="_logNetworkTraffic"/> is <c>true</c>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="data"></param>
         private void _pageConnection_MessageReceived(object sender, string data)
         {
-            File.AppendAllText("d:\\logs.txt", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + data + Environment.NewLine);
+            var message = Base.FromJson(data);
+
+            switch (message.Method)
+            {
+                case "Network.requestWillBeSent":
+                    var requestWillBeSent = RequestWillBeSent.FromJson(data);
+                    WriteToLog($"Request sent with request id '{requestWillBeSent.Params.RequestId}' " +
+                               $"for url '{requestWillBeSent.Params.Request.Url}' " +
+                               $"with method '{requestWillBeSent.Params.Request.Method}' " +
+                               $"and type '{requestWillBeSent.Params.Type}'");
+                    break;
+
+                case "Network.requestWillBeSentExtraInfo":
+                    // Experimental
+                    break;
+
+                case "Network.dataReceived":
+                    var dataReceived = DataReceived.FromJson(data);
+                    WriteToLog($"Data received for request id '{dataReceived.Params.RequestId}' " +
+                               $"with length '{dataReceived.Params.DataLength}'");
+                    break;
+
+                case "Network.responseReceived":
+                    var responseReceived = ResponseReceived.FromJson(data);
+                    WriteToLog($"Response received for request id '{responseReceived.Params.RequestId}' " +
+                               $"and url '{responseReceived.Params.Response.Url}' " +
+                               $"from ip '{responseReceived.Params.Response.RemoteIpAddress}' " +
+                               $"on port '{responseReceived.Params.Response.RemotePort}' " +
+                               $"with status '{responseReceived.Params.Response.Status}'");
+                    break;
+
+                case "Network.responseReceivedExtraInfo":
+                    // Experimental
+                    break;
+
+                case "Network.loadingFinished":
+                    var loadingFinished = LoadingFinished.FromJson(data);
+                    WriteToLog($"Loading finished for request id '{loadingFinished.Params.RequestId}' " +
+                               $"with encoded data length '{loadingFinished.Params.EncodedDataLength}'");
+                    break;
+
+                case "Network.loadingFailed":
+                    var loadingFailed = LoadingFailed.FromJson(data);
+                    WriteToLog($"Loading failed for request id '{loadingFailed.Params.RequestId}' " +
+                               $"and type '{loadingFailed.Params.Type}' " +
+                               $"with error '{loadingFailed.Params.ErrorText}'");
+                    break;
+            }
         }
         #endregion
 
@@ -499,6 +564,13 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         public void Dispose()
         {
+            if (_logNetworkTraffic)
+            {
+                var networkMessage = new Message {Method = "Network.disable"};
+                _pageConnection.SendAsync(networkMessage).GetAwaiter().GetResult();
+                _pageConnection.MessageReceived -= _pageConnection_MessageReceived;
+            }
+
             _pageConnection?.Dispose();
             _browserConnection?.Dispose();
         }

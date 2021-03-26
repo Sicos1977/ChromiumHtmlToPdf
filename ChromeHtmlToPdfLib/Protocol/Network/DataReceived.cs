@@ -24,16 +24,18 @@
 // THE SOFTWARE.
 //
 
-using System.Collections.Generic;
 using System.Globalization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
 namespace ChromeHtmlToPdfLib.Protocol.Network
 {
-    public class DataReceived : Base
+    public class DataReceived
     {
         #region Properties
+        [JsonProperty("method")]
+        public string Method { get; set; }
+
         [JsonProperty("params")]
         public DataReceivedParams Params { get; set; }
         #endregion
@@ -44,55 +46,29 @@ namespace ChromeHtmlToPdfLib.Protocol.Network
         /// </summary>
         /// <param name="json"></param>
         /// <returns></returns>
-        public new static DataReceived FromJson(string json) => JsonConvert.DeserializeObject<DataReceived>(json, ReceivedConverter.Settings);
+        public static DataReceived FromJson(string json) => JsonConvert.DeserializeObject<DataReceived>(json, DataReceivedConverter.Settings);
         #endregion
     }
 
     public class DataReceivedParams
     {
         #region Properties
-        [JsonProperty("frame")]
-        public ReceivedFrame Frame { get; set; }
+        [JsonProperty("requestId")]
+        public string RequestId { get; set; }
+
+        [JsonProperty("timestamp")]
+        public double Timestamp { get; set; }
+
+        [JsonProperty("dataLength")]
+        public long DataLength { get; set; }
+
+        [JsonProperty("encodedDataLength")]
+        public long EncodedDataLength { get; set; }
         #endregion
     }
 
-    public class ReceivedFrame
-    {
-        #region Properties
-        [JsonProperty("id")]
-        public string Id { get; set; }
-
-        [JsonProperty("loaderId")]
-        public string LoaderId { get; set; }
-
-        [JsonProperty("url")]
-        public string Url { get; set; }
-
-        [JsonProperty("domainAndRegistry")]
-        public string DomainAndRegistry { get; set; }
-
-        [JsonProperty("securityOrigin")]
-        public string SecurityOrigin { get; set; }
-
-        [JsonProperty("mimeType")]
-        public string MimeType { get; set; }
-
-        [JsonProperty("adFrameType")]
-        public string AdFrameType { get; set; }
-
-        [JsonProperty("secureContextType")]
-        public string SecureContextType { get; set; }
-
-        [JsonProperty("crossOriginIsolatedContextType")]
-        public string CrossOriginIsolatedContextType { get; set; }
-
-        [JsonProperty("gatedAPIFeatures")]
-        public List<string> GatedApiFeatures { get; set; }
-        #endregion
-    }
-
-    #region Static class ReceivedConverter
-    internal static class ReceivedConverter
+    #region Static class DataReceivedConverter
+    internal static class DataReceivedConverter
     {
         public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings
         {

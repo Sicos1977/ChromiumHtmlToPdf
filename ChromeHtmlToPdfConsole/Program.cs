@@ -15,7 +15,7 @@ using CommandLine.Text;
 
 namespace ChromeHtmlToPdfConsole
 {
-    class Program
+    static class Program
     {
         #region Fields
         /// <summary>
@@ -309,6 +309,7 @@ namespace ChromeHtmlToPdfConsole
             }
 
             converter.CaptureSnapshot = options.Snapshot;
+            converter.LogNetworkTraffic = options.LogNetworkTraffic;
         }
         #endregion
 

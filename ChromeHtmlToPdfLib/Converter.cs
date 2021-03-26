@@ -357,6 +357,11 @@ namespace ChromeHtmlToPdfLib
         ///     is set to <c>true</c>
         /// </summary>
         public Stream SnapshotStream { get; set; }
+
+        /// <summary>
+        ///     When enabled network traffic is also logged
+        /// </summary>
+        public bool LogNetworkTraffic { get; set; }
         #endregion
 
         #region Constructor & Destructor
@@ -591,7 +596,7 @@ namespace ChromeHtmlToPdfLib
         private void ConnectToDevProtocol(Uri uri)
         {
             WriteToLog($"Connecting to dev protocol on uri '{uri}'");
-            _browser = new Browser(uri, _logStream);
+            _browser = new Browser(uri, _logStream, LogNetworkTraffic);
             WriteToLog("Connected to dev protocol");
         }
 

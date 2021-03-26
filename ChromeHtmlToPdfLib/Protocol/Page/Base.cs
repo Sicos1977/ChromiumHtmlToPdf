@@ -47,9 +47,9 @@ namespace ChromeHtmlToPdfLib.Protocol.Page
         /// </summary>
         /// <param name="json"></param>
         /// <returns></returns>
-        public static MessageBase FromJson(string json)
+        public static Base FromJson(string json)
         {
-            return JsonConvert.DeserializeObject<MessageBase>(json);
+            return JsonConvert.DeserializeObject<Base>(json);
         }
         #endregion
     }

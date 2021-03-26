@@ -1,15 +1,14 @@
 ﻿using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using ChromeHtmlToPdfLib.Enums;
 using CommandLine;
 // ReSharper disable StringLiteralTypo
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 
 namespace ChromeHtmlToPdfConsole
 {
     /// <summary>
     ///     The parameters that can be used when calling this application
     /// </summary>
-    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
     // ReSharper disable once ClassNeverInstantiated.Global
     public class Options
     {
@@ -340,6 +339,13 @@ namespace ChromeHtmlToPdfConsole
                 "selected for the --output parameter, e.g. --output test.pdf --> test.mhtml"
         )]
         public bool Snapshot { get; set; }
+
+        /// <summary>
+        ///     This will capture a snapshot of the webpage (before it is converted to PDF) and save this to disk with
+        ///     the same name (but different extension .mhtml) that is selected for the --output parameter
+        /// </summary>
+        [Option("log-network-traffic", Required = false, HelpText = "When enabled network traffic is also logged")]
+        public bool LogNetworkTraffic { get; set; }
         #endregion
     }
 }
