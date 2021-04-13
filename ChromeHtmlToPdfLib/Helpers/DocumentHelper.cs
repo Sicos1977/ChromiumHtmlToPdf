@@ -384,7 +384,6 @@ namespace ChromeHtmlToPdfLib.Helpers
                         else
                             using (var textWriter = new StreamWriter(fileStream))
                                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
-
                     }
 
                     WriteToLog("Changed webpage written");
