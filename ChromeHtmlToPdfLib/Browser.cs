@@ -151,11 +151,16 @@ namespace ChromeHtmlToPdfLib
 
                 case "Network.responseReceived":
                     var responseReceived = ResponseReceived.FromJson(data);
-                    WriteToLog($"Response received for request id '{responseReceived.Params.RequestId}' " +
-                               $"and url '{responseReceived.Params.Response.Url}' " +
-                               $"from ip '{responseReceived.Params.Response.RemoteIpAddress}' " +
-                               $"on port '{responseReceived.Params.Response.RemotePort}' " +
-                               $"with status '{responseReceived.Params.Response.Status}'");
+                    var logMessage = $"Response received for request id '{responseReceived.Params.RequestId}' " +
+                                     $"and url '{responseReceived.Params.Response.Url}'";
+
+                    if (!string.IsNullOrWhiteSpace(responseReceived.Params.Response.RemoteIpAddress))
+                        logMessage += $" from ip '{responseReceived.Params.Response.RemoteIpAddress}' " +
+                                      $"on port '{responseReceived.Params.Response.RemotePort}' " +
+                                      $"with status '{responseReceived.Params.Response.Status}'";
+
+                    WriteToLog(logMessage);
+                        
                     break;
 
                 case "Network.responseReceivedExtraInfo":
