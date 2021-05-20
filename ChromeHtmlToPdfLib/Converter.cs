@@ -33,7 +33,6 @@ using ChromeHtmlToPdfLib.Settings;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Text.RegularExpressions;
 using System.Threading;
 using ChromeHtmlToPdfLib.Enums;
 using ChromeHtmlToPdfLib.Exceptions;
@@ -934,8 +933,7 @@ namespace ChromeHtmlToPdfLib
         /// <returns></returns>
         private List<string> ListToWildCardRegEx(IEnumerable<string> values)
         {
-            return values.Select(value => Regex.Escape(value).Replace("*", ".*"))
-                .ToList();
+            return values.Select(RegularExpression.Escape).ToList();
         }
         #endregion
 
@@ -1072,7 +1070,8 @@ namespace ChromeHtmlToPdfLib
                             ImageRotate,
                             pageSettings,
                             out var outputUri,
-                            out var validateImagesSafeUrls))
+                            out var validateImagesSafeUrls,
+                            _urlBlacklist))
                         {
                             foreach (var validateImagesSafeUrl in validateImagesSafeUrls)
                             {

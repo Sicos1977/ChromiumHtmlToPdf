@@ -258,6 +258,10 @@ namespace ChromeHtmlToPdfLib.Helpers
                         foreach (var image in images)
                         {
                             var src = image.Source;
+                            
+                            if (src.StartsWith("http://", StringComparison.InvariantCultureIgnoreCase) ||
+                                src.StartsWith("https://", StringComparison.InvariantCultureIgnoreCase)) continue;
+                            
                             WriteToLog($"Updating image source to '{src}'");
                             safeUrls.Add(src);
                             image.Source = src;
@@ -423,7 +427,7 @@ namespace ChromeHtmlToPdfLib.Helpers
             PageSettings pageSettings,
             out ConvertUri outputUri,
             out List<string> safeUrls,
-            List<string> urlBlacklist = null)
+            List<string> urlBlacklist)
         {
             outputUri = null;
             safeUrls = new List<string>();
@@ -448,9 +452,9 @@ namespace ChromeHtmlToPdfLib.Helpers
                 {
                     var httpClientHandler = new HttpClientHandler
                     {
-                        Proxy = _webProxy,
-                        PreAuthenticate = true,
-                        UseDefaultCredentials = false,
+                        Proxy = _webProxy
+                        //PreAuthenticate = true,
+                        //UseDefaultCredentials = false,
                     };
 
                     Configuration.Default.WithCss().WithRequesters(httpClientHandler);

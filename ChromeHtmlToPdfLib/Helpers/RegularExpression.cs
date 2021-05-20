@@ -51,12 +51,19 @@ namespace ChromeHtmlToPdfLib.Helpers
             {
                 if (Regex.IsMatch(value, pattern, RegexOptions.IgnoreCase))
                 {
-                    matchedPattern = Regex.Unescape(pattern);
+                    matchedPattern = Regex.Unescape(pattern).Replace(".*", "*");
                     return true;
                 }
             }
 
             return false;
+        }
+        #endregion
+
+        #region Escape
+        public static string Escape(string pattern)
+        {
+            return Regex.Escape(pattern.Replace("*", ".*"));
         }
         #endregion
     }
