@@ -2,13 +2,12 @@
 
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.1;netstandard2.0</TargetFrameworks>
-    <Version>2.2.1</Version>
+    <Version>2.2.2</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>ChromeHtmlToPdf is a 100% managed C# .NETStandard 2.0 library that can be used to convert HTML to PDF format with the use of Google Chrome</Description>
     <Copyright>(C)2017-2021 Kees van Spelde</Copyright>
-    <PackageReleaseNotes>- Added option to also log Chrome's network traffic to the log stream
-- Updated nuget packages
-- Add FitToPage url to the url safe list</PackageReleaseNotes>
+    <PackageReleaseNotes>- Updated nuget packages
+- Fix error with blacklisting url</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/Sicos1977/ChromeHtmlToPdf</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Sicos1977/ChromeHtmlToPdf</RepositoryUrl>
     <RepositoryType>GitHub</RepositoryType>
@@ -21,16 +20,16 @@
     <Company>Magic-Sessions</Company>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>ChromeHtmlToPdf.snk</AssemblyOriginatorKeyFile>
-    <AssemblyVersion>2.2.1.0</AssemblyVersion>
-    <FileVersion>2.2.1.0</FileVersion>
+    <AssemblyVersion>2.2.2.0</AssemblyVersion>
+    <FileVersion>2.2.2.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AngleSharp" Version="0.14.0" />
-    <PackageReference Include="AngleSharp.Css" Version="0.14.2" />
-    <PackageReference Include="AngleSharp.Io" Version="0.14.0" />
-    <PackageReference Include="AngleSharp.Xml" Version="0.14.0" />
-    <PackageReference Include="HtmlSanitizer" Version="5.0.376" />
+    <PackageReference Include="AngleSharp" Version="0.15.0" />
+    <PackageReference Include="AngleSharp.Css" Version="0.15.0" />
+    <PackageReference Include="AngleSharp.Io" Version="0.15.0" />
+    <PackageReference Include="AngleSharp.Xml" Version="0.15.0" />
+    <PackageReference Include="HtmlSanitizer" Version="5.0.404" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="System.Drawing.Common" Version="5.0.2" />
