@@ -682,8 +682,11 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         /// <param name="argument"></param>
         // ReSharper disable once UnusedMember.Local
-        private void RemoveArgument(string argument)
+        public void RemoveArgument(string argument)
         {
+            if (argument.ToLowerInvariant().Trim().Equals("--headless"))
+                throw new ArgumentException("Can't remove '--headless' argument, this argument is always needed");
+
             if (DefaultArguments.Contains(argument))
                 DefaultArguments.Remove(argument);
         }
