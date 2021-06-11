@@ -54,6 +54,11 @@ namespace ChromeHtmlToPdfLib
     {
         #region Fields
         /// <summary>
+        ///     The default Chrome arguments
+        /// </summary>
+        private List<string> _defaultChromeArgument;
+
+        /// <summary>
         ///     Used to make the logging thread safe
         /// </summary>
         private readonly object _loggerLock = new object();
@@ -170,7 +175,10 @@ namespace ChromeHtmlToPdfLib
         /// <summary>
         ///     Returns the list with default arguments that are send to Chrome when starting
         /// </summary>
-        public List<string> DefaultChromeArguments { get; private set; }
+        public IReadOnlyCollection<string> DefaultChromeArguments
+        {
+            get => _defaultChromeArgument.AsReadOnly();
+        }
 
         /// <summary>
         ///     An unique id that can be used to identify the logging of the converter when
@@ -651,7 +659,7 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         private void ResetChromeArguments()
         {
-            DefaultChromeArguments = new List<string>();
+            _defaultChromeArgument = new List<string>();
             AddChromeArgument("--headless");
             AddChromeArgument("--disable-gpu");
             AddChromeArgument("--hide-scrollbars");
@@ -674,22 +682,31 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
 
-        #region RemoveArgument
+        #region RemoveChromeArgument
         /// <summary>
         ///     Removes the given <paramref name="argument" /> from <see cref="DefaultChromeArguments" />
         /// </summary>
-        /// <param name="argument"></param>
+        /// <param name="argument">The Chrome argument</param>
         // ReSharper disable once UnusedMember.Local
-        public void RemoveArgument(string argument)
+        public void RemoveChromeArgument(string argument)
         {
             if (string.IsNullOrWhiteSpace(argument))
                 throw new ArgumentException("Argument is null, empty or white space");
 
-            if (argument.ToLowerInvariant().Trim().Equals("--headless"))
-                throw new ArgumentException("Can't remove '--headless' argument, this argument is always needed");
+            switch (argument)
+            {
+                case "--headless":
+                    throw new ArgumentException("Can't remove '--headless' argument, this argument is always needed");
+              
+                case "--no-first-run":
+                    throw new ArgumentException("Can't remove '--no-first-run' argument, this argument is always needed");
+                
+                case "--remote-debugging-port=\"0\"":
+                    throw new ArgumentException("Can't remove '---remote-debugging-port=\"0\"' argument, this argument is always needed");
+            }
 
-            if (DefaultChromeArguments.Contains(argument))
-                DefaultChromeArguments.Remove(argument);
+            if (_defaultChromeArgument.Contains(argument))
+                _defaultChromeArgument.Remove(argument);
         }
         #endregion
 
@@ -710,8 +727,8 @@ namespace ChromeHtmlToPdfLib
             if (string.IsNullOrWhiteSpace(argument))
                 throw new ArgumentException("Argument is null, empty or white space");
 
-            if (!DefaultChromeArguments.Contains(argument, StringComparison.CurrentCultureIgnoreCase))
-                DefaultChromeArguments.Add(argument);
+            if (!_defaultChromeArgument.Contains(argument, StringComparison.CurrentCultureIgnoreCase))
+                _defaultChromeArgument.Add(argument);
         }
 
         /// <summary>
@@ -734,12 +751,12 @@ namespace ChromeHtmlToPdfLib
 
             for (var i = 0; i < DefaultChromeArguments.Count; i++)
             {
-                if (!DefaultChromeArguments[i].StartsWith(argument + "=")) continue;
-                DefaultChromeArguments[i] = argument + $"=\"{value}\"";
+                if (!_defaultChromeArgument[i].StartsWith(argument + "=")) continue;
+                _defaultChromeArgument[i] = argument + $"=\"{value}\"";
                 return;
             }
 
-            DefaultChromeArguments.Add(argument + $"=\"{value}\"");
+            _defaultChromeArgument.Add(argument + $"=\"{value}\"");
         }
         #endregion
 
