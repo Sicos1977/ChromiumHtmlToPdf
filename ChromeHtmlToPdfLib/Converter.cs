@@ -170,7 +170,7 @@ namespace ChromeHtmlToPdfLib
         /// <summary>
         ///     Returns the list with default arguments that are send to Chrome when starting
         /// </summary>
-        public List<string> DefaultArguments { get; private set; }
+        public List<string> DefaultChromeArguments { get; private set; }
 
         /// <summary>
         ///     An unique id that can be used to identify the logging of the converter when
@@ -388,7 +388,7 @@ namespace ChromeHtmlToPdfLib
             _preWrapExtensions = new List<string>();
             _logStream = logStream;
 
-            ResetArguments();
+            ResetChromeArguments();
 
             if (string.IsNullOrWhiteSpace(chromeExeFileName))
                 chromeExeFileName = ChromeFinder.Find();
@@ -406,7 +406,7 @@ namespace ChromeHtmlToPdfLib
 
             _userProfileSet = true;
             _devToolsActivePortFile = Path.Combine(userProfileDirectory.FullName, "DevToolsActivePort");
-            SetDefaultArgument("--user-data-dir", userProfileDirectory.FullName);
+            AddChromedArgument("--user-data-dir", userProfileDirectory.FullName);
         }
 
         /// <summary>
@@ -438,13 +438,13 @@ namespace ChromeHtmlToPdfLib
             var workingDirectory = Path.GetDirectoryName(_chromeExeFileName);
 
             WriteToLog($"Starting Chrome from location '{_chromeExeFileName}' with working directory '{workingDirectory}'");
-            WriteToLog($"\"{_chromeExeFileName}\" {string.Join(" ", DefaultArguments)}");
+            WriteToLog($"\"{_chromeExeFileName}\" {string.Join(" ", DefaultChromeArguments)}");
 
             _chromeProcess = new Process();
             var processStartInfo = new ProcessStartInfo
             {
                 FileName = _chromeExeFileName,
-                Arguments = string.Join(" ", DefaultArguments),
+                Arguments = string.Join(" ", DefaultChromeArguments),
                 CreateNoWindow = true,
             };
 
@@ -541,7 +541,7 @@ namespace ChromeHtmlToPdfLib
             try
             {
                 if (_chromeProcess == null) return;
-                WriteToLog("Chrome exited unexpectedly, arguments used: " + string.Join(" ", DefaultArguments));
+                WriteToLog("Chrome exited unexpectedly, arguments used: " + string.Join(" ", DefaultChromeArguments));
                 WriteToLog("Process id: " + _chromeProcess.Id);
                 WriteToLog("Process exit time: " + _chromeProcess.ExitTime.ToString("yyyy-MM-ddTHH:mm:ss.fff"));
                 var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromeProcess.ExitCode));
@@ -645,50 +645,101 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
 
-        #region ResetArguments
+        #region ResetChromeArguments
         /// <summary>
-        ///     Resets the <see cref="DefaultArguments" /> to their default settings
+        ///     Resets the <see cref="DefaultChromeArguments" /> to their default settings
         /// </summary>
-        private void ResetArguments()
+        private void ResetChromeArguments()
         {
-            DefaultArguments = new List<string>();
-            SetDefaultArgument("--headless");
-            SetDefaultArgument("--disable-gpu");
-            SetDefaultArgument("--hide-scrollbars");
-            SetDefaultArgument("--mute-audio");
-            SetDefaultArgument("--disable-background-networking");
-            SetDefaultArgument("--disable-background-timer-throttling");
-            SetDefaultArgument("--disable-default-apps");
-            SetDefaultArgument("--disable-extensions");
-            SetDefaultArgument("--disable-hang-monitor");
-            //SetDefaultArgument("--disable-popup-blocking");
+            DefaultChromeArguments = new List<string>();
+            AddChromeArgument("--headless");
+            AddChromeArgument("--disable-gpu");
+            AddChromeArgument("--hide-scrollbars");
+            AddChromeArgument("--mute-audio");
+            AddChromeArgument("--disable-background-networking");
+            AddChromeArgument("--disable-background-timer-throttling");
+            AddChromeArgument("--disable-default-apps");
+            AddChromeArgument("--disable-extensions");
+            AddChromeArgument("--disable-hang-monitor");
+            //AddArgument("--disable-popup-blocking");
             // ReSharper disable once StringLiteralTypo
-            SetDefaultArgument("--disable-prompt-on-repost");
-            SetDefaultArgument("--disable-sync");
-            SetDefaultArgument("--disable-translate");
-            SetDefaultArgument("--metrics-recording-only");
-            SetDefaultArgument("--no-first-run");
-            SetDefaultArgument("--disable-crash-reporter");
-            //SetDefaultArgument("--allow-insecure-localhost");
-            //SetDefaultArgument("--no-sandbox");
-            SetDefaultArgument("--remote-debugging-port", "0");
+            AddChromeArgument("--disable-prompt-on-repost");
+            AddChromeArgument("--disable-sync");
+            AddChromeArgument("--disable-translate");
+            AddChromeArgument("--metrics-recording-only");
+            AddChromeArgument("--no-first-run");
+            AddChromeArgument("--disable-crash-reporter");
+            AddChromedArgument("--remote-debugging-port", "0");
             SetWindowSize(WindowSize.HD_1366_768);
         }
         #endregion
 
         #region RemoveArgument
         /// <summary>
-        ///     Removes the given <paramref name="argument" /> from <see cref="DefaultArguments" />
+        ///     Removes the given <paramref name="argument" /> from <see cref="DefaultChromeArguments" />
         /// </summary>
         /// <param name="argument"></param>
         // ReSharper disable once UnusedMember.Local
         public void RemoveArgument(string argument)
         {
+            if (string.IsNullOrWhiteSpace(argument))
+                throw new ArgumentException("Argument is null, empty or white space");
+
             if (argument.ToLowerInvariant().Trim().Equals("--headless"))
                 throw new ArgumentException("Can't remove '--headless' argument, this argument is always needed");
 
-            if (DefaultArguments.Contains(argument))
-                DefaultArguments.Remove(argument);
+            if (DefaultChromeArguments.Contains(argument))
+                DefaultChromeArguments.Remove(argument);
+        }
+        #endregion
+
+        #region AddChromedArgument
+        /// <summary>
+        ///     Adds an extra conversion argument to the <see cref="DefaultChromeArguments" />
+        /// </summary>
+        /// <remarks>
+        ///     This is a one time only default setting which can not be changed when doing multiple conversions.
+        ///     Set this before doing any conversions. You can get all the set argument through the <see cref="DefaultChromeArguments"/> property
+        /// </remarks>
+        /// <param name="argument">The Chrome argument</param>
+        public void AddChromeArgument(string argument)
+        {
+            if (IsChromeRunning)
+                throw new ChromeException($"Chrome is already running, you need to set the argument '{argument}' before staring Chrome");
+
+            if (string.IsNullOrWhiteSpace(argument))
+                throw new ArgumentException("Argument is null, empty or white space");
+
+            if (!DefaultChromeArguments.Contains(argument, StringComparison.CurrentCultureIgnoreCase))
+                DefaultChromeArguments.Add(argument);
+        }
+
+        /// <summary>
+        ///     Adds an extra conversion argument with value to the <see cref="DefaultChromeArguments" />
+        ///     or replaces it when it already exists
+        /// </summary>
+        /// <remarks>
+        ///     This is a one time only default setting which can not be changed when doing multiple conversions.
+        ///     Set this before doing any conversions. You can get all the set argument through the <see cref="DefaultChromeArguments"/> property
+        /// </remarks>
+        /// <param name="argument">The Chrome argument</param>
+        /// <param name="value">The argument value</param>
+        public void AddChromedArgument(string argument, string value)
+        {
+            if (IsChromeRunning)
+                throw new ChromeException($"Chrome is already running, you need to set the argument '{argument}' before staring Chrome");
+
+            if (string.IsNullOrWhiteSpace(argument))
+                throw new ArgumentException("Argument is null, empty or white space");
+
+            for (var i = 0; i < DefaultChromeArguments.Count; i++)
+            {
+                if (!DefaultChromeArguments[i].StartsWith(argument + "=")) continue;
+                DefaultChromeArguments[i] = argument + $"=\"{value}\"";
+                return;
+            }
+
+            DefaultChromeArguments.Add(argument + $"=\"{value}\"");
         }
         #endregion
 
@@ -717,7 +768,7 @@ namespace ChromeHtmlToPdfLib
         public void SetProxyServer(string value)
         {
             _proxyServer = value;
-            SetDefaultArgument("--proxy-server", value);
+            AddChromedArgument("--proxy-server", value);
         }
         #endregion
 
@@ -742,7 +793,7 @@ namespace ChromeHtmlToPdfLib
         public void SetProxyBypassList(string values)
         {
             _proxyBypassList = values;
-            SetDefaultArgument("--proxy-bypass-list", values);
+            AddChromedArgument("--proxy-bypass-list", values);
         }
         #endregion
 
@@ -760,7 +811,7 @@ namespace ChromeHtmlToPdfLib
         /// </remarks>
         public void SetProxyPacUrl(string value)
         {
-            SetDefaultArgument("--proxy-pac-url", value);
+            AddChromedArgument("--proxy-pac-url", value);
         }
         #endregion
 
@@ -774,7 +825,7 @@ namespace ChromeHtmlToPdfLib
         /// </remarks>
         public void SetUserAgent(string value)
         {
-            SetDefaultArgument("--user-agent", value);
+            AddChromedArgument("--user-agent", value);
         }
         #endregion
 
@@ -792,50 +843,6 @@ namespace ChromeHtmlToPdfLib
         {
             _userName = userName;
             _password = password;
-        }
-        #endregion
-
-        #region SetArgument
-        /// <summary>
-        ///     Adds an extra conversion argument to the <see cref="DefaultArguments" />
-        /// </summary>
-        /// <remarks>
-        ///     This is a one time only default setting which can not be changed when doing multiple conversions.
-        ///     Set this before doing any conversions. You can get all the set argument through the <see cref="DefaultArguments"/> property
-        /// </remarks>
-        /// <param name="argument">The Chrome argument</param>
-        public void SetDefaultArgument(string argument)
-        {
-            if (IsChromeRunning)
-                throw new ChromeException($"Chrome is already running, you need to set the argument '{argument}' before staring Chrome");
-
-            if (!DefaultArguments.Contains(argument, StringComparison.CurrentCultureIgnoreCase))
-                DefaultArguments.Add(argument);
-        }
-
-        /// <summary>
-        ///     Adds an extra conversion argument with value to the <see cref="DefaultArguments" />
-        ///     or replaces it when it already exists
-        /// </summary>
-        /// <remarks>
-        ///     This is a one time only default setting which can not be changed when doing multiple conversions.
-        ///     Set this before doing any conversions. You can get all the set argument through the <see cref="DefaultArguments"/> property
-        /// </remarks>
-        /// <param name="argument">The Chrome argument</param>
-        /// <param name="value">The argument value</param>
-        public void SetDefaultArgument(string argument, string value)
-        {
-            if (IsChromeRunning)
-                throw new ChromeException($"Chrome is already running, you need to set the argument '{argument}' before staring Chrome");
-
-            for (var i = 0; i < DefaultArguments.Count; i++)
-            {
-                if (!DefaultArguments[i].StartsWith(argument + "=")) continue;
-                DefaultArguments[i] = argument + $"=\"{value}\"";
-                return;
-            }
-
-            DefaultArguments.Add(argument + $"=\"{value}\"");
         }
         #endregion
 
@@ -860,7 +867,7 @@ namespace ChromeHtmlToPdfLib
             if (height <= 0)
                 throw new ArgumentOutOfRangeException(nameof(height));
 
-            SetDefaultArgument("--window-size", width + "," + height);
+            AddChromedArgument("--window-size", width + "," + height);
         }
 
         /// <summary>
@@ -872,58 +879,58 @@ namespace ChromeHtmlToPdfLib
             switch (size)
             {
                 case WindowSize.SVGA:
-                    SetDefaultArgument("--window-size", 800 + "," + 600);
+                    AddChromedArgument("--window-size", 800 + "," + 600);
                     break;
                 case WindowSize.WSVGA:
-                    SetDefaultArgument("--window-size", 1024 + "," + 600);
+                    AddChromedArgument("--window-size", 1024 + "," + 600);
                     break;
                 case WindowSize.XGA:
-                    SetDefaultArgument("--window-size", 1024 + "," + 768);
+                    AddChromedArgument("--window-size", 1024 + "," + 768);
                     break;
                 case WindowSize.XGAPLUS:
-                    SetDefaultArgument("--window-size", 1152 + "," + 864);
+                    AddChromedArgument("--window-size", 1152 + "," + 864);
                     break;
                 case WindowSize.WXGA_5_3:
-                    SetDefaultArgument("--window-size", 1280 + "," + 768);
+                    AddChromedArgument("--window-size", 1280 + "," + 768);
                     break;
                 case WindowSize.WXGA_16_10:
-                    SetDefaultArgument("--window-size", 1280 + "," + 800);
+                    AddChromedArgument("--window-size", 1280 + "," + 800);
                     break;
                 case WindowSize.SXGA:
-                    SetDefaultArgument("--window-size", 1280 + "," + 1024);
+                    AddChromedArgument("--window-size", 1280 + "," + 1024);
                     break;
                 case WindowSize.HD_1360_768:
-                    SetDefaultArgument("--window-size", 1360 + "," + 768);
+                    AddChromedArgument("--window-size", 1360 + "," + 768);
                     break;
                 case WindowSize.HD_1366_768:
-                    SetDefaultArgument("--window-size", 1366 + "," + 768);
+                    AddChromedArgument("--window-size", 1366 + "," + 768);
                     break;
                 case WindowSize.OTHER_1536_864:
-                    SetDefaultArgument("--window-size", 1536 + "," + 864);
+                    AddChromedArgument("--window-size", 1536 + "," + 864);
                     break;
                 case WindowSize.HD_PLUS:
-                    SetDefaultArgument("--window-size", 1600 + "," + 900);
+                    AddChromedArgument("--window-size", 1600 + "," + 900);
                     break;
                 case WindowSize.WSXGA_PLUS:
-                    SetDefaultArgument("--window-size", 1680 + "," + 1050);
+                    AddChromedArgument("--window-size", 1680 + "," + 1050);
                     break;
                 case WindowSize.FHD:
-                    SetDefaultArgument("--window-size", 1920 + "," + 1080);
+                    AddChromedArgument("--window-size", 1920 + "," + 1080);
                     break;
                 case WindowSize.WUXGA:
-                    SetDefaultArgument("--window-size", 1920 + "," + 1200);
+                    AddChromedArgument("--window-size", 1920 + "," + 1200);
                     break;
                 case WindowSize.OTHER_2560_1070:
-                    SetDefaultArgument("--window-size", 2560 + "," + 1070);
+                    AddChromedArgument("--window-size", 2560 + "," + 1070);
                     break;
                 case WindowSize.WQHD:
-                    SetDefaultArgument("--window-size", 2560 + "," + 1440);
+                    AddChromedArgument("--window-size", 2560 + "," + 1440);
                     break;
                 case WindowSize.OTHER_3440_1440:
-                    SetDefaultArgument("--window-size", 3440 + "," + 1440);
+                    AddChromedArgument("--window-size", 3440 + "," + 1440);
                     break;
                 case WindowSize._4K_UHD:
-                    SetDefaultArgument("--window-size", 3840 + "," + 2160);
+                    AddChromedArgument("--window-size", 3840 + "," + 2160);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(size), size, null);
@@ -1273,7 +1280,7 @@ namespace ChromeHtmlToPdfLib
         //{
         //    CheckIfOutputFolderExists(outputFile);
         //    _communicator.NavigateTo(new Uri("file://" + inputFile), TODO);
-        //    SetDefaultArgument("--screenshot", Path.ChangeExtension(outputFile, ".png"));
+        //    AddArgument("--screenshot", Path.ChangeExtension(outputFile, ".png"));
         //}
 
         ///// <summary>
@@ -1287,7 +1294,7 @@ namespace ChromeHtmlToPdfLib
         //{
         //    CheckIfOutputFolderExists(outputFile);
         //    _communicator.NavigateTo(inputUri, TODO);
-        //    SetDefaultArgument("--screenshot", Path.ChangeExtension(outputFile, ".png"));
+        //    AddArgument("--screenshot", Path.ChangeExtension(outputFile, ".png"));
         //}
         #endregion
 
