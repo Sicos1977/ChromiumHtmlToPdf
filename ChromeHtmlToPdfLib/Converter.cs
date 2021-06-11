@@ -798,11 +798,14 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         /// <remarks>
         ///     This is a one time only default setting which can not be changed when doing multiple conversions.
-        ///     Set this before doing any conversions.
+        ///     Set this before doing any conversions. You can get all the set argument through the <see cref="DefaultArguments"/> property
         /// </remarks>
-        /// <param name="argument"></param>
-        private void SetDefaultArgument(string argument)
+        /// <param name="argument">The Chrome argument</param>
+        public void SetDefaultArgument(string argument)
         {
+            if (IsChromeRunning)
+                throw new ChromeException($"Chrome is already running, you need to set the argument '{argument}' before staring Chrome");
+
             if (!DefaultArguments.Contains(argument, StringComparison.CurrentCultureIgnoreCase))
                 DefaultArguments.Add(argument);
         }
@@ -813,14 +816,14 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         /// <remarks>
         ///     This is a one time only default setting which can not be changed when doing multiple conversions.
-        ///     Set this before doing any conversions.
+        ///     Set this before doing any conversions. You can get all the set argument through the <see cref="DefaultArguments"/> property
         /// </remarks>
-        /// <param name="argument"></param>
-        /// <param name="value"></param>
-        private void SetDefaultArgument(string argument, string value)
+        /// <param name="argument">The Chrome argument</param>
+        /// <param name="value">The argument value</param>
+        public void SetDefaultArgument(string argument, string value)
         {
             if (IsChromeRunning)
-                throw new ChromeException($"Chrome is already running, you need to set the parameter '{argument}' before staring Chrome");
+                throw new ChromeException($"Chrome is already running, you need to set the argument '{argument}' before staring Chrome");
 
             for (var i = 0; i < DefaultArguments.Count; i++)
             {
