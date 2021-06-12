@@ -484,11 +484,15 @@ namespace ChromeHtmlToPdfLib
 
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    var secureString = new SecureString();
-                    foreach (var t in _password)
-                        secureString.AppendChar(t);
+                    if (!string.IsNullOrEmpty(_password))
+                    {
+                        var secureString = new SecureString();
+                        foreach (var c in _password)
+                            secureString.AppendChar(c);
 
-                    processStartInfo.Password = secureString;
+                        processStartInfo.Password = secureString;
+                    }
+
                     processStartInfo.LoadUserProfile = true;
                 }
                 else
