@@ -874,7 +874,7 @@ namespace ChromeHtmlToPdfLib
         /// <param name="password">The password for the <paramref name="userName" /></param>
         /// <remarks>
         ///     Set this parameter before starting Chrome. On systems other than Windows the password can
-        ///     be left empty because this only supported on Windows.
+        ///     be left empty because this is only supported on Windows.
         /// </remarks>
         public void SetUser(string userName, string password = null)
         {
