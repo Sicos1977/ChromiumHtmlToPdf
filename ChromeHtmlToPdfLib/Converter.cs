@@ -458,31 +458,32 @@ namespace ChromeHtmlToPdfLib
 
             if (!string.IsNullOrWhiteSpace(_userName))
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                var userName = string.Empty;
+                var domain = string.Empty;
+
+                if (_userName.Contains("\\"))
                 {
-                    WriteToLog("Ignoring SetUser because running under a different user is not supported on Linux");
+                    userName = _userName.Split('\\')[1];
+                    domain = _userName.Split('\\')[0];
+                }
+
+                if (!string.IsNullOrWhiteSpace(domain) && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    WriteToLog($"Starting Chrome with username '{userName}' on domain '{domain}'");
+                    processStartInfo.Domain = domain;
                 }
                 else
                 {
-                    var userName = string.Empty;
-                    var domain = string.Empty;
+                    if (!string.IsNullOrWhiteSpace(domain) && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                        WriteToLog($"Ignoring domain '{domain}' because this is only supported on Windows");
 
-                    if (_userName.Contains("\\"))
-                    {
-                        userName = _userName.Split('\\')[1];
-                        domain = _userName.Split('\\')[0];
-                    }
+                    WriteToLog($"Starting Chrome with username '{userName}'");
+                }
 
-                    if (!string.IsNullOrWhiteSpace(domain))
-                    {
-                        WriteToLog($"Starting Chrome with username '{userName}' on domain '{domain}'");
-                        processStartInfo.Domain = domain;
-                    }
-                    else
-                        WriteToLog($"Starting Chrome with username '{userName}'");
+                processStartInfo.UserName = userName;
 
-                    processStartInfo.UserName = userName;
-
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
                     var secureString = new SecureString();
                     foreach (var t in _password)
                         secureString.AppendChar(t);
@@ -490,6 +491,8 @@ namespace ChromeHtmlToPdfLib
                     processStartInfo.Password = secureString;
                     processStartInfo.LoadUserProfile = true;
                 }
+                else
+                    WriteToLog("Ignoring password and loading user profile because this is only supported on Windows");
             }
 
             if (!_userProfileSet)
@@ -866,10 +869,10 @@ namespace ChromeHtmlToPdfLib
         /// <param name="userName">The username with or without a domain name (e.g DOMAIN\USERNAME)</param>
         /// <param name="password">The password for the <paramref name="userName" /></param>
         /// <remarks>
-        ///     Set this parameter before starting Chrome. Do not use this method when running on Linux.<br/>
-        ///     Running a programm under a different user is not supported on Linux
+        ///     Set this parameter before starting Chrome. On systems other than Windows the password can
+        ///     be left empty because this only supported on Windows.
         /// </remarks>
-        public void SetUser(string userName, string password)
+        public void SetUser(string userName, string password = null)
         {
             _userName = userName;
             _password = password;
