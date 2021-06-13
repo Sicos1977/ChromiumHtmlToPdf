@@ -678,8 +678,10 @@ namespace ChromeHtmlToPdfLib
         /// <summary>
         ///     Resets the <see cref="DefaultChromeArguments" /> to their default settings
         /// </summary>
-        private void ResetChromeArguments()
+        public void ResetChromeArguments()
         {
+            WriteToLog("Resetting Chrome arguments to default");
+
             _defaultChromeArgument = new List<string>();
             AddChromeArgument("--headless");
             AddChromeArgument("--disable-gpu");
@@ -727,7 +729,10 @@ namespace ChromeHtmlToPdfLib
             }
 
             if (_defaultChromeArgument.Contains(argument))
+            {
                 _defaultChromeArgument.Remove(argument);
+                WriteToLog($"Removed Chrome argument '{argument}'");
+            }
         }
         #endregion
 
@@ -749,7 +754,10 @@ namespace ChromeHtmlToPdfLib
                 throw new ArgumentException("Argument is null, empty or white space");
 
             if (!_defaultChromeArgument.Contains(argument, StringComparison.CurrentCultureIgnoreCase))
+            {
+                WriteToLog($"Adding Chrome argument '{argument}'");
                 _defaultChromeArgument.Add(argument);
+            }
         }
 
         /// <summary>
@@ -777,6 +785,7 @@ namespace ChromeHtmlToPdfLib
                 return;
             }
 
+            WriteToLog($"Adding Chrome argument '{argument}=\"{value}\"'");
             _defaultChromeArgument.Add(argument + $"=\"{value}\"");
         }
         #endregion
