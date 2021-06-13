@@ -458,7 +458,7 @@ namespace ChromeHtmlToPdfLib
 
             if (!string.IsNullOrWhiteSpace(_userName))
             {
-                var userName = string.Empty;
+                string userName;
                 var domain = string.Empty;
 
                 if (_userName.Contains("\\"))
@@ -466,6 +466,8 @@ namespace ChromeHtmlToPdfLib
                     userName = _userName.Split('\\')[1];
                     domain = _userName.Split('\\')[0];
                 }
+                else
+                    userName = _userName;
 
                 if (!string.IsNullOrWhiteSpace(domain) && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
