@@ -1012,16 +1012,6 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
 
-        #region ClearUrlBlackList
-        /// <summary>
-        ///     Clears the url blacklist
-        /// </summary>
-        private void ClearUrlBlackList()
-        {
-            _urlBlacklist = new List<string>();
-        }
-        #endregion
-
         #region ConvertToPdf
         /// <summary>
         ///     Converts the given <paramref name="inputUri" /> to PDF
