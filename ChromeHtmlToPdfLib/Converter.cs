@@ -490,6 +490,7 @@ namespace ChromeHtmlToPdfLib
                     WriteToLog($"Starting Chrome with username '{userName}'");
                 }
 
+                processStartInfo.UseShellExecute = false;
                 processStartInfo.UserName = userName;
 
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
