@@ -39,6 +39,7 @@ using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
 using AngleSharp.Html;
 using AngleSharp.Html.Dom;
+using AngleSharp.Io.Network;
 using ChromeHtmlToPdfLib.Settings;
 using Ganss.XSS;
 using Image = System.Drawing.Image;
@@ -446,18 +447,29 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                 var htmlChanged = false;
 
-                IConfiguration config = null;
+                IConfiguration config;
 
                 if (_webProxy != null)
                 {
+                    WriteToLog($"Using webproxy '{_webProxy.Address}' to download images");
+
                     var httpClientHandler = new HttpClientHandler
                     {
-                        Proxy = _webProxy
-                        //PreAuthenticate = true,
-                        //UseDefaultCredentials = false,
+                        Proxy = _webProxy,
+                        ServerCertificateCustomValidationCallback = (message, certificate2, arg3, arg4) =>
+                        {
+                            WriteToLog($"Accepting certificate '{certificate2.Subject}', message '{message}'");
+                            return true;
+                        }
                     };
 
-                    Configuration.Default.WithCss().WithRequesters(httpClientHandler);
+                    var client = new HttpClient(httpClientHandler);
+                    //client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.101 Safari/537.36");
+                    config = Configuration.Default
+                        .With(new HttpClientRequester(client))
+                        .WithTemporaryCookies()
+                        .WithDefaultLoader()
+                        .WithCss();
                 }
                 else
                     config = Configuration.Default.WithCss();

@@ -340,10 +340,18 @@ namespace ChromeHtmlToPdfLib
                             : new NetworkCredential(userName, _password);
                     }
 
-                    return networkCredential != null
-                        ? _webProxy = new WebProxy(_proxyServer, true, bypassList, networkCredential)
-                        : _webProxy = new WebProxy(_proxyServer, true, bypassList);
+                    if (networkCredential != null)
+                    {
+                        WriteToLog($"Setting up webproxy with server '{_proxyServer}' and user '{_userName}'{(!string.IsNullOrEmpty(networkCredential.Domain) ? $" on domain '{networkCredential.Domain}'" : string.Empty)}");
+                        _webProxy = new WebProxy(_proxyServer, true, bypassList, networkCredential);
+                    }
+                    else
+                    {
+                        _webProxy = new WebProxy(_proxyServer, true, bypassList) {UseDefaultCredentials = true};
+                        WriteToLog($"Setting up webproxy with server '{_proxyServer}' with default credentials");
+                    }
 
+                    return _webProxy;
                 }
                 catch (Exception exception)
                 {
@@ -1044,7 +1052,6 @@ namespace ChromeHtmlToPdfLib
             Stream logStream = null)
         {
             if (logStream != null)
-                // ReSharper disable once InconsistentlySynchronizedField
                 _logStream = logStream;
 
             _conversionTimeout = conversionTimeout;
