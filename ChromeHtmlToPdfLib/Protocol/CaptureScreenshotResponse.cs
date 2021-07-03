@@ -1,5 +1,5 @@
 ﻿//
-// SnapshotResponse.cs
+// CaptureScreenshotResponse.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
@@ -24,7 +24,7 @@
 // THE SOFTWARE.
 //
 
-using System.Text;
+using System;
 using Newtonsoft.Json;
 
 namespace ChromeHtmlToPdfLib.Protocol
@@ -32,19 +32,19 @@ namespace ChromeHtmlToPdfLib.Protocol
     /// <summary>
     ///     Placeholder for the result of a page snapshot
     /// </summary>
-    public class SnapshotResponse
+    public class CaptureScreenshotResponse
     {
         #region Properties
         [JsonProperty("id")]
         public long Id { get; set; }
 
         [JsonProperty("result")]
-        public SnapshotResult Result { get; set; }
+        public CaptureScreenshotResult Result { get; set; }
 
         /// <summary>
-        /// Returns <see cref="SnapshotResult.Data"/> as array of bytes
+        /// Returns <see cref="PrintToPdfResult.Data"/> as array of bytes
         /// </summary>
-        public byte[] Bytes => Encoding.ASCII.GetBytes(Result.Data);
+        public byte[] Bytes => Convert.FromBase64String(Result.Data);
         #endregion
 
         #region FromJson
@@ -53,14 +53,14 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// </summary>
         /// <param name="json"></param>
         /// <returns></returns>
-        public static SnapshotResponse FromJson(string json) => JsonConvert.DeserializeObject<SnapshotResponse>(json);
+        public static CaptureScreenshotResponse FromJson(string json) => JsonConvert.DeserializeObject<CaptureScreenshotResponse>(json);
         #endregion
     }
 
     /// <summary>
-    ///     Part of the <see cref="SnapshotResponse"/> class
+    ///     Part of the <see cref="CaptureScreenshotResponse"/> class
     /// </summary>
-    public class SnapshotResult
+    public class CaptureScreenshotResult
     {
         #region Properties
         [JsonProperty("data")]

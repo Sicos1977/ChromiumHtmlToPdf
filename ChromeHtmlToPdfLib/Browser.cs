@@ -91,7 +91,7 @@ namespace ChromeHtmlToPdfLib
         ///     Makes this object and sets the Chrome remote debugging url
         /// </summary>
         /// <param name="browser">The websocket to the browser</param>
-        /// <param name="logStream">When set then logging is written to this tream</param>
+        /// <param name="logStream">When set then logging is written to this stream</param>
         /// <param name="logNetworkTraffic">When enabled network traffic is also logged</param>
         internal Browser(Uri browser, Stream logStream, bool logNetworkTraffic)
         {
@@ -208,7 +208,7 @@ namespace ChromeHtmlToPdfLib
             var waitEvent = new ManualResetEvent(false);
             var mediaLoadTimeoutCancellationTokenSource = new CancellationTokenSource();
             var navigationError = string.Empty;
-            var waitforNetworkIdle = false;
+            var waitForNetworkIdle = false;
             var mediaTimeoutTaskSet = false;
 
             var messageHandler = new EventHandler<string>(delegate(object sender, string data)
@@ -282,10 +282,10 @@ namespace ChromeHtmlToPdfLib
 
                             case "Page.frameNavigated":
                                 WriteToLog("The 'Page.frameNavigated' event has been fired, waiting for the 'Page.lifecycleEvent' with name 'networkIdle'");
-                                waitforNetworkIdle = true;
+                                waitForNetworkIdle = true;
                                 break;
 
-                            case "Page.lifecycleEvent" when page.Params?.Name == "networkIdle" && waitforNetworkIdle:
+                            case "Page.lifecycleEvent" when page.Params?.Name == "networkIdle" && waitForNetworkIdle:
                                 WriteToLog("The 'Page.lifecycleEvent' event with name 'networkIdle' has been fired, the page is now fully loaded");
                                 waitEvent?.Set();
                                 break;
@@ -335,9 +335,7 @@ namespace ChromeHtmlToPdfLib
                     throw new ConversionTimedOutException($"The {nameof(NavigateTo)} method timed out");
             }
             else
-            {
                 waitEvent.WaitOne();
-            }
 
             _pageConnection.MessageReceived -= messageHandler;
 
@@ -347,10 +345,10 @@ namespace ChromeHtmlToPdfLib
                 mediaLoadTimeoutCancellationTokenSource.Dispose();
             }
 
-            var lifecycleEventDisableddMessage = new Message {Method = "Page.setLifecycleEventsEnabled"};
-            lifecycleEventDisableddMessage.AddParameter("enabled", false);
+            var lifecycleEventDisabledMessage = new Message {Method = "Page.setLifecycleEventsEnabled"};
+            lifecycleEventDisabledMessage.AddParameter("enabled", false);
 
-            _pageConnection.SendAsync(lifecycleEventDisableddMessage).GetAwaiter();
+            _pageConnection.SendAsync(lifecycleEventDisabledMessage).GetAwaiter();
             _pageConnection.SendAsync(new Message {Method = "Page.disable"}).GetAwaiter();
 
             // Disable Fetch again if it was enabled
@@ -514,6 +512,28 @@ namespace ChromeHtmlToPdfLib
                 throw new ConversionException("Conversion failed");
 
             return printToPdfResponse;
+        }
+        #endregion
+
+        #region CaptureScreenshot
+        /// <summary>
+        ///     Instructs Chrome to take a screenshot of the page
+        /// </summary>
+        /// <exception cref="ConversionException">Raised when Chrome returns an empty string</exception>
+        /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer"/> reaches zero</exception>
+        internal async Task<CaptureScreenshotResponse> CaptureScreenshot(CountdownTimer countdownTimer = null)
+        {
+            var message = new Message { Method = "Page.captureScreenshot" };
+            var result = countdownTimer == null
+                ? await _pageConnection.SendAsync(message)
+                : await _pageConnection.SendAsync(message).Timeout(countdownTimer.MillisecondsLeft);
+
+            var captureScreenshotResponse = CaptureScreenshotResponse.FromJson(result);
+
+            if (string.IsNullOrEmpty(captureScreenshotResponse.Result?.Data))
+                throw new ConversionException("Screenshot capture failed");
+
+            return captureScreenshotResponse;
         }
         #endregion
 

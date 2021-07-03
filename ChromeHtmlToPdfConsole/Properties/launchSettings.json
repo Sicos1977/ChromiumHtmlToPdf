@@ -2,7 +2,7 @@
   "profiles": {
     "ChromeHtmlToPdf": {
       "commandName": "Project",
-      "commandLineArgs": "--input \"d:\\test.html\" --output d:\\test.pdf --media-load-timeout 5000 --image-resize  --sanitize-html --log-network-traffic --url-blacklist \"https://e.fbto.nl/0/\" --paper-format FitPageToContent --logfile=\"d:\\log.txt\""
+      "commandLineArgs": "--input \"https://www.tweakers.net\" --output d:\\test.pdf --media-load-timeout 5000 --image-resize  --sanitize-html --log-network-traffic --url-blacklist \"https://e.fbto.nl/0/\" --paper-format FitPageToContent --logfile=\"d:\\log.txt\""
     }
   }
 }
