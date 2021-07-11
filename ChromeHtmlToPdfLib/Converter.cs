@@ -39,6 +39,7 @@ using ChromeHtmlToPdfLib.Exceptions;
 using ChromeHtmlToPdfLib.Helpers;
 using System.Text;
 using Ganss.XSS;
+using Microsoft.Extensions.Logging;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable MemberCanBePrivate.Global
@@ -85,6 +86,11 @@ namespace ChromeHtmlToPdfLib
         ///     When set then logging is written to this stream
         /// </summary>
         private Stream _logStream;
+
+        /// <summary>
+        ///     When set then logging is written to this ILogger instance
+        /// </summary>
+        private ILogger _logger;
 
         /// <summary>
         ///     Chrome with it's full path
@@ -407,6 +413,7 @@ namespace ChromeHtmlToPdfLib
         /// </param>
         /// <param name="logStream">When set then logging is written to this stream for all conversions. If
         /// you want a separate log for each conversion then set the log stream on one of the ConvertToPdf" methods</param>
+        /// <param name="logger">When set then logging is written to this ILogger instance for all conversions at the Information log level".</param>
         /// <exception cref="FileNotFoundException">Raised when <see cref="chromeExeFileName" /> does not exists</exception>
         /// <exception cref="DirectoryNotFoundException">
         ///     Raised when the <paramref name="userProfile" /> directory is given but
@@ -414,10 +421,12 @@ namespace ChromeHtmlToPdfLib
         /// </exception>
         public Converter(string chromeExeFileName = null,
                          string userProfile = null,
-                         Stream logStream = null)
+                         Stream logStream = null,
+                         ILogger logger = null)
         {
             _preWrapExtensions = new List<string>();
             _logStream = logStream;
+            _logger = logger;
 
             ResetChromeArguments();
 
@@ -1538,6 +1547,13 @@ namespace ChromeHtmlToPdfLib
             {
                 try
                 {
+                    if (_logger != null)
+                    {
+                        using (_logger.BeginScope(InstanceId))
+                        {
+                            _logger.LogInformation(message);
+                        }
+                    }
                     if (_logStream == null || !_logStream.CanWrite) return;
                     var line = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") +
                                (InstanceId != null ? " - " + InstanceId : string.Empty) + " - " +
