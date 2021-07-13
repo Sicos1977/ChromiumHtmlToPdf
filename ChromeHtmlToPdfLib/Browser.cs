@@ -27,8 +27,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ChromeHtmlToPdfLib.Exceptions;
@@ -36,6 +34,8 @@ using ChromeHtmlToPdfLib.Helpers;
 using ChromeHtmlToPdfLib.Protocol;
 using ChromeHtmlToPdfLib.Protocol.Network;
 using ChromeHtmlToPdfLib.Settings;
+using Microsoft.Extensions.Logging;
+
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable AccessToDisposedClosure
@@ -56,11 +56,11 @@ namespace ChromeHtmlToPdfLib
         ///     Used to make the logging thread safe
         /// </summary>
         private readonly object _lock = new object();
-
+        
         /// <summary>
-        ///     When set then logging is written to this stream
+        ///     When set then logging is written to this ILogger instance
         /// </summary>
-        private readonly Stream _logStream;
+        private readonly ILogger _logger;
 
         /// <summary>
         ///      When enabled network traffic is also logged
@@ -91,11 +91,11 @@ namespace ChromeHtmlToPdfLib
         ///     Makes this object and sets the Chrome remote debugging url
         /// </summary>
         /// <param name="browser">The websocket to the browser</param>
-        /// <param name="logStream">When set then logging is written to this stream</param>
+        /// <param name="logger">When set then logging is written to this ILogger instance for all conversions at the Information log level</param>
         /// <param name="logNetworkTraffic">When enabled network traffic is also logged</param>
-        internal Browser(Uri browser, Stream logStream, bool logNetworkTraffic)
+        internal Browser(Uri browser, ILogger logger, bool logNetworkTraffic)
         {
-            _logStream = logStream;
+            _logger = logger;
             _logNetworkTraffic = logNetworkTraffic;
 
             // Open a websocket to the browser
@@ -295,7 +295,7 @@ namespace ChromeHtmlToPdfLib
                                 if (!string.IsNullOrEmpty(pageNavigateResponse.Result?.ErrorText) &&
                                     !pageNavigateResponse.Result.ErrorText.Contains("net::ERR_BLOCKED_BY_CLIENT"))
                                 {
-                                    navigationError = $"{pageNavigateResponse.Result.ErrorText} occured when navigating to the page '{uri}'";
+                                    navigationError = $"{pageNavigateResponse.Result.ErrorText} occurred when navigating to the page '{uri}'";
                                     waitEvent?.Set();
                                 }
 
@@ -558,7 +558,7 @@ namespace ChromeHtmlToPdfLib
 
         #region WriteToLog
         /// <summary>
-        ///     Writes a line and linefeed to the <see cref="_logStream" />
+        ///     Writes a line to the <see cref="_logger" />
         /// </summary>
         /// <param name="message">The message to write</param>
         internal void WriteToLog(string message)
@@ -567,13 +567,9 @@ namespace ChromeHtmlToPdfLib
             {
                 try
                 {
-                    if (_logStream == null || !_logStream.CanWrite) return;
-                    var line = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") +
-                               (InstanceId != null ? " - " + InstanceId : string.Empty) + " - " +
-                               message + Environment.NewLine;
-                    var bytes = Encoding.UTF8.GetBytes(line);
-                    _logStream.Write(bytes, 0, bytes.Length);
-                    _logStream.Flush();
+                    if (_logger == null) return;
+                    using (_logger.BeginScope(InstanceId))
+                        _logger.LogInformation(message);
                 }
                 catch (ObjectDisposedException)
                 {

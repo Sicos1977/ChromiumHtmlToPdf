@@ -32,7 +32,6 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Text;
 using System.Text.RegularExpressions;
 using AngleSharp;
 using AngleSharp.Css.Dom;
@@ -42,6 +41,7 @@ using AngleSharp.Html.Dom;
 using AngleSharp.Io.Network;
 using ChromeHtmlToPdfLib.Settings;
 using Ganss.XSS;
+using Microsoft.Extensions.Logging;
 using Image = System.Drawing.Image;
 // ReSharper disable ConvertToUsingDeclaration
 // ReSharper disable ConvertIfStatementToNullCoalescingAssignment
@@ -55,9 +55,14 @@ namespace ChromeHtmlToPdfLib.Helpers
     {
         #region Fields
         /// <summary>
-        ///     When set then logging is written to this stream
+        ///     When set then logging is written to this ILogger instance
         /// </summary>
-        private readonly Stream _logStream;
+        private ILogger _logger;
+
+        /// <summary>
+        ///     Used to make the logging thread safe
+        /// </summary>
+        private readonly object _loggerLock = new object();
 
         /// <summary>
         ///     The temp folder
@@ -116,16 +121,16 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <param name="tempDirectory">When set then this directory will be used for temporary files</param>
         /// <param name="webProxy">The web proxy to use when downloading</param>
         /// <param name="timeout"></param>
-        /// <param name="logStream"></param>
+        /// <param name="logger">When set then logging is written to this ILogger instance for all conversions at the Information log level</param>
         public DocumentHelper(DirectoryInfo tempDirectory,
             WebProxy webProxy,
             int? timeout,
-            Stream logStream)
+            ILogger logger)
         {
             _tempDirectory = tempDirectory;
             _webProxy = webProxy;
             _timeout = timeout ?? 30000;
-            _logStream = logStream;
+            _logger = logger;
         }
         #endregion
 
@@ -180,7 +185,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                 }
                 catch (Exception exception)
                 {
-                    WriteToLog($"Exception occured in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
+                    WriteToLog($"Exception occurred in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
                     return false;
                 }
 
@@ -368,7 +373,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                 }
                 catch (Exception exception)
                 {
-                    WriteToLog($"Exception occured in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
+                    WriteToLog($"Exception occurred in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
                     return false;
                 }
 
@@ -451,7 +456,7 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                 if (_webProxy != null)
                 {
-                    WriteToLog($"Using webproxy '{_webProxy.Address}' to download images");
+                    WriteToLog($"Using web proxy '{_webProxy.Address}' to download images");
 
                     var httpClientHandler = new HttpClientHandler
                     {
@@ -488,7 +493,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                 }
                 catch (Exception exception)
                 {
-                    WriteToLog($"Exception occured in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
+                    WriteToLog($"Exception occurred in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
                     return false;
                 }
 
@@ -872,24 +877,23 @@ namespace ChromeHtmlToPdfLib.Helpers
 
         #region WriteToLog
         /// <summary>
-        ///     Writes a line and linefeed to the <see cref="_logStream" />
+        ///     Writes a line to the <see cref="_logger" />
         /// </summary>
         /// <param name="message">The message to write</param>
-        private void WriteToLog(string message)
+        internal void WriteToLog(string message)
         {
-            try
+            lock (_loggerLock)
             {
-                if (_logStream == null || !_logStream.CanWrite) return;
-                var line = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") +
-                           (InstanceId != null ? " - " + InstanceId : string.Empty) + " - " +
-                           message + Environment.NewLine;
-                var bytes = Encoding.UTF8.GetBytes(line);
-                _logStream.Write(bytes, 0, bytes.Length);
-                _logStream.Flush();
-            }
-            catch (ObjectDisposedException)
-            {
-                // Ignore
+                try
+                {
+                    if (_logger == null) return;
+                    using (_logger.BeginScope(InstanceId))
+                        _logger.LogInformation(message);
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Ignore
+                }
             }
         }
         #endregion

@@ -29,6 +29,8 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Web;
+using Microsoft.Extensions.Logging;
+
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
@@ -42,9 +44,14 @@ namespace ChromeHtmlToPdfLib.Helpers
     {
         #region Fields
         /// <summary>
-        ///     When set then logging is written to this stream
+        ///     When set then logging is written to this ILogger instance
         /// </summary>
-        private readonly Stream _logStream;
+        private readonly ILogger _logger;
+
+        /// <summary>
+        ///     Used to make the logging thread safe
+        /// </summary>
+        private readonly object _loggerLock = new object();
 
         /// <summary>
         ///     The temp folder
@@ -106,11 +113,11 @@ namespace ChromeHtmlToPdfLib.Helpers
         ///     Makes this object and sets its needed properties
         /// </summary>
         /// <param name="tempDirectory">When set then this directory will be used for temporary files</param>
-        /// <param name="logStream"></param>
-        public PreWrapper(DirectoryInfo tempDirectory, Stream logStream)
+        /// <param name="logger">When set then logging is written to this ILogger instance for all conversions at the Information log level</param>
+        public PreWrapper(DirectoryInfo tempDirectory, ILogger logger)
         {
             _tempDirectory = tempDirectory;
-            _logStream = logStream;
+            _logger = logger;
         }
         #endregion
 
@@ -205,24 +212,23 @@ namespace ChromeHtmlToPdfLib.Helpers
 
         #region WriteToLog
         /// <summary>
-        ///     Writes a line and linefeed to the <see cref="_logStream" />
+        ///     Writes a line to the <see cref="_logger" />
         /// </summary>
         /// <param name="message">The message to write</param>
-        private void WriteToLog(string message)
+        internal void WriteToLog(string message)
         {
-            try
+            lock (_loggerLock)
             {
-                if (_logStream == null || !_logStream.CanWrite) return;
-                var line = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") +
-                           (InstanceId != null ? " - " + InstanceId : string.Empty) + " - " +
-                           message + Environment.NewLine;
-                var bytes = Encoding.UTF8.GetBytes(line);
-                _logStream.Write(bytes, 0, bytes.Length);
-                _logStream.Flush();
-            }
-            catch (ObjectDisposedException)
-            {
-                // Ignore
+                try
+                {
+                    if (_logger == null) return;
+                    using (_logger.BeginScope(InstanceId))
+                        _logger.LogInformation(message);
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Ignore
+                }
             }
         }
         #endregion

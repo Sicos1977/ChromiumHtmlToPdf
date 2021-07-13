@@ -12,6 +12,7 @@ using ChromeHtmlToPdfLib.Enums;
 using ChromeHtmlToPdfLib.Settings;
 using CommandLine;
 using CommandLine.Text;
+using Microsoft.Extensions.Logging;
 
 namespace ChromeHtmlToPdfConsole
 {
@@ -21,7 +22,7 @@ namespace ChromeHtmlToPdfConsole
         /// <summary>
         ///     When set then logging is written to this stream
         /// </summary>
-        private static Stream _logStream;
+        private static ChromeHtmlToPdfLib.Loggers.Stream _logger;
 
         /// <summary>
         ///     <see cref="LimitedConcurrencyLevel" />
@@ -61,10 +62,11 @@ namespace ChromeHtmlToPdfConsole
             if (options == null)
                 throw new ArgumentException(nameof(options));
 
-            // ReSharper disable once PossibleNullReferenceException
-            using (_logStream = string.IsNullOrWhiteSpace(options.LogFile)
-                ? Console.OpenStandardOutput()
-                : File.OpenWrite(ReplaceWildCards(options.LogFile)))
+            _logger = !string.IsNullOrWhiteSpace(options.LogFile)
+                ? new ChromeHtmlToPdfLib.Loggers.Stream(File.OpenWrite(ReplaceWildCards(options.LogFile)))
+                : new ChromeHtmlToPdfLib.Loggers.Console();
+
+            using (_logger)
             {
                 try
                 {
@@ -332,7 +334,7 @@ namespace ChromeHtmlToPdfConsole
         {
             var pageSettings = GetPageSettings(options);
 
-            using var converter = new Converter(options.ChromeLocation, options.ChromeUserProfile, _logStream);
+            using var converter = new Converter(options.ChromeLocation, options.ChromeUserProfile, _logger);
             SetConverterSettings(converter, options);
 
             converter.ConvertToPdf(CheckInput(options),
@@ -382,13 +384,13 @@ namespace ChromeHtmlToPdfConsole
         {
             var pageSettings = GetPageSettings(options);
 
-            var logStream = string.IsNullOrWhiteSpace(options.LogFile)
-                ? Console.OpenStandardOutput()
-                : File.OpenWrite(ReplaceWildCards(options.LogFile));
+            var logger = !string.IsNullOrWhiteSpace(options.LogFile)
+                ? new ChromeHtmlToPdfLib.Loggers.Stream(File.OpenWrite(ReplaceWildCards(options.LogFile)))
+                : new ChromeHtmlToPdfLib.Loggers.Console();
 
-            using (logStream)
+            using (logger)
             {
-                using var converter = new Converter(options.ChromeLocation, options.ChromeUserProfile, logStream)
+                using var converter = new Converter(options.ChromeLocation, options.ChromeUserProfile, logger)
                 {
                     InstanceId = instanceId
                 };
@@ -419,16 +421,21 @@ namespace ChromeHtmlToPdfConsole
 
         #region WriteToLog
         /// <summary>
-        ///     Writes a line and linefeed to the <see cref="_logStream" />
+        ///     Writes a line to the <see cref="_logger" />
         /// </summary>
         /// <param name="message">The message to write</param>
-        private static void WriteToLog(string message)
+        internal static void WriteToLog(string message)
         {
-            if (_logStream == null) return;
-            var line = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + message + Environment.NewLine;
-            var bytes = Encoding.UTF8.GetBytes(line);
-            _logStream.Write(bytes, 0, bytes.Length);
-            _logStream.Flush();
+            try
+            {
+                if (_logger == null) return;
+                using (_logger.BeginScope(null))
+                    _logger.LogInformation(message);
+            }
+            catch (ObjectDisposedException)
+            {
+                // Ignore
+            }
         }
         #endregion
     }
