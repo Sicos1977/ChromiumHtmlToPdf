@@ -79,6 +79,21 @@ https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.0.11/ChromeHtml
 https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.1.6/ChromeHtmlToPdf_216.zip
 https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.2/ChromeHtmlToPdf_220.zip
 
+Logging
+=======
+
+From version 2.5.0 ChromeHtmlToPdfLib uses the Microsoft ILogger interface (https://docs.microsoft.com/en-us/dotnet/api/microsoft.extensions.logging.ilogger?view=dotnet-plat-ext-5.0). You can use any logging library that uses this interface.
+
+ChromeHtmlToPdfLib has some build in loggers that can be found in the ```ChromeHtmlToPdfLib.Logger``` namespace. 
+
+For example
+
+```csharp
+var logger = !string.IsNullOrWhiteSpace(<some logfile>)
+                ? new ChromeHtmlToPdfLib.Loggers.Stream(File.OpenWrite(<some logfile>))
+                : new ChromeHtmlToPdfLib.Loggers.Console();
+```
+
 Core Team
 =========
     Sicos1977 (Kees van Spelde)
