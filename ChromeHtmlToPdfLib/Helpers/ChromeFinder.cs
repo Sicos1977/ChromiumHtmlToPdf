@@ -44,6 +44,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
+                // c:\Program Files\Google\Chrome\Application\
                 const string subDirectory = "Google\\Chrome\\Application";
                 directories.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), subDirectory));
                 directories.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), subDirectory));
@@ -68,6 +69,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         {
             var appPath = AppDomain.CurrentDomain.BaseDirectory;
 
+            // ReSharper disable once PossibleNullReferenceException
             if (appPath.EndsWith(Path.DirectorySeparatorChar.ToString()))
                 return appPath;
             return appPath + Path.DirectorySeparatorChar;
@@ -93,6 +95,7 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                 if (key != null)
                 {
+                    // ReSharper disable once AssignNullToNotNullAttribute
                     var path = Path.Combine(key.ToString(), "chrome.exe");
                     if (File.Exists(path))
                         return path;

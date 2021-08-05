@@ -398,7 +398,7 @@ namespace ChromeHtmlToPdfLib
         /// <summary>
         ///     Creates this object and sets it's needed properties
         /// </summary>
-        /// <param name="chromeExeFileName">When set then this has to be tThe full path to the chrome executable.
+        /// <param name="chromeExeFileName">When set then this has to be the full path to the chrome executable.
         ///      When not set then then the converter tries to find Chrome.exe by first looking in the path
         ///      where this library exists. After that it tries to find it by looking into the registry</param>
         /// <param name="userProfile">
@@ -408,8 +408,7 @@ namespace ChromeHtmlToPdfLib
         /// <param name="logger">When set then logging is written to this ILogger instance for all conversions at the Information log level</param>
         /// <exception cref="FileNotFoundException">Raised when <see cref="chromeExeFileName" /> does not exists</exception>
         /// <exception cref="DirectoryNotFoundException">
-        ///     Raised when the <paramref name="userProfile" /> directory is given but
-        ///     does not exists
+        ///     Raised when the <paramref name="userProfile" /> directory is given but does not exists
         /// </exception>
         public Converter(string chromeExeFileName = null,
                          string userProfile = null,
@@ -424,15 +423,14 @@ namespace ChromeHtmlToPdfLib
                 chromeExeFileName = ChromeFinder.Find();
 
             if (!File.Exists(chromeExeFileName))
-                throw new FileNotFoundException("Could not find chrome.exe");
+                throw new FileNotFoundException($"Could not find chrome.exe in location '{chromeExeFileName}'");
 
             _chromeExeFileName = chromeExeFileName;
 
             if (string.IsNullOrWhiteSpace(userProfile)) return;
             var userProfileDirectory = new DirectoryInfo(userProfile);
             if (!userProfileDirectory.Exists)
-                throw new DirectoryNotFoundException(
-                    $"The directory '{userProfileDirectory.FullName}' does not exists");
+                throw new DirectoryNotFoundException($"The directory '{userProfileDirectory.FullName}' does not exists");
 
             _userProfileSet = true;
             _devToolsActivePortFile = Path.Combine(userProfileDirectory.FullName, "DevToolsActivePort");
