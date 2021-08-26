@@ -85,7 +85,7 @@ https://docs.microsoft.com/en-us/dotnet/core/install/macos
 Pre compiled binaries
 =====================
 
-You can find pre compiled binaries for Windows, Unix and macOS over here 
+You can find pre compiled binaries for Windows, Linux and macOS over here 
 
 https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.0.11/ChromeHtmlToPdf_211.zip
 https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.1.6/ChromeHtmlToPdf_216.zip
