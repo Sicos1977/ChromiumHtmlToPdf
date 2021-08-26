@@ -74,13 +74,23 @@ ChromeHtmlToPdf.exe --input https://www.google.com --output c:\google.pdf
 Installing on Linux or macOS
 ============================
 
-See this url about how you install .NET on Linux
+See this url about how to install .NET on Linux
 
 https://docs.microsoft.com/en-us/dotnet/core/install/linux
 
-And this url about how you install .NET on macOS
+And this url about how to install .NET on macOS
 
 https://docs.microsoft.com/en-us/dotnet/core/install/macos
+
+### Chrome for Linux or macOS
+
+See this url about how to install Chrome on Linux
+
+https://support.google.com/chrome/a/answer/9025903?hl=en
+
+And this url about how to install Chrome on macOS
+
+https://support.google.com/chrome/a/answer/7550274?hl=en
 
 Pre compiled binaries
 =====================
@@ -91,6 +101,7 @@ https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.0.11/ChromeHtml
 https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.1.6/ChromeHtmlToPdf_216.zip
 https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.2/ChromeHtmlToPdf_220.zip
 https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.5.1/ChromeHtmlToPdf_251.zip
+
 
 Logging
 =======
