@@ -74,6 +74,8 @@ ChromeHtmlToPdf.exe --input https://www.google.com --output c:\google.pdf
 Installing on Linux or macOS
 ============================
 
+### Installing .NET
+
 See this url about how to install .NET on Linux
 
 https://docs.microsoft.com/en-us/dotnet/core/install/linux
@@ -82,7 +84,7 @@ And this url about how to install .NET on macOS
 
 https://docs.microsoft.com/en-us/dotnet/core/install/macos
 
-### Chrome for Linux or macOS
+### Installing Chrome
 
 See this url about how to install Chrome on Linux
 
