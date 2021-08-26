@@ -71,7 +71,8 @@ ChromeHtmlToPdf.exe --input https://www.google.com --output c:\google.pdf
 
 0 = successful, 1 = an error occurred
 
-### Installing on Linux or macOS
+Installing on Linux or macOS
+============================
 
 See this url about how you install .NET on Linux
 
@@ -81,7 +82,8 @@ And this url about how you install .NET on macOS
 
 https://docs.microsoft.com/en-us/dotnet/core/install/macos
 
-### Pre compiled binaries
+Pre compiled binaries
+=====================
 
 You can find pre compiled binaries for Windows, Unix and macOS over here 
 
