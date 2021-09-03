@@ -705,7 +705,7 @@ namespace ChromeHtmlToPdfLib
             AddChromeArgument("--disable-gpu");
             AddChromeArgument("--hide-scrollbars");
             AddChromeArgument("--mute-audio");
-            AddChromeArgument("--disable-background-networking");
+            //AddChromeArgument("--disable-background-networking");
             AddChromeArgument("--disable-background-timer-throttling");
             AddChromeArgument("--disable-default-apps");
             AddChromeArgument("--disable-extensions");
