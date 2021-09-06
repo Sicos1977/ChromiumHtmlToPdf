@@ -213,7 +213,7 @@ namespace ChromeHtmlToPdfLib
 
             var messageHandler = new EventHandler<string>(delegate(object sender, string data)
             {
-                //System.IO.File.AppendAllText("d:\\logs.txt", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff") + " - " + data + Environment.NewLine);
+                //System.IO.File.AppendAllText("d:\\logs.txt", $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fff} - {data}{Environment.NewLine}");
                 var message = Message.FromJson(data);
 
                 switch (message.Method)

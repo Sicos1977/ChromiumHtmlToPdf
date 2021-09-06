@@ -434,7 +434,7 @@ namespace ChromeHtmlToPdfLib
 
             _userProfileSet = true;
             _devToolsActivePortFile = Path.Combine(userProfileDirectory.FullName, "DevToolsActivePort");
-            AddChromedArgument("--user-data-dir", userProfileDirectory.FullName);
+            AddChromeArgument("--user-data-dir", userProfileDirectory.FullName);
         }
 
         /// <summary>
@@ -718,7 +718,7 @@ namespace ChromeHtmlToPdfLib
             AddChromeArgument("--metrics-recording-only");
             AddChromeArgument("--no-first-run");
             AddChromeArgument("--disable-crash-reporter");
-            AddChromedArgument("--remote-debugging-port", "0");
+            AddChromeArgument("--remote-debugging-port", "0");
             SetWindowSize(WindowSize.HD_1366_768);
         }
         #endregion
@@ -788,7 +788,7 @@ namespace ChromeHtmlToPdfLib
         /// </remarks>
         /// <param name="argument">The Chrome argument</param>
         /// <param name="value">The argument value</param>
-        public void AddChromedArgument(string argument, string value)
+        public void AddChromeArgument(string argument, string value)
         {
             if (IsChromeRunning)
                 throw new ChromeException($"Chrome is already running, you need to set the argument '{argument}' before staring Chrome");
@@ -833,7 +833,7 @@ namespace ChromeHtmlToPdfLib
         public void SetProxyServer(string value)
         {
             _proxyServer = value;
-            AddChromedArgument("--proxy-server", value);
+            AddChromeArgument("--proxy-server", value);
         }
         #endregion
 
@@ -858,7 +858,7 @@ namespace ChromeHtmlToPdfLib
         public void SetProxyBypassList(string values)
         {
             _proxyBypassList = values;
-            AddChromedArgument("--proxy-bypass-list", values);
+            AddChromeArgument("--proxy-bypass-list", values);
         }
         #endregion
 
@@ -876,7 +876,7 @@ namespace ChromeHtmlToPdfLib
         /// </remarks>
         public void SetProxyPacUrl(string value)
         {
-            AddChromedArgument("--proxy-pac-url", value);
+            AddChromeArgument("--proxy-pac-url", value);
         }
         #endregion
 
@@ -890,7 +890,28 @@ namespace ChromeHtmlToPdfLib
         /// </remarks>
         public void SetUserAgent(string value)
         {
-            AddChromedArgument("--user-agent", value);
+            AddChromeArgument("--user-agent", value);
+        }
+        #endregion
+
+        #region SetDiskCache
+        /// <summary>
+        ///     This tells Chrome to cache it's content to the given <paramref name="directory"/>
+        /// </summary>
+        /// <param name="directory">The cache directory</param>
+        /// <param name="size">The maximum size in megabytes for the cache directory, <c>null</c> for unlimited</param>
+        public void SetDiskCache(string directory, long? size)
+        {
+            if (!Directory.Exists(directory))
+                throw new DirectoryNotFoundException($"The directory '{directory}' does not exists");
+
+            AddChromeArgument("--disk-cache-dir", directory);
+
+            if (!size.HasValue) return;
+            if (size.Value <= 0)
+                throw new ArgumentException("Has to be a value of 1 or greater", nameof(size));
+
+            AddChromeArgument("--disk-cache-size", (size.Value * 1024 * 1024).ToString());
         }
         #endregion
 
@@ -933,7 +954,7 @@ namespace ChromeHtmlToPdfLib
             if (height <= 0)
                 throw new ArgumentOutOfRangeException(nameof(height));
 
-            AddChromedArgument("--window-size", width + "," + height);
+            AddChromeArgument("--window-size", width + "," + height);
         }
 
         /// <summary>
@@ -945,58 +966,58 @@ namespace ChromeHtmlToPdfLib
             switch (size)
             {
                 case WindowSize.SVGA:
-                    AddChromedArgument("--window-size", 800 + "," + 600);
+                    AddChromeArgument("--window-size", 800 + "," + 600);
                     break;
                 case WindowSize.WSVGA:
-                    AddChromedArgument("--window-size", 1024 + "," + 600);
+                    AddChromeArgument("--window-size", 1024 + "," + 600);
                     break;
                 case WindowSize.XGA:
-                    AddChromedArgument("--window-size", 1024 + "," + 768);
+                    AddChromeArgument("--window-size", 1024 + "," + 768);
                     break;
                 case WindowSize.XGAPLUS:
-                    AddChromedArgument("--window-size", 1152 + "," + 864);
+                    AddChromeArgument("--window-size", 1152 + "," + 864);
                     break;
                 case WindowSize.WXGA_5_3:
-                    AddChromedArgument("--window-size", 1280 + "," + 768);
+                    AddChromeArgument("--window-size", 1280 + "," + 768);
                     break;
                 case WindowSize.WXGA_16_10:
-                    AddChromedArgument("--window-size", 1280 + "," + 800);
+                    AddChromeArgument("--window-size", 1280 + "," + 800);
                     break;
                 case WindowSize.SXGA:
-                    AddChromedArgument("--window-size", 1280 + "," + 1024);
+                    AddChromeArgument("--window-size", 1280 + "," + 1024);
                     break;
                 case WindowSize.HD_1360_768:
-                    AddChromedArgument("--window-size", 1360 + "," + 768);
+                    AddChromeArgument("--window-size", 1360 + "," + 768);
                     break;
                 case WindowSize.HD_1366_768:
-                    AddChromedArgument("--window-size", 1366 + "," + 768);
+                    AddChromeArgument("--window-size", 1366 + "," + 768);
                     break;
                 case WindowSize.OTHER_1536_864:
-                    AddChromedArgument("--window-size", 1536 + "," + 864);
+                    AddChromeArgument("--window-size", 1536 + "," + 864);
                     break;
                 case WindowSize.HD_PLUS:
-                    AddChromedArgument("--window-size", 1600 + "," + 900);
+                    AddChromeArgument("--window-size", 1600 + "," + 900);
                     break;
                 case WindowSize.WSXGA_PLUS:
-                    AddChromedArgument("--window-size", 1680 + "," + 1050);
+                    AddChromeArgument("--window-size", 1680 + "," + 1050);
                     break;
                 case WindowSize.FHD:
-                    AddChromedArgument("--window-size", 1920 + "," + 1080);
+                    AddChromeArgument("--window-size", 1920 + "," + 1080);
                     break;
                 case WindowSize.WUXGA:
-                    AddChromedArgument("--window-size", 1920 + "," + 1200);
+                    AddChromeArgument("--window-size", 1920 + "," + 1200);
                     break;
                 case WindowSize.OTHER_2560_1070:
-                    AddChromedArgument("--window-size", 2560 + "," + 1070);
+                    AddChromeArgument("--window-size", 2560 + "," + 1070);
                     break;
                 case WindowSize.WQHD:
-                    AddChromedArgument("--window-size", 2560 + "," + 1440);
+                    AddChromeArgument("--window-size", 2560 + "," + 1440);
                     break;
                 case WindowSize.OTHER_3440_1440:
-                    AddChromedArgument("--window-size", 3440 + "," + 1440);
+                    AddChromeArgument("--window-size", 3440 + "," + 1440);
                     break;
                 case WindowSize._4K_UHD:
-                    AddChromedArgument("--window-size", 3840 + "," + 2160);
+                    AddChromeArgument("--window-size", 3840 + "," + 2160);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(size), size, null);
