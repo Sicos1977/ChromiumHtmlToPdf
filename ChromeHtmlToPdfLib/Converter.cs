@@ -912,7 +912,7 @@ namespace ChromeHtmlToPdfLib
             if (!Directory.Exists(directory))
                 throw new DirectoryNotFoundException($"The directory '{directory}' does not exists");
 
-            AddChromeArgument("--disk-cache-dir", directory);
+            AddChromeArgument("--disk-cache-dir", directory.TrimEnd('\\', '/'));
 
             if (!size.HasValue) return;
             if (size.Value <= 0)
