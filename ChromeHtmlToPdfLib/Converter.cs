@@ -171,6 +171,11 @@ namespace ChromeHtmlToPdfLib
         ///     The file that Chrome creates to tell us on what port it is listening with the devtools
         /// </summary>
         private readonly string _devToolsActivePortFile;
+
+        /// <summary>
+        ///     When <c>true</c> then caching will be enabled
+        /// </summary>
+        private bool _useCache;
         #endregion
 
         #region Properties
@@ -399,23 +404,26 @@ namespace ChromeHtmlToPdfLib
         ///     Creates this object and sets it's needed properties
         /// </summary>
         /// <param name="chromeExeFileName">When set then this has to be the full path to the chrome executable.
-        ///      When not set then then the converter tries to find Chrome.exe by first looking in the path
-        ///      where this library exists. After that it tries to find it by looking into the registry</param>
+        ///     When not set then then the converter tries to find Chrome.exe by first looking in the path
+        ///     where this library exists. After that it tries to find it by looking into the registry</param>
         /// <param name="userProfile">
         ///     If set then this directory will be used to store a user profile.
         ///     Leave blank or set to <c>null</c> if you want to use the default Chrome user profile location
         /// </param>
         /// <param name="logger">When set then logging is written to this ILogger instance for all conversions at the Information log level</param>
+        /// <param name="useCache">When <c>true</c> (default) then Chrome uses it disk cache when possible</param>
         /// <exception cref="FileNotFoundException">Raised when <see cref="chromeExeFileName" /> does not exists</exception>
         /// <exception cref="DirectoryNotFoundException">
         ///     Raised when the <paramref name="userProfile" /> directory is given but does not exists
         /// </exception>
         public Converter(string chromeExeFileName = null,
                          string userProfile = null,
-                         ILogger logger = null)
+                         ILogger logger = null,
+                         bool useCache = true)
         {
             _preWrapExtensions = new List<string>();
             _logger = logger;
+            _useCache = useCache;
 
             ResetChromeArguments();
 
@@ -573,7 +581,7 @@ namespace ChromeHtmlToPdfLib
             {
                 var lines = ReadDevToolsActiveFile();
                 var uri = new Uri($"ws://127.0.0.1:{lines[0]}{lines[1]}");
-                ConnectToDevProtocol(uri);
+                ConnectToDevProtocol(uri, _useCache);
             }
 
             _chromeProcess.Exited -= _chromeProcess_Exited;
@@ -642,10 +650,10 @@ namespace ChromeHtmlToPdfLib
             }
         }
 
-        private void ConnectToDevProtocol(Uri uri)
+        private void ConnectToDevProtocol(Uri uri, bool useCache)
         {
             WriteToLog($"Connecting to dev protocol on uri '{uri}'");
-            _browser = new Browser(uri, _logger, LogNetworkTraffic);
+            _browser = new Browser(uri, _logger, LogNetworkTraffic, useCache);
             WriteToLog("Connected to dev protocol");
         }
 
@@ -665,7 +673,7 @@ namespace ChromeHtmlToPdfLib
                 if (!args.Data.StartsWith("DevTools listening on")) return;
                 // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
                 var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
-                ConnectToDevProtocol(uri);
+                ConnectToDevProtocol(uri, _useCache);
                 _chromeProcess.ErrorDataReceived -= _chromeProcess_ErrorDataReceived;
                 _chromeWaitEvent.Set();
             }
@@ -705,13 +713,11 @@ namespace ChromeHtmlToPdfLib
             AddChromeArgument("--disable-gpu");
             AddChromeArgument("--hide-scrollbars");
             AddChromeArgument("--mute-audio");
-            //AddChromeArgument("--disable-background-networking");
+            AddChromeArgument("--disable-background-networking");
             AddChromeArgument("--disable-background-timer-throttling");
             AddChromeArgument("--disable-default-apps");
             AddChromeArgument("--disable-extensions");
             AddChromeArgument("--disable-hang-monitor");
-            //AddArgument("--disable-popup-blocking");
-            // ReSharper disable once StringLiteralTypo
             AddChromeArgument("--disable-prompt-on-repost");
             AddChromeArgument("--disable-sync");
             AddChromeArgument("--disable-translate");
@@ -720,6 +726,7 @@ namespace ChromeHtmlToPdfLib
             AddChromeArgument("--disable-crash-reporter");
             AddChromeArgument("--remote-debugging-port", "0");
             SetWindowSize(WindowSize.HD_1366_768);
+            _useCache = false;
         }
         #endregion
 
@@ -896,10 +903,10 @@ namespace ChromeHtmlToPdfLib
 
         #region SetDiskCache
         /// <summary>
-        ///     This tells Chrome to cache it's content to the given <paramref name="directory"/>
+        ///     This tells Chrome to cache it's content to the given <paramref name="directory"/> instead of the user profile
         /// </summary>
         /// <param name="directory">The cache directory</param>
-        /// <param name="size">The maximum size in megabytes for the cache directory, <c>null</c> for unlimited</param>
+        /// <param name="size">The maximum size in megabytes for the cache directory, <c>null</c> to let Chrome decide</param>
         public void SetDiskCache(string directory, long? size)
         {
             if (!Directory.Exists(directory))
@@ -912,6 +919,7 @@ namespace ChromeHtmlToPdfLib
                 throw new ArgumentException("Has to be a value of 1 or greater", nameof(size));
 
             AddChromeArgument("--disk-cache-size", (size.Value * 1024 * 1024).ToString());
+            _useCache = true;
         }
         #endregion
 

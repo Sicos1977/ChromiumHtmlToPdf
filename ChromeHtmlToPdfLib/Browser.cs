@@ -93,7 +93,8 @@ namespace ChromeHtmlToPdfLib
         /// <param name="browser">The websocket to the browser</param>
         /// <param name="logger">When set then logging is written to this ILogger instance for all conversions at the Information log level</param>
         /// <param name="logNetworkTraffic">When enabled network traffic is also logged</param>
-        internal Browser(Uri browser, ILogger logger, bool logNetworkTraffic)
+        /// <param name="useCache">When <c>true</c> then caching will be enabled</param>
+        internal Browser(Uri browser, ILogger logger, bool logNetworkTraffic, bool useCache)
         {
             _logger = logger;
             _logNetworkTraffic = logNetworkTraffic;
@@ -116,6 +117,12 @@ namespace ChromeHtmlToPdfLib
                 _pageConnection.SendAsync(networkMessage).GetAwaiter().GetResult();
                 _pageConnection.MessageReceived += _pageConnection_MessageReceived;
             }
+
+            WriteToLog(useCache ? "Caching is enabled" : "Caching is disabled");
+
+            var cacheMessage = new Message {Method = "Network.setCacheDisabled"};
+            cacheMessage.Parameters.Add("cacheDisabled", !useCache);
+            _pageConnection.SendAsync(cacheMessage).GetAwaiter().GetResult();
         }
         #endregion
 
@@ -139,10 +146,6 @@ namespace ChromeHtmlToPdfLib
                                $"and type '{requestWillBeSent.Params.Type}'");
                     break;
 
-                case "Network.requestWillBeSentExtraInfo":
-                    // Experimental
-                    break;
-
                 case "Network.dataReceived":
                     var dataReceived = DataReceived.FromJson(data);
                     WriteToLog($"Data received for request id '{dataReceived.Params.RequestId}' " +
@@ -151,8 +154,8 @@ namespace ChromeHtmlToPdfLib
 
                 case "Network.responseReceived":
                     var responseReceived = ResponseReceived.FromJson(data);
-                    var logMessage = $"Response received for request id '{responseReceived.Params.RequestId}' " +
-                                     $"and url '{responseReceived.Params.Response.Url}'";
+                    var logMessage = $"{(responseReceived.Params.Response.FromDiskCache ? "Cached response" : "Response")} " +
+                                     $"received for request id '{responseReceived.Params.RequestId}' and url '{responseReceived.Params.Response.Url}'";
 
                     if (!string.IsNullOrWhiteSpace(responseReceived.Params.Response.RemoteIpAddress))
                         logMessage += $" from ip '{responseReceived.Params.Response.RemoteIpAddress}' " +
@@ -163,14 +166,10 @@ namespace ChromeHtmlToPdfLib
                         
                     break;
 
-                case "Network.responseReceivedExtraInfo":
-                    // Experimental
-                    break;
-
                 case "Network.loadingFinished":
                     var loadingFinished = LoadingFinished.FromJson(data);
                     WriteToLog($"Loading finished for request id '{loadingFinished.Params.RequestId}' " +
-                               $"with encoded data length '{loadingFinished.Params.EncodedDataLength}'");
+                               $"{(loadingFinished.Params.EncodedDataLength > 0 ? $"with encoded data length '{loadingFinished.Params.EncodedDataLength}'" : string.Empty)}");
                     break;
 
                 case "Network.loadingFailed":
@@ -178,6 +177,11 @@ namespace ChromeHtmlToPdfLib
                     WriteToLog($"Loading failed for request id '{loadingFailed.Params.RequestId}' " +
                                $"and type '{loadingFailed.Params.Type}' " +
                                $"with error '{loadingFailed.Params.ErrorText}'");
+                    break;
+
+                case "Network.requestServedFromCache":
+                    var requestServedFromCache = RequestServedFromCache.FromJson(data);
+                    WriteToLog($"The request with id '{requestServedFromCache.Params.RequestId}' is served from cache");
                     break;
             }
         }

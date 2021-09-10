@@ -247,11 +247,11 @@ namespace ChromeHtmlToPdfConsole
         public int? Timeout { get; set; }
 
         /// <summary>
-        ///     The time to wait in milliseconds for media (stylesheets, images and subframes) to load after the dom content has
+        ///     The time to wait in milliseconds for media (stylesheets, images and sub frames) to load after the dom content has
         ///     been loaded. When the timeout is exceeded the tool will start the conversion.
         /// </summary>
         [Option("media-load-timeout", Required = false,
-            HelpText = "The time to wait in milliseconds for media (stylesheets, images and subframes) to load " +
+            HelpText = "The time to wait in milliseconds for media (stylesheets, images and sub frames) to load " +
                        "after the dom content has been loaded. When the timeout is exceeded the tool will start the conversion.")]
         public int? MediaLoadTimeout { get; set; }
 
@@ -356,7 +356,7 @@ namespace ChromeHtmlToPdfConsole
         /// <summary>
         ///     When set then Chrome uses this directory for caching
         /// </summary>
-        [Option("disk-cache-size", Required = false, Default = false, HelpText = "The size for the 'disk-cache-directory' in megabytes")]
+        [Option("disk-cache-size", Required = false, HelpText = "The size for the '--disk-cache-directory' in megabytes")]
         public long? DiskCacheSize { get; set; }
         #endregion
     }

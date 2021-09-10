@@ -313,8 +313,8 @@ namespace ChromeHtmlToPdfConsole
             converter.CaptureSnapshot = options.Snapshot;
             converter.LogNetworkTraffic = options.LogNetworkTraffic;
 
-            if (!string.IsNullOrWhiteSpace(options.CacheDirectory))
-                converter.SetDiskCache(options.CacheDirectory, options.CacheSize);
+            if (!string.IsNullOrWhiteSpace(options.DiskCacheDirectory))
+                converter.SetDiskCache(options.DiskCacheDirectory, options.DiskCacheSize);
 
         }
         #endregion
