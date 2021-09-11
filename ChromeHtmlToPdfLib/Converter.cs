@@ -581,7 +581,7 @@ namespace ChromeHtmlToPdfLib
             {
                 var lines = ReadDevToolsActiveFile();
                 var uri = new Uri($"ws://127.0.0.1:{lines[0]}{lines[1]}");
-                ConnectToDevProtocol(uri, _useCache);
+                ConnectToDevProtocol(uri);
             }
 
             _chromeProcess.Exited -= _chromeProcess_Exited;
@@ -650,10 +650,10 @@ namespace ChromeHtmlToPdfLib
             }
         }
 
-        private void ConnectToDevProtocol(Uri uri, bool useCache)
+        private void ConnectToDevProtocol(Uri uri)
         {
             WriteToLog($"Connecting to dev protocol on uri '{uri}'");
-            _browser = new Browser(uri, _logger, LogNetworkTraffic, useCache);
+            _browser = new Browser(uri, _logger);
             WriteToLog("Connected to dev protocol");
         }
 
@@ -673,7 +673,7 @@ namespace ChromeHtmlToPdfLib
                 if (!args.Data.StartsWith("DevTools listening on")) return;
                 // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
                 var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
-                ConnectToDevProtocol(uri, _useCache);
+                ConnectToDevProtocol(uri);
                 _chromeProcess.ErrorDataReceived -= _chromeProcess_ErrorDataReceived;
                 _chromeWaitEvent.Set();
             }
@@ -907,6 +907,11 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         /// <param name="directory">The cache directory</param>
         /// <param name="size">The maximum size in megabytes for the cache directory, <c>null</c> to let Chrome decide</param>
+        /// <remarks>
+        ///     You can not share a cache folder between multiple instances that are running at the same time because a Chrome
+        ///     instance locks the cache for it self. If you want to use caching in a multi threaded environment then assign
+        ///     a unique cache folder to each running Chrome instance
+        /// </remarks>
         public void SetDiskCache(string directory, long? size)
         {
             if (!Directory.Exists(directory))
@@ -1179,7 +1184,7 @@ namespace ChromeHtmlToPdfLib
 
                 WriteToLog($"Loading {(inputUri.IsFile ? "file " + inputUri.OriginalString : "url " + inputUri)}");
 
-                _browser.NavigateTo(inputUri, safeUrls, countdownTimer, mediaLoadTimeout, _urlBlacklist);
+                _browser.NavigateTo(inputUri, safeUrls, countdownTimer, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic, _useCache);
 
                 if (!string.IsNullOrWhiteSpace(waitForWindowStatus))
                 {

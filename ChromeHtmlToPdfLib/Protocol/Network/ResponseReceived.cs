@@ -24,6 +24,7 @@
 // THE SOFTWARE.
 //
 
+using System.Collections.Generic;
 using System.Globalization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -73,56 +74,149 @@ namespace ChromeHtmlToPdfLib.Protocol.Network
     public class ResponseReceivedResponse
     {
         #region Properties
+        /// <summary>
+        /// Response URL. This URL can be different from CachedResource.url in case of redirect
+        /// </summary>
         [JsonProperty("url")]
         public string Url { get; set; }
 
+        /// <summary>
+        /// HTTP response status code.
+        /// </summary>
         [JsonProperty("status")]
         public long Status { get; set; }
 
+        /// <summary>
+        /// HTTP response status text.
+        /// </summary>
         [JsonProperty("statusText")]
         public string StatusText { get; set; }
 
+        /// <summary>
+        /// HTTP response headers.
+        /// </summary>
         [JsonProperty("headers")]
-        public ResponseReceivedHeaders Headers { get; set; }
+        public Dictionary<string, string> Headers { get; set; }
 
+        /// <summary>
+        /// Resource mimeType as determined by the browser.
+        /// </summary>
         [JsonProperty("mimeType")]
         public string MimeType { get; set; }
 
+        /// <summary>
+        /// Specifies whether physical connection was actually reused for this request.
+        /// </summary>
         [JsonProperty("connectionReused")]
         public bool ConnectionReused { get; set; }
 
+        /// <summary>
+        /// Physical connection id that was actually used for this request.
+        /// </summary>
         [JsonProperty("connectionId")]
         public long ConnectionId { get; set; }
 
+        /// <summary>
+        /// Remote IP address.
+        /// </summary>
         [JsonProperty("remoteIPAddress")]
         public string RemoteIpAddress { get; set; }
 
+        /// <summary>
+        /// Remote port.
+        /// </summary>
         [JsonProperty("remotePort")]
         public long RemotePort { get; set; }
 
+        /// <summary>
+        /// Specifies that the request was served from the disk cache.
+        /// </summary>
         [JsonProperty("fromDiskCache")]
         public bool FromDiskCache { get; set; }
 
+        /// <summary>
+        /// Specifies that the request was served from the ServiceWorker.
+        /// </summary>
         [JsonProperty("fromServiceWorker")]
         public bool FromServiceWorker { get; set; }
 
+        /// <summary>
+        /// Specifies that the request was served from the prefetch cache.
+        /// </summary>
         [JsonProperty("fromPrefetchCache")]
         public bool FromPrefetchCache { get; set; }
 
+        /// <summary>
+        /// Total number of bytes received for this request so far.
+        /// </summary>
         [JsonProperty("encodedDataLength")]
         public long EncodedDataLength { get; set; }
 
+        /// <summary>
+        /// Cache Storage Cache Name.
+        /// </summary>
+        [JsonProperty("cacheStorageCacheName")]
+        public string CacheStorageCacheName { get; set; }
+
+        /// <summary>
+        /// Protocol used to fetch this request.
+        /// </summary>
         [JsonProperty("protocol")]
         public string Protocol { get; set; }
 
+        /// <summary>
+        /// Security state of the request resource.
+        /// </summary>
+        /// <remarks>
+        /// unknown, neutral, insecure, secure, info, insecure-broken
+        /// </remarks>
         [JsonProperty("securityState")]
         public string SecurityState { get; set; }
+
+        [JsonProperty("securityDetails")]
+        public ResponseReceiveSecurityDetails SecurityDetails { get; set; }
         #endregion
     }
 
-    // ReSharper disable once ClassNeverInstantiated.Global
-    public class ResponseReceivedHeaders
+    public class ResponseReceiveSecurityDetails
     {
+        #region Properties
+        [JsonProperty("protocol")]
+        public string Protocol { get; set; }
+
+        [JsonProperty("keyExchange")]
+        public string KeyExchange { get; set; }
+
+        [JsonProperty("keyExchangeGroup")]
+        public string KeyExchangeGroup { get; set; }
+
+        [JsonProperty("cipher")]
+        public string Cipher { get; set; }
+
+        [JsonProperty("certificateId")]
+        public long CertificateId { get; set; }
+
+        [JsonProperty("subjectName")]
+        public string SubjectName { get; set; }
+
+        [JsonProperty("sanList")]
+        public string[] SanList { get; set; }
+
+        [JsonProperty("issuer")]
+        public string Issuer { get; set; }
+
+        [JsonProperty("validFrom")]
+        public long ValidFrom { get; set; }
+
+        [JsonProperty("validTo")]
+        public long ValidTo { get; set; }
+
+        [JsonProperty("signedCertificateTimestampList")]
+        public object[] SignedCertificateTimestampList { get; set; }
+
+        [JsonProperty("certificateTransparencyCompliance")]
+        public string CertificateTransparencyCompliance { get; set; }
+        #endregion
     }
 
     #region Static class ResponseReceivedConverter

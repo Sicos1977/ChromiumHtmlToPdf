@@ -63,11 +63,6 @@ namespace ChromeHtmlToPdfLib
         private readonly ILogger _logger;
 
         /// <summary>
-        ///      When enabled network traffic is also logged
-        /// </summary>
-        private readonly bool _logNetworkTraffic;
-
-        /// <summary>
         ///     A connection to the browser (Chrome)
         /// </summary>
         private readonly Connection _browserConnection;
@@ -92,12 +87,9 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         /// <param name="browser">The websocket to the browser</param>
         /// <param name="logger">When set then logging is written to this ILogger instance for all conversions at the Information log level</param>
-        /// <param name="logNetworkTraffic">When enabled network traffic is also logged</param>
-        /// <param name="useCache">When <c>true</c> then caching will be enabled</param>
-        internal Browser(Uri browser, ILogger logger, bool logNetworkTraffic, bool useCache)
+        internal Browser(Uri browser, ILogger logger)
         {
             _logger = logger;
-            _logNetworkTraffic = logNetworkTraffic;
 
             // Open a websocket to the browser
             _browserConnection = new Connection(browser.ToString());
@@ -110,80 +102,6 @@ namespace ChromeHtmlToPdfLib
             var pageUrl = $"{browser.Scheme}://{browser.Host}:{browser.Port}/devtools/page/{page.Result.TargetId}";
 
             _pageConnection = new Connection(pageUrl);
-
-            if (logNetworkTraffic)
-            {
-                var networkMessage = new Message {Method = "Network.enable"};
-                _pageConnection.SendAsync(networkMessage).GetAwaiter().GetResult();
-                _pageConnection.MessageReceived += _pageConnection_MessageReceived;
-            }
-
-            WriteToLog(useCache ? "Caching is enabled" : "Caching is disabled");
-
-            var cacheMessage = new Message {Method = "Network.setCacheDisabled"};
-            cacheMessage.Parameters.Add("cacheDisabled", !useCache);
-            _pageConnection.SendAsync(cacheMessage).GetAwaiter().GetResult();
-        }
-        #endregion
-
-        #region Network traffic
-        /// <summary>
-        ///     Event used to log the network traffic when <see cref="_logNetworkTraffic"/> is <c>true</c>
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="data"></param>
-        private void _pageConnection_MessageReceived(object sender, string data)
-        {
-            var message = Base.FromJson(data);
-
-            switch (message.Method)
-            {
-                case "Network.requestWillBeSent":
-                    var requestWillBeSent = RequestWillBeSent.FromJson(data);
-                    WriteToLog($"Request sent with request id '{requestWillBeSent.Params.RequestId}' " +
-                               $"for url '{requestWillBeSent.Params.Request.Url}' " +
-                               $"with method '{requestWillBeSent.Params.Request.Method}' " +
-                               $"and type '{requestWillBeSent.Params.Type}'");
-                    break;
-
-                case "Network.dataReceived":
-                    var dataReceived = DataReceived.FromJson(data);
-                    WriteToLog($"Data received for request id '{dataReceived.Params.RequestId}' " +
-                               $"with length '{dataReceived.Params.DataLength}'");
-                    break;
-
-                case "Network.responseReceived":
-                    var responseReceived = ResponseReceived.FromJson(data);
-                    var logMessage = $"{(responseReceived.Params.Response.FromDiskCache ? "Cached response" : "Response")} " +
-                                     $"received for request id '{responseReceived.Params.RequestId}' and url '{responseReceived.Params.Response.Url}'";
-
-                    if (!string.IsNullOrWhiteSpace(responseReceived.Params.Response.RemoteIpAddress))
-                        logMessage += $" from ip '{responseReceived.Params.Response.RemoteIpAddress}' " +
-                                      $"on port '{responseReceived.Params.Response.RemotePort}' " +
-                                      $"with status '{responseReceived.Params.Response.Status}'";
-
-                    WriteToLog(logMessage);
-                        
-                    break;
-
-                case "Network.loadingFinished":
-                    var loadingFinished = LoadingFinished.FromJson(data);
-                    WriteToLog($"Loading finished for request id '{loadingFinished.Params.RequestId}' " +
-                               $"{(loadingFinished.Params.EncodedDataLength > 0 ? $"with encoded data length '{loadingFinished.Params.EncodedDataLength}'" : string.Empty)}");
-                    break;
-
-                case "Network.loadingFailed":
-                    var loadingFailed = LoadingFailed.FromJson(data);
-                    WriteToLog($"Loading failed for request id '{loadingFailed.Params.RequestId}' " +
-                               $"and type '{loadingFailed.Params.Type}' " +
-                               $"with error '{loadingFailed.Params.ErrorText}'");
-                    break;
-
-                case "Network.requestServedFromCache":
-                    var requestServedFromCache = RequestServedFromCache.FromJson(data);
-                    WriteToLog($"The request with id '{requestServedFromCache.Params.RequestId}' is served from cache");
-                    break;
-            }
         }
         #endregion
 
@@ -200,14 +118,18 @@ namespace ChromeHtmlToPdfLib
         ///     has been completely loaded</param>
         /// <param name="urlBlacklist">A list with URL's that need to be blocked (use * as a wildcard)</param>
         /// <param name="safeUrls">A list with URL's that are safe to load</param>
+        /// <param name="logNetworkTraffic">When enabled network traffic is also logged</param>
+        /// <param name="useCache">When <c>true</c> then caching will be enabled</param>
         /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
         /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer"/> reaches zero</exception>
-        public void NavigateTo(
+        internal void NavigateTo(
             Uri uri,
             List<string> safeUrls,
             CountdownTimer countdownTimer = null,
             int? mediaLoadTimeout = null,
-            List<string> urlBlacklist = null)
+            List<string> urlBlacklist = null,
+            bool logNetworkTraffic = false, 
+            bool useCache = true)
         {
             var waitEvent = new ManualResetEvent(false);
             var mediaLoadTimeoutCancellationTokenSource = new CancellationTokenSource();
@@ -215,13 +137,57 @@ namespace ChromeHtmlToPdfLib
             var waitForNetworkIdle = false;
             var mediaTimeoutTaskSet = false;
 
+            #region Message handler
             var messageHandler = new EventHandler<string>(delegate(object sender, string data)
             {
                 //System.IO.File.AppendAllText("d:\\logs.txt", $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fff} - {data}{Environment.NewLine}");
-                var message = Message.FromJson(data);
+                var message = Base.FromJson(data);
 
                 switch (message.Method)
                 {
+                    case "Network.requestWillBeSent":
+                        var requestWillBeSent = RequestWillBeSent.FromJson(data);
+                        WriteToLog($"Request sent with request id '{requestWillBeSent.Params.RequestId}' " +
+                                   $"for url '{requestWillBeSent.Params.Request.Url}' " +
+                                   $"with method '{requestWillBeSent.Params.Request.Method}' " +
+                                   $"and type '{requestWillBeSent.Params.Type}'");
+                        break;
+
+                    case "Network.dataReceived":
+                        var dataReceived = DataReceived.FromJson(data);
+                        WriteToLog($"Data received for request id '{dataReceived.Params.RequestId}' " +
+                                   $"with length '{dataReceived.Params.DataLength}'");
+                        break;
+
+                    case "Network.responseReceived":
+                        var responseReceived = ResponseReceived.FromJson(data);
+                        var response = responseReceived.Params.Response;
+
+                        var logMessage = $"{(response.FromDiskCache ? "Cached response" : "Response")} received for request id '{responseReceived.Params.RequestId}' and url '{response.Url}'";
+
+                        if (!string.IsNullOrWhiteSpace(response.RemoteIpAddress))
+                            logMessage += $" from ip '{response.RemoteIpAddress}' on port '{response.RemotePort}' with status '{response.Status}{(!string.IsNullOrWhiteSpace(response.StatusText) ? $" ({response.StatusText})" : string.Empty)}'";
+                        WriteToLog(logMessage);
+                        break;
+
+                    case "Network.loadingFinished":
+                        var loadingFinished = LoadingFinished.FromJson(data);
+                        WriteToLog($"Loading finished for request id '{loadingFinished.Params.RequestId}' " +
+                                   $"{(loadingFinished.Params.EncodedDataLength > 0 ? $"with encoded data length '{loadingFinished.Params.EncodedDataLength}'" : string.Empty)}");
+                        break;
+
+                    case "Network.loadingFailed":
+                        var loadingFailed = LoadingFailed.FromJson(data);
+                        WriteToLog($"Loading failed for request id '{loadingFailed.Params.RequestId}' " +
+                                   $"and type '{loadingFailed.Params.Type}' " +
+                                   $"with error '{loadingFailed.Params.ErrorText}'");
+                        break;
+
+                    case "Network.requestServedFromCache":
+                        var requestServedFromCache = RequestServedFromCache.FromJson(data);
+                        WriteToLog($"The request with id '{requestServedFromCache.Params.RequestId}' is served from cache");
+                        break;
+
                     case "Fetch.requestPaused":
                     {
                         var fetch = Fetch.FromJson(data);
@@ -310,26 +276,41 @@ namespace ChromeHtmlToPdfLib
                     }
                 }
             });
+            #endregion
 
             _pageConnection.MessageReceived += messageHandler;
             _pageConnection.Closed += (sender, args) => waitEvent?.Set();
 
-            // Enable Fetch when we want to blacklist certain URL's
+            if (logNetworkTraffic)
+            {
+                WriteToLog("Enabling network traffic logging");
+                var networkMessage = new Message {Method = "Network.enable"};
+                _pageConnection.SendAsync(networkMessage).GetAwaiter().GetResult();
+            }
+
+            WriteToLog(useCache ? "Enabling caching" : "Disabling caching");
+
+            var cacheMessage = new Message {Method = "Network.setCacheDisabled"};
+            cacheMessage.Parameters.Add("cacheDisabled", !useCache);
+            _pageConnection.SendAsync(cacheMessage).GetAwaiter().GetResult();
+
+            // Enables issuing of requestPaused events. A request will be paused until client calls one of failRequest, fulfillRequest or continueRequest/continueWithAuth
             if (urlBlacklist?.Count > 0)
             {
                 WriteToLog("Enabling Fetch to block url's that are in the url blacklist'");
                 _pageConnection.SendAsync(new Message {Method = "Fetch.enable"}).GetAwaiter();
             }
 
+            // Enables page domain notifications
             _pageConnection.SendAsync(new Message {Method = "Page.enable"}).GetAwaiter();
 
             var lifecycleEventEnabledMessage = new Message {Method = "Page.setLifecycleEventsEnabled"};
             lifecycleEventEnabledMessage.AddParameter("enabled", true);
             _pageConnection.SendAsync(lifecycleEventEnabledMessage).GetAwaiter();
 
+            // Navigates current page to the given URL
             var pageNavigateMessage = new Message {Method = "Page.navigate"};
             pageNavigateMessage.AddParameter("url", uri.ToString());
-
             _pageConnection.SendAsync(pageNavigateMessage).GetAwaiter();
 
             if (countdownTimer != null)
@@ -341,8 +322,6 @@ namespace ChromeHtmlToPdfLib
             else
                 waitEvent.WaitOne();
 
-            _pageConnection.MessageReceived -= messageHandler;
-
             if (mediaTimeoutTaskSet)
             {
                 mediaLoadTimeoutCancellationTokenSource.Cancel();
@@ -352,12 +331,22 @@ namespace ChromeHtmlToPdfLib
             var lifecycleEventDisabledMessage = new Message {Method = "Page.setLifecycleEventsEnabled"};
             lifecycleEventDisabledMessage.AddParameter("enabled", false);
 
+            // Disables page domain notifications
             _pageConnection.SendAsync(lifecycleEventDisabledMessage).GetAwaiter();
             _pageConnection.SendAsync(new Message {Method = "Page.disable"}).GetAwaiter();
 
-            // Disable Fetch again if it was enabled
+            // Disables the fetch domain
             if (urlBlacklist?.Count > 0)
                 _pageConnection.SendAsync(new Message {Method = "Fetch.disable"}).GetAwaiter();
+
+            if (logNetworkTraffic)
+            {
+                WriteToLog("Disabling network traffic logging");
+                var networkMessage = new Message {Method = "Network.disable"};
+                _pageConnection.SendAsync(networkMessage).GetAwaiter().GetResult();
+            }
+
+            _pageConnection.MessageReceived -= messageHandler;
 
             waitEvent.Dispose();
             waitEvent = null;
@@ -589,13 +578,6 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         public void Dispose()
         {
-            if (_logNetworkTraffic)
-            {
-                var networkMessage = new Message {Method = "Network.disable"};
-                _pageConnection.SendAsync(networkMessage).GetAwaiter().GetResult();
-                _pageConnection.MessageReceived -= _pageConnection_MessageReceived;
-            }
-
             _pageConnection?.Dispose();
             _browserConnection?.Dispose();
         }
