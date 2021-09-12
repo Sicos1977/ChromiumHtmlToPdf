@@ -1191,7 +1191,7 @@ namespace ChromeHtmlToPdfLib
                     countdownTimer.Start();
                 }
 
-                WriteToLog($"Loading {(inputUri.IsFile ? "file " + inputUri.OriginalString : "url " + inputUri)}");
+                WriteToLog($"Loading {(inputUri.IsFile ? $"file {inputUri.OriginalString}" : $"url {inputUri}")}");
 
                 _browser.NavigateTo(inputUri, safeUrls, countdownTimer, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic, _useCache);
 
