@@ -146,7 +146,7 @@ public static class InstanceId
 
     #region Pop
     /// <summary>
-    /// Retourneert een instance id en verwijdert deze uit de <see cref="ConcurrentStack"/>
+    /// Returns an instance id and pops it from the <see cref="ConcurrentStack"/>
     /// </summary>
     /// <returns></returns>
     public static string Pop()
@@ -160,7 +160,7 @@ public static class InstanceId
 
     #region Push
     /// <summary>
-    /// Plaats het <paramref name="instanceId"/> boven aan in de <see cref="ConcurrentStack"/>
+    /// Pushes the <paramref name="instanceId"/> back on top of the <see cref="ConcurrentStack"/>
     /// </summary>
     /// <param name="instanceId"></param>
     public static void Push(string instanceId)
