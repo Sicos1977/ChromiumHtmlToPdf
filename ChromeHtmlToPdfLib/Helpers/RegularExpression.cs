@@ -63,7 +63,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         #region Escape
         public static string Escape(string pattern)
         {
-            return Regex.Escape(pattern.Replace("*", ".*"));
+            return Regex.Escape(pattern).Replace("\\*", ".*");
         }
         #endregion
     }

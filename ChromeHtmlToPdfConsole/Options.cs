@@ -348,9 +348,15 @@ namespace ChromeHtmlToPdfConsole
         public bool LogNetworkTraffic { get; set; }
 
         /// <summary>
+        ///     When set to <c>true</c> then caching is disabled
+        /// </summary>
+        [Option("disk-cache-disabled", Required = false, Default = false, HelpText = "When set to true then Chrome won't use a disk cache")]
+        public bool DiskCacheDisabled { get; set; }
+        
+        /// <summary>
         ///     When set then Chrome uses this directory for caching
         /// </summary>
-        [Option("disk-cache-directory", Required = false, Default = false, HelpText = "When set then Chrome uses this directory for caching")]
+        [Option("disk-cache-directory", Required = false, HelpText = "When set then Chrome uses this directory for caching")]
         public string DiskCacheDirectory { get; set; }
 
         /// <summary>

@@ -397,6 +397,15 @@ namespace ChromeHtmlToPdfLib
         ///     When enabled network traffic is also logged
         /// </summary>
         public bool LogNetworkTraffic { get; set; }
+
+        /// <summary>
+        ///     Gets or sets the disk cache state
+        /// </summary>
+        public bool DiskCacheDisabled
+        {
+            get => !_useCache;
+            set => _useCache = !value;
+        }
         #endregion
 
         #region Constructor & Destructor
