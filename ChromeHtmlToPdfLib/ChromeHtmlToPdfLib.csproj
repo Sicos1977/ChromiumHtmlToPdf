@@ -2,13 +2,12 @@
 
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.1;netstandard2.0</TargetFrameworks>
-    <Version>2.5.6</Version>
+    <Version>2.5.7</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>ChromeHtmlToPdf is a 100% managed C# .NETStandard 2.0 library that can be used to convert HTML to PDF or PNG format with the use of Google Chrome</Description>
     <Copyright>(C)2017-2021 Kees van Spelde</Copyright>
-    <PackageReleaseNotes>- Added method SetDiskCache to tell Chrome where to cache its content
-- Added flag to enable or disable caching (enabled by default)
-- Added logging that shows that something is loaded from cache</PackageReleaseNotes>
+    <PackageReleaseNotes>- Added option and property to enable or disable disk caching
+- Fixed bug in url blacklisting</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/Sicos1977/ChromeHtmlToPdf</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Sicos1977/ChromeHtmlToPdf</RepositoryUrl>
     <RepositoryType>GitHub</RepositoryType>
@@ -21,8 +20,8 @@
     <Company>Magic-Sessions</Company>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>ChromeHtmlToPdf.snk</AssemblyOriginatorKeyFile>
-    <AssemblyVersion>2.5.6.0</AssemblyVersion>
-    <FileVersion>2.5.6.0</FileVersion>
+    <AssemblyVersion>2.5.7.0</AssemblyVersion>
+    <FileVersion>2.5.7.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
