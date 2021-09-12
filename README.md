@@ -120,6 +120,57 @@ var logger = !string.IsNullOrWhiteSpace(<some logfile>)
                 : new ChromeHtmlToPdfLib.Loggers.Console();
 ```
 
+Setting a common Chrome cache folder
+====================================
+
+You can not share a cache directory between Chrome instances because the first instance that is using the cache directory will lock it for its own use. The most efficient way to make optimal use of a cache directory is to create one for each instance that you are running. 
+
+I'm using Chrome for a WCF service and used the class below to make optimal use of cache directories. The class will create an instance id that I use to create a cache directory for each running Chrome instance. When the instance shuts down the instance id is put back in a stack so that the next executing instance can use this directory again.
+
+```csharp
+public static class InstanceId
+{
+    #region Fields
+    private static readonly ConcurrentStack<string> ConcurrentStack;
+    #endregion
+
+    #region Constructor
+    static InstanceId()
+    {
+        ConcurrentStack = new ConcurrentStack<string>();
+
+        for(var i = 100000; i > 0; i--)
+            ConcurrentStack.Push(i.ToString().PadLeft(6, '0'));
+    }
+    #endregion
+
+    #region Pop
+    /// <summary>
+    /// Retourneert een instance id en verwijdert deze uit de <see cref="ConcurrentStack"/>
+    /// </summary>
+    /// <returns></returns>
+    public static string Pop()
+    {
+        if (ConcurrentStack.TryPop(out var instanceId))
+            return instanceId;
+
+        throw new Exception("Instance id stack is empty");
+    }
+    #endregion
+
+    #region Push
+    /// <summary>
+    /// Plaats het <paramref name="instanceId"/> boven aan in de <see cref="ConcurrentStack"/>
+    /// </summary>
+    /// <param name="instanceId"></param>
+    public static void Push(string instanceId)
+    {
+        ConcurrentStack.Push(instanceId);
+    }
+    #endregion
+}
+```
+
 Core Team
 =========
     Sicos1977 (Kees van Spelde)
