@@ -125,7 +125,7 @@ Setting a common Chrome cache folder
 
 You can not share a cache directory between Chrome instances because the first instance that is using the cache directory will lock it for its own use. The most efficient way to make optimal use of a cache directory is to create one for each instance that you are running. 
 
-I'm using Chrome for a WCF service and used the class below to make optimal use of cache directories. The class will create an instance id that I use to create a cache directory for each running Chrome instance. When the instance shuts down the instance id is put back in a stack so that the next executing instance can use this directory again.
+I'm using Chrome from a WCF service and used the class below to make optimal use of cache directories. The class will create an instance id that I use to create a cache directory for each running Chrome instance. When the instance shuts down the instance id is put back in a stack so that the next executing instance can use this directory again.
 
 ```csharp
 public static class InstanceId
