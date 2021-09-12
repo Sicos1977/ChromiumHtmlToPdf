@@ -337,7 +337,10 @@ namespace ChromeHtmlToPdfLib
 
             // Disables the fetch domain
             if (urlBlacklist?.Count > 0)
+            {
+                WriteToLog("Disabling Fetch");
                 _pageConnection.SendAsync(new Message {Method = "Fetch.disable"}).GetAwaiter();
+            }
 
             if (logNetworkTraffic)
             {
