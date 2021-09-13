@@ -31,6 +31,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Cache;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using AngleSharp;
@@ -45,6 +46,8 @@ using Microsoft.Extensions.Logging;
 using Image = System.Drawing.Image;
 // ReSharper disable ConvertToUsingDeclaration
 // ReSharper disable ConvertIfStatementToNullCoalescingAssignment
+// ReSharper disable AssignNullToNotNullAttribute
+// ReSharper disable PossibleNullReferenceException
 
 namespace ChromeHtmlToPdfLib.Helpers
 {
@@ -57,7 +60,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <summary>
         ///     When set then logging is written to this ILogger instance
         /// </summary>
-        private ILogger _logger;
+        private readonly ILogger _logger;
 
         /// <summary>
         ///     Used to make the logging thread safe
@@ -84,6 +87,11 @@ namespace ChromeHtmlToPdfLib.Helpers
         ///     of images
         /// </summary>
         private readonly int _timeout;
+
+        /// <summary>
+        ///     When <c>true</c> then caching is enabled on the <see cref="_webClient"/>
+        /// </summary>
+        private readonly bool _useCache;
         #endregion
 
         #region Properties
@@ -109,6 +117,17 @@ namespace ChromeHtmlToPdfLib.Helpers
                     ? new WebClient {Proxy = _webProxy}
                     : new WebClient();
 
+                if (_useCache)
+                {
+                    WriteToLog($"Setting cache policy on WebClient to '{RequestCacheLevel.CacheIfAvailable}'");
+                    _webClient.CachePolicy = new RequestCachePolicy(RequestCacheLevel.CacheIfAvailable);
+                }
+                else
+                {
+                    WriteToLog($"Setting cache policy on WebClient to '{RequestCacheLevel.BypassCache}'");
+                    _webClient.CachePolicy = new RequestCachePolicy(RequestCacheLevel.BypassCache);
+                }
+
                 return _webClient;
             }
         }
@@ -121,15 +140,18 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <param name="tempDirectory">When set then this directory will be used for temporary files</param>
         /// <param name="webProxy">The web proxy to use when downloading</param>
         /// <param name="timeout"></param>
+        /// <param name="useCache">When <c>true</c> then caching is enabled on the <see cref="WebClient"/></param>
         /// <param name="logger">When set then logging is written to this ILogger instance for all conversions at the Information log level</param>
         public DocumentHelper(DirectoryInfo tempDirectory,
             WebProxy webProxy,
             int? timeout,
+            bool useCache,
             ILogger logger)
         {
             _tempDirectory = tempDirectory;
             _webProxy = webProxy;
             _timeout = timeout ?? 30000;
+            _useCache = useCache;
             _logger = logger;
         }
         #endregion
@@ -162,12 +184,11 @@ namespace ChromeHtmlToPdfLib.Helpers
             ConvertUri inputUri,
             HtmlSanitizer sanitizer, 
             out ConvertUri outputUri,
-            out List<string> safeUrls)
+            ref List<string> safeUrls)
         {
             outputUri = null;
-            safeUrls = new List<string>();
 
-            using (var webpage = inputUri.IsFile ? File.OpenRead(inputUri.OriginalString) : DownloadStream(inputUri))
+            using (var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : OpenDownloadStream(inputUri))
             {
                 var htmlChanged = false;
                 var config = Configuration.Default.WithCss();
@@ -251,7 +272,9 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                 var sanitizedOutputFile = GetTempFile(".htm");
                 outputUri = new ConvertUri(sanitizedOutputFile, inputUri.Encoding);
-                safeUrls.Add(outputUri.ToString());
+                var url = outputUri.ToString();
+                WriteToLog($"Adding url '{url}' to the safe url list");
+                safeUrls.Add(url);
 
                 try
                 {
@@ -268,7 +291,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                             if (src.StartsWith("http://", StringComparison.InvariantCultureIgnoreCase) ||
                                 src.StartsWith("https://", StringComparison.InvariantCultureIgnoreCase)) continue;
                             
-                            WriteToLog($"Updating image source to '{src}'");
+                            WriteToLog($"Updating image source to '{src}' and adding it to the safe url list");
                             safeUrls.Add(src);
                             image.Source = src;
                         }
@@ -312,9 +335,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         {
             outputUri = null;
 
-            using (var webpage = inputUri.IsFile
-                ? File.OpenRead(inputUri.OriginalString)
-                : DownloadStream(inputUri))
+            using (var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : OpenDownloadStream(inputUri))
             {
                 var config = Configuration.Default.WithCss();
                 var context = BrowsingContext.New(config);
@@ -432,15 +453,12 @@ namespace ChromeHtmlToPdfLib.Helpers
             bool rotate,
             PageSettings pageSettings,
             out ConvertUri outputUri,
-            out List<string> safeUrls,
+            ref List<string> safeUrls,
             List<string> urlBlacklist)
         {
             outputUri = null;
-            safeUrls = new List<string>();
 
-            using (var webpage = inputUri.IsFile
-                ? File.OpenRead(inputUri.OriginalString)
-                : DownloadStream(inputUri))
+            using (var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : OpenDownloadStream(inputUri))
             {
                 var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft - pageSettings.MarginRight) * 96.0;
                 var maxHeight = (pageSettings.PaperHeight - pageSettings.MarginTop - pageSettings.MarginBottom) * 96.0;
@@ -461,15 +479,14 @@ namespace ChromeHtmlToPdfLib.Helpers
                     var httpClientHandler = new HttpClientHandler
                     {
                         Proxy = _webProxy,
-                        ServerCertificateCustomValidationCallback = (message, certificate2, arg3, arg4) =>
+                        ServerCertificateCustomValidationCallback = (message, certificate, arg1, arg2) =>
                         {
-                            WriteToLog($"Accepting certificate '{certificate2.Subject}', message '{message}'");
+                            WriteToLog($"Accepting certificate '{certificate.Subject}', message '{message}'");
                             return true;
                         }
                     };
 
                     var client = new HttpClient(httpClientHandler);
-                    //client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.101 Safari/537.36");
                     config = Configuration.Default
                         .With(new HttpClientRequester(client))
                         .WithTemporaryCookies()
@@ -517,10 +534,12 @@ namespace ChromeHtmlToPdfLib.Helpers
                         ? htmlImage.Source.Split('?')[0]
                         : htmlImage.Source;
 
+                    var isSafeUrl = safeUrls.Contains(source);
+
                     if (!RegularExpression.IsRegExMatch(urlBlacklist, source, out var matchedPattern) ||
-                        source.StartsWith(absoluteUri, StringComparison.InvariantCultureIgnoreCase))
+                        source.StartsWith(absoluteUri, StringComparison.InvariantCultureIgnoreCase) || isSafeUrl)
                     {
-                        WriteToLog($"The url '{source}' has been allowed");
+                        WriteToLog($"The url '{source}' has been allowed{(isSafeUrl ? " because it is on the safe url list" : string.Empty)}");
                     }
                     else
                     {
@@ -555,6 +574,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                                 htmlImage.DisplayHeight = image.Height;
                                 htmlImage.SetStyle(string.Empty);
                                 var newSrc = new Uri(fileName).ToString();
+                                WriteToLog($"Adding url '{newSrc}' to the safe url list");
                                 safeUrls.Add(newSrc);
                                 htmlImage.Source = newSrc;
                                 htmlChanged = true;
@@ -722,7 +742,7 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                     if (File.Exists(fileName))
                     {
-                        var fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read);
+                        var fileStream = OpenFileStream(fileName);
                         return Image.FromStream(fileStream, true, false);
                     }
                 }
@@ -731,7 +751,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                 {
                     case "https":
                     case "http":
-                        using (var webStream = WebClient.OpenReadTaskAsync(imageUri).Timeout(_timeout).GetAwaiter().GetResult())
+                        using (var webStream = OpenDownloadStream(imageUri))
                         {
                             if (webStream != null)
                                 return Image.FromStream(webStream, true, false);
@@ -749,7 +769,7 @@ namespace ChromeHtmlToPdfLib.Helpers
             }
             catch (Exception exception)
             {
-                WriteToLog("Getting image failed with exception: " + ExceptionHelpers.GetInnerException(exception));
+                WriteToLog($"Getting image failed with exception: {ExceptionHelpers.GetInnerException(exception)}");
             }
 
             return null;
@@ -839,24 +859,46 @@ namespace ChromeHtmlToPdfLib.Helpers
         }       
         #endregion
 
-        #region DownloadStream
+        #region OpenFileStream
         /// <summary>
-        ///     Downloads from the given <paramref name="sourceUri"/> and it as a string
+        ///     Open the file to the given <paramref name="fileName"/> and returns it as a stream
         /// </summary>
-        /// <param name="sourceUri"></param>
+        /// <param name="fileName"></param>
         /// <returns></returns>
-        private Stream DownloadStream(Uri sourceUri)
+
+        private Stream OpenFileStream(string fileName)
         {
             try
             {
-                WriteToLog($"Downloading from uri '{sourceUri}'");
-                var result = WebClient.OpenReadTaskAsync(sourceUri).Timeout(_timeout).GetAwaiter().GetResult();
-                WriteToLog("Downloaded");
+                WriteToLog($"Opening stream to file '{fileName}'");
+                var result = File.OpenRead(fileName);
                 return result;
             }
             catch (Exception exception)
             {
-                WriteToLog("Downloading failed with exception: " + ExceptionHelpers.GetInnerException(exception));
+                WriteToLog($"Opening stream failed with exception: {ExceptionHelpers.GetInnerException(exception)}");
+                return null;
+            }
+        }
+        #endregion
+
+        #region OpenDownloadStream
+        /// <summary>
+        ///     Opens a download stream to the given <paramref name="sourceUri"/>
+        /// </summary>
+        /// <param name="sourceUri"></param>
+        /// <returns></returns>
+        private Stream OpenDownloadStream(Uri sourceUri)
+        {
+            try
+            {
+                WriteToLog($"Opening stream to uri '{sourceUri}'");
+                var result = WebClient.OpenReadTaskAsync(sourceUri).Timeout(_timeout).GetAwaiter().GetResult();
+                return result;
+            }
+            catch (Exception exception)
+            {
+                WriteToLog($"Opening stream failed with exception: {ExceptionHelpers.GetInnerException(exception)}");
                 return null;
             }
         }

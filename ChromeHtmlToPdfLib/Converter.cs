@@ -1129,19 +1129,12 @@ namespace ChromeHtmlToPdfLib
 
                 if (ImageResize || ImageRotate || SanitizeHtml || pageSettings.PaperFormat == PaperFormat.FitPageToContent)
                 {
-                    var documentHelper = new DocumentHelper(GetTempDirectory, WebProxy, ImageDownloadTimeout, _logger) { InstanceId = InstanceId };
+                    var documentHelper = new DocumentHelper(GetTempDirectory, WebProxy, ImageDownloadTimeout, _useCache, _logger) { InstanceId = InstanceId };
 
                     if (SanitizeHtml)
                     {
-                        if (documentHelper.SanitizeHtml(inputUri, Sanitizer, out var outputUri, out var sanitizeHtmlSafeUrls))
-                        {
+                        if (documentHelper.SanitizeHtml(inputUri, Sanitizer, out var outputUri, ref safeUrls))
                             inputUri = outputUri;
-                            foreach (var sanitizeHtmlSafeUrl in sanitizeHtmlSafeUrls)
-                            {
-                                WriteToLog($"Adding url '{sanitizeHtmlSafeUrl}' to the safe url list");
-                                safeUrls.Add(sanitizeHtmlSafeUrl);
-                            }
-                        }
                     }
 
                     if (pageSettings.PaperFormat == PaperFormat.FitPageToContent)
@@ -1162,15 +1155,9 @@ namespace ChromeHtmlToPdfLib
                             ImageRotate,
                             pageSettings,
                             out var outputUri,
-                            out var validateImagesSafeUrls,
+                            ref safeUrls,
                             _urlBlacklist))
                         {
-                            foreach (var validateImagesSafeUrl in validateImagesSafeUrls)
-                            {
-                                WriteToLog($"Adding url '{validateImagesSafeUrl}' to the safe url list");
-                                safeUrls.Add(validateImagesSafeUrl);
-                            }
-
                             inputUri = outputUri;
                         }
                     }
