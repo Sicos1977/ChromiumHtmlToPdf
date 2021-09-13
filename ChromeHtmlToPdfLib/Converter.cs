@@ -1129,7 +1129,7 @@ namespace ChromeHtmlToPdfLib
 
                 if (ImageResize || ImageRotate || SanitizeHtml || pageSettings.PaperFormat == PaperFormat.FitPageToContent)
                 {
-                    var documentHelper = new DocumentHelper(GetTempDirectory, WebProxy, ImageDownloadTimeout, _useCache, _logger) { InstanceId = InstanceId };
+                    var documentHelper = new DocumentHelper(GetTempDirectory, WebProxy, _useCache, _logger) { InstanceId = InstanceId };
 
                     if (SanitizeHtml)
                     {

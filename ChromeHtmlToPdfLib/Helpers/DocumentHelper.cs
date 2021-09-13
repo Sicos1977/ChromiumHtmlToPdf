@@ -73,23 +73,12 @@ namespace ChromeHtmlToPdfLib.Helpers
         private readonly DirectoryInfo _tempDirectory;
 
         /// <summary>
-        ///     The web client to use when downloading from the Internet
-        /// </summary>
-        private WebClient _webClient;
-
-        /// <summary>
         ///     The web proxy to use
         /// </summary>
         private readonly WebProxy _webProxy;
 
         /// <summary>
-        ///     The timeout in milliseconds before this application aborts the downloading
-        ///     of images
-        /// </summary>
-        private readonly int _timeout;
-
-        /// <summary>
-        ///     When <c>true</c> then caching is enabled on the <see cref="_webClient"/>
+        ///     When <c>true</c> then caching is enabled
         /// </summary>
         private readonly bool _useCache;
         #endregion
@@ -102,35 +91,6 @@ namespace ChromeHtmlToPdfLib.Helpers
         // ReSharper disable once UnusedAutoPropertyAccessor.Global
         // ReSharper disable once MemberCanBePrivate.Global
         public string InstanceId { get; set; }
-
-        /// <summary>
-        ///     The web client to use when downloading from the Internet
-        /// </summary>
-        private WebClient WebClient
-        {
-            get
-            {
-                if (_webClient != null)
-                    return _webClient;
-
-                _webClient = _webProxy != null
-                    ? new WebClient {Proxy = _webProxy}
-                    : new WebClient();
-
-                if (_useCache)
-                {
-                    WriteToLog($"Setting cache policy on WebClient to '{RequestCacheLevel.CacheIfAvailable}'");
-                    _webClient.CachePolicy = new RequestCachePolicy(RequestCacheLevel.CacheIfAvailable);
-                }
-                else
-                {
-                    WriteToLog($"Setting cache policy on WebClient to '{RequestCacheLevel.BypassCache}'");
-                    _webClient.CachePolicy = new RequestCachePolicy(RequestCacheLevel.BypassCache);
-                }
-
-                return _webClient;
-            }
-        }
         #endregion
 
         #region Constructor
@@ -139,18 +99,15 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// </summary>
         /// <param name="tempDirectory">When set then this directory will be used for temporary files</param>
         /// <param name="webProxy">The web proxy to use when downloading</param>
-        /// <param name="timeout"></param>
         /// <param name="useCache">When <c>true</c> then caching is enabled on the <see cref="WebClient"/></param>
         /// <param name="logger">When set then logging is written to this ILogger instance for all conversions at the Information log level</param>
         public DocumentHelper(DirectoryInfo tempDirectory,
             WebProxy webProxy,
-            int? timeout,
             bool useCache,
             ILogger logger)
         {
             _tempDirectory = tempDirectory;
             _webProxy = webProxy;
-            _timeout = timeout ?? 30000;
             _useCache = useCache;
             _logger = logger;
         }
@@ -892,9 +849,19 @@ namespace ChromeHtmlToPdfLib.Helpers
         {
             try
             {
-                WriteToLog($"Opening stream to uri '{sourceUri}'");
-                var result = WebClient.OpenReadTaskAsync(sourceUri).Timeout(_timeout).GetAwaiter().GetResult();
-                return result;
+                var request = WebRequest.Create(sourceUri);
+
+                if (_webProxy != null)
+                    request.Proxy = _webProxy;
+
+                if (_useCache)
+                    request.CachePolicy = new HttpRequestCachePolicy(HttpCacheAgeControl.MaxAge, TimeSpan.FromDays(1));
+
+                WriteToLog($"Opening stream to url '{sourceUri}'");
+                var response = (HttpWebResponse)request.GetResponse(); 
+
+                WriteToLog($"Opened {(response.IsFromCache ? "cached" : string.Empty)} stream to url '{sourceUri}'");
+                return response.GetResponseStream();
             }
             catch (Exception exception)
             {
