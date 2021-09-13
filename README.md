@@ -120,8 +120,8 @@ var logger = !string.IsNullOrWhiteSpace(<some logfile>)
                 : new ChromeHtmlToPdfLib.Loggers.Console();
 ```
 
-Setting a common Chrome cache folder
-====================================
+Setting a common Chrome cache directory
+=======================================
 
 You can not share a cache directory between Chrome instances because the first instance that is using the cache directory will lock it for its own use. The most efficient way to make optimal use of a cache directory is to create one for each instance that you are running. 
 
