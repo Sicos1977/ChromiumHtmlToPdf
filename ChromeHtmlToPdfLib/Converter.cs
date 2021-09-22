@@ -1135,6 +1135,11 @@ namespace ChromeHtmlToPdfLib
                     {
                         if (documentHelper.SanitizeHtml(inputUri, Sanitizer, out var outputUri, ref safeUrls))
                             inputUri = outputUri;
+                        else
+                        {
+                            WriteToLog($"Adding url '{inputUri}' to the safe url list");
+                            safeUrls.Add(inputUri.ToString());
+                        }
                     }
 
                     if (pageSettings.PaperFormat == PaperFormat.FitPageToContent)
