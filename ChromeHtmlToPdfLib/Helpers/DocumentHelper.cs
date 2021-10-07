@@ -492,11 +492,16 @@ namespace ChromeHtmlToPdfLib.Helpers
                         : htmlImage.Source;
 
                     var isSafeUrl = safeUrls.Contains(source);
+                    var isAbsoluteUri = source.StartsWith(absoluteUri, StringComparison.InvariantCultureIgnoreCase);
 
-                    if (!RegularExpression.IsRegExMatch(urlBlacklist, source, out var matchedPattern) ||
-                        source.StartsWith(absoluteUri, StringComparison.InvariantCultureIgnoreCase) || isSafeUrl)
+                    if (!RegularExpression.IsRegExMatch(urlBlacklist, source, out var matchedPattern) || isAbsoluteUri || isSafeUrl)
                     {
-                        WriteToLog($"The url '{source}' has been allowed{(isSafeUrl ? " because it is on the safe url list" : string.Empty)}");
+                        if (isAbsoluteUri)
+                            WriteToLog($"The url '{source}' has been allowed because it start with the absolute uri '{absoluteUri}'");
+                        else if (isSafeUrl)
+                            WriteToLog($"The url '{source}' has been allowed because it is on the safe url list");
+                        else
+                            WriteToLog($"The url '{source}' has been allowed because it did not match anything on the url blacklist");
                     }
                     else
                     {

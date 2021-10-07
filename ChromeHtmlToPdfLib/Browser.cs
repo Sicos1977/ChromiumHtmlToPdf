@@ -136,6 +136,7 @@ namespace ChromeHtmlToPdfLib
             var navigationError = string.Empty;
             var waitForNetworkIdle = false;
             var mediaTimeoutTaskSet = false;
+            var absoluteUri = uri.AbsoluteUri.Substring(0, uri.AbsoluteUri.LastIndexOf('/') + 1);
 
             #region Message handler
             var messageHandler = new EventHandler<string>(delegate(object sender, string data)
@@ -194,10 +195,18 @@ namespace ChromeHtmlToPdfLib
                         var requestId = fetch.Params.RequestId;
                         var url = fetch.Params.Request.Url;
                         var isSafeUrl = safeUrls.Contains(url);
+                        var isAbsoluteFileUri = url.StartsWith("file://", StringComparison.InvariantCultureIgnoreCase) &&
+                                                url.StartsWith(absoluteUri, StringComparison.InvariantCultureIgnoreCase);
 
-                        if (!RegularExpression.IsRegExMatch(urlBlacklist, url, out var matchedPattern) || isSafeUrl)
+                        if (!RegularExpression.IsRegExMatch(urlBlacklist, url, out var matchedPattern) || isAbsoluteFileUri || isSafeUrl)
                         {
-                            WriteToLog($"The url '{url}' has been allowed{(isSafeUrl ? " because it is on the safe url list" : string.Empty)}");
+                            if (isSafeUrl)
+                                WriteToLog($"The url '{url}' has been allowed because it is on the safe url list");
+                            else if (isAbsoluteFileUri)
+                                WriteToLog($"The file url '{url}' has been allowed because it start with the absolute uri '{absoluteUri}'");
+                            else
+                                WriteToLog($"The url '{url}' has been allowed because it did not match anything on the url blacklist");
+
                             var fetchContinue = new Message {Method = "Fetch.continueRequest"};
                             fetchContinue.Parameters.Add("requestId", requestId);
                             _pageConnection.SendAsync(fetchContinue).GetAwaiter();
@@ -362,6 +371,23 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
 
+        #region SetPageContent
+        /// <summary>
+        /// Sets given markup as the document's HTML
+        /// </summary>
+        /// <param name="html">HTML content to set</param>
+        internal void SetDocumentContent(string html)
+        {
+            var pageGetFrameTree = new Message {Method = "Page.getFrameTree"};
+            var frameTree = _pageConnection.SendAsync(pageGetFrameTree).GetAwaiter().GetResult();
+
+            var pageSetDocumentContent = new Message {Method = "Page.setDocumentContent"};
+            //pageSetDocumentContent.AddParameter("frameId", frameId);
+            pageSetDocumentContent.AddParameter("html", html);
+            _pageConnection.SendAsync(pageSetDocumentContent).GetAwaiter();
+        }
+        #endregion
+        
         #region WaitForWindowStatus
         /// <summary>
         ///     Wait until the javascript window.status is returning the given <paramref name="status" />
