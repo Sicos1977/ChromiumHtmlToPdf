@@ -16,7 +16,7 @@ namespace ChromeHtmlToPdfConsole
         /// <summary>
         ///     The input url or file
         /// </summary>
-        [Option("input", Required = true, HelpText = "The input url or file")]
+        [Option("input", Required = true, HelpText = "The input content, url or file")]
         public string Input { get; set; }
 
         /// <summary>
@@ -25,9 +25,14 @@ namespace ChromeHtmlToPdfConsole
         [Option("input-is-list", Required = false,
             HelpText =
                 "Tells this app that --input is a list of input urls and/or files. Use the --output parameter to " +
-                "give a location where to write information about the converted files, e.g. c:\\myconvertedfiles"
-        )]
+                "give a location where to write information about the converted files, e.g. c:\\myconvertedfiles")]
         public bool InputIsList { get; set; }
+
+        /// <summary>
+        ///     A file with input urls and/or files
+        /// </summary>
+        [Option("input-is-content", Required = false, HelpText = "Tells this app that --input is pure html and not an url, file or file list")]
+        public bool InputIsContent { get; set; }
 
         /// <summary>
         ///     The output file
