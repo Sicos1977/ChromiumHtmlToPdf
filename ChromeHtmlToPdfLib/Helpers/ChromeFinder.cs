@@ -118,6 +118,7 @@ namespace ChromeHtmlToPdfLib.Helpers
             {
                 exeNames.Add("Google Chrome.app/Contents/MacOS/Google Chrome");
                 exeNames.Add("Chromium.app/Contents/MacOS/Chromium");
+                exeNames.Add("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
             }
             
             // Check the directory of this assembly/application
