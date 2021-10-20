@@ -118,13 +118,15 @@ namespace ChromeHtmlToPdfLib
         {
             if (_response.Task.Status != TaskStatus.RanToCompletion)
                 _response.SetResult(string.Empty);
+
             throw new ChromeException(e.Exception.Message);
         }
 
         private void WebSocketOnClosed(object sender, EventArgs e)
         {
-            if (_response.Task.Status != TaskStatus.RanToCompletion)
-                _response.SetResult(string.Empty);
+            if (_response?.Task.Status != TaskStatus.RanToCompletion)
+                _response?.SetResult(string.Empty);
+
             Closed?.Invoke(this, e);
         }
         #endregion

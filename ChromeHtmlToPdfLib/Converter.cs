@@ -1133,7 +1133,7 @@ namespace ChromeHtmlToPdfLib
 
                     if (SanitizeHtml)
                     {
-                        if (documentHelper.SanitizeHtml(inputUri, Sanitizer, out var outputUri, ref safeUrls))
+                        if (documentHelper.SanitizeHtml(inputUri, mediaLoadTimeout, Sanitizer, out var outputUri, ref safeUrls))
                             inputUri = outputUri;
                         else
                         {
@@ -1145,7 +1145,7 @@ namespace ChromeHtmlToPdfLib
                     if (pageSettings.PaperFormat == PaperFormat.FitPageToContent)
                     {
                         WriteToLog("The paper format 'FitPageToContent' is set, modifying html so that the PDF fits the HTML content");
-                        if (documentHelper.FitPageToContent(inputUri, out var outputUri))
+                        if (documentHelper.FitPageToContent(inputUri, mediaLoadTimeout, out var outputUri))
                         {
                             inputUri = outputUri;
                             safeUrls.Add(outputUri.ToString());
@@ -1156,6 +1156,7 @@ namespace ChromeHtmlToPdfLib
                     {
                         if (documentHelper.ValidateImages(
                             inputUri,
+                            mediaLoadTimeout,
                             ImageResize,
                             ImageRotate,
                             pageSettings,
