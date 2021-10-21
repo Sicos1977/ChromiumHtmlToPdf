@@ -238,14 +238,19 @@ namespace ChromeHtmlToPdfLib
                             // waiting for stylesheets, images, and sub frames to finish loading (the load event can be used to
                             // detect a fully-loaded page).
                             case "Page.lifecycleEvent" when page.Params?.Name == "DOMContentLoaded":
+                                
+                                WriteToLog("The 'Page.lifecycleEvent' with param name 'DomContentLoaded' has been fired, the dom content is now loaded and parsed, waiting for stylesheets, images and sub frames to finish loading");
+                                
                                 if (mediaLoadTimeout.HasValue && !mediaTimeoutTaskSet)
                                 {
                                     try
                                     {
+                                        WriteToLog($"Media load timeout has a value of {mediaLoadTimeout.Value} milliseconds, setting media load timeout task");
+
                                         Task.Run(async delegate
                                         {
                                             await Task.Delay(mediaLoadTimeout.Value, mediaLoadTimeoutCancellationTokenSource.Token);
-                                            WriteToLog($"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
+                                            WriteToLog($"Media load timeout task timed out after {mediaLoadTimeout.Value} milliseconds");
                                             waitEvent?.Set();
                                         }, mediaLoadTimeoutCancellationTokenSource.Token);
 

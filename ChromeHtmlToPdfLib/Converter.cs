@@ -1148,8 +1148,7 @@ namespace ChromeHtmlToPdfLib
 
                         if (pageSettings.PaperFormat == PaperFormat.FitPageToContent)
                         {
-                            WriteToLog(
-                                "The paper format 'FitPageToContent' is set, modifying html so that the PDF fits the HTML content");
+                            WriteToLog("The paper format 'FitPageToContent' is set, modifying html so that the PDF fits the HTML content");
                             if (documentHelper.FitPageToContent(inputUri, out var outputUri))
                             {
                                 inputUri = outputUri;

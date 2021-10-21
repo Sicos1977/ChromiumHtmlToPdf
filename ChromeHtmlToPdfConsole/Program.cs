@@ -316,6 +316,7 @@ namespace ChromeHtmlToPdfConsole
                 converter.SetDiskCache(options.DiskCacheDirectory, options.DiskCacheSize);
 
             converter.DiskCacheDisabled = options.DiskCacheDisabled;
+            converter.ImageLoadTimeout = options.ImageLoadTimeout;
 
         }
         #endregion
