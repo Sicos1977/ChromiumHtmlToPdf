@@ -110,8 +110,15 @@ namespace ChromeHtmlToPdfLib.Helpers
                 if (_imageLoadTimeout == 0)
                     return 0;   
 
-                var result = _stopwatch.ElapsedMilliseconds - _imageLoadTimeout;
-                return (int)(result < 0 ? 0 : result);
+                var result = _imageLoadTimeout - _stopwatch.ElapsedMilliseconds;
+
+                if (result <= 0)
+                {
+                    _stopwatch.Stop();
+                    result = 0;
+                }
+
+                return (int) result;
             }
         }
         #endregion
@@ -139,6 +146,7 @@ namespace ChromeHtmlToPdfLib.Helpers
             if (imageLoadTimeout.HasValue)
             {
                 _imageLoadTimeout = imageLoadTimeout.Value;
+                WriteToLog($"Setting image load timeout to '{_imageLoadTimeout}' milliseconds");
                 _stopwatch = Stopwatch.StartNew();
             }
         }
@@ -916,7 +924,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                 WriteToLog($"Opening stream to url '{sourceUri}'{(_stopwatch != null ? $" with a timeout of {timeLeft} milliseconds" : string.Empty)}");
                 var response = (HttpWebResponse)request.GetResponse(); 
 
-                WriteToLog($"Opened {(response.IsFromCache ? "cached" : string.Empty)} stream to url '{sourceUri}'");
+                WriteToLog($"Opened {(response.IsFromCache ? "cached " : string.Empty)}stream to url '{sourceUri}'");
                 return response.GetResponseStream();
             }
             catch (Exception exception)
