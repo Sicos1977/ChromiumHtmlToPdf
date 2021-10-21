@@ -27,6 +27,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -54,7 +55,7 @@ namespace ChromeHtmlToPdfLib.Helpers
     /// <summary>
     ///     This class contains helper methods
     /// </summary>
-    public class DocumentHelper
+    internal class DocumentHelper : IDisposable
     {
         #region Fields
         /// <summary>
@@ -81,6 +82,13 @@ namespace ChromeHtmlToPdfLib.Helpers
         ///     When <c>true</c> then caching is enabled
         /// </summary>
         private readonly bool _useCache;
+
+        /// <summary>
+        ///     Used when mediaTimeout is set
+        /// </summary>
+        private readonly Stopwatch _stopwatch;
+
+        private readonly int _mediaTimeout;
         #endregion
 
         #region Properties
@@ -91,6 +99,21 @@ namespace ChromeHtmlToPdfLib.Helpers
         // ReSharper disable once UnusedAutoPropertyAccessor.Global
         // ReSharper disable once MemberCanBePrivate.Global
         public string InstanceId { get; set; }
+
+        /// <summary>
+        ///     Returns the time left when <see cref="_mediaTimeout"/> has been set
+        /// </summary>
+        internal int TimeLeft
+        {
+            get
+            {
+                if (_mediaTimeout == 0)
+                    return 0;   
+
+                var result = _stopwatch.ElapsedMilliseconds - _mediaTimeout;
+                return (int)(result < 0 ? 0 : result);
+            }
+        }
         #endregion
 
         #region Constructor
@@ -100,16 +123,24 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <param name="tempDirectory">When set then this directory will be used for temporary files</param>
         /// <param name="webProxy">The web proxy to use when downloading</param>
         /// <param name="useCache">When <c>true</c> then caching is enabled on the <see cref="WebClient"/></param>
+        /// <param name="mediaTimeout"></param>
         /// <param name="logger">When set then logging is written to this ILogger instance for all conversions at the Information log level</param>
         public DocumentHelper(DirectoryInfo tempDirectory,
             WebProxy webProxy,
             bool useCache,
+            int? mediaTimeout,
             ILogger logger)
         {
             _tempDirectory = tempDirectory;
             _webProxy = webProxy;
             _useCache = useCache;
             _logger = logger;
+
+            if (mediaTimeout.HasValue)
+            {
+                _mediaTimeout = mediaTimeout.Value;
+                _stopwatch = Stopwatch.StartNew();
+            }
         }
         #endregion
 
@@ -147,138 +178,142 @@ namespace ChromeHtmlToPdfLib.Helpers
         {
             outputUri = null;
 
-            using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : OpenDownloadStream(inputUri, mediaLoadTimeout);
-
-            var htmlChanged = false;
-            var config = Configuration.Default.WithCss();
-            var context = BrowsingContext.New(config);
-
-            IDocument document;
-
-            try
+            using (var webpage =
+                inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : OpenDownloadStream(inputUri))
             {
-                // ReSharper disable AccessToDisposedClosure
-                document = inputUri.Encoding != null
-                    ? context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString())).Result
-                    : context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString())).Result;
-                // ReSharper restore AccessToDisposedClosure
-            }
-            catch (Exception exception)
-            {
-                WriteToLog($"Exception occurred in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
-                return false;
-            }
+                var htmlChanged = false;
+                var config = Configuration.Default.WithCss();
+                var context = BrowsingContext.New(config);
 
-            WriteToLog("Sanitizing HTML");
+                IDocument document;
 
-            if (sanitizer == null)
-                sanitizer = new HtmlSanitizer();
-
-            sanitizer.FilterUrl += delegate(object sender, FilterUrlEventArgs args)
-            {
-                if (args.OriginalUrl != args.SanitizedUrl)
+                try
                 {
-                    WriteToLog($"URL sanitized from '{args.OriginalUrl}' to '{args.SanitizedUrl}'");
+                    // ReSharper disable AccessToDisposedClosure
+                    document = inputUri.Encoding != null
+                        ? context.OpenAsync(m =>
+                            m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}")
+                                .Address(inputUri.ToString())).Result
+                        : context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString())).Result;
+                    // ReSharper restore AccessToDisposedClosure
+                }
+                catch (Exception exception)
+                {
+                    WriteToLog($"Exception occurred in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
+                    return false;
+                }
+
+                WriteToLog("Sanitizing HTML");
+
+                if (sanitizer == null)
+                    sanitizer = new HtmlSanitizer();
+
+                sanitizer.FilterUrl += delegate(object sender, FilterUrlEventArgs args)
+                {
+                    if (args.OriginalUrl != args.SanitizedUrl)
+                    {
+                        WriteToLog($"URL sanitized from '{args.OriginalUrl}' to '{args.SanitizedUrl}'");
+                        htmlChanged = true;
+                    }
+                };
+
+                sanitizer.RemovingAtRule += delegate(object sender, RemovingAtRuleEventArgs args)
+                {
+                    WriteToLog($"Removing CSS at-rule '{args.Rule.CssText}' from tag '{args.Tag.TagName}'");
                     htmlChanged = true;
-                }
-            };
+                };
 
-            sanitizer.RemovingAtRule += delegate(object sender, RemovingAtRuleEventArgs args)
-            {
-                WriteToLog($"Removing CSS at-rule '{args.Rule.CssText}' from tag '{args.Tag.TagName}'");
-                htmlChanged = true;
-            };
-
-            sanitizer.RemovingAttribute += delegate(object sender, RemovingAttributeEventArgs args)
-            {
-                WriteToLog($"Removing attribute '{args.Attribute.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
-                htmlChanged = true;
-            };
-
-            sanitizer.RemovingComment += delegate(object sender, RemovingCommentEventArgs args)
-            {
-                WriteToLog($"Removing comment '{args.Comment.TextContent}'");
-                htmlChanged = true;
-            };
-
-            sanitizer.RemovingCssClass += delegate(object sender, RemovingCssClassEventArgs args)
-            {
-                WriteToLog($"Removing CSS class '{args.CssClass}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
-                htmlChanged = true;
-            };
-
-            sanitizer.RemovingStyle += delegate(object sender, RemovingStyleEventArgs args)
-            {
-                WriteToLog($"Removing style '{args.Style.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
-                htmlChanged = true;
-            };
-
-            sanitizer.RemovingTag += delegate(object sender, RemovingTagEventArgs args)
-            {
-                WriteToLog($"Removing tag '{args.Tag.TagName}', reason '{args.Reason}'");
-                htmlChanged = true;
-            };
-
-            sanitizer.SanitizeDom(document as IHtmlDocument);
-
-            if (!htmlChanged)
-            {
-                WriteToLog("HTML did not need any sanitization");
-                return false;
-            }
-
-            WriteToLog("HTML sanitized");
-
-            var sanitizedOutputFile = GetTempFile(".htm");
-            outputUri = new ConvertUri(sanitizedOutputFile, inputUri.Encoding);
-            var url = outputUri.ToString();
-            WriteToLog($"Adding url '{url}' to the safe url list");
-            safeUrls.Add(url);
-
-            try
-            {
-                if (document.BaseUrl.Scheme.StartsWith("file"))
+                sanitizer.RemovingAttribute += delegate(object sender, RemovingAttributeEventArgs args)
                 {
-                    var images = document.DocumentElement.Descendents()
-                        .Where(x => x.NodeType == NodeType.Element)
-                        .OfType<IHtmlImageElement>();
+                    WriteToLog(
+                        $"Removing attribute '{args.Attribute.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                    htmlChanged = true;
+                };
 
-                    foreach (var image in images)
-                    {
-                        var src = image.Source;
-                            
-                        if (src.StartsWith("http://", StringComparison.InvariantCultureIgnoreCase) ||
-                            src.StartsWith("https://", StringComparison.InvariantCultureIgnoreCase)) continue;
-                            
-                        WriteToLog($"Updating image source to '{src}' and adding it to the safe url list");
-                        safeUrls.Add(src);
-                        image.Source = src;
-                    }
-                }
-
-                WriteToLog($"Writing sanitized webpage to '{sanitizedOutputFile}'");
-
-                using (var fileStream = new FileStream(sanitizedOutputFile, FileMode.CreateNew, FileAccess.Write))
+                sanitizer.RemovingComment += delegate(object sender, RemovingCommentEventArgs args)
                 {
-                    if (inputUri.Encoding != null)
-                    {
-                        using var textWriter = new StreamWriter(fileStream, inputUri.Encoding);
-                        document.ToHtml(textWriter, new HtmlMarkupFormatter());
-                    }
-                    else
-                    {
-                        using var textWriter = new StreamWriter(fileStream);
-                        document.ToHtml(textWriter, new HtmlMarkupFormatter());
-                    }
+                    WriteToLog($"Removing comment '{args.Comment.TextContent}'");
+                    htmlChanged = true;
+                };
+
+                sanitizer.RemovingCssClass += delegate(object sender, RemovingCssClassEventArgs args)
+                {
+                    WriteToLog(
+                        $"Removing CSS class '{args.CssClass}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                    htmlChanged = true;
+                };
+
+                sanitizer.RemovingStyle += delegate(object sender, RemovingStyleEventArgs args)
+                {
+                    WriteToLog(
+                        $"Removing style '{args.Style.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                    htmlChanged = true;
+                };
+
+                sanitizer.RemovingTag += delegate(object sender, RemovingTagEventArgs args)
+                {
+                    WriteToLog($"Removing tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                    htmlChanged = true;
+                };
+
+                sanitizer.SanitizeDom(document as IHtmlDocument);
+
+                if (!htmlChanged)
+                {
+                    WriteToLog("HTML did not need any sanitization");
+                    return false;
                 }
 
-                WriteToLog("Sanitized webpage written");
-                return true;
-            }
-            catch (Exception exception)
-            {
-                WriteToLog($"Could not write new html file '{sanitizedOutputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
-                return false;
+                WriteToLog("HTML sanitized");
+
+                var sanitizedOutputFile = GetTempFile(".htm");
+                outputUri = new ConvertUri(sanitizedOutputFile, inputUri.Encoding);
+                var url = outputUri.ToString();
+                WriteToLog($"Adding url '{url}' to the safe url list");
+                safeUrls.Add(url);
+
+                try
+                {
+                    if (document.BaseUrl.Scheme.StartsWith("file"))
+                    {
+                        var images = document.DocumentElement.Descendents()
+                            .Where(x => x.NodeType == NodeType.Element)
+                            .OfType<IHtmlImageElement>();
+
+                        foreach (var image in images)
+                        {
+                            var src = image.Source;
+
+                            if (src.StartsWith("http://", StringComparison.InvariantCultureIgnoreCase) ||
+                                src.StartsWith("https://", StringComparison.InvariantCultureIgnoreCase)) continue;
+
+                            WriteToLog($"Updating image source to '{src}' and adding it to the safe url list");
+                            safeUrls.Add(src);
+                            image.Source = src;
+                        }
+                    }
+
+                    WriteToLog($"Writing sanitized webpage to '{sanitizedOutputFile}'");
+
+                    using (var fileStream = new FileStream(sanitizedOutputFile, FileMode.CreateNew, FileAccess.Write))
+                    {
+                        if (inputUri.Encoding != null)
+                            using(var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
+                                document.ToHtml(textWriter, new HtmlMarkupFormatter());
+                        else
+                            using(var textWriter = new StreamWriter(fileStream))
+                                document.ToHtml(textWriter, new HtmlMarkupFormatter());
+                    }
+
+                    WriteToLog("Sanitized webpage written");
+                    return true;
+                }
+                catch (Exception exception)
+                {
+                    WriteToLog(
+                        $"Could not write new html file '{sanitizedOutputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
+                    return false;
+                }
             }
         }
         #endregion
@@ -288,18 +323,14 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// Sanitizes the HTML by removing all forbidden elements
         /// </summary>
         /// <param name="inputUri">The uri of the webpage</param>
-        /// <param name="mediaLoadTimeout"></param>
         /// <param name="outputUri">The outputUri when this method returns <c>false</c> otherwise
         ///     <c>null</c> is returned</param>
         /// <returns></returns>
-        public bool FitPageToContent(
-            ConvertUri inputUri, 
-            int? mediaLoadTimeout,
-            out ConvertUri outputUri)
+        public bool FitPageToContent(ConvertUri inputUri, out ConvertUri outputUri)
         {
             outputUri = null;
 
-            using (var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : OpenDownloadStream(inputUri, mediaLoadTimeout))
+            using (var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : OpenDownloadStream(inputUri))
             {
                 var config = Configuration.Default.WithCss();
                 var context = BrowsingContext.New(config);
@@ -372,12 +403,10 @@ namespace ChromeHtmlToPdfLib.Helpers
                     using (var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write))
                     {
                         if (inputUri.Encoding != null)
-                        {
-                            using (var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
+                            using(var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
                                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
-                        }
                         else
-                            using (var textWriter = new StreamWriter(fileStream))
+                            using(var textWriter = new StreamWriter(fileStream))
                                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
                     }
 
@@ -405,7 +434,6 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <param name="rotate">When set to <c>true</c> then the EXIF information of an
         ///     image is read and when needed the image is automatic rotated</param>
         /// <param name="pageSettings"><see cref="PageSettings"/></param>
-        /// <param name="mediaLoadTimeout">The media load time or <c>null</c> when not set</param>
         /// <param name="outputUri">The outputUri when this method returns <c>true</c> otherwise
         ///     <c>null</c> is returned</param>
         /// <param name="urlBlacklist">A list of URL's that need to be blocked (use * as a wildcard)</param>
@@ -414,7 +442,6 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <exception cref="WebException">Raised when the webpage from <paramref name="inputUri"/> could not be downloaded</exception>
         public bool ValidateImages(
             ConvertUri inputUri,
-            int? mediaLoadTimeout,
             bool resize,
             bool rotate,
             PageSettings pageSettings,
@@ -424,7 +451,8 @@ namespace ChromeHtmlToPdfLib.Helpers
         {
             outputUri = null;
 
-            using (var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : OpenDownloadStream(inputUri, mediaLoadTimeout))
+            using (var webpage =
+                inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : OpenDownloadStream(inputUri))
             {
                 var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft - pageSettings.MarginRight) * 96.0;
                 var maxHeight = (pageSettings.PaperHeight - pageSettings.MarginTop - pageSettings.MarginBottom) * 96.0;
@@ -470,7 +498,9 @@ namespace ChromeHtmlToPdfLib.Helpers
                 {
                     // ReSharper disable AccessToDisposedClosure
                     document = inputUri.Encoding != null
-                        ? context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString())).Result
+                        ? context.OpenAsync(m =>
+                            m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}")
+                                .Address(inputUri.ToString())).Result
                         : context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString())).Result;
                     // ReSharper restore AccessToDisposedClosure
                 }
@@ -503,14 +533,17 @@ namespace ChromeHtmlToPdfLib.Helpers
                     var isSafeUrl = safeUrls.Contains(source);
                     var isAbsoluteUri = source.StartsWith(absoluteUri, StringComparison.InvariantCultureIgnoreCase);
 
-                    if (!RegularExpression.IsRegExMatch(urlBlacklist, source, out var matchedPattern) || isAbsoluteUri || isSafeUrl)
+                    if (!RegularExpression.IsRegExMatch(urlBlacklist, source, out var matchedPattern) ||
+                        isAbsoluteUri || isSafeUrl)
                     {
                         if (isAbsoluteUri)
-                            WriteToLog($"The url '{source}' has been allowed because it start with the absolute uri '{absoluteUri}'");
+                            WriteToLog(
+                                $"The url '{source}' has been allowed because it start with the absolute uri '{absoluteUri}'");
                         else if (isSafeUrl)
                             WriteToLog($"The url '{source}' has been allowed because it is on the safe url list");
                         else
-                            WriteToLog($"The url '{source}' has been allowed because it did not match anything on the url blacklist");
+                            WriteToLog(
+                                $"The url '{source}' has been allowed because it did not match anything on the url blacklist");
                     }
                     else
                     {
@@ -528,10 +561,10 @@ namespace ChromeHtmlToPdfLib.Helpers
                         var width = htmlImage.DisplayWidth;
                         var height = htmlImage.DisplayHeight;
 
-                       
+
                         if (rotate)
                         {
-                            image = GetImage(htmlImage.Source, localDirectory, mediaLoadTimeout);
+                            image = GetImage(htmlImage.Source, localDirectory);
 
                             if (image == null) continue;
 
@@ -572,7 +605,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                             if (width <= 0 || height <= 0)
                             {
                                 if (image == null)
-                                    image = GetImage(htmlImage.Source, localDirectory, mediaLoadTimeout);
+                                    image = GetImage(htmlImage.Source, localDirectory);
 
                                 if (image == null) continue;
                                 width = image.Width;
@@ -584,11 +617,11 @@ namespace ChromeHtmlToPdfLib.Helpers
                                 // If we did not load the image already then load it
 
                                 if (image == null)
-                                    image = GetImage(htmlImage.Source, localDirectory, mediaLoadTimeout);
+                                    image = GetImage(htmlImage.Source, localDirectory);
 
                                 if (image == null) continue;
 
-                                ScaleImage(image, (int) maxWidth, out var newWidth, out var newHeight);
+                                ScaleImage(image, (int)maxWidth, out var newWidth, out var newHeight);
                                 WriteToLog($"Image rescaled to width {newWidth} and height {newHeight}");
                                 htmlImage.DisplayWidth = newWidth;
                                 htmlImage.DisplayHeight = newHeight;
@@ -605,13 +638,13 @@ namespace ChromeHtmlToPdfLib.Helpers
                     if (!imageChanged)
                         unchangedImages.Add(htmlImage);
                 }
-                
+
                 if (!htmlChanged)
                     return false;
 
                 foreach (var unchangedImage in unchangedImages)
                 {
-                    using (var image = GetImage(unchangedImage.Source, localDirectory, mediaLoadTimeout))
+                    using (var image = GetImage(unchangedImage.Source, localDirectory))
                     {
                         if (image == null)
                         {
@@ -672,9 +705,8 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// </summary>
         /// <param name="imageSource"></param>
         /// <param name="localDirectory"></param>
-        /// <param name="mediaLoadTimeout"></param>
         /// <returns></returns>
-        private Image GetImage(string imageSource, string localDirectory, int? mediaLoadTimeout) 
+        private Image GetImage(string imageSource, string localDirectory) 
         {
             if (imageSource.StartsWith("data:", StringComparison.InvariantCultureIgnoreCase))
             {
@@ -723,7 +755,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                 {
                     case "https":
                     case "http":
-                        using (var webStream = OpenDownloadStream(imageUri, mediaLoadTimeout))
+                        using (var webStream = OpenDownloadStream(imageUri))
                         {
                             if (webStream != null)
                                 return Image.FromStream(webStream, true, false);
@@ -859,15 +891,25 @@ namespace ChromeHtmlToPdfLib.Helpers
         ///     Opens a download stream to the given <paramref name="sourceUri"/>
         /// </summary>
         /// <param name="sourceUri"></param>
-        /// <param name="timeout"></param>
         /// <returns></returns>
-        private Stream OpenDownloadStream(Uri sourceUri, int? timeout)
+        private Stream OpenDownloadStream(Uri sourceUri)
         {
             try
             {
                 var request = WebRequest.Create(sourceUri);
-                if (timeout.HasValue)
-                    request.Timeout = timeout.Value;
+
+                var timeLeft = TimeLeft;
+
+                if (_stopwatch != null)
+                {
+                    if (timeLeft == 0)
+                    {
+                        WriteToLog($"Media load has timed out, skipping opening stream to url '{sourceUri}'");
+                        return null;
+                    }
+
+                    request.Timeout = TimeLeft;
+                }
 
                 if (_webProxy != null)
                     request.Proxy = _webProxy;
@@ -875,7 +917,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                 if (_useCache)
                     request.CachePolicy = new HttpRequestCachePolicy(HttpCacheAgeControl.MaxAge, TimeSpan.FromDays(1));
 
-                WriteToLog($"Opening stream to url '{sourceUri}'{(timeout.HasValue ? $" with a timeout of {timeout.Value} milliseconds" : string.Empty)}");
+                WriteToLog($"Opening stream to url '{sourceUri}'{(_stopwatch != null ? $" with a timeout of {TimeLeft} milliseconds" : string.Empty)}");
                 var response = (HttpWebResponse)request.GetResponse(); 
 
                 WriteToLog($"Opened {(response.IsFromCache ? "cached" : string.Empty)} stream to url '{sourceUri}'");
@@ -922,6 +964,13 @@ namespace ChromeHtmlToPdfLib.Helpers
                     // Ignore
                 }
             }
+        }
+        #endregion
+
+        #region Dispose
+        public void Dispose()
+        {
+            _stopwatch?.Stop();
         }
         #endregion
     }

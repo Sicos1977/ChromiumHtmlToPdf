@@ -284,16 +284,6 @@ namespace ChromeHtmlToPdfConsole
         public bool ImageRotate { get; set; }
 
         /// <summary>
-        ///     The timeout in milliseconds before this application aborts the downloading
-        ///     of images when the option <see cref="ImageResize"/> and/or <see cref="ImageRotate"/>
-        ///     is being used
-        /// </summary>
-        [Option("imagedownloadtimeout", Required = false, Default = 30000,
-            HelpText = "The timeout in milliseconds before this application aborts the downloading " +
-                       "of images when the option --ImageResize and/or --ImageRotate is being used")]
-        public int? ImageDownloadTimeout { get; set; }
-
-        /// <summary>
         ///     When set to <c>true</c> this will remove all HTML that can lead to XSS attacks
         /// </summary>
         [Option("sanitize-html", Required = false, Default = false,
@@ -350,7 +340,7 @@ namespace ChromeHtmlToPdfConsole
         /// <summary>
         ///     When set to <c>true</c> then caching is disabled
         /// </summary>
-        [Option("disk-cache-disabled", Required = false, Default = false, HelpText = "When set to true then Chrome won't use a disk cache")]
+        [Option("disk-cache-disabled", Required = false, Default = false, HelpText = "When set to true then we won't use a disk cache")]
         public bool DiskCacheDisabled { get; set; }
         
         /// <summary>

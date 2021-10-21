@@ -300,7 +300,6 @@ namespace ChromeHtmlToPdfConsole
 
             converter.ImageResize = options.ImageResize;
             converter.ImageRotate = options.ImageRotate;
-            converter.ImageDownloadTimeout = options.ImageDownloadTimeout;
             converter.SanitizeHtml = options.SanitizeHtml;
             converter.RunJavascript = options.RunJavascript;
 
@@ -315,6 +314,8 @@ namespace ChromeHtmlToPdfConsole
 
             if (!string.IsNullOrWhiteSpace(options.DiskCacheDirectory))
                 converter.SetDiskCache(options.DiskCacheDirectory, options.DiskCacheSize);
+
+            converter.DiskCacheDisabled = options.DiskCacheDisabled;
 
         }
         #endregion
