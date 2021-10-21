@@ -284,6 +284,16 @@ namespace ChromeHtmlToPdfConsole
         public bool ImageRotate { get; set; }
 
         /// <summary>
+        ///     The timeout in milliseconds before this application aborts the downloading
+        ///     of images when the option <see cref="ImageResize"/> and/or <see cref="ImageRotate"/>
+        ///     is being used
+        /// </summary>
+        [Option("imageloadtimeout", Required = false, Default = 30000,
+            HelpText = "The timeout in milliseconds before this application aborts the downloading " +
+                       "of images when the option --ImageResize and/or --ImageRotate is being used")]
+        public int? ImageLoadTimeout { get; set; }
+
+        /// <summary>
         ///     When set to <c>true</c> this will remove all HTML that can lead to XSS attacks
         /// </summary>
         [Option("sanitize-html", Required = false, Default = false,

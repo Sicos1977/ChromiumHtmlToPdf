@@ -253,6 +253,13 @@ namespace ChromeHtmlToPdfLib
         public bool SanitizeHtml { get; set; }
 
         /// <summary>
+        ///     The timeout in milliseconds before this application aborts the downloading
+        ///     of images when the option <see cref="ImageResize"/> and/or <see cref="ImageRotate"/>
+        ///     is being used
+        /// </summary>
+        public int? ImageLoadTimeout { get; set; }
+
+        /// <summary>
         ///     When set then these settings will be used when <see cref="SanitizeHtml"/> is
         ///     set to <c>true</c>
         /// </summary>
@@ -1125,7 +1132,7 @@ namespace ChromeHtmlToPdfLib
 
                 if (ImageResize || ImageRotate || SanitizeHtml || pageSettings.PaperFormat == PaperFormat.FitPageToContent)
                 {
-                    using(var documentHelper = new DocumentHelper(GetTempDirectory, WebProxy, _useCache, mediaLoadTimeout, _logger) { InstanceId = InstanceId })
+                    using(var documentHelper = new DocumentHelper(GetTempDirectory, WebProxy, _useCache, ImageLoadTimeout, _logger) { InstanceId = InstanceId })
                     {
                         if (SanitizeHtml)
                         {
@@ -1163,16 +1170,6 @@ namespace ChromeHtmlToPdfLib
                             {
                                 inputUri = outputUri;
                             }
-                        }
-
-                        if (mediaLoadTimeout.HasValue)
-                        {
-                            var timeLeft = documentHelper.TimeLeft;
-                            if (timeLeft == 0)
-                                timeLeft = 1;
-
-                            WriteToLog($"Updating media load timeout to new value '{timeLeft}'");
-                            mediaLoadTimeout = timeLeft;
                         }
                     }
                 }
