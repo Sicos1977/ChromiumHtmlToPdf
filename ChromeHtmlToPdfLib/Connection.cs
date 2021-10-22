@@ -25,10 +25,10 @@
 //
 
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using ChromeHtmlToPdfLib.Exceptions;
 using ChromeHtmlToPdfLib.Protocol;
+using Microsoft.Extensions.Logging;
 using SuperSocket.ClientEngine;
 using WebSocket4Net;
 
@@ -52,6 +52,16 @@ namespace ChromeHtmlToPdfLib
         #endregion
 
         #region Fields
+        /// <summary>
+        ///     Used to make the logging thread safe
+        /// </summary>
+        private readonly object _lock = new object();
+
+        /// <summary>
+        ///     When set then logging is written to this ILogger instance
+        /// </summary>
+        private readonly ILogger _logger;
+
         private int _messageId;
         private TaskCompletionSource<string> _response;
 
@@ -61,13 +71,24 @@ namespace ChromeHtmlToPdfLib
         private readonly WebSocket _webSocket;
         #endregion
 
+        #region Properties
+        /// <summary>
+        ///     An unique id that can be used to identify the logging of the converter when
+        ///     calling the code from multiple threads and writing all the logging to the same file
+        /// </summary>
+        public string InstanceId { get; set; }
+        #endregion
+
         #region Constructor
         /// <summary>
         /// Makes this object and sets all it's needed properties
         /// </summary>
         /// <param name="url">The url</param>
-        internal Connection(string url)
+        /// <param name="logger">When set then logging is written to this ILogger instance for all conversions at the Information log level</param>
+        internal Connection(string url, ILogger logger)
         {
+            _logger = logger;
+            WriteToLog($"Creating new websocket connection to url '{url}'");
             _webSocket = new WebSocket(url);
             _webSocket.MessageReceived += WebSocketOnMessageReceived;
             _webSocket.Error += WebSocketOnError;
@@ -79,23 +100,17 @@ namespace ChromeHtmlToPdfLib
         #region OpenWebSocket
         private void OpenWebSocket()
         {
-            if (_webSocket.State == WebSocketState.Open)
-                return;
+            if (_webSocket.State == WebSocketState.Open) return;
 
-            var connected = false;
-            var i = 0;
+            WriteToLog("Opening websocket connection with a timeout of 30 seconds");
+            _webSocket.OpenAsync().Wait(30000);
+            WriteToLog("Websocket opened");
 
-            _webSocket.Opened += delegate { connected = true; };
-            _webSocket.Open();
+            if (_webSocket.State == WebSocketState.Open) return;
 
-            while (!connected)
-            {
-                Thread.Sleep(1);
-                i += 1;
-
-                if (i == 30000)
-                    throw new ChromeException("Websocket connection timed out after 30 seconds");
-            }
+            var message = $"Websocket connection timed out after 30 seconds with the state '{_webSocket.State}'";
+            WriteToLog(message);
+            throw new ChromeException(message);
         }
         #endregion
 
@@ -161,6 +176,29 @@ namespace ChromeHtmlToPdfLib
             if (error.InnerError != null && error.InnerError.Code != 0 &&
                 !string.IsNullOrEmpty(error.InnerError.Message))
                 throw new ChromeException(error.InnerError.Message);
+        }
+        #endregion
+
+        #region WriteToLog
+        /// <summary>
+        ///     Writes a line to the <see cref="_logger" />
+        /// </summary>
+        /// <param name="message">The message to write</param>
+        internal void WriteToLog(string message)
+        {
+            lock (_lock)
+            {
+                try
+                {
+                    if (_logger == null) return;
+                    using (_logger.BeginScope(InstanceId))
+                        _logger.LogInformation(message);
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Ignore
+                }
+            }
         }
         #endregion
 
