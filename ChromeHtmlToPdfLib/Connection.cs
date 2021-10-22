@@ -25,6 +25,7 @@
 //
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using ChromeHtmlToPdfLib.Exceptions;
 using ChromeHtmlToPdfLib.Protocol;
@@ -103,14 +104,22 @@ namespace ChromeHtmlToPdfLib
             if (_webSocket.State == WebSocketState.Open) return;
 
             WriteToLog("Opening websocket connection with a timeout of 30 seconds");
-            _webSocket.OpenAsync().Wait(30000);
-            WriteToLog("Websocket opened");
+            _webSocket.Open();
 
-            if (_webSocket.State == WebSocketState.Open) return;
+            var i = 0;
 
-            var message = $"Websocket connection timed out after 30 seconds with the state '{_webSocket.State}'";
-            WriteToLog(message);
-            throw new ChromeException(message);
+            while(_webSocket.State != WebSocketState.Open)
+            {
+                Thread.Sleep(1);
+                i += 1;
+
+                if (i == 30000)
+                {
+                    var message = $"Websocket connection timed out after 30 seconds with the state '{_webSocket.State}'";
+                    WriteToLog(message);
+                    throw new ChromeException(message);
+                }
+            }
         }
         #endregion
 
