@@ -113,13 +113,13 @@ namespace ChromeHtmlToPdfLib
                 Thread.Sleep(1);
                 i += 1;
 
-                if (i == 30000)
-                {
-                    var message = $"Websocket connection timed out after 30 seconds with the state '{_webSocket.State}'";
-                    WriteToLog(message);
-                    throw new ChromeException(message);
-                }
+                if (i != 30000) continue;
+                var message = $"Websocket connection timed out after 30 seconds with the state '{_webSocket.State}'";
+                WriteToLog(message);
+                throw new ChromeException(message);
             }
+
+            WriteToLog("Websocket opened");
         }
         #endregion
 
