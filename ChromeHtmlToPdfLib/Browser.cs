@@ -398,9 +398,12 @@ namespace ChromeHtmlToPdfLib
             var pageGetFrameTree = new Message {Method = "Page.getFrameTree"};
             var frameTree = _pageConnection.SendAsync(pageGetFrameTree).GetAwaiter().GetResult();
 
+            var frameResult = ChromeHtmlToPdfLib.Protocol.Page.FrameTree.FromJson(frameTree);
             var pageSetDocumentContent = new Message {Method = "Page.setDocumentContent"};
-            //pageSetDocumentContent.AddParameter("frameId", frameId);
+
+            pageSetDocumentContent.AddParameter("frameId", frameResult.Result.FrameTree.Frame.Id);
             pageSetDocumentContent.AddParameter("html", html);
+
             _pageConnection.SendAsync(pageSetDocumentContent).GetAwaiter();
         }
         #endregion
