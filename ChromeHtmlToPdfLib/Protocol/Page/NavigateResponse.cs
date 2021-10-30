@@ -24,7 +24,6 @@
 // THE SOFTWARE.
 //
 
-
 using Newtonsoft.Json;
 
 namespace ChromeHtmlToPdfLib.Protocol.Page
