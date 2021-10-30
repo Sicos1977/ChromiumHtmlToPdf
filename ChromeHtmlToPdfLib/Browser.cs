@@ -71,6 +71,8 @@ namespace ChromeHtmlToPdfLib
         ///     A connection to a page
         /// </summary>
         private readonly Connection _pageConnection;
+
+        private string _instanceId;
         #endregion
 
         #region Properties
@@ -78,7 +80,16 @@ namespace ChromeHtmlToPdfLib
         ///     An unique id that can be used to identify the logging of the converter when
         ///     calling the code from multiple threads and writing all the logging to the same file
         /// </summary>
-        public string InstanceId { get; set; }
+        public string InstanceId
+        {
+            get => _instanceId;
+            set
+            {
+                _instanceId = value;
+                _browserConnection.InstanceId = value;
+                _pageConnection.InstanceId = value;
+            }
+        }
         #endregion
 
         #region Constructor & destructor
@@ -92,7 +103,7 @@ namespace ChromeHtmlToPdfLib
             _logger = logger;
 
             // Open a websocket to the browser
-            _browserConnection = new Connection(browser.ToString());
+            _browserConnection = new Connection(browser.ToString(), logger);
             
             var message = new Message {Method = "Target.createTarget"};
             message.Parameters.Add("url", "about:blank");
@@ -101,7 +112,8 @@ namespace ChromeHtmlToPdfLib
             var page = Protocol.Page.Page.FromJson(result);
             var pageUrl = $"{browser.Scheme}://{browser.Host}:{browser.Port}/devtools/page/{page.Result.TargetId}";
 
-            _pageConnection = new Connection(pageUrl);
+            // Open a websocket to the page
+            _pageConnection = new Connection(pageUrl, logger);
         }
         #endregion
 
@@ -238,14 +250,19 @@ namespace ChromeHtmlToPdfLib
                             // waiting for stylesheets, images, and sub frames to finish loading (the load event can be used to
                             // detect a fully-loaded page).
                             case "Page.lifecycleEvent" when page.Params?.Name == "DOMContentLoaded":
+                                
+                                WriteToLog("The 'Page.lifecycleEvent' with param name 'DomContentLoaded' has been fired, the dom content is now loaded and parsed, waiting for stylesheets, images and sub frames to finish loading");
+                                
                                 if (mediaLoadTimeout.HasValue && !mediaTimeoutTaskSet)
                                 {
                                     try
                                     {
+                                        WriteToLog($"Media load timeout has a value of {mediaLoadTimeout.Value} milliseconds, setting media load timeout task");
+
                                         Task.Run(async delegate
                                         {
                                             await Task.Delay(mediaLoadTimeout.Value, mediaLoadTimeoutCancellationTokenSource.Token);
-                                            WriteToLog($"Media load timed out after {mediaLoadTimeout.Value} milliseconds");
+                                            WriteToLog($"Media load timeout task timed out after {mediaLoadTimeout.Value} milliseconds");
                                             waitEvent?.Set();
                                         }, mediaLoadTimeoutCancellationTokenSource.Token);
 

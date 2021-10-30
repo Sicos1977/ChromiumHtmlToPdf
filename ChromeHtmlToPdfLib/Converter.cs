@@ -253,6 +253,13 @@ namespace ChromeHtmlToPdfLib
         public bool SanitizeHtml { get; set; }
 
         /// <summary>
+        ///     The timeout in milliseconds before this application aborts the downloading
+        ///     of images when the option <see cref="ImageResize"/> and/or <see cref="ImageRotate"/>
+        ///     is being used
+        /// </summary>
+        public int? ImageLoadTimeout { get; set; }
+
+        /// <summary>
         ///     When set then these settings will be used when <see cref="SanitizeHtml"/> is
         ///     set to <c>true</c>
         /// </summary>
@@ -260,13 +267,6 @@ namespace ChromeHtmlToPdfLib
         ///     See https://github.com/mganss/HtmlSanitizer for all the default settings
         /// </remarks>
         public HtmlSanitizer Sanitizer { get; set; }
-
-        /// <summary>
-        ///     The timeout in milliseconds before this application aborts the downloading
-        ///     of images when the option <see cref="ImageResize"/> and/or <see cref="ImageRotate"/>
-        ///     is being used
-        /// </summary>
-        public int? ImageDownloadTimeout { get; set; }
 
         /// <summary>
         ///     Runs the given javascript after the webpage has been loaded and before it is converted
@@ -928,11 +928,14 @@ namespace ChromeHtmlToPdfLib
 
             AddChromeArgument("--disk-cache-dir", directory.TrimEnd('\\', '/'));
 
-            if (!size.HasValue) return;
-            if (size.Value <= 0)
-                throw new ArgumentException("Has to be a value of 1 or greater", nameof(size));
+            if (size.HasValue)
+            {
+                if (size.Value <= 0)
+                    throw new ArgumentException("Has to be a value of 1 or greater", nameof(size));
 
-            AddChromeArgument("--disk-cache-size", (size.Value * 1024 * 1024).ToString());
+                AddChromeArgument("--disk-cache-size", (size.Value * 1024 * 1024).ToString());
+            }
+
             _useCache = true;
         }
         #endregion
@@ -1129,41 +1132,43 @@ namespace ChromeHtmlToPdfLib
 
                 if (ImageResize || ImageRotate || SanitizeHtml || pageSettings.PaperFormat == PaperFormat.FitPageToContent)
                 {
-                    var documentHelper = new DocumentHelper(GetTempDirectory, WebProxy, _useCache, _logger) { InstanceId = InstanceId };
-
-                    if (SanitizeHtml)
+                    using(var documentHelper = new DocumentHelper(GetTempDirectory, WebProxy, _useCache, ImageLoadTimeout, _logger) { InstanceId = InstanceId })
                     {
-                        if (documentHelper.SanitizeHtml(inputUri, Sanitizer, out var outputUri, ref safeUrls))
-                            inputUri = outputUri;
-                        else
+                        if (SanitizeHtml)
                         {
-                            WriteToLog($"Adding url '{inputUri}' to the safe url list");
-                            safeUrls.Add(inputUri.ToString());
+                            if (documentHelper.SanitizeHtml(inputUri, mediaLoadTimeout, Sanitizer, out var outputUri,
+                                ref safeUrls))
+                                inputUri = outputUri;
+                            else
+                            {
+                                WriteToLog($"Adding url '{inputUri}' to the safe url list");
+                                safeUrls.Add(inputUri.ToString());
+                            }
                         }
-                    }
 
-                    if (pageSettings.PaperFormat == PaperFormat.FitPageToContent)
-                    {
-                        WriteToLog("The paper format 'FitPageToContent' is set, modifying html so that the PDF fits the HTML content");
-                        if (documentHelper.FitPageToContent(inputUri, out var outputUri))
+                        if (pageSettings.PaperFormat == PaperFormat.FitPageToContent)
                         {
-                            inputUri = outputUri;
-                            safeUrls.Add(outputUri.ToString());
+                            WriteToLog("The paper format 'FitPageToContent' is set, modifying html so that the PDF fits the HTML content");
+                            if (documentHelper.FitPageToContent(inputUri, out var outputUri))
+                            {
+                                inputUri = outputUri;
+                                safeUrls.Add(outputUri.ToString());
+                            }
                         }
-                    }
 
-                    if (ImageResize || ImageRotate)
-                    {
-                        if (documentHelper.ValidateImages(
-                            inputUri,
-                            ImageResize,
-                            ImageRotate,
-                            pageSettings,
-                            out var outputUri,
-                            ref safeUrls,
-                            _urlBlacklist))
+                        if (ImageResize || ImageRotate)
                         {
-                            inputUri = outputUri;
+                            if (documentHelper.ValidateImages(
+                                inputUri,
+                                ImageResize,
+                                ImageRotate,
+                                pageSettings,
+                                out var outputUri,
+                                ref safeUrls,
+                                _urlBlacklist))
+                            {
+                                inputUri = outputUri;
+                            }
                         }
                     }
                 }

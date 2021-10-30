@@ -27,6 +27,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -54,7 +55,7 @@ namespace ChromeHtmlToPdfLib.Helpers
     /// <summary>
     ///     This class contains helper methods
     /// </summary>
-    public class DocumentHelper
+    internal class DocumentHelper : IDisposable
     {
         #region Fields
         /// <summary>
@@ -81,6 +82,13 @@ namespace ChromeHtmlToPdfLib.Helpers
         ///     When <c>true</c> then caching is enabled
         /// </summary>
         private readonly bool _useCache;
+
+        /// <summary>
+        ///     Used when mediaTimeout is set
+        /// </summary>
+        private readonly Stopwatch _stopwatch;
+
+        private readonly int _imageLoadTimeout;
         #endregion
 
         #region Properties
@@ -91,6 +99,28 @@ namespace ChromeHtmlToPdfLib.Helpers
         // ReSharper disable once UnusedAutoPropertyAccessor.Global
         // ReSharper disable once MemberCanBePrivate.Global
         public string InstanceId { get; set; }
+
+        /// <summary>
+        ///     Returns the time left when <see cref="_imageLoadTimeout"/> has been set
+        /// </summary>
+        internal int TimeLeft
+        {
+            get
+            {
+                if (_imageLoadTimeout == 0)
+                    return 0;   
+
+                var result = _imageLoadTimeout - _stopwatch.ElapsedMilliseconds;
+
+                if (result <= 0)
+                {
+                    _stopwatch.Stop();
+                    result = 0;
+                }
+
+                return (int) result;
+            }
+        }
         #endregion
 
         #region Constructor
@@ -100,16 +130,25 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <param name="tempDirectory">When set then this directory will be used for temporary files</param>
         /// <param name="webProxy">The web proxy to use when downloading</param>
         /// <param name="useCache">When <c>true</c> then caching is enabled on the <see cref="WebClient"/></param>
+        /// <param name="imageLoadTimeout">When set then this timeout is used for loading images, <c>null</c> when no timeout is needed</param>
         /// <param name="logger">When set then logging is written to this ILogger instance for all conversions at the Information log level</param>
         public DocumentHelper(DirectoryInfo tempDirectory,
             WebProxy webProxy,
             bool useCache,
+            int? imageLoadTimeout,
             ILogger logger)
         {
             _tempDirectory = tempDirectory;
             _webProxy = webProxy;
             _useCache = useCache;
             _logger = logger;
+
+            if (imageLoadTimeout.HasValue)
+            {
+                _imageLoadTimeout = imageLoadTimeout.Value;
+                WriteToLog($"Setting image load timeout to '{_imageLoadTimeout}' milliseconds");
+                _stopwatch = Stopwatch.StartNew();
+            }
         }
         #endregion
 
@@ -132,6 +171,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// Sanitizes the HTML by removing all forbidden elements
         /// </summary>
         /// <param name="inputUri">The uri of the webpage</param>
+        /// <param name="mediaLoadTimeout">The media load timeout or <c>null</c> when not set</param>
         /// <param name="sanitizer"><see cref="HtmlSanitizer"/></param>
         /// <param name="outputUri">The outputUri when this method returns <c>false</c> otherwise
         ///     <c>null</c> is returned</param>
@@ -139,6 +179,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// <returns></returns>
         public bool SanitizeHtml(
             ConvertUri inputUri,
+            int? mediaLoadTimeout,
             HtmlSanitizer sanitizer, 
             out ConvertUri outputUri,
             ref List<string> safeUrls)
@@ -244,10 +285,10 @@ namespace ChromeHtmlToPdfLib.Helpers
                         foreach (var image in images)
                         {
                             var src = image.Source;
-                            
+
                             if (src.StartsWith("http://", StringComparison.InvariantCultureIgnoreCase) ||
                                 src.StartsWith("https://", StringComparison.InvariantCultureIgnoreCase)) continue;
-                            
+
                             WriteToLog($"Updating image source to '{src}' and adding it to the safe url list");
                             safeUrls.Add(src);
                             image.Source = src;
@@ -259,12 +300,10 @@ namespace ChromeHtmlToPdfLib.Helpers
                     using (var fileStream = new FileStream(sanitizedOutputFile, FileMode.CreateNew, FileAccess.Write))
                     {
                         if (inputUri.Encoding != null)
-                        {
-                            using (var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
+                            using(var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
                                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
-                        }
                         else
-                            using (var textWriter = new StreamWriter(fileStream))
+                            using(var textWriter = new StreamWriter(fileStream))
                                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
                     }
 
@@ -282,7 +321,7 @@ namespace ChromeHtmlToPdfLib.Helpers
 
         #region FitPageToContent
         /// <summary>
-        /// Sanitizes the HTML by removing all forbidden elements
+        /// Opens the webpage and adds code to make it fit the page
         /// </summary>
         /// <param name="inputUri">The uri of the webpage</param>
         /// <param name="outputUri">The outputUri when this method returns <c>false</c> otherwise
@@ -365,12 +404,10 @@ namespace ChromeHtmlToPdfLib.Helpers
                     using (var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write))
                     {
                         if (inputUri.Encoding != null)
-                        {
-                            using (var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
+                            using(var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
                                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
-                        }
                         else
-                            using (var textWriter = new StreamWriter(fileStream))
+                            using(var textWriter = new StreamWriter(fileStream))
                                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
                     }
 
@@ -461,7 +498,9 @@ namespace ChromeHtmlToPdfLib.Helpers
                 {
                     // ReSharper disable AccessToDisposedClosure
                     document = inputUri.Encoding != null
-                        ? context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString())).Result
+                        ? context.OpenAsync(m =>
+                            m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}")
+                                .Address(inputUri.ToString())).Result
                         : context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString())).Result;
                     // ReSharper restore AccessToDisposedClosure
                 }
@@ -487,14 +526,13 @@ namespace ChromeHtmlToPdfLib.Helpers
                     }
 
                     Image image = null;
-                    var source = htmlImage.Source.Contains("?")
-                        ? htmlImage.Source.Split('?')[0]
-                        : htmlImage.Source;
 
+                    var source = htmlImage.Source.Contains("?") ? htmlImage.Source.Split('?')[0] : htmlImage.Source;
                     var isSafeUrl = safeUrls.Contains(source);
                     var isAbsoluteUri = source.StartsWith(absoluteUri, StringComparison.InvariantCultureIgnoreCase);
 
-                    if (!RegularExpression.IsRegExMatch(urlBlacklist, source, out var matchedPattern) || isAbsoluteUri || isSafeUrl)
+                    if (!RegularExpression.IsRegExMatch(urlBlacklist, source, out var matchedPattern) ||
+                        isAbsoluteUri || isSafeUrl)
                     {
                         if (isAbsoluteUri)
                             WriteToLog($"The url '{source}' has been allowed because it start with the absolute uri '{absoluteUri}'");
@@ -510,7 +548,6 @@ namespace ChromeHtmlToPdfLib.Helpers
                     }
 
                     var extension = Path.GetExtension(FileManager.RemoveInvalidFileNameChars(source));
-
                     var fileName = GetTempFile(extension);
 
                     try
@@ -518,8 +555,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                         // The local width and height attributes always go before css width and height
                         var width = htmlImage.DisplayWidth;
                         var height = htmlImage.DisplayHeight;
-
-                       
+                        
                         if (rotate)
                         {
                             image = GetImage(htmlImage.Source, localDirectory);
@@ -551,7 +587,17 @@ namespace ChromeHtmlToPdfLib.Helpers
                         {
                             if (height == 0 && width == 0)
                             {
-                                var style = context.Current.GetComputedStyle(htmlImage);
+                                ICssStyleDeclaration style = null;
+
+                                try
+                                {
+                                    style = context.Current.GetComputedStyle(htmlImage);
+                                }
+                                catch (Exception exception)
+                                {
+                                    WriteToLog($"Could not get computed style from html image, exception: '{exception.Message}'");
+                                }
+
                                 if (style != null)
                                 {
                                     width = ParseValue(style.GetPropertyValue("width"));
@@ -579,7 +625,7 @@ namespace ChromeHtmlToPdfLib.Helpers
 
                                 if (image == null) continue;
 
-                                ScaleImage(image, (int) maxWidth, out var newWidth, out var newHeight);
+                                ScaleImage(image, (int)maxWidth, out var newWidth, out var newHeight);
                                 WriteToLog($"Image rescaled to width {newWidth} and height {newHeight}");
                                 htmlImage.DisplayWidth = newWidth;
                                 htmlImage.DisplayHeight = newHeight;
@@ -596,7 +642,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                     if (!imageChanged)
                         unchangedImages.Add(htmlImage);
                 }
-                
+
                 if (!htmlChanged)
                     return false;
 
@@ -691,7 +737,7 @@ namespace ChromeHtmlToPdfLib.Helpers
 
             try
             {
-                WriteToLog($"Getting image from uri '{imageSource}'");
+                WriteToLog($"Getting image from url '{imageSource}'");
 
                 var imageUri = new Uri(imageSource);
 
@@ -713,7 +759,7 @@ namespace ChromeHtmlToPdfLib.Helpers
                 {
                     case "https":
                     case "http":
-                        using (var webStream = OpenDownloadStream(imageUri))
+                        using (var webStream = OpenDownloadStream(imageUri, true))
                         {
                             if (webStream != null)
                                 return Image.FromStream(webStream, true, false);
@@ -849,12 +895,25 @@ namespace ChromeHtmlToPdfLib.Helpers
         ///     Opens a download stream to the given <paramref name="sourceUri"/>
         /// </summary>
         /// <param name="sourceUri"></param>
+        /// <param name="checkTimeout"></param>
         /// <returns></returns>
-        private Stream OpenDownloadStream(Uri sourceUri)
+        private Stream OpenDownloadStream(Uri sourceUri, bool checkTimeout = false)
         {
             try
             {
                 var request = WebRequest.Create(sourceUri);
+                var timeLeft = TimeLeft;
+
+                if (_stopwatch != null && checkTimeout)
+                {
+                    if (timeLeft == 0)
+                    {
+                        WriteToLog($"Image load has timed out, skipping opening stream to url '{sourceUri}'");
+                        return null;
+                    }
+
+                    request.Timeout = TimeLeft;
+                }
 
                 if (_webProxy != null)
                     request.Proxy = _webProxy;
@@ -862,10 +921,10 @@ namespace ChromeHtmlToPdfLib.Helpers
                 if (_useCache)
                     request.CachePolicy = new HttpRequestCachePolicy(HttpCacheAgeControl.MaxAge, TimeSpan.FromDays(1));
 
-                WriteToLog($"Opening stream to url '{sourceUri}'");
+                WriteToLog($"Opening stream to url '{sourceUri}'{(_stopwatch != null ? $" with a timeout of {timeLeft} milliseconds" : string.Empty)}");
                 var response = (HttpWebResponse)request.GetResponse(); 
 
-                WriteToLog($"Opened {(response.IsFromCache ? "cached" : string.Empty)} stream to url '{sourceUri}'");
+                WriteToLog($"Opened {(response.IsFromCache ? "cached " : string.Empty)}stream to url '{sourceUri}'");
                 return response.GetResponseStream();
             }
             catch (Exception exception)
@@ -909,6 +968,13 @@ namespace ChromeHtmlToPdfLib.Helpers
                     // Ignore
                 }
             }
+        }
+        #endregion
+
+        #region Dispose
+        public void Dispose()
+        {
+            _stopwatch?.Stop();
         }
         #endregion
     }
