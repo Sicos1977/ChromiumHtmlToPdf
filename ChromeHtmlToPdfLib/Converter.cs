@@ -1190,7 +1190,7 @@ namespace ChromeHtmlToPdfLib
 
                 WriteToLog($"Loading {(inputUri.IsFile ? $"file {inputUri.OriginalString}" : $"url {inputUri}")}");
 
-                _browser.NavigateTo(inputUri, safeUrls, countdownTimer, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic, _useCache);
+                _browser.NavigateTo(inputUri, safeUrls, _useCache, countdownTimer, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic);
 
                 if (!string.IsNullOrWhiteSpace(waitForWindowStatus))
                 {
