@@ -395,16 +395,22 @@ namespace ChromeHtmlToPdfLib
         /// <param name="html">HTML content to set</param>
         internal void SetDocumentContent(string html)
         {
+            WriteToLog("Getting page frame tree");
             var pageGetFrameTree = new Message {Method = "Page.getFrameTree"};
             var frameTree = _pageConnection.SendAsync(pageGetFrameTree).GetAwaiter().GetResult();
+            var frameResult = Protocol.Page.FrameTree.FromJson(frameTree);
 
+            WriteToLog("Setting document content");
+            
             var pageSetDocumentContent = new Message {Method = "Page.setDocumentContent"};
-            //pageSetDocumentContent.AddParameter("frameId", frameId);
+            pageSetDocumentContent.AddParameter("frameId", frameResult.Result.FrameTree.Frame.Id);
             pageSetDocumentContent.AddParameter("html", html);
             _pageConnection.SendAsync(pageSetDocumentContent).GetAwaiter();
+
+            WriteToLog("Document content set");
         }
         #endregion
-        
+
         #region WaitForWindowStatus
         /// <summary>
         ///     Wait until the javascript window.status is returning the given <paramref name="status" />

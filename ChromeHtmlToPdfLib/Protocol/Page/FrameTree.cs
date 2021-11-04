@@ -1,5 +1,5 @@
-﻿//
-// NavigateResponse.cs
+//
+// FrameTree.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
@@ -28,37 +28,49 @@ using Newtonsoft.Json;
 
 namespace ChromeHtmlToPdfLib.Protocol.Page
 {
-    /// <summary>
-    /// The JSON object that is returned from Chrome when navigation to a page
-    /// </summary>
-    public class NavigateResponse : MessageBase
+    public class FrameTree
     {
         #region Properties
+        [JsonProperty("id")]
+        public int Id { get; set; }
+
         [JsonProperty("result")]
-        public NavigateResponseResult Result { get; set; }
+        public FrameTreeResponse Result { get; set; }
         #endregion
 
         #region FromJson
-        /// <summary>
-        /// Returns this object deserialized from the given <paramref name="json"/> string
-        /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
-        public new static NavigateResponse FromJson(string json) => JsonConvert.DeserializeObject<NavigateResponse>(json);
+        public static FrameTree FromJson(string json) => JsonConvert.DeserializeObject<FrameTree>(json);
         #endregion
     }
 
-    public class NavigateResponseResult
+    public class FrameTreeResponse
     {
         #region Properties
-        [JsonProperty("frameId")]
-        public string FrameId { get; set; }
+        [JsonProperty("frameTree")]
+        public FrameResponse FrameTree { get; set; }
+        #endregion
+    }
+
+    public class FrameResponse
+    {
+        #region Properties
+        [JsonProperty("frame")]
+        public FrameBody Frame { get; set; }
+        #endregion
+    }
+
+    public class FrameBody
+    {
+        #region Properties
+        [JsonProperty("id")]
+        public string Id { get; set; }
 
         [JsonProperty("loaderId")]
         public string LoaderId { get; set; }
 
-        [JsonProperty("errorText")]
-        public string ErrorText { get; set; }
+        [JsonProperty("url")]
+        public string Url { get; set; }
         #endregion
     }
 }
+

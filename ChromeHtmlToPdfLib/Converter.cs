@@ -1079,7 +1079,7 @@ namespace ChromeHtmlToPdfLib
         #region Convert
         private void Convert(
             OutputFormat outputFormat,
-            ConvertUri inputUri,
+            object input,
             Stream outputStream,
             PageSettings pageSettings,
             string waitForWindowStatus = "",
@@ -1094,8 +1094,10 @@ namespace ChromeHtmlToPdfLib
             _conversionTimeout = conversionTimeout;
 
             var safeUrls = new List<string>();
+            var inputUri = input as ConvertUri;
+            var html = input as string;
 
-            if (inputUri.IsFile)
+            if (inputUri != null && inputUri.IsFile)
             {
                 if (!File.Exists(inputUri.OriginalString))
                     throw new FileNotFoundException($"The file '{inputUri.OriginalString}' does not exists");
@@ -1123,51 +1125,54 @@ namespace ChromeHtmlToPdfLib
 
             try
             {
-                if (inputUri.IsFile && CheckForPreWrap(inputUri, out var preWrapFile))
+                if (inputUri != null)
                 {
-                    inputUri = new ConvertUri(preWrapFile);
-                    WriteToLog($"Adding url '{inputUri}' to the safe url list");
-                    safeUrls.Add(inputUri.ToString());
-                }
-
-                if (ImageResize || ImageRotate || SanitizeHtml || pageSettings.PaperFormat == PaperFormat.FitPageToContent)
-                {
-                    using(var documentHelper = new DocumentHelper(GetTempDirectory, WebProxy, _useCache, ImageLoadTimeout, _logger) { InstanceId = InstanceId })
+                    if (inputUri.IsFile && CheckForPreWrap(inputUri, out var preWrapFile))
                     {
-                        if (SanitizeHtml)
-                        {
-                            if (documentHelper.SanitizeHtml(inputUri, mediaLoadTimeout, Sanitizer, out var outputUri,
-                                ref safeUrls))
-                                inputUri = outputUri;
-                            else
-                            {
-                                WriteToLog($"Adding url '{inputUri}' to the safe url list");
-                                safeUrls.Add(inputUri.ToString());
-                            }
-                        }
+                        inputUri = new ConvertUri(preWrapFile);
+                        WriteToLog($"Adding url '{inputUri}' to the safe url list");
+                        safeUrls.Add(inputUri.ToString());
+                    }
 
-                        if (pageSettings.PaperFormat == PaperFormat.FitPageToContent)
+                    if (ImageResize || ImageRotate || SanitizeHtml || pageSettings.PaperFormat == PaperFormat.FitPageToContent)
+                    {
+                        using (var documentHelper = new DocumentHelper(GetTempDirectory, WebProxy, _useCache, ImageLoadTimeout, _logger) { InstanceId = InstanceId })
                         {
-                            WriteToLog("The paper format 'FitPageToContent' is set, modifying html so that the PDF fits the HTML content");
-                            if (documentHelper.FitPageToContent(inputUri, out var outputUri))
+                            if (SanitizeHtml)
                             {
-                                inputUri = outputUri;
-                                safeUrls.Add(outputUri.ToString());
+                                if (documentHelper.SanitizeHtml(inputUri, mediaLoadTimeout, Sanitizer, out var outputUri, ref safeUrls))
+                                    inputUri = outputUri;
+                                else
+                                {
+                                    WriteToLog($"Adding url '{inputUri}' to the safe url list");
+                                    safeUrls.Add(inputUri.ToString());
+                                }
                             }
-                        }
 
-                        if (ImageResize || ImageRotate)
-                        {
-                            if (documentHelper.ValidateImages(
-                                inputUri,
-                                ImageResize,
-                                ImageRotate,
-                                pageSettings,
-                                out var outputUri,
-                                ref safeUrls,
-                                _urlBlacklist))
+                            if (pageSettings.PaperFormat == PaperFormat.FitPageToContent)
                             {
-                                inputUri = outputUri;
+                                WriteToLog(
+                                    "The paper format 'FitPageToContent' is set, modifying html so that the PDF fits the HTML content");
+                                if (documentHelper.FitPageToContent(inputUri, out var outputUri))
+                                {
+                                    inputUri = outputUri;
+                                    safeUrls.Add(outputUri.ToString());
+                                }
+                            }
+
+                            if (ImageResize || ImageRotate)
+                            {
+                                if (documentHelper.ValidateImages(
+                                        inputUri,
+                                        ImageResize,
+                                        ImageRotate,
+                                        pageSettings,
+                                        out var outputUri,
+                                        ref safeUrls,
+                                        _urlBlacklist))
+                                {
+                                    inputUri = outputUri;
+                                }
                             }
                         }
                     }
@@ -1188,9 +1193,13 @@ namespace ChromeHtmlToPdfLib
                     countdownTimer.Start();
                 }
 
-                WriteToLog($"Loading {(inputUri.IsFile ? $"file {inputUri.OriginalString}" : $"url {inputUri}")}");
-
-                _browser.NavigateTo(inputUri, safeUrls, _useCache, countdownTimer, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic);
+                if (inputUri != null)
+                {
+                    WriteToLog($"Loading {(inputUri.IsFile ? $"file {inputUri.OriginalString}" : $"url {inputUri}")}");
+                    _browser.NavigateTo(inputUri, safeUrls, countdownTimer, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic, _useCache);
+                }
+                else
+                    _browser.SetDocumentContent(html);
 
                 if (!string.IsNullOrWhiteSpace(waitForWindowStatus))
                 {
@@ -1211,7 +1220,8 @@ namespace ChromeHtmlToPdfLib
                     }
                 }
 
-                WriteToLog($"{(inputUri.IsFile ? "File" : "Url")} loaded");
+                if (inputUri != null)
+                    WriteToLog($"{(inputUri.IsFile ? "File" : "Url")} loaded");
 
                 if (!string.IsNullOrWhiteSpace(RunJavascript))
                 {
@@ -1291,6 +1301,26 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
 
+        #region WriteSnapShot
+        /// <summary>
+        /// Writes the snap shot to the given <param name="outputFile"></param>
+        /// </summary>
+        /// <param name="outputFile"></param>
+        private void WriteSnapShot(string outputFile)
+        {
+            var snapShotOutputFile = Path.ChangeExtension(outputFile, ".mhtml");
+
+            using (SnapshotStream)
+            using (var fileStream = File.Open(snapShotOutputFile, FileMode.Create))
+            {
+                SnapshotStream.Position = 0;
+                SnapshotStream.CopyTo(fileStream);
+            }
+
+            WriteToLog($"Page snapshot written to output file '{snapShotOutputFile}'");
+        }
+        #endregion
+
         #region ConvertToPdf
         /// <summary>
         ///     Converts the given <paramref name="inputUri" /> to PDF
@@ -1353,7 +1383,7 @@ namespace ChromeHtmlToPdfLib
         /// <exception cref="ConversionTimedOutException">Raised when <see cref="conversionTimeout"/> is set and the 
         /// conversion fails to finish in this amount of time</exception>
         /// <exception cref="DirectoryNotFoundException"></exception>
-        /// /// <remarks>
+        /// <remarks>
         ///     When the property <see cref="CaptureSnapshot"/> has been set then the snapshot is saved to the
         ///     property <see cref="SnapshotStream"/> and after that automatic saved to the <paramref name="outputFile"/>
         ///     (the extension will automatic be replaced with .mhtml)
@@ -1388,20 +1418,116 @@ namespace ChromeHtmlToPdfLib
             }
 
             if (CaptureSnapshot)
-            {
-                var snapshotOutputFile = Path.ChangeExtension(outputFile, ".mhtml");
-
-                using (SnapshotStream)
-                using (var fileStream = File.Open(snapshotOutputFile, FileMode.Create))
-                {
-                    SnapshotStream.Position = 0;
-                    SnapshotStream.CopyTo(fileStream);
-                }
-
-                WriteToLog($"Page snapshot written to output file '{snapshotOutputFile}'");
-            }
+                WriteSnapShot(outputFile);
         }
 
+        /// <summary>
+        ///     Converts the given <paramref name="html" /> to PDF
+        /// </summary>
+        /// <param name="html">The html</param>
+        /// <param name="outputStream">The output stream</param>
+        /// <param name="pageSettings"><see cref="PageSettings"/></param>
+        /// <param name="waitForWindowStatus">Wait until the javascript window.status has this value before
+        ///     rendering the PDF</param>
+        /// <param name="waitForWindowsStatusTimeout"></param>
+        /// <param name="conversionTimeout">An conversion timeout in milliseconds, if the conversion fails
+        ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException"/> is raised</param>
+        /// <param name="mediaLoadTimeout">When set a timeout will be started after the DomContentLoaded
+        ///     event has fired. After a timeout the NavigateTo method will exit as if the page has been completely loaded</param>
+        /// <param name="logger">When set then this will give a logging for each conversion. Use the logger
+        ///     option in the constructor if you want one log for all conversions</param>
+        /// <exception cref="ConversionTimedOutException">Raised when <paramref name="conversionTimeout"/> is set and the 
+        /// conversion fails to finish in this amount of time</exception>
+        /// <remarks>
+        ///     When the property <see cref="CaptureSnapshot"/> has been set then the snapshot is saved to the
+        ///     property <see cref="SnapshotStream"/><br/>
+        ///     Warning: At the moment this method does not support the properties <see cref="ImageResize"/>,
+        ///     <see cref="ImageRotate"/> and <see cref="SanitizeHtml"/><br/>
+        ///     Warning: At the moment this method does not support <see cref="PageSettings.PaperFormat"/> == <c>PaperFormat.FitPageToContent</c>
+        /// </remarks>
+        public void ConvertToPdf(
+            string html,
+            Stream outputStream,
+            PageSettings pageSettings,
+            string waitForWindowStatus = "",
+            int waitForWindowsStatusTimeout = 60000,
+            int? conversionTimeout = null,
+            int? mediaLoadTimeout = null,
+            ILogger logger = null)
+        {
+            Convert(
+                OutputFormat.Pdf,
+                html,
+                outputStream,
+                pageSettings,
+                waitForWindowStatus,
+                waitForWindowsStatusTimeout,
+                conversionTimeout,
+                mediaLoadTimeout,
+                logger);
+        }
+
+        /// <summary>
+        ///     Converts the given <paramref name="html" /> to PDF
+        /// </summary>
+        /// <param name="html">The html</param>
+        /// <param name="outputFile">The output file</param>
+        /// <param name="pageSettings"><see cref="PageSettings"/></param>
+        /// <param name="waitForWindowStatus">Wait until the javascript window.status has this value before
+        ///     rendering the PDF</param>
+        /// <param name="waitForWindowsStatusTimeout"></param>
+        /// <param name="conversionTimeout">An conversion timeout in milliseconds, if the conversion fails
+        ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException"/> is raised</param>
+        /// <param name="mediaLoadTimeout">When set a timeout will be started after the DomContentLoaded
+        /// event has fired. After a timeout the NavigateTo method will exit as if the page has been completely loaded</param>
+        /// <param name="logger">When set then this will give a logging for each conversion. Use the logger
+        ///     option in the constructor if you want one log for all conversions</param>
+        /// <exception cref="ConversionTimedOutException">Raised when <see cref="conversionTimeout"/> is set and the 
+        /// conversion fails to finish in this amount of time</exception>
+        /// <exception cref="DirectoryNotFoundException"></exception>
+        /// /// <remarks>
+        ///     When the property <see cref="CaptureSnapshot"/> has been set then the snapshot is saved to the
+        ///     property <see cref="SnapshotStream"/> and after that automatic saved to the <paramref name="outputFile"/>
+        ///     (the extension will automatic be replaced with .mhtml)<br/>
+        ///     Warning: At the moment this method does not support the properties <see cref="ImageResize"/>,
+        ///     <see cref="ImageRotate"/> and <see cref="SanitizeHtml"/><br/>
+        ///     Warning: At the moment this method does not support <see cref="PageSettings.PaperFormat"/> == <c>PaperFormat.FitPageToContent</c>
+        /// </remarks>
+        public void ConvertToPdf(
+            string html,
+            string outputFile,
+            PageSettings pageSettings,
+            string waitForWindowStatus = "",
+            int waitForWindowsStatusTimeout = 60000,
+            int? conversionTimeout = null,
+            int? mediaLoadTimeout = null,
+            ILogger logger = null)
+        {
+            CheckIfOutputFolderExists(outputFile);
+
+            if (CaptureSnapshot)
+                SnapshotStream = new MemoryStream();
+
+            using (var memoryStream = new MemoryStream())
+            {
+                ConvertToPdf(html, memoryStream, pageSettings, waitForWindowStatus,
+                    waitForWindowsStatusTimeout, conversionTimeout, mediaLoadTimeout, logger);
+
+                using (var fileStream = File.Open(outputFile, FileMode.Create))
+                {
+                    memoryStream.Position = 0;
+                    memoryStream.CopyTo(fileStream);
+                }
+
+                WriteToLog($"PDF written to output file '{outputFile}'");
+            }
+
+            if (CaptureSnapshot)
+                WriteSnapShot(outputFile);
+        }
+        #endregion
+
+        #region ConvertToImage
         /// <summary>
         ///     Converts the given <paramref name="inputUri" /> to an image (png)
         /// </summary>
@@ -1436,6 +1562,52 @@ namespace ChromeHtmlToPdfLib
             Convert(
                 OutputFormat.Image,
                 inputUri,
+                outputStream,
+                pageSettings,
+                waitForWindowStatus,
+                waitForWindowsStatusTimeout,
+                conversionTimeout,
+                mediaLoadTimeout,
+                logger);
+        }
+
+        /// <summary>
+        ///     Converts the given <paramref name="html" /> to an image (png)
+        /// </summary>
+        /// <param name="html">The html</param>
+        /// <param name="outputStream">The output stream</param>
+        /// <param name="pageSettings"><see cref="PageSettings"/></param>
+        /// <param name="waitForWindowStatus">Wait until the javascript window.status has this value before
+        ///     rendering the PDF</param>
+        /// <param name="waitForWindowsStatusTimeout"></param>
+        /// <param name="conversionTimeout">An conversion timeout in milliseconds, if the conversion fails
+        ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException"/> is raised</param>
+        /// <param name="mediaLoadTimeout">When set a timeout will be started after the DomContentLoaded
+        ///     event has fired. After a timeout the NavigateTo method will exit as if the page has been completely loaded</param>
+        /// <param name="logger">When set then this will give a logging for each conversion. Use the logger
+        ///     option in the constructor if you want one log for all conversions</param>
+        /// <exception cref="ConversionTimedOutException">Raised when <paramref name="conversionTimeout"/> is set and the 
+        /// conversion fails to finish in this amount of time</exception>
+        /// <remarks>
+        ///     When the property <see cref="CaptureSnapshot"/> has been set then the snapshot is saved to the
+        ///     property <see cref="SnapshotStream"/><br/>
+        ///     Warning: At the moment this method does not support the properties <see cref="ImageResize"/>,
+        ///     <see cref="ImageRotate"/> and <see cref="SanitizeHtml"/><br/>
+        ///     Warning: At the moment this method does not support <see cref="PageSettings.PaperFormat"/> == <c>PaperFormat.FitPageToContent</c>
+        /// </remarks>
+        public void ConvertToImage(
+            string html,
+            Stream outputStream,
+            PageSettings pageSettings,
+            string waitForWindowStatus = "",
+            int waitForWindowsStatusTimeout = 60000,
+            int? conversionTimeout = null,
+            int? mediaLoadTimeout = null,
+            ILogger logger = null)
+        {
+            Convert(
+                OutputFormat.Image,
+                html,
                 outputStream,
                 pageSettings,
                 waitForWindowStatus,
@@ -1498,18 +1670,66 @@ namespace ChromeHtmlToPdfLib
             }
 
             if (CaptureSnapshot)
-            {
-                var snapshotOutputFile = Path.ChangeExtension(outputFile, ".mhtml");
+                WriteSnapShot(outputFile);
+        }
 
-                using (SnapshotStream)
-                using (var fileStream = File.Open(snapshotOutputFile, FileMode.Create))
+        /// <summary>
+        ///     Converts the given <paramref name="html" /> to an image (png)
+        /// </summary>
+        /// <param name="html">The html</param>
+        /// <param name="outputFile">The output file</param>
+        /// <param name="pageSettings"><see cref="PageSettings"/></param>
+        /// <param name="waitForWindowStatus">Wait until the javascript window.status has this value before
+        ///     rendering the PDF</param>
+        /// <param name="waitForWindowsStatusTimeout"></param>
+        /// <param name="conversionTimeout">An conversion timeout in milliseconds, if the conversion fails
+        ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException"/> is raised</param>
+        /// <param name="mediaLoadTimeout">When set a timeout will be started after the DomContentLoaded
+        /// event has fired. After a timeout the NavigateTo method will exit as if the page has been completely loaded</param>
+        /// <param name="logger">When set then this will give a logging for each conversion. Use the logger
+        ///     option in the constructor if you want one log for all conversions</param>
+        /// <exception cref="ConversionTimedOutException">Raised when <see cref="conversionTimeout"/> is set and the 
+        /// conversion fails to finish in this amount of time</exception>
+        /// <exception cref="DirectoryNotFoundException"></exception>
+        /// /// <remarks>
+        ///     When the property <see cref="CaptureSnapshot"/> has been set then the snapshot is saved to the
+        ///     property <see cref="SnapshotStream"/> and after that automatic saved to the <paramref name="outputFile"/>
+        ///     (the extension will automatic be replaced with .mhtml)<br/>
+        ///     Warning: At the moment this method does not support the properties <see cref="ImageResize"/>,
+        ///     <see cref="ImageRotate"/> and <see cref="SanitizeHtml"/><br/>
+        ///     Warning: At the moment this method does not support <see cref="PageSettings.PaperFormat"/> == <c>PaperFormat.FitPageToContent</c>
+        /// </remarks>
+        public void ConvertToImage(
+            string html,
+            string outputFile,
+            PageSettings pageSettings,
+            string waitForWindowStatus = "",
+            int waitForWindowsStatusTimeout = 60000,
+            int? conversionTimeout = null,
+            int? mediaLoadTimeout = null,
+            ILogger logger = null)
+        {
+            CheckIfOutputFolderExists(outputFile);
+
+            if (CaptureSnapshot)
+                SnapshotStream = new MemoryStream();
+
+            using (var memoryStream = new MemoryStream())
+            {
+                ConvertToImage(html, memoryStream, pageSettings, waitForWindowStatus,
+                    waitForWindowsStatusTimeout, conversionTimeout, mediaLoadTimeout, logger);
+
+                using (var fileStream = File.Open(outputFile, FileMode.Create))
                 {
-                    SnapshotStream.Position = 0;
-                    SnapshotStream.CopyTo(fileStream);
+                    memoryStream.Position = 0;
+                    memoryStream.CopyTo(fileStream);
                 }
 
-                WriteToLog($"Page snapshot written to output file '{snapshotOutputFile}'");
+                WriteToLog($"Image written to output file '{outputFile}'");
             }
+
+            if (CaptureSnapshot)
+                WriteSnapShot(outputFile);
         }
         #endregion
 
