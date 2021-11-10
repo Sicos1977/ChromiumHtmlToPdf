@@ -594,7 +594,6 @@ namespace ChromeHtmlToPdfLib
             }
 
             _chromeProcess.Exited -= _chromeProcess_Exited;
-
             WriteToLog("Chrome started");
         }
 

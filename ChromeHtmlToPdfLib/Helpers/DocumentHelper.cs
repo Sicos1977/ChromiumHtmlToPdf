@@ -452,10 +452,12 @@ namespace ChromeHtmlToPdfLib.Helpers
         {
             outputUri = null;
 
+            using (var graphics = Graphics.FromHwnd(IntPtr.Zero))
             using (var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : OpenDownloadStream(inputUri))
             {
-                var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft - pageSettings.MarginRight) * 96.0;
-                var maxHeight = (pageSettings.PaperHeight - pageSettings.MarginTop - pageSettings.MarginBottom) * 96.0;
+                WriteToLog($"DPI settings for image, x: '{graphics.DpiX}' and y: '{graphics.DpiY}'");
+                var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft - pageSettings.MarginRight) * graphics.DpiX;
+                var maxHeight = (pageSettings.PaperHeight - pageSettings.MarginTop - pageSettings.MarginBottom) * graphics.DpiY;
 
                 string localDirectory = null;
 

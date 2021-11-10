@@ -117,7 +117,7 @@ namespace ChromeHtmlToPdfLib.Settings
         public bool PreferCSSPageSize { get; set; }
 
         /// <summary>
-        ///     The paperformat
+        ///     The paper format
         /// </summary>
         public PaperFormat PaperFormat { get; private set; }
         #endregion
@@ -220,18 +220,18 @@ namespace ChromeHtmlToPdfLib.Settings
                     break;
 
                 case PaperFormat.A4:
-                    PaperWidth = 8.27;
+                    PaperWidth = 8.3;
                     PaperHeight = 11.7;
                     break;
 
                 case PaperFormat.A5:
-                    PaperWidth = 5.83;
-                    PaperHeight = 8.27;
+                    PaperWidth = 5.8;
+                    PaperHeight = 8.3;
                     break;
 
                 case PaperFormat.A6:
-                    PaperWidth = 4.13;
-                    PaperHeight = 5.83;
+                    PaperWidth = 4.1;
+                    PaperHeight = 5.8;
                     break;
 
                 case PaperFormat.FitPageToContent:
