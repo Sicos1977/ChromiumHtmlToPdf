@@ -1225,6 +1225,7 @@ namespace ChromeHtmlToPdfLib
                 if (!string.IsNullOrWhiteSpace(RunJavascript))
                 {
                     WriteToLog("Start running javascript");
+                    WriteToLog(RunJavascript);
                     _browser.RunJavascript(RunJavascript);
                     WriteToLog("Done running javascript");
                 }
