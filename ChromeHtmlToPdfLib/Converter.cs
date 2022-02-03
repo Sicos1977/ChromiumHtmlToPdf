@@ -594,7 +594,6 @@ namespace ChromeHtmlToPdfLib
             }
 
             _chromeProcess.Exited -= _chromeProcess_Exited;
-
             WriteToLog("Chrome started");
         }
 
@@ -1196,7 +1195,7 @@ namespace ChromeHtmlToPdfLib
                 if (inputUri != null)
                 {
                     WriteToLog($"Loading {(inputUri.IsFile ? $"file {inputUri.OriginalString}" : $"url {inputUri}")}");
-                    _browser.NavigateTo(inputUri, safeUrls, countdownTimer, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic, _useCache);
+                    _browser.NavigateTo(inputUri, safeUrls, _useCache, countdownTimer, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic);
                 }
                 else
                     _browser.SetDocumentContent(html);
@@ -1226,6 +1225,7 @@ namespace ChromeHtmlToPdfLib
                 if (!string.IsNullOrWhiteSpace(RunJavascript))
                 {
                     WriteToLog("Start running javascript");
+                    WriteToLog(RunJavascript);
                     _browser.RunJavascript(RunJavascript);
                     WriteToLog("Done running javascript");
                 }

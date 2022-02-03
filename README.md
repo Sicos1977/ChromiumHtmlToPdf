@@ -94,6 +94,22 @@ And this url about how to install Chrome on macOS
 
 https://support.google.com/chrome/a/answer/7550274?hl=en
 
+### Example installing Chrome on Linux Ubuntu
+
+```
+wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+
+sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
+
+sudo apt-get update
+
+sudo apt-get install google-chrome-stable
+
+google-chrome --version
+
+google-chrome --no-sandbox --user-data-dir
+```
+
 Pre compiled binaries
 =====================
 
@@ -103,7 +119,6 @@ https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.0.11/ChromeHtml
 https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.1.6/ChromeHtmlToPdf_216.zip
 https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.2/ChromeHtmlToPdf_220.zip
 https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.5.1/ChromeHtmlToPdf_251.zip
-
 
 Logging
 =======

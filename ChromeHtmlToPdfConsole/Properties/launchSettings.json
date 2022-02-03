@@ -2,7 +2,7 @@
   "profiles": {
     "ChromeHtmlToPdf": {
       "commandName": "Project",
-      "commandLineArgs": "--input \"d:\\test.htm\" --output d:\\test.pdf  --log-network-traffic --media-load-timeout 5000 --image-resize true --image-load-timeout 5000"
+      "commandLineArgs": "--input \"d:\\test.htm\" --output d:\\test.pdf  --log-network-traffic --media-load-timeout 5000 --image-resize true --image-load-timeout 5000 --paper-format A4"
     }
   }
 }

@@ -122,6 +122,8 @@ namespace ChromeHtmlToPdfLib
         ///     Instructs Chrome to navigate to the given <paramref name="uri" />
         /// </summary>
         /// <param name="uri"></param>
+        /// <param name="useCache">When <c>true</c> then caching will be enabled</param>
+        /// <param name="safeUrls">A list with URL's that are safe to load</param>
         /// <param name="countdownTimer">If a <see cref="CountdownTimer"/> is set then
         ///     the method will raise an <see cref="ConversionTimedOutException"/> if the 
         ///     <see cref="CountdownTimer"/> reaches zero before finishing navigation</param>
@@ -129,19 +131,17 @@ namespace ChromeHtmlToPdfLib
         ///     event has fired. After a timeout the NavigateTo method will exit as if the page
         ///     has been completely loaded</param>
         /// <param name="urlBlacklist">A list with URL's that need to be blocked (use * as a wildcard)</param>
-        /// <param name="safeUrls">A list with URL's that are safe to load</param>
         /// <param name="logNetworkTraffic">When enabled network traffic is also logged</param>
-        /// <param name="useCache">When <c>true</c> then caching will be enabled</param>
         /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
         /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer"/> reaches zero</exception>
         internal void NavigateTo(
             Uri uri,
             List<string> safeUrls,
+            bool useCache,
             CountdownTimer countdownTimer = null,
             int? mediaLoadTimeout = null,
             List<string> urlBlacklist = null,
-            bool logNetworkTraffic = false, 
-            bool useCache = true)
+            bool logNetworkTraffic = false)
         {
             var waitEvent = new ManualResetEvent(false);
             var mediaLoadTimeoutCancellationTokenSource = new CancellationTokenSource();
