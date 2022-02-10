@@ -110,6 +110,10 @@ google-chrome --version
 google-chrome --no-sandbox --user-data-dir
 ```
 
+### Running it fron docker
+
+See this issue for more information --> https://github.com/Sicos1977/ChromeHtmlToPdf/issues/39
+
 Pre compiled binaries
 =====================
 
