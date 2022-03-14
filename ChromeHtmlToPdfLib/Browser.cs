@@ -221,8 +221,8 @@ namespace ChromeHtmlToPdfLib
 
                             var fetchContinue = new Message {Method = "Fetch.continueRequest"};
                             fetchContinue.Parameters.Add("requestId", requestId);
-                            _pageConnection.SendAsync(fetchContinue).GetAwaiter();
-                        }
+                            _pageConnection.SendAsync(fetchContinue).GetAwaiter().GetResult();
+                            }
                         else
                         {
                             WriteToLog($"The url '{url}' has been blocked by url blacklist pattern '{matchedPattern}'");
@@ -234,7 +234,7 @@ namespace ChromeHtmlToPdfLib
                             // ConnectionAborted, ConnectionFailed, NameNotResolved, InternetDisconnected, AddressUnreachable,
                             // BlockedByClient, BlockedByResponse
                             fetchFail.Parameters.Add("errorReason", "BlockedByClient");
-                            _pageConnection.SendAsync(fetchFail).GetAwaiter();
+                            _pageConnection.SendAsync(fetchFail).GetAwaiter().GetResult();
                         }
 
                         break;
@@ -324,20 +324,20 @@ namespace ChromeHtmlToPdfLib
             if (urlBlacklist?.Count > 0)
             {
                 WriteToLog("Enabling Fetch to block url's that are in the url blacklist'");
-                _pageConnection.SendAsync(new Message {Method = "Fetch.enable"}).GetAwaiter();
+                _pageConnection.SendAsync(new Message {Method = "Fetch.enable"}).GetAwaiter().GetResult();
             }
 
             // Enables page domain notifications
-            _pageConnection.SendAsync(new Message {Method = "Page.enable"}).GetAwaiter();
+            _pageConnection.SendAsync(new Message {Method = "Page.enable"}).GetAwaiter().GetResult();
 
             var lifecycleEventEnabledMessage = new Message {Method = "Page.setLifecycleEventsEnabled"};
             lifecycleEventEnabledMessage.AddParameter("enabled", true);
-            _pageConnection.SendAsync(lifecycleEventEnabledMessage).GetAwaiter();
+            _pageConnection.SendAsync(lifecycleEventEnabledMessage).GetAwaiter().GetResult();
 
             // Navigates current page to the given URL
             var pageNavigateMessage = new Message {Method = "Page.navigate"};
             pageNavigateMessage.AddParameter("url", uri.ToString());
-            _pageConnection.SendAsync(pageNavigateMessage).GetAwaiter();
+            _pageConnection.SendAsync(pageNavigateMessage).GetAwaiter().GetResult();
 
             if (countdownTimer != null)
             {
@@ -358,14 +358,14 @@ namespace ChromeHtmlToPdfLib
             lifecycleEventDisabledMessage.AddParameter("enabled", false);
 
             // Disables page domain notifications
-            _pageConnection.SendAsync(lifecycleEventDisabledMessage).GetAwaiter();
-            _pageConnection.SendAsync(new Message {Method = "Page.disable"}).GetAwaiter();
+            _pageConnection.SendAsync(lifecycleEventDisabledMessage).GetAwaiter().GetResult();
+            _pageConnection.SendAsync(new Message {Method = "Page.disable"}).GetAwaiter().GetResult();
 
             // Disables the fetch domain
             if (urlBlacklist?.Count > 0)
             {
                 WriteToLog("Disabling Fetch");
-                _pageConnection.SendAsync(new Message {Method = "Fetch.disable"}).GetAwaiter();
+                _pageConnection.SendAsync(new Message {Method = "Fetch.disable"}).GetAwaiter().GetResult();
             }
 
             if (logNetworkTraffic)
@@ -405,7 +405,7 @@ namespace ChromeHtmlToPdfLib
             var pageSetDocumentContent = new Message {Method = "Page.setDocumentContent"};
             pageSetDocumentContent.AddParameter("frameId", frameResult.Result.FrameTree.Frame.Id);
             pageSetDocumentContent.AddParameter("html", html);
-            _pageConnection.SendAsync(pageSetDocumentContent).GetAwaiter();
+            _pageConnection.SendAsync(pageSetDocumentContent).GetAwaiter().GetResult();
 
             WriteToLog("Document content set");
         }
@@ -444,7 +444,7 @@ namespace ChromeHtmlToPdfLib
 
             while (!match)
             {
-                _pageConnection.SendAsync(message).GetAwaiter();
+                _pageConnection.SendAsync(message).GetAwaiter().GetResult();
                 waitEvent.WaitOne(10);
                 if (stopWatch.ElapsedMilliseconds >= timeout) break;
             }
@@ -595,9 +595,9 @@ namespace ChromeHtmlToPdfLib
             var message = new Message {Method = "Browser.close"};
 
             if (countdownTimer != null)
-                _browserConnection.SendAsync(message).Timeout(countdownTimer.MillisecondsLeft).GetAwaiter();
+                _browserConnection.SendAsync(message).Timeout(countdownTimer.MillisecondsLeft).GetAwaiter().GetResult();
             else
-                _browserConnection.SendAsync(message).GetAwaiter();
+                _browserConnection.SendAsync(message).GetAwaiter().GetResult();
         }
         #endregion
 
