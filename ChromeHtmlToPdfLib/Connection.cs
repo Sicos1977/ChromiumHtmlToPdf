@@ -133,7 +133,7 @@ namespace ChromeHtmlToPdfLib
             var messageBase = MessageBase.FromJson(response);
 
             if (_messageId == messageBase.Id)
-                _response.SetResult(response);
+                _response?.SetResult(response);
 
             MessageReceived?.Invoke(this, response);
         }
@@ -157,7 +157,7 @@ namespace ChromeHtmlToPdfLib
 
         #region SendAsync
         /// <summary>
-        /// Sends a message asynchronously to the <see cref="_webSocket"/>
+        ///     Sends a message asynchronously to the <see cref="_webSocket"/>
         /// </summary>
         /// <param name="message">The message to send</param>
         /// <returns></returns>
@@ -169,6 +169,21 @@ namespace ChromeHtmlToPdfLib
             OpenWebSocket();
             _webSocket.Send(message.ToJson());            
             return await _response.Task;
+        }
+        #endregion
+
+        #region SendAsync
+        /// <summary>
+        ///     Sends a message to the <see cref="_webSocket"/>
+        /// </summary>
+        /// <param name="message">The message to send</param>
+        /// <returns></returns>
+        internal void Send(Message message)
+        {
+            _messageId += 1;
+            message.Id = _messageId;
+            OpenWebSocket();
+            _webSocket.Send(message.ToJson());            
         }
         #endregion
 
