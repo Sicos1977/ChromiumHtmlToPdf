@@ -140,8 +140,8 @@ namespace ChromeHtmlToPdfLib
 
         private void WebSocketOnError(object sender, ErrorEventArgs e)
         {
-            if (_response.Task.Status != TaskStatus.RanToCompletion)
-                _response.SetResult(string.Empty);
+            if (_response?.Task.Status != TaskStatus.RanToCompletion)
+                _response?.SetResult(string.Empty);
 
             throw new ChromeException(e.Exception.Message);
         }
@@ -172,7 +172,7 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
 
-        #region SendAsync
+        #region Send
         /// <summary>
         ///     Sends a message to the <see cref="_webSocket"/>
         /// </summary>
@@ -182,6 +182,7 @@ namespace ChromeHtmlToPdfLib
         {
             _messageId += 1;
             message.Id = _messageId;
+            _response = null;
             OpenWebSocket();
             _webSocket.Send(message.ToJson());            
         }
