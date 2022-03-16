@@ -25,8 +25,11 @@
 //
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using AngleSharp.Io;
 using ChromeHtmlToPdfLib.Exceptions;
 using ChromeHtmlToPdfLib.Protocol;
 using Microsoft.Extensions.Logging;
@@ -63,8 +66,9 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         private readonly ILogger _logger;
 
-        private int _messageId;
-        private TaskCompletionSource<string> _response;
+        private Dictionary<int, TaskCompletionSource<string>> _messagesInFlight;
+        private int _lastMessageId = 0;
+        private object _messagesDictLock = new object();
 
         /// <summary>
         /// The websocket
@@ -88,6 +92,7 @@ namespace ChromeHtmlToPdfLib
         /// <param name="logger">When set then logging is written to this ILogger instance for all conversions at the Information log level</param>
         internal Connection(string url, ILogger logger)
         {
+            _messagesInFlight = new Dictionary<int, TaskCompletionSource<string>>();
             _logger = logger;
             WriteToLog($"Creating new websocket connection to url '{url}'");
             _webSocket = new WebSocket(url);
@@ -108,7 +113,7 @@ namespace ChromeHtmlToPdfLib
 
             var i = 0;
 
-            while(_webSocket.State != WebSocketState.Open)
+            while (_webSocket.State != WebSocketState.Open)
             {
                 Thread.Sleep(1);
                 i += 1;
@@ -132,24 +137,44 @@ namespace ChromeHtmlToPdfLib
 
             var messageBase = MessageBase.FromJson(response);
 
-            if (_messageId == messageBase.Id)
-                _response?.SetResult(response);
+            SetTaskResult(response, messageBase.Id);
 
             MessageReceived?.Invoke(this, response);
         }
 
+        private void SetTaskResult(string result, int id)
+        {
+            lock (_messagesDictLock)
+            {
+                if (_messagesInFlight.ContainsKey(id))
+                {
+                    if (!_messagesInFlight[id].Task.IsCompleted)
+                    {
+                        _messagesInFlight[id].SetResult(result);
+                    }
+
+                    if (_messagesInFlight[id].Task.IsCompleted)
+                    {
+                        _messagesInFlight.Remove(id);
+                    }
+                }
+                else
+                {
+                    Debug.WriteLine($"Ignoring websocket message {result} for ID {id}");
+                }
+            }
+        }
+
         private void WebSocketOnError(object sender, ErrorEventArgs e)
         {
-            if (_response.Task.Status != TaskStatus.RanToCompletion)
-                _response.SetResult(string.Empty);
+            SetTaskResult(string.Empty, _lastMessageId);
 
             throw new ChromeException(e.Exception.Message);
         }
 
         private void WebSocketOnClosed(object sender, EventArgs e)
         {
-            if (_response?.Task.Status != TaskStatus.RanToCompletion)
-                _response?.SetResult(string.Empty);
+            SetTaskResult(string.Empty, _lastMessageId);
 
             Closed?.Invoke(this, e);
         }
@@ -163,16 +188,19 @@ namespace ChromeHtmlToPdfLib
         /// <returns></returns>
         internal async Task<string> SendAsync(Message message)
         {
-            _messageId += 1;
-            message.Id = _messageId;
-            _response = new TaskCompletionSource<string>();
+            lock (_messagesDictLock)
+            {
+                _lastMessageId += 1;
+                message.Id = _lastMessageId;
+                _messagesInFlight.Add(message.Id, new TaskCompletionSource<string>());
+            }
             OpenWebSocket();
-            _webSocket.Send(message.ToJson());            
-            return await _response.Task;
+            _webSocket.Send(message.ToJson());
+            return await _messagesInFlight[message.Id].Task;
         }
         #endregion
 
-        #region SendAsync
+        #region Send
         /// <summary>
         ///     Sends a message to the <see cref="_webSocket"/>
         /// </summary>
@@ -180,10 +208,13 @@ namespace ChromeHtmlToPdfLib
         /// <returns></returns>
         internal void Send(Message message)
         {
-            _messageId += 1;
-            message.Id = _messageId;
+            lock (_messagesDictLock)
+            {
+                _lastMessageId += 1;
+                message.Id = _lastMessageId;
+            }
             OpenWebSocket();
-            _webSocket.Send(message.ToJson());            
+            _webSocket.Send(message.ToJson());
         }
         #endregion
 
@@ -236,7 +267,7 @@ namespace ChromeHtmlToPdfLib
             _webSocket.Error -= WebSocketOnError;
             _webSocket.Closed -= WebSocketOnClosed;
 
-            if(_webSocket.State == WebSocketState.Open)
+            if (_webSocket.State == WebSocketState.Open)
                 _webSocket.Close();
 
             _webSocket.Dispose();
