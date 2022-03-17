@@ -121,9 +121,10 @@ namespace ChromeHtmlToPdfLib
         /// <summary>
         ///     Instructs Chrome to navigate to the given <paramref name="uri" />
         /// </summary>
-        /// <param name="uri"></param>
-        /// <param name="useCache">When <c>true</c> then caching will be enabled</param>
         /// <param name="safeUrls">A list with URL's that are safe to load</param>
+        /// <param name="useCache">When <c>true</c> then caching will be enabled</param>
+        /// <param name="uri"></param>
+        /// <param name="html"></param>
         /// <param name="countdownTimer">If a <see cref="CountdownTimer"/> is set then
         ///     the method will raise an <see cref="ConversionTimedOutException"/> if the 
         ///     <see cref="CountdownTimer"/> reaches zero before finishing navigation</param>
@@ -135,9 +136,10 @@ namespace ChromeHtmlToPdfLib
         /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
         /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer"/> reaches zero</exception>
         internal void NavigateTo(
-            Uri uri,
             List<string> safeUrls,
             bool useCache,
+            Uri uri = null,
+            string html = null,
             CountdownTimer countdownTimer = null,
             int? mediaLoadTimeout = null,
             List<string> urlBlacklist = null,
@@ -148,7 +150,7 @@ namespace ChromeHtmlToPdfLib
             var navigationError = string.Empty;
             var waitForNetworkIdle = false;
             var mediaTimeoutTaskSet = false;
-            var absoluteUri = uri.AbsoluteUri.Substring(0, uri.AbsoluteUri.LastIndexOf('/') + 1);
+            var absoluteUri = uri?.AbsoluteUri.Substring(0, uri.AbsoluteUri.LastIndexOf('/') + 1);
 
             #region Message handler
             var messageHandler = new EventHandler<string>(delegate(object sender, string data)
@@ -207,7 +209,8 @@ namespace ChromeHtmlToPdfLib
                         var requestId = fetch.Params.RequestId;
                         var url = fetch.Params.Request.Url;
                         var isSafeUrl = safeUrls.Contains(url);
-                        var isAbsoluteFileUri = url.StartsWith("file://", StringComparison.InvariantCultureIgnoreCase) &&
+                        var isAbsoluteFileUri = absoluteUri != null &&
+                                                url.StartsWith("file://", StringComparison.InvariantCultureIgnoreCase) &&
                                                 url.StartsWith(absoluteUri, StringComparison.InvariantCultureIgnoreCase);
 
                         if (!RegularExpression.IsRegExMatch(urlBlacklist, url, out var matchedPattern) || isAbsoluteFileUri || isSafeUrl)
@@ -234,7 +237,7 @@ namespace ChromeHtmlToPdfLib
                             // ConnectionAborted, ConnectionFailed, NameNotResolved, InternetDisconnected, AddressUnreachable,
                             // BlockedByClient, BlockedByResponse
                             fetchFail.Parameters.Add("errorReason", "BlockedByClient");
-                            _pageConnection.SendAsync(fetchFail);
+                            _pageConnection.Send(fetchFail);
                         }
 
                         break;
@@ -334,10 +337,31 @@ namespace ChromeHtmlToPdfLib
             lifecycleEventEnabledMessage.AddParameter("enabled", true);
             _pageConnection.Send(lifecycleEventEnabledMessage);
 
-            // Navigates current page to the given URL
-            var pageNavigateMessage = new Message {Method = "Page.navigate"};
-            pageNavigateMessage.AddParameter("url", uri.ToString());
-            _pageConnection.Send(pageNavigateMessage);
+            if (uri != null)
+            {
+                // Navigates current page to the given URL
+                var pageNavigateMessage = new Message { Method = "Page.navigate" };
+                pageNavigateMessage.AddParameter("url", uri.ToString());
+                _pageConnection.Send(pageNavigateMessage);
+            }
+            else if (!string.IsNullOrWhiteSpace(html))
+            {
+                WriteToLog("Getting page frame tree");
+                var pageGetFrameTree = new Message { Method = "Page.getFrameTree" };
+                var frameTree = _pageConnection.SendAsync(pageGetFrameTree).GetAwaiter().GetResult();
+                var frameResult = Protocol.Page.FrameTree.FromJson(frameTree);
+
+                WriteToLog("Setting document content");
+
+                var pageSetDocumentContent = new Message { Method = "Page.setDocumentContent" };
+                pageSetDocumentContent.AddParameter("frameId", frameResult.Result.FrameTree.Frame.Id);
+                pageSetDocumentContent.AddParameter("html", html);
+                _pageConnection.Send(pageSetDocumentContent);
+
+                WriteToLog("Document content set");
+            }
+            else
+                throw new ArgumentException("Uri and html are both null");
 
             if (countdownTimer != null)
             {
@@ -385,29 +409,6 @@ namespace ChromeHtmlToPdfLib
                 WriteToLog(navigationError);
                 throw new ChromeNavigationException(navigationError);
             }
-        }
-        #endregion
-
-        #region SetPageContent
-        /// <summary>
-        /// Sets given markup as the document's HTML
-        /// </summary>
-        /// <param name="html">HTML content to set</param>
-        internal void SetDocumentContent(string html)
-        {
-            WriteToLog("Getting page frame tree");
-            var pageGetFrameTree = new Message {Method = "Page.getFrameTree"};
-            var frameTree = _pageConnection.SendAsync(pageGetFrameTree).GetAwaiter().GetResult();
-            var frameResult = Protocol.Page.FrameTree.FromJson(frameTree);
-
-            WriteToLog("Setting document content");
-            
-            var pageSetDocumentContent = new Message {Method = "Page.setDocumentContent"};
-            pageSetDocumentContent.AddParameter("frameId", frameResult.Result.FrameTree.Frame.Id);
-            pageSetDocumentContent.AddParameter("html", html);
-            _pageConnection.Send(pageSetDocumentContent);
-
-            WriteToLog("Document content set");
         }
         #endregion
 
