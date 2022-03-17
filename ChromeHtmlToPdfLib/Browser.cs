@@ -155,7 +155,7 @@ namespace ChromeHtmlToPdfLib
             #region Message handler
             var messageHandler = new EventHandler<string>(delegate(object sender, string data)
             {
-                //System.IO.File.AppendAllText("d:\\logs.txt", $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fff} - {data}{Environment.NewLine}");
+                System.IO.File.AppendAllText("d:\\logs.txt", $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fff} - {data}{Environment.NewLine}");
                 var message = Base.FromJson(data);
 
                 switch (message.Method)
@@ -307,9 +307,6 @@ namespace ChromeHtmlToPdfLib
             });
             #endregion
 
-            _pageConnection.MessageReceived += messageHandler;
-            _pageConnection.Closed += (sender, args) => waitEvent?.Set();
-
             if (logNetworkTraffic)
             {
                 WriteToLog("Enabling network traffic logging");
@@ -337,6 +334,9 @@ namespace ChromeHtmlToPdfLib
             lifecycleEventEnabledMessage.AddParameter("enabled", true);
             _pageConnection.Send(lifecycleEventEnabledMessage);
 
+            _pageConnection.MessageReceived += messageHandler;
+            _pageConnection.Closed += (sender, args) => waitEvent?.Set();
+
             if (uri != null)
             {
                 // Navigates current page to the given URL
@@ -356,7 +356,9 @@ namespace ChromeHtmlToPdfLib
                 var pageSetDocumentContent = new Message { Method = "Page.setDocumentContent" };
                 pageSetDocumentContent.AddParameter("frameId", frameResult.Result.FrameTree.Frame.Id);
                 pageSetDocumentContent.AddParameter("html", html);
-                _pageConnection.Send(pageSetDocumentContent);
+                _pageConnection.SendAsync(pageSetDocumentContent).GetAwaiter().GetResult();
+                // When using setDocumentContent a Page.frameNavigated event is never fired so we have to set the waitForNetworkIdle to true our self
+                waitForNetworkIdle = true;
 
                 WriteToLog("Document content set");
             }

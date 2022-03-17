@@ -1150,8 +1150,7 @@ namespace ChromeHtmlToPdfLib
 
                             if (pageSettings.PaperFormat == PaperFormat.FitPageToContent)
                             {
-                                WriteToLog(
-                                    "The paper format 'FitPageToContent' is set, modifying html so that the PDF fits the HTML content");
+                                WriteToLog("The paper format 'FitPageToContent' is set, modifying html so that the PDF fits the HTML content");
                                 if (documentHelper.FitPageToContent(inputUri, out var outputUri))
                                 {
                                     inputUri = outputUri;
@@ -1194,6 +1193,9 @@ namespace ChromeHtmlToPdfLib
 
                 if (inputUri != null)
                     WriteToLog($"Loading {(inputUri.IsFile ? $"file {inputUri.OriginalString}" : $"url {inputUri}")}");
+
+                inputUri = null;
+                html = File.ReadAllText("d:\\test.html");
 
                 _browser.NavigateTo(safeUrls, _useCache, inputUri, html, countdownTimer, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic);
 
