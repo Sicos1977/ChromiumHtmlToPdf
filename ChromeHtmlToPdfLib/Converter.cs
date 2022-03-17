@@ -1194,9 +1194,6 @@ namespace ChromeHtmlToPdfLib
                 if (inputUri != null)
                     WriteToLog($"Loading {(inputUri.IsFile ? $"file {inputUri.OriginalString}" : $"url {inputUri}")}");
 
-                inputUri = null;
-                html = File.ReadAllText("d:\\test.html");
-
                 _browser.NavigateTo(safeUrls, _useCache, inputUri, html, countdownTimer, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic);
 
                 if (!string.IsNullOrWhiteSpace(waitForWindowStatus))
