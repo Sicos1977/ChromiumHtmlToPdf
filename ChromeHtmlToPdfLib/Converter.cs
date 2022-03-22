@@ -1811,8 +1811,15 @@ namespace ChromeHtmlToPdfLib
 
             if (_browser != null)
             {
-                _browser.Close();
-                _browser.Dispose();
+                try
+                {
+                    _browser.Close();
+                    _browser.Dispose();
+                }
+                catch 
+                {
+                    // Ignore
+                }
             }
 
             if (!IsChromeRunning)
