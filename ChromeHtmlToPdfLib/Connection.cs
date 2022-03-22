@@ -28,6 +28,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using ChromeHtmlToPdfLib.Exceptions;
+using ChromeHtmlToPdfLib.Helpers;
 using ChromeHtmlToPdfLib.Protocol;
 using Microsoft.Extensions.Logging;
 using SuperSocket.ClientEngine;
@@ -50,6 +51,11 @@ namespace ChromeHtmlToPdfLib
         /// Triggered when a new message is received on the <see cref="_webSocket"/>
         /// </summary>
         public event EventHandler<string> MessageReceived;
+
+        /// <summary>
+        /// Triggered when a <see cref="_webSocket"/> error occurs
+        /// </summary>
+        public event EventHandler<string> OnError;
         #endregion
 
         #region Fields
@@ -128,7 +134,9 @@ namespace ChromeHtmlToPdfLib
         {
             var response = e.Message;
 
-            CheckForError(response);
+            var error = CheckForError(response);
+            if (!string.IsNullOrEmpty(error))
+                OnError?.Invoke(this, error);
 
             var messageBase = MessageBase.FromJson(response);
 
@@ -143,7 +151,7 @@ namespace ChromeHtmlToPdfLib
             if (_response?.Task.Status != TaskStatus.RanToCompletion)
                 _response?.SetResult(string.Empty);
 
-            throw new ChromeException(e.Exception.Message);
+            OnError?.Invoke(this, ExceptionHelpers.GetInnerException(e.Exception));
         }
 
         private void WebSocketOnClosed(object sender, EventArgs e)
@@ -193,14 +201,16 @@ namespace ChromeHtmlToPdfLib
         ///     Checks if <paramref name="message"/> contains an error and if so raises an exception
         /// </summary>
         /// <param name="message"></param>
-        private void CheckForError(string message)
+        private string CheckForError(string message)
         {
             var error = Error.FromJson(message);
 
             // ReSharper disable once CompareOfFloatsByEqualityOperator
             if (error.InnerError != null && error.InnerError.Code != 0 &&
                 !string.IsNullOrEmpty(error.InnerError.Message))
-                throw new ChromeException(error.InnerError.Message);
+                return error.InnerError.Message;
+
+            return null;
         }
         #endregion
 

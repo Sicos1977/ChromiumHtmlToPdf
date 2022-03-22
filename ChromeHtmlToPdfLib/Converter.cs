@@ -37,6 +37,7 @@ using System.Threading;
 using ChromeHtmlToPdfLib.Enums;
 using ChromeHtmlToPdfLib.Exceptions;
 using ChromeHtmlToPdfLib.Helpers;
+using ChromeHtmlToPdfLib.Protocol;
 using Ganss.XSS;
 using Microsoft.Extensions.Logging;
 
@@ -1401,8 +1402,7 @@ namespace ChromeHtmlToPdfLib
 
             using (var memoryStream = new MemoryStream())
             {
-                ConvertToPdf(inputUri, memoryStream, pageSettings, waitForWindowStatus,
-                    waitForWindowsStatusTimeout, conversionTimeout, mediaLoadTimeout, logger);
+                ConvertToPdf(inputUri, memoryStream, pageSettings, waitForWindowStatus, waitForWindowsStatusTimeout, conversionTimeout, mediaLoadTimeout, logger);
 
                 using (var fileStream = File.Open(outputFile, FileMode.Create))
                 {

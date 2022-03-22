@@ -104,7 +104,8 @@ namespace ChromeHtmlToPdfLib
 
             // Open a websocket to the browser
             _browserConnection = new Connection(browser.ToString(), logger);
-            
+            _browserConnection.OnError += OnOnError;
+
             var message = new Message {Method = "Target.createTarget"};
             message.Parameters.Add("url", "about:blank");
 
@@ -114,6 +115,14 @@ namespace ChromeHtmlToPdfLib
 
             // Open a websocket to the page
             _pageConnection = new Connection(pageUrl, logger);
+            _pageConnection.OnError += OnOnError;
+        }
+        #endregion
+
+        #region OnError
+        private void OnOnError(object sender, string error)
+        {
+            WriteToLog($"An error occurred: '{error}'");
         }
         #endregion
 
@@ -311,28 +320,28 @@ namespace ChromeHtmlToPdfLib
             {
                 WriteToLog("Enabling network traffic logging");
                 var networkMessage = new Message {Method = "Network.enable"};
-                _pageConnection.Send(networkMessage);
+                _pageConnection.SendAsync(networkMessage).GetAwaiter().GetResult();
             }
 
             WriteToLog(useCache ? "Enabling caching" : "Disabling caching");
 
             var cacheMessage = new Message {Method = "Network.setCacheDisabled"};
             cacheMessage.Parameters.Add("cacheDisabled", !useCache);
-            _pageConnection.Send(cacheMessage);
+            _pageConnection.SendAsync(cacheMessage).GetAwaiter().GetResult();
 
             // Enables issuing of requestPaused events. A request will be paused until client calls one of failRequest, fulfillRequest or continueRequest/continueWithAuth
             if (urlBlacklist?.Count > 0)
             {
                 WriteToLog("Enabling Fetch to block url's that are in the url blacklist'");
-                _pageConnection.Send(new Message {Method = "Fetch.enable"});
+                _pageConnection.SendAsync(new Message {Method = "Fetch.enable"}).GetAwaiter().GetResult();
             }
 
             // Enables page domain notifications
-            _pageConnection.Send(new Message {Method = "Page.enable"});
+            _pageConnection.SendAsync(new Message {Method = "Page.enable"}).GetAwaiter().GetResult();
 
             var lifecycleEventEnabledMessage = new Message {Method = "Page.setLifecycleEventsEnabled"};
             lifecycleEventEnabledMessage.AddParameter("enabled", true);
-            _pageConnection.Send(lifecycleEventEnabledMessage);
+            _pageConnection.SendAsync(lifecycleEventEnabledMessage).GetAwaiter().GetResult();
 
             _pageConnection.MessageReceived += messageHandler;
             _pageConnection.Closed += (sender, args) => waitEvent?.Set();
@@ -384,21 +393,21 @@ namespace ChromeHtmlToPdfLib
             lifecycleEventDisabledMessage.AddParameter("enabled", false);
 
             // Disables page domain notifications
-            _pageConnection.Send(lifecycleEventDisabledMessage);
-            _pageConnection.Send(new Message {Method = "Page.disable"});
+            _pageConnection.SendAsync(lifecycleEventDisabledMessage).GetAwaiter().GetResult();
+            _pageConnection.SendAsync(new Message {Method = "Page.disable"}).GetAwaiter().GetResult();
 
             // Disables the fetch domain
             if (urlBlacklist?.Count > 0)
             {
                 WriteToLog("Disabling Fetch");
-                _pageConnection.Send(new Message {Method = "Fetch.disable"});
+                _pageConnection.SendAsync(new Message {Method = "Fetch.disable"}).GetAwaiter().GetResult();
             }
 
             if (logNetworkTraffic)
             {
                 WriteToLog("Disabling network traffic logging");
                 var networkMessage = new Message {Method = "Network.disable"};
-                _pageConnection.Send(networkMessage);
+                _pageConnection.SendAsync(networkMessage).GetAwaiter().GetResult();
             }
 
             _pageConnection.MessageReceived -= messageHandler;
@@ -473,18 +482,11 @@ namespace ChromeHtmlToPdfLib
             message.AddParameter("returnByValue", false);
 
             var errorDescription = string.Empty;
+            var result = _pageConnection.SendAsync(message).GetAwaiter().GetResult();
+            var evaluateError = EvaluateError.FromJson(result);
 
-            void MessageReceived(object sender, string data)
-            {
-                var evaluateError = EvaluateError.FromJson(data);
-
-                if (evaluateError.Result?.ExceptionDetails != null)
-                    errorDescription = evaluateError.Result.ExceptionDetails.Exception.Description;
-            }
-
-            _pageConnection.MessageReceived += MessageReceived;
-            _pageConnection.Send(message);
-            _pageConnection.MessageReceived -= MessageReceived;
+            if (evaluateError.Result?.ExceptionDetails != null)
+                errorDescription = evaluateError.Result.ExceptionDetails.Exception.Description;
 
             if (!string.IsNullOrEmpty(errorDescription))
                 throw new ChromeException(errorDescription);
@@ -589,18 +591,11 @@ namespace ChromeHtmlToPdfLib
         /// <summary>
         ///     Instructs Chrome to close
         /// </summary>
-        /// <param name="countdownTimer">If a <see cref="CountdownTimer"/> is set then
-        /// the method will raise an <see cref="ConversionTimedOutException"/> in the 
-        /// <see cref="CountdownTimer"/> reaches zero before Chrome responses that it is going to close</param>    
         /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
-        public void Close(CountdownTimer countdownTimer = null)
+        public void Close()
         {
             var message = new Message {Method = "Browser.close"};
-
-            if (countdownTimer != null)
-                _browserConnection.SendAsync(message).Timeout(countdownTimer.MillisecondsLeft).GetAwaiter().GetResult();
-            else
-                _browserConnection.Send(message);
+            _browserConnection.SendAsync(message).GetAwaiter().GetResult();
         }
         #endregion
 
@@ -633,7 +628,10 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         public void Dispose()
         {
+            _pageConnection.OnError -= OnOnError;
             _pageConnection?.Dispose();
+
+            _browserConnection.OnError -= OnOnError;
             _browserConnection?.Dispose();
         }
         #endregion
