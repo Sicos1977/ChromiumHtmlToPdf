@@ -1831,7 +1831,7 @@ namespace ChromeHtmlToPdfLib
             // Sometimes Chrome does not close all processes so kill them
             WriteToLog("Chrome did not shutdown gracefully, stopping Chrome by killing it's main and child processes");
             KillProcessAndChildren(_chromeProcess.Id);
-            WriteToLog("Chrome kill");
+            WriteToLog("Chrome killed");
 
             _chromeWaitEvent?.Dispose();
             _chromeWaitEvent = null;

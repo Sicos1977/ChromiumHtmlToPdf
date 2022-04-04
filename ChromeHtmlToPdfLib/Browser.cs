@@ -591,7 +591,6 @@ namespace ChromeHtmlToPdfLib
         /// <summary>
         ///     Instructs Chrome to close
         /// </summary>
-        /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
         public void Close()
         {
             var message = new Message {Method = "Browser.close"};
