@@ -69,6 +69,7 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         private readonly ILogger _logger;
 
+        private readonly string _url;
         private int _messageId;
         private TaskCompletionSource<string> _response;
 
@@ -94,6 +95,7 @@ namespace ChromeHtmlToPdfLib
         /// <param name="logger">When set then logging is written to this ILogger instance for all conversions at the Information log level</param>
         internal Connection(string url, ILogger logger)
         {
+            _url = url;
             _logger = logger;
             WriteToLog($"Creating new websocket connection to url '{url}'");
             _webSocket = new WebSocket(url);
@@ -243,14 +245,20 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         public void Dispose()
         {
+            WriteToLog($"Disposing websocket connection to url '{_url}'");
+
             _webSocket.MessageReceived -= WebSocketOnMessageReceived;
             _webSocket.Error -= WebSocketOnError;
             _webSocket.Closed -= WebSocketOnClosed;
 
-            if(_webSocket.State == WebSocketState.Open)
+            if (_webSocket.State == WebSocketState.Open)
+            {
+                WriteToLog("Closing websocket");
                 _webSocket.Close();
+            }
 
             _webSocket.Dispose();
+            WriteToLog("Websocket connection disposed");
         }
         #endregion
     }

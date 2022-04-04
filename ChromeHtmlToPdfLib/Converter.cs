@@ -37,7 +37,6 @@ using System.Threading;
 using ChromeHtmlToPdfLib.Enums;
 using ChromeHtmlToPdfLib.Exceptions;
 using ChromeHtmlToPdfLib.Helpers;
-using ChromeHtmlToPdfLib.Protocol;
 using Ganss.XSS;
 using Microsoft.Extensions.Logging;
 
@@ -1813,6 +1812,7 @@ namespace ChromeHtmlToPdfLib
             {
                 try
                 {
+                    WriteToLog("Closing Chrome browser gracefully");
                     _browser.Close();
                     _browser.Dispose();
                 }
@@ -1829,9 +1829,9 @@ namespace ChromeHtmlToPdfLib
             }
 
             // Sometimes Chrome does not close all processes so kill them
-            WriteToLog("Stopping Chrome");
+            WriteToLog("Chrome did not shutdown gracefully, stopping Chrome by killing it's main and child processes");
             KillProcessAndChildren(_chromeProcess.Id);
-            WriteToLog("Chrome stopped");
+            WriteToLog("Chrome kill");
 
             _chromeWaitEvent?.Dispose();
             _chromeWaitEvent = null;
