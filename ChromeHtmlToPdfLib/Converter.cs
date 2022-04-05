@@ -1805,8 +1805,11 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         public void Dispose()
         {
-            if (_disposed) return;
-            _disposed = true;
+            if (_disposed) 
+                return;
+
+            _chromeWaitEvent?.Dispose();
+            _chromeWaitEvent = null;
 
             if (_browser != null)
             {
@@ -1816,26 +1819,38 @@ namespace ChromeHtmlToPdfLib
                     _browser.Close();
                     _browser.Dispose();
                 }
-                catch 
+                catch (Exception exception)
                 {
-                    // Ignore
+                    WriteToLog($"An error occurred while trying to close Chrome gracefully, error '{ExceptionHelpers.GetInnerException(exception)}'");
                 }
             }
 
-            if (!IsChromeRunning)
+            var counter = 0;
+
+            // Give Chrome 2 seconds to close
+            while (counter < 200)
             {
-                _chromeProcess = null;
-                return;
+                if (!IsChromeRunning)
+                {
+                    WriteToLog("Chrome closed gracefully");
+                    break;
+                }
+
+                counter++;
+                Thread.Sleep(10);
             }
 
-            // Sometimes Chrome does not close all processes so kill them
-            WriteToLog("Chrome did not shutdown gracefully, stopping Chrome by killing it's main and child processes");
-            KillProcessAndChildren(_chromeProcess.Id);
-            WriteToLog("Chrome killed");
+            if (IsChromeRunning)
+            {
+                // Sometimes Chrome does not close all processes so kill them
+                WriteToLog($"Chrome did not close gracefully, closing it by killing it's process on id '{_chromeProcess.Id}'");
+                KillProcessAndChildren(_chromeProcess.Id);
+                WriteToLog("Chrome killed");
 
-            _chromeWaitEvent?.Dispose();
-            _chromeWaitEvent = null;
-            _chromeProcess = null;
+                _chromeProcess = null;
+            }
+
+            _disposed = true;
         }
         #endregion
     }
