@@ -31,6 +31,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using ChromeHtmlToPdfLib.Exceptions;
 // ReSharper disable ConvertToUsingDeclaration
+// ReSharper disable UnusedMember.Global
 
 namespace ChromeHtmlToPdfLib.Helpers
 {
@@ -38,7 +39,7 @@ namespace ChromeHtmlToPdfLib.Helpers
     {
         #region Contains
         /// <summary>
-        ///     Returns <c>true</c> when the list containts the given <paramref name="source" />
+        ///     Returns <c>true</c> when the list contains the given <paramref name="source" />
         /// </summary>
         /// <param name="source"></param>
         /// <param name="value">The value to check if it exists in the list</param>
@@ -57,7 +58,7 @@ namespace ChromeHtmlToPdfLib.Helpers
 
         #region Replace
         /// <summary>
-        ///     Replaces the first occurence of the <paramref name="oldValue" /> with the <paramref name="newValue" />
+        ///     Replaces the first occurrence of the <paramref name="oldValue" /> with the <paramref name="newValue" />
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="source"></param>
@@ -76,7 +77,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         }
 
         /// <summary>
-        ///     Replaces the first occurence of the <paramref name="oldValue" /> with the <paramref name="newValue" />
+        ///     Replaces the first occurrence of the <paramref name="oldValue" /> with the <paramref name="newValue" />
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="source"></param>
@@ -120,7 +121,7 @@ namespace ChromeHtmlToPdfLib.Helpers
         /// </summary>
         /// <typeparam name="TResult"></typeparam>
         /// <param name="task"></param>
-        /// <param name="timeout">The timeout in millisecons</param>
+        /// <param name="timeout">The timeout in milliseconds</param>
         /// <returns></returns>
         public static async Task<TResult> Timeout<TResult>(this Task<TResult> task, int timeout)
         {
