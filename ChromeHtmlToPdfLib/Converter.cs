@@ -1766,7 +1766,7 @@ namespace ChromeHtmlToPdfLib
             try
             {
                 var process = Process.GetProcessById(processId);
-                process.Kill();
+                process.Kill(true);
             }
             catch (Exception exception)
             {
