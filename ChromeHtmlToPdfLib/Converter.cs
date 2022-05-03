@@ -1075,6 +1075,33 @@ namespace ChromeHtmlToPdfLib
         }
         #endregion
 
+        #region GetUrlFromFile
+        private bool GetUrlFromFile(string fileName, out string url)
+        {
+            try
+            {
+                var lines = File.ReadAllLines(fileName);
+
+                foreach (var line in lines)
+                {
+                    var temp = line.ToLowerInvariant();
+                    if (temp.StartsWith("url="))
+                    {
+                        url = line.Substring(4);
+                        return true;
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore
+            }
+
+            url = null;
+            return false;
+        }
+        #endregion
+
         #region Convert
         private void Convert(
             OutputFormat outputFormat,
@@ -1112,6 +1139,14 @@ namespace ChromeHtmlToPdfLib
                     case ".svg":
                     case ".xml":
                         // This is ok
+                        break;
+
+                    case ".url":
+                        if (GetUrlFromFile(inputUri.AbsolutePath, out var url))
+                        {
+                            WriteToLog($"Read url '{url}' from URL file '{inputUri.AbsolutePath}'");
+                            inputUri = new ConvertUri(url);
+                        }
                         break;
 
                     default:
