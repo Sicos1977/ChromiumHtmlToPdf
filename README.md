@@ -123,7 +123,9 @@ https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.5.33/ChromeHtml
 
 .NET Core 3.1 for the console app
 ---------------------------------
-The console app needs .NET CORE 3.1 to run, you can download this framework from here --> https://dotnet.microsoft.com/en-us/download/dotnet/3.1
+The console app needs .NET CORE 3.1 to run, you can download this framework from here 
+
+https://dotnet.microsoft.com/en-us/download/dotnet/3.1
 
 Logging
 =======
