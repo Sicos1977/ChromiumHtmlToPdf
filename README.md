@@ -120,6 +120,8 @@ https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.1.6/ChromeHtmlT
 https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.2/ChromeHtmlToPdf_220.zip
 https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.5.1/ChromeHtmlToPdf_251.zip
 
+The console app needs .NET CORE 3.1 to run, you can download this framework from here --> https://dotnet.microsoft.com/en-us/download/dotnet/3.1
+
 Logging
 =======
 
