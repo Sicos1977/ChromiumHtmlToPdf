@@ -229,13 +229,15 @@ RUN apt-get update && \
     mv chromedriver /usr/bin && rm -f chromedriver_linux64.zip
 ```
 
+See this issue for more information --> https://github.com/Sicos1977/ChromeHtmlToPdf/issues/39
+
 # When it is not working on Linux
 
 Sometimes the code will not work when Chrome is started in sanbox mode (default). If you get an error you cant explain then try to add this to your code and try again.
 
+```csharp
 converter.AddChromeArgument("--no-sandbox")
-
-See this issue for more information --> https://github.com/Sicos1977/ChromeHtmlToPdf/issues/39
+```
 
 Core Team
 =========
