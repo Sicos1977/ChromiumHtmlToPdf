@@ -233,7 +233,7 @@ See this issue for more information --> https://github.com/Sicos1977/ChromeHtmlT
 
 # When it is not working on Linux
 
-Sometimes the code will not work when Chrome is started in sanbox mode (default). If you get an error you cant explain then try to add this to your code and try again.
+Sometimes the code will not work when Chrome is started in sandbox mode (default). If you get an error you cant explain then try to add this to your code and try again.
 
 ```csharp
 converter.AddChromeArgument("--no-sandbox")
