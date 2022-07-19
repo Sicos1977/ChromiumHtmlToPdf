@@ -115,13 +115,16 @@ Pre compiled binaries
 
 You can find pre compiled binaries for Windows, Linux and macOS over here 
 
+Latest version
+---------------
+https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.6.0/ChromeHtmlToPDF_260.zip
+
+Older versions
+--------------
 https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.0.11/ChromeHtmlToPdf_211.zip
 https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.1.6/ChromeHtmlToPdf_216.zip
 https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.2/ChromeHtmlToPdf_220.zip
 https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.5.1/ChromeHtmlToPdf_251.zip
-
-Latest version
----------------
 https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.5.33/ChromeHtmlToPdf_253.zip
 
 .NET Core 3.1 for the console app
