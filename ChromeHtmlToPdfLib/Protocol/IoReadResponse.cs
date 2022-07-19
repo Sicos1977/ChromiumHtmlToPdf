@@ -1,5 +1,5 @@
 ﻿//
-// PrintToPdfResponse.cs
+// IoReadResponse.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
@@ -30,21 +30,16 @@ using Newtonsoft.Json;
 namespace ChromeHtmlToPdfLib.Protocol
 {
     /// <summary>
-    /// The JSON object that is returned from Chrome when calling the <see cref="Converter"/> ConvertToPdf method
+    /// The JSON structure that is returned from Chrome when reading from an IO stream
     /// </summary>
-    public class PrintToPdfResponse
+    public class IoReadResponse : MessageBase
     {
-        #region Properties
+        #region Properties        
         /// <summary>
-        /// <see cref="PrintToPdfResult"/>
+        /// <see cref="IoReadResponseResult"/>
         /// </summary>
         [JsonProperty("result")]
-        public PrintToPdfResult Result { get; set; }
-
-        /// <summary>
-        /// Returns <see cref="PrintToPdfResult.Data"/> as array of bytes
-        /// </summary>
-        public byte[] Bytes => Convert.FromBase64String(Result.Data);
+        public IoReadResponseResult Result { get; set; }
         #endregion
 
         #region FromJson
@@ -53,27 +48,38 @@ namespace ChromeHtmlToPdfLib.Protocol
         /// </summary>
         /// <param name="json"></param>
         /// <returns></returns>
-        public static PrintToPdfResponse FromJson(string json) => JsonConvert.DeserializeObject<PrintToPdfResponse>(json);
+        public new static IoReadResponse FromJson(string json) => JsonConvert.DeserializeObject<IoReadResponse>(json);
         #endregion
     }
 
     /// <summary>
-    /// The result returned from the <see cref="Converter"/> ConvertToPdf  method
+    /// The chunk read
     /// </summary>
-    public class PrintToPdfResult
+    public class IoReadResponseResult
     {
         #region Properties
         /// <summary>
-        /// The PDF as base64 string
+        /// Returns <c>true</c> when <see cref="Data"/> is base64 encoded
+        /// </summary>
+        [JsonProperty("base64Encoded")]
+        public bool Base64Encoded { get; set; }
+
+        /// <summary>
+        /// Returns the data as a base64 encoded string
         /// </summary>
         [JsonProperty("data")]
         public string Data { get; set; }
 
         /// <summary>
-        /// Returns a stream handle number
+        /// Returns <see cref="PrintToPdfResult.Data"/> as array of bytes
         /// </summary>
-        [JsonProperty("stream")]
-        public string Stream { get; set; }
+        public byte[] Bytes => Convert.FromBase64String(Data);
+
+        /// <summary>
+        /// Returns <c>true</c> when at the end of the file
+        /// </summary>
+        [JsonProperty("eof")]
+        public bool Eof { get; set; }
         #endregion
     }
 }

@@ -27,6 +27,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using ChromeHtmlToPdfLib.Exceptions;
@@ -529,7 +530,7 @@ namespace ChromeHtmlToPdfLib
         /// </remarks>
         /// <exception cref="ConversionException">Raised when Chrome returns an empty string</exception>
         /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer"/> reaches zero</exception>
-        internal async Task<PrintToPdfResponse> PrintToPdf(
+        internal async Task<MemoryStream> PrintToPdf(
             PageSettings pageSettings, 
             CountdownTimer countdownTimer = null)
         {
@@ -551,6 +552,7 @@ namespace ChromeHtmlToPdfLib
             if (!string.IsNullOrEmpty(pageSettings.FooterTemplate))
                 message.AddParameter("footerTemplate", pageSettings.FooterTemplate);
             message.AddParameter("preferCSSPageSize", pageSettings.PreferCSSPageSize);
+            message.AddParameter("transferMode", "ReturnAsStream");
 
             var result = countdownTimer == null
                 ? await _pageConnection.SendAsync(message)
@@ -558,10 +560,34 @@ namespace ChromeHtmlToPdfLib
 
             var printToPdfResponse = PrintToPdfResponse.FromJson(result);
 
-            if (string.IsNullOrEmpty(printToPdfResponse.Result?.Data))
+            if (string.IsNullOrEmpty(printToPdfResponse.Result?.Stream))
                 throw new ConversionException("Conversion failed");
 
-            return printToPdfResponse;
+            var memoryStream = new MemoryStream();
+            var memoryStreamOffset = 0;
+
+            while (true)
+            {
+                message = new Message {Method = "IO.read"};
+                message.AddParameter("handle", printToPdfResponse.Result?.Stream);
+
+                result = countdownTimer == null
+                    ? await _pageConnection.SendAsync(message)
+                    : await _pageConnection.SendAsync(message).Timeout(countdownTimer.MillisecondsLeft);
+
+                var ioReadResponse = IoReadResponse.FromJson(result);
+                var length = ioReadResponse.Result.Bytes.Length;
+
+                if (length > 0)
+                    memoryStream.Write(ioReadResponse.Result.Bytes, memoryStreamOffset, length);
+                
+                memoryStreamOffset += length;
+
+                if (ioReadResponse.Result.Eof)
+                    break;
+            }
+
+            return memoryStream;
         }
         #endregion
 

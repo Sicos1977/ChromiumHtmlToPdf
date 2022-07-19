@@ -9,7 +9,7 @@
     <Version>2.2.0</Version>
     <Company>Magic-Sessions</Company>
     <Authors>Kees van Spelde</Authors>
-    <Copyright>(C)2017-2020 Kees van Spelde</Copyright>
+    <Copyright>(C)2017-2022 Kees van Spelde</Copyright>
     <PackageProjectUrl>https://github.com/Sicos1977/ChromeHtmlToPdf</PackageProjectUrl>
     <PackageIcon>Chrome-icon.png</PackageIcon>
     <PackageIconUrl />
