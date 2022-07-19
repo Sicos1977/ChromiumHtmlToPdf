@@ -120,7 +120,15 @@ https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.1.6/ChromeHtmlT
 https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.2/ChromeHtmlToPdf_220.zip
 https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.5.1/ChromeHtmlToPdf_251.zip
 
-The console app needs .NET CORE 3.1 to run, you can download this framework from here --> https://dotnet.microsoft.com/en-us/download/dotnet/3.1
+Latest version
+---------------
+https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.5.33/ChromeHtmlToPdf_253.zip
+
+.NET Core 3.1 for the console app
+---------------------------------
+The console app needs .NET Core 3.1 to run, you can download this framework from here 
+
+https://dotnet.microsoft.com/en-us/download/dotnet/3.1
 
 Logging
 =======
@@ -222,6 +230,14 @@ RUN apt-get update && \
 ```
 
 See this issue for more information --> https://github.com/Sicos1977/ChromeHtmlToPdf/issues/39
+
+# When it is not working on Linux
+
+Sometimes the code will not work when Chrome is started in sandbox mode (default). If you get an error you cant explain then try to add this to your code and try again.
+
+```csharp
+converter.AddChromeArgument("--no-sandbox")
+```
 
 Core Team
 =========
