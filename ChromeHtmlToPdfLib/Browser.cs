@@ -563,28 +563,36 @@ namespace ChromeHtmlToPdfLib
             if (string.IsNullOrEmpty(printToPdfResponse.Result?.Stream))
                 throw new ConversionException("Conversion failed");
 
+            message = new Message {Method = "IO.read"};
+            message.AddParameter("handle", printToPdfResponse.Result.Stream);
+
+            WriteToLog($"Reading generated PDF from IO stream with handle id {printToPdfResponse.Result.Stream}");
+
             var memoryStream = new MemoryStream();
             var memoryStreamOffset = 0;
 
             while (true)
             {
-                message = new Message {Method = "IO.read"};
-                message.AddParameter("handle", printToPdfResponse.Result?.Stream);
-
                 result = countdownTimer == null
                     ? await _pageConnection.SendAsync(message)
                     : await _pageConnection.SendAsync(message).Timeout(countdownTimer.MillisecondsLeft);
 
                 var ioReadResponse = IoReadResponse.FromJson(result);
+
                 var length = ioReadResponse.Result.Bytes.Length;
 
                 if (length > 0)
+                {
+                    WriteToLog($"PDF chunk received with id {ioReadResponse.Id} and length {length}, writing it to memory stream");
                     memoryStream.Write(ioReadResponse.Result.Bytes, memoryStreamOffset, length);
-                
+                }
+
                 memoryStreamOffset += length;
 
-                if (ioReadResponse.Result.Eof)
-                    break;
+                if (!ioReadResponse.Result.Eof) continue;
+
+                WriteToLog("Last chunk received, returning memory stream");
+                break;
             }
 
             return memoryStream;
