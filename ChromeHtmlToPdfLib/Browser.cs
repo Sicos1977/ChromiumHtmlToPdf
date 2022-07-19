@@ -521,16 +521,17 @@ namespace ChromeHtmlToPdfLib
         /// <summary>
         ///     Instructs Chrome to print the page
         /// </summary>
+        /// <param name="outputStream">The generated PDF gets written to this stream</param>
         /// <param name="pageSettings"><see cref="PageSettings" /></param>
         /// <param name="countdownTimer">If a <see cref="CountdownTimer"/> is set then
-        /// the method will raise an <see cref="ConversionTimedOutException"/> in the 
-        /// <see cref="CountdownTimer"/> reaches zero before finishing the printing to pdf</param>        
+        ///     the method will raise an <see cref="ConversionTimedOutException"/> in the 
+        ///     <see cref="CountdownTimer"/> reaches zero before finishing the printing to pdf</param>
         /// <remarks>
         ///     See https://chromedevtools.github.io/devtools-protocol/tot/Page/#method-printToPDF
         /// </remarks>
         /// <exception cref="ConversionException">Raised when Chrome returns an empty string</exception>
         /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer"/> reaches zero</exception>
-        internal async Task<MemoryStream> PrintToPdf(
+        internal async Task PrintToPdf(Stream outputStream,
             PageSettings pageSettings, 
             CountdownTimer countdownTimer = null)
         {
@@ -563,13 +564,16 @@ namespace ChromeHtmlToPdfLib
             if (string.IsNullOrEmpty(printToPdfResponse.Result?.Stream))
                 throw new ConversionException("Conversion failed");
 
+            if (!outputStream.CanWrite)
+                throw new ConversionException("The output stream is not writable, please provide a writable stream");
+            
+            WriteToLog("Resetting output stream to position 0");
             message = new Message {Method = "IO.read"};
             message.AddParameter("handle", printToPdfResponse.Result.Stream);
             message.AddParameter("size", 1048576); // Get the pdf in chunks of 1MB
 
             WriteToLog($"Reading generated PDF from IO stream with handle id {printToPdfResponse.Result.Stream}");
-
-            var memoryStream = new MemoryStream();
+            outputStream.Position = 0;
 
             while (true)
             {
@@ -584,17 +588,15 @@ namespace ChromeHtmlToPdfLib
 
                 if (length > 0)
                 {
-                    WriteToLog($"PDF chunk received with id {ioReadResponse.Id} and length {length}, writing it to memory stream");
-                    memoryStream.Write(bytes, 0, length);
+                    WriteToLog($"PDF chunk received with id {ioReadResponse.Id} and length {length}, writing it to output stream");
+                    await outputStream.WriteAsync(bytes, 0, length);
                 }
 
                 if (!ioReadResponse.Result.Eof) continue;
 
-                WriteToLog("Last chunk received, returning memory stream");
+                WriteToLog("Last chunk received... done");
                 break;
             }
-
-            return memoryStream;
         }
         #endregion
 

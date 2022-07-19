@@ -1281,13 +1281,8 @@ namespace ChromeHtmlToPdfLib
                 {
                     case OutputFormat.Pdf:
                         WriteToLog("Converting to PDF");
-
-                        using (var memoryStream = _browser.PrintToPdf(pageSettings, countdownTimer).GetAwaiter().GetResult())
-                        {
-                            memoryStream.Position = 0;
-                            memoryStream.CopyTo(outputStream);
-                        }
-
+                        _browser.PrintToPdf(outputStream, pageSettings, countdownTimer).GetAwaiter().GetResult();
+                        
                         break;
 
                     case OutputFormat.Image:
