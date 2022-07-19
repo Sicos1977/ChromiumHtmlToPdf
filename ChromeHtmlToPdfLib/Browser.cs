@@ -565,11 +565,11 @@ namespace ChromeHtmlToPdfLib
 
             message = new Message {Method = "IO.read"};
             message.AddParameter("handle", printToPdfResponse.Result.Stream);
+            message.AddParameter("size", 1048576); // Get the pdf in chunks of 1MB
 
             WriteToLog($"Reading generated PDF from IO stream with handle id {printToPdfResponse.Result.Stream}");
 
             var memoryStream = new MemoryStream();
-            var memoryStreamOffset = 0;
 
             while (true)
             {
@@ -579,15 +579,14 @@ namespace ChromeHtmlToPdfLib
 
                 var ioReadResponse = IoReadResponse.FromJson(result);
 
-                var length = ioReadResponse.Result.Bytes.Length;
+                var bytes = ioReadResponse.Result.Bytes;
+                var length = bytes.Length;
 
                 if (length > 0)
                 {
                     WriteToLog($"PDF chunk received with id {ioReadResponse.Id} and length {length}, writing it to memory stream");
-                    memoryStream.Write(ioReadResponse.Result.Bytes, memoryStreamOffset, length);
+                    memoryStream.Write(bytes, 0, length);
                 }
-
-                memoryStreamOffset += length;
 
                 if (!ioReadResponse.Result.Eof) continue;
 
