@@ -733,6 +733,13 @@ namespace ChromeHtmlToPdfLib
             AddChromeArgument("--no-first-run");
             AddChromeArgument("--disable-crash-reporter");
             AddChromeArgument("--remote-debugging-port", "0");
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                WriteToLog("Detected Linux operating system, adding the parameter '--no-sandbox'");
+                AddChromeArgument("--no-sandbox");
+            }
+
             SetWindowSize(WindowSize.HD_1366_768);
             _useCache = false;
         }
@@ -791,6 +798,8 @@ namespace ChromeHtmlToPdfLib
                 WriteToLog($"Adding Chrome argument '{argument}'");
                 _defaultChromeArgument.Add(argument);
             }
+            else
+                WriteToLog($"The Chrome argument '{argument}' has already been set, ignoring it");
         }
 
         /// <summary>
@@ -814,12 +823,14 @@ namespace ChromeHtmlToPdfLib
             for (var i = 0; i < DefaultChromeArguments.Count; i++)
             {
                 if (!_defaultChromeArgument[i].StartsWith(argument + "=")) continue;
-                _defaultChromeArgument[i] = argument + $"=\"{value}\"";
+
+                WriteToLog($"Updating Chrome argument '{_defaultChromeArgument[i]}' with value '{value}'");
+                _defaultChromeArgument[i] = $"{argument}=\"{value}\"";
                 return;
             }
 
             WriteToLog($"Adding Chrome argument '{argument}=\"{value}\"'");
-            _defaultChromeArgument.Add(argument + $"=\"{value}\"");
+            _defaultChromeArgument.Add($"{argument}=\"{value}\"");
         }
         #endregion
 
