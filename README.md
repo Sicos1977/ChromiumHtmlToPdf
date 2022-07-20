@@ -234,9 +234,9 @@ RUN apt-get update && \
 
 See this issue for more information --> https://github.com/Sicos1977/ChromeHtmlToPdf/issues/39
 
-# When it is not working on Linux
+# Using this library on Linux or from a docker container
 
-Sometimes the code will not work when Chrome is started in sandbox mode (default). If you get an error you cant explain then try to add this to your code and try again.
+To make the library work the flag --no-sandbox will be set by default (on Windows this flag is not set). The library automaticly detect on which system you are running the code and sets the flag when needed. If for whatever reason you get a converting error then check if this flag is set and if not then add it manually.
 
 ```csharp
 converter.AddChromeArgument("--no-sandbox")
@@ -245,12 +245,6 @@ converter.AddChromeArgument("--no-sandbox")
 Core Team
 =========
     Sicos1977 (Kees van Spelde)
-
-Support
-=======
-If you like my work then please consider a donation as a thank you.
-
-<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=NS92EXB2RDPYA" target="_blank"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif" /></a>
 
 ## Reporting Bugs
 
