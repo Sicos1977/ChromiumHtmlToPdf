@@ -562,7 +562,7 @@ namespace ChromeHtmlToPdfLib
             var printToPdfResponse = PrintToPdfResponse.FromJson(result);
 
             if (string.IsNullOrEmpty(printToPdfResponse.Result?.Stream))
-                throw new ConversionException("Conversion failed");
+                throw new ConversionException($"Conversion failed ... did not get the expected response from Chrome, response '{result}'");
 
             if (!outputStream.CanWrite)
                 throw new ConversionException("The output stream is not writable, please provide a writable stream");
