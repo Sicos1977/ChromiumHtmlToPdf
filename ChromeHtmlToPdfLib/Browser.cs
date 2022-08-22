@@ -595,7 +595,7 @@ namespace ChromeHtmlToPdfLib
                 if (!ioReadResponse.Result.Eof) continue;
 
                 WriteToLog("Last chunk received");
-                WriteToLog($"Closing stream with id {ioReadResponse.Id}");
+                WriteToLog($"Closing stream with id {printToPdfResponse.Result.Stream}");
                 message = new Message {Method = "IO.close"};
                 message.AddParameter("handle", printToPdfResponse.Result.Stream);
                 await _pageConnection.SendAsync(message);
