@@ -234,7 +234,7 @@ namespace ChromeHtmlToPdfLib
 
                             var fetchContinue = new Message {Method = "Fetch.continueRequest"};
                             fetchContinue.Parameters.Add("requestId", requestId);
-                            _pageConnection.SendAsync(fetchContinue).GetAwaiter().GetResult();
+                            _pageConnection.SendAsync(fetchContinue, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
                         }
                         else
                         {
@@ -247,7 +247,7 @@ namespace ChromeHtmlToPdfLib
                             // ConnectionAborted, ConnectionFailed, NameNotResolved, InternetDisconnected, AddressUnreachable,
                             // BlockedByClient, BlockedByResponse
                             fetchFail.Parameters.Add("errorReason", "BlockedByClient");
-                            _pageConnection.SendAsync(fetchFail).GetAwaiter().GetResult();
+                            _pageConnection.SendAsync(fetchFail, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
                         }
 
                         break;
@@ -321,28 +321,28 @@ namespace ChromeHtmlToPdfLib
             {
                 WriteToLog("Enabling network traffic logging");
                 var networkMessage = new Message {Method = "Network.enable"};
-                _pageConnection.SendForResponseAsync(networkMessage).GetAwaiter().GetResult();
+                _pageConnection.SendForResponseAsync(networkMessage, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
             }
 
             WriteToLog(useCache ? "Enabling caching" : "Disabling caching");
 
             var cacheMessage = new Message {Method = "Network.setCacheDisabled"};
             cacheMessage.Parameters.Add("cacheDisabled", !useCache);
-            _pageConnection.SendForResponseAsync(cacheMessage).GetAwaiter().GetResult();
+            _pageConnection.SendForResponseAsync(cacheMessage, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
 
             // Enables issuing of requestPaused events. A request will be paused until client calls one of failRequest, fulfillRequest or continueRequest/continueWithAuth
             if (urlBlacklist?.Count > 0)
             {
                 WriteToLog("Enabling Fetch to block url's that are in the url blacklist'");
-                _pageConnection.SendForResponseAsync(new Message {Method = "Fetch.enable"}).GetAwaiter().GetResult();
+                _pageConnection.SendForResponseAsync(new Message {Method = "Fetch.enable"}, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
             }
 
             // Enables page domain notifications
-            _pageConnection.SendForResponseAsync(new Message {Method = "Page.enable"}).GetAwaiter().GetResult();
+            _pageConnection.SendForResponseAsync(new Message {Method = "Page.enable"}, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
 
             var lifecycleEventEnabledMessage = new Message {Method = "Page.setLifecycleEventsEnabled"};
             lifecycleEventEnabledMessage.AddParameter("enabled", true);
-            _pageConnection.SendForResponseAsync(lifecycleEventEnabledMessage).GetAwaiter().GetResult();
+            _pageConnection.SendForResponseAsync(lifecycleEventEnabledMessage, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
 
             _pageConnection.MessageReceived += messageHandler;
             _pageConnection.Closed += (sender, args) => waitEvent?.Set();
@@ -352,13 +352,13 @@ namespace ChromeHtmlToPdfLib
                 // Navigates current page to the given URL
                 var pageNavigateMessage = new Message { Method = "Page.navigate" };
                 pageNavigateMessage.AddParameter("url", uri.ToString());
-                _pageConnection.SendAsync(pageNavigateMessage).GetAwaiter().GetResult();
+                _pageConnection.SendAsync(pageNavigateMessage, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
             }
             else if (!string.IsNullOrWhiteSpace(html))
             {
                 WriteToLog("Getting page frame tree");
                 var pageGetFrameTree = new Message { Method = "Page.getFrameTree" };
-                var frameTree = _pageConnection.SendForResponseAsync(pageGetFrameTree).GetAwaiter().GetResult();
+                var frameTree = _pageConnection.SendForResponseAsync(pageGetFrameTree, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
                 var frameResult = Protocol.Page.FrameTree.FromJson(frameTree);
 
                 WriteToLog("Setting document content");
@@ -366,7 +366,7 @@ namespace ChromeHtmlToPdfLib
                 var pageSetDocumentContent = new Message { Method = "Page.setDocumentContent" };
                 pageSetDocumentContent.AddParameter("frameId", frameResult.Result.FrameTree.Frame.Id);
                 pageSetDocumentContent.AddParameter("html", html);
-                _pageConnection.SendForResponseAsync(pageSetDocumentContent).GetAwaiter().GetResult();
+                _pageConnection.SendForResponseAsync(pageSetDocumentContent, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
                 // When using setDocumentContent a Page.frameNavigated event is never fired so we have to set the waitForNetworkIdle to true our self
                 waitForNetworkIdle = true;
 
@@ -394,21 +394,21 @@ namespace ChromeHtmlToPdfLib
             lifecycleEventDisabledMessage.AddParameter("enabled", false);
 
             // Disables page domain notifications
-            _pageConnection.SendForResponseAsync(lifecycleEventDisabledMessage).GetAwaiter().GetResult();
-            _pageConnection.SendForResponseAsync(new Message {Method = "Page.disable"}).GetAwaiter().GetResult();
+            _pageConnection.SendForResponseAsync(lifecycleEventDisabledMessage, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
+            _pageConnection.SendForResponseAsync(new Message {Method = "Page.disable"}, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
 
             // Disables the fetch domain
             if (urlBlacklist?.Count > 0)
             {
                 WriteToLog("Disabling Fetch");
-                _pageConnection.SendForResponseAsync(new Message {Method = "Fetch.disable"}).GetAwaiter().GetResult();
+                _pageConnection.SendForResponseAsync(new Message {Method = "Fetch.disable"}, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
             }
 
             if (logNetworkTraffic)
             {
                 WriteToLog("Disabling network traffic logging");
                 var networkMessage = new Message {Method = "Network.disable"};
-                _pageConnection.SendForResponseAsync(networkMessage).GetAwaiter().GetResult();
+                _pageConnection.SendForResponseAsync(networkMessage, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
             }
 
             _pageConnection.MessageReceived -= messageHandler;

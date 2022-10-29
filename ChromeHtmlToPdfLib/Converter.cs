@@ -39,6 +39,7 @@ using ChromeHtmlToPdfLib.Exceptions;
 using ChromeHtmlToPdfLib.Helpers;
 using Ganss.Xss;
 using Microsoft.Extensions.Logging;
+// ReSharper disable ConvertToUsingDeclaration
 
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable MemberCanBePrivate.Global
@@ -703,7 +704,7 @@ namespace ChromeHtmlToPdfLib
         private void CheckIfOutputFolderExists(string outputFile)
         {
             var directory = new FileInfo(outputFile).Directory;
-            if (directory != null && !directory.Exists)
+            if (directory is { Exists: false })
                 throw new DirectoryNotFoundException($"The path '{directory.FullName}' does not exists");
         }
         #endregion

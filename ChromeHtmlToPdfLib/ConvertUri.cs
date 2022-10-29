@@ -32,7 +32,7 @@ using System.Text;
 namespace ChromeHtmlToPdfLib
 {
     /// <summary>
-    /// <inheritdoc cref="Uri"/>
+    ///     <inheritdoc cref="Uri"/>
     /// </summary>
     public class ConvertUri : Uri
     {
@@ -41,6 +41,10 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         public Encoding Encoding { get; }
 
+        /// <summary>
+        ///     The uri to converter
+        /// </summary>
+        /// <param name="uriString"></param>
         public ConvertUri(string uriString) : base(uriString)
         {
         }
@@ -68,27 +72,58 @@ namespace ChromeHtmlToPdfLib
         }
 
 #pragma warning disable CS0618 // Type or member is obsolete
+        /// <summary>
+        ///     The uri to converter
+        /// </summary>
+        /// <param name="uriString"></param>
+        /// <param name="dontEscape"></param>
         public ConvertUri(string uriString, bool dontEscape) : base(uriString, dontEscape)
         {
         }
 
+        /// <summary>
+        ///     The uri to converter
+        /// </summary>
+        /// <param name="baseUri"></param>
+        /// <param name="relativeUri"></param>
+        /// <param name="dontEscape"></param>
         public ConvertUri(Uri baseUri, string relativeUri, bool dontEscape) : base(baseUri, relativeUri, dontEscape)
         {
         }
 #pragma warning restore CS0618 // Type or member is obsolete
 
+        /// <summary>
+        ///     The uri to converter
+        /// </summary>
+        /// <param name="uriString"></param>
+        /// <param name="uriKind"></param>
         public ConvertUri(string uriString, UriKind uriKind) : base(uriString, uriKind)
         {
         }
 
+        /// <summary>
+        ///     The uri to converter
+        /// </summary>
+        /// <param name="baseUri"></param>
+        /// <param name="relativeUri"></param>
         public ConvertUri(Uri baseUri, string relativeUri) : base(baseUri, relativeUri)
         {
         }
 
+        /// <summary>
+        ///     The uri to converter
+        /// </summary>
+        /// <param name="baseUri"></param>
+        /// <param name="relativeUri"></param>
         public ConvertUri(Uri baseUri, Uri relativeUri) : base(baseUri, relativeUri)
         {
         }
 
+        /// <summary>
+        ///     The uri to converter
+        /// </summary>
+        /// <param name="serializationInfo"></param>
+        /// <param name="streamingContext"></param>
         protected ConvertUri(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
         }

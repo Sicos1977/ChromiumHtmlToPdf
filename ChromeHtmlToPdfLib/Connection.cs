@@ -62,9 +62,8 @@ namespace ChromeHtmlToPdfLib
         #endregion
 
         #region Fields
-
-        private const int _recieveBufferSize = 8192;
-        private CancellationTokenSource _recieveLoopCTS;
+        private const int ReceiveBufferSize = 8192;
+        private readonly CancellationTokenSource _receiveLoopCts;
 
         /// <summary>
         ///     Used to make the logging thread safe
@@ -106,30 +105,31 @@ namespace ChromeHtmlToPdfLib
             _logger = logger;
             WriteToLog($"Creating new websocket connection to url '{url}'");
             _webSocket = new ClientWebSocket();
-            _recieveLoopCTS = new CancellationTokenSource();
+            _receiveLoopCts = new CancellationTokenSource();
             OpenWebSocket();
             Task
                 .Factory
-                .StartNew(ReceiveLoop, _recieveLoopCTS.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                .StartNew(ReceiveLoop, _receiveLoopCts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
         #endregion
 
         #region ReceiveLoop
         private async Task ReceiveLoop()
         {
-            var loopToken = _recieveLoopCTS.Token;
+            var loopToken = _receiveLoopCts.Token;
             MemoryStream outputStream = null;
-            WebSocketReceiveResult receiveResult;
-            var buffer = new ArraySegment<byte>(new byte[_recieveBufferSize]);
+            var buffer = new ArraySegment<byte>(new byte[ReceiveBufferSize]);
             try
             {
                 while (!loopToken.IsCancellationRequested)
                 {
-                    outputStream = new MemoryStream(_recieveBufferSize);
+                    outputStream = new MemoryStream(ReceiveBufferSize);
+                    WebSocketReceiveResult receiveResult;
                     do
                     {
-                        receiveResult = await _webSocket.ReceiveAsync(buffer, _recieveLoopCTS.Token);
-                        if (receiveResult.MessageType != WebSocketMessageType.Close)
+                        receiveResult = await _webSocket.ReceiveAsync(buffer, _receiveLoopCts.Token);
+                        if (receiveResult.MessageType == WebSocketMessageType.Close) continue;
+                        if (buffer.Array != null)
                             outputStream.Write(buffer.Array, 0, receiveResult.Count);
                     }
                     while (!receiveResult.EndOfMessage);
@@ -143,20 +143,20 @@ namespace ChromeHtmlToPdfLib
                         response = await reader.ReadToEndAsync();
                     }
 
-                    WebSocketOnMessageReceived(this, new MessageReceivedEventArgs(response));
+                    WebSocketOnMessageReceived(new MessageReceivedEventArgs(response));
                 }
             }
             catch (TaskCanceledException)
             {
-                // ignore
+                // Ignore
             }
             catch (Exception e)
             {
-                WebSocketOnError(this, new ErrorEventArgs(e));
+                WebSocketOnError(new ErrorEventArgs(e));
             }
             finally
             {
-                outputStream?.Dispose();
+                outputStream?.DisposeAsync();
             }
         }
         #endregion
@@ -169,16 +169,18 @@ namespace ChromeHtmlToPdfLib
             if (_webSocket.State == WebSocketState.Open) return;
 
             WriteToLog("Opening websocket connection with a timeout of 30 seconds");
+
             try
             {
                 await _webSocket.ConnectAsync(new Uri(_url), cancellationToken);
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
-                WebSocketOnError(this, new ErrorEventArgs(e));
+                WebSocketOnError(new ErrorEventArgs(exception));
             }
 
             var i = 0;
+
             while(_webSocket.State != WebSocketState.Open)
             {
                 Thread.Sleep(1);
@@ -195,7 +197,7 @@ namespace ChromeHtmlToPdfLib
         #endregion
 
         #region Websocket events
-        private void WebSocketOnMessageReceived(object sender, MessageReceivedEventArgs e)
+        private void WebSocketOnMessageReceived(MessageReceivedEventArgs e)
         {
             var response = e.Message;
 
@@ -211,7 +213,7 @@ namespace ChromeHtmlToPdfLib
             MessageReceived?.Invoke(this, response);
         }
 
-        private void WebSocketOnError(object sender, ErrorEventArgs e)
+        private void WebSocketOnError(ErrorEventArgs e)
         {
             if (_response?.Task.Status != TaskStatus.RanToCompletion)
                 _response?.SetResult(string.Empty);
@@ -219,7 +221,7 @@ namespace ChromeHtmlToPdfLib
             OnError?.Invoke(this, ExceptionHelpers.GetInnerException(e.Exception));
         }
 
-        private void WebSocketOnClosed(object sender, EventArgs e)
+        private void WebSocketOnClosed(EventArgs e)
         {
             if (_response?.Task.Status != TaskStatus.RanToCompletion)
                 _response?.SetResult(string.Empty);
@@ -259,7 +261,7 @@ namespace ChromeHtmlToPdfLib
             }
             catch (Exception e)
             {
-                WebSocketOnError(this, new ErrorEventArgs(e));
+                WebSocketOnError(new ErrorEventArgs(e));
             }
 
             var response = tcs.Task.Result;
@@ -280,14 +282,15 @@ namespace ChromeHtmlToPdfLib
             _messageId += 1;
             message.Id = _messageId;
             _response = null;
-            OpenWebSocket();
+            await OpenWebSocketAsync(cancellationToken);
+
             try
             {
                 await _webSocket.SendAsync(MessageToBytes(message), WebSocketMessageType.Text, true, cancellationToken);
             }
             catch (Exception e)
             {
-                WebSocketOnError(this, new ErrorEventArgs(e));
+                WebSocketOnError(new ErrorEventArgs(e));
             }
         }
         #endregion
@@ -343,7 +346,7 @@ namespace ChromeHtmlToPdfLib
 
             try
             {
-                WebSocketOnClosed(this, new EventArgs());
+                WebSocketOnClosed(EventArgs.Empty);
             }
             catch (Exception e)
             {
@@ -353,7 +356,7 @@ namespace ChromeHtmlToPdfLib
             if (_webSocket.State == WebSocketState.Open)
             {
                 WriteToLog("Closing websocket");
-                _recieveLoopCTS.CancelAfter(TimeSpan.FromSeconds(2));
+                _receiveLoopCts.CancelAfter(TimeSpan.FromSeconds(2));
                 _webSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "done", default).GetAwaiter().GetResult();
                 _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", default);
             }
@@ -364,7 +367,7 @@ namespace ChromeHtmlToPdfLib
         #endregion
 
         #region MessageToBytes
-        private ArraySegment<byte> MessageToBytes(Message message) => new ArraySegment<byte>(Encoding.UTF8.GetBytes(message.ToJson()));
+        private static ArraySegment<byte> MessageToBytes(MessageBase message) => new ArraySegment<byte>(Encoding.UTF8.GetBytes(message.ToJson()));
         #endregion
     }
 }
