@@ -37,7 +37,7 @@ using System.Threading;
 using ChromeHtmlToPdfLib.Enums;
 using ChromeHtmlToPdfLib.Exceptions;
 using ChromeHtmlToPdfLib.Helpers;
-using Ganss.XSS;
+using Ganss.Xss;
 using Microsoft.Extensions.Logging;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Global

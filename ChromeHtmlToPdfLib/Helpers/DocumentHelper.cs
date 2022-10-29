@@ -42,7 +42,7 @@ using AngleSharp.Html;
 using AngleSharp.Html.Dom;
 using AngleSharp.Io.Network;
 using ChromeHtmlToPdfLib.Settings;
-using Ganss.XSS;
+using Ganss.Xss;
 using Microsoft.Extensions.Logging;
 using Image = System.Drawing.Image;
 // ReSharper disable ConvertToUsingDeclaration
