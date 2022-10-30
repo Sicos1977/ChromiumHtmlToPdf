@@ -5,8 +5,8 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <StartupObject>ChromeHtmlToPdfConsole.Program</StartupObject>
     <ApplicationIcon />
-    <AssemblyVersion>2.2.0.0</AssemblyVersion>
-    <Version>2.2.0</Version>
+    <AssemblyVersion>2.6.5.0</AssemblyVersion>
+    <Version>2.6.5</Version>
     <Company>Magic-Sessions</Company>
     <Authors>Kees van Spelde</Authors>
     <Copyright>(C)2017-2022 Kees van Spelde</Copyright>
@@ -22,7 +22,7 @@
     <PackageId />
     <AssemblyName>ChromeHtmlToPdfConsole</AssemblyName>
     <RootNamespace>ChromeHtmlToPdfConsole</RootNamespace>
-    <FileVersion>2.2.0.0</FileVersion>
+    <FileVersion>2.6.5.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
