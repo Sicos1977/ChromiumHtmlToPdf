@@ -107,9 +107,7 @@ namespace ChromeHtmlToPdfLib
             _webSocket = new ClientWebSocket();
             _receiveLoopCts = new CancellationTokenSource();
             OpenWebSocket();
-            Task
-                .Factory
-                .StartNew(ReceiveLoop, _receiveLoopCts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            Task.Factory.StartNew(ReceiveLoop, _receiveLoopCts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
         #endregion
 
@@ -156,7 +154,7 @@ namespace ChromeHtmlToPdfLib
             }
             finally
             {
-                outputStream?.DisposeAsync();
+                outputStream?.Dispose();
             }
         }
         #endregion
@@ -348,17 +346,16 @@ namespace ChromeHtmlToPdfLib
             {
                 WebSocketOnClosed(EventArgs.Empty);
             }
-            catch (Exception e)
+            catch (Exception exception)
             {
-                WriteToLog($"Exception while disposing websocket connection to url '{_url}': {e.Message}");
+                WriteToLog($"Exception while disposing websocket connection to url '{_url}': {exception.Message}");
             }
 
             if (_webSocket.State == WebSocketState.Open)
             {
                 WriteToLog("Closing websocket");
-                _receiveLoopCts.CancelAfter(TimeSpan.FromSeconds(2));
-                _webSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "done", default).GetAwaiter().GetResult();
-                _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", default);
+                _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Done", default);
+                _receiveLoopCts.Cancel();
             }
 
             _webSocket.Dispose();

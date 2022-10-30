@@ -36,6 +36,7 @@ using ChromeHtmlToPdfLib.Protocol;
 using ChromeHtmlToPdfLib.Protocol.Network;
 using ChromeHtmlToPdfLib.Settings;
 using Microsoft.Extensions.Logging;
+// ReSharper disable MethodSupportsCancellation
 
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable UnusedAutoPropertyAccessor.Global
@@ -57,7 +58,7 @@ namespace ChromeHtmlToPdfLib
         ///     Used to make the logging thread safe
         /// </summary>
         private readonly object _lock = new object();
-        
+
         /// <summary>
         ///     When set then logging is written to this ILogger instance
         /// </summary>
@@ -107,7 +108,7 @@ namespace ChromeHtmlToPdfLib
             _browserConnection = new Connection(browser.ToString(), logger);
             _browserConnection.OnError += OnOnError;
 
-            var message = new Message {Method = "Target.createTarget"};
+            var message = new Message { Method = "Target.createTarget" };
             message.Parameters.Add("url", "about:blank");
 
             var result = _browserConnection.SendForResponseAsync(message).GetAwaiter().GetResult();
@@ -163,7 +164,7 @@ namespace ChromeHtmlToPdfLib
             var absoluteUri = uri?.AbsoluteUri.Substring(0, uri.AbsoluteUri.LastIndexOf('/') + 1);
 
             #region Message handler
-            var messageHandler = new EventHandler<string>(delegate(object sender, string data)
+            var messageHandler = new EventHandler<string>(delegate (object sender, string data)
             {
                 //System.IO.File.AppendAllText("d:\\logs.txt", $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fff} - {data}{Environment.NewLine}");
                 var message = Base.FromJson(data);
@@ -214,105 +215,105 @@ namespace ChromeHtmlToPdfLib
                         break;
 
                     case "Fetch.requestPaused":
-                    {
-                        var fetch = Fetch.FromJson(data);
-                        var requestId = fetch.Params.RequestId;
-                        var url = fetch.Params.Request.Url;
-                        var isSafeUrl = safeUrls.Contains(url);
-                        var isAbsoluteFileUri = absoluteUri != null &&
-                                                url.StartsWith("file://", StringComparison.InvariantCultureIgnoreCase) &&
-                                                url.StartsWith(absoluteUri, StringComparison.InvariantCultureIgnoreCase);
-
-                        if (!RegularExpression.IsRegExMatch(urlBlacklist, url, out var matchedPattern) || isAbsoluteFileUri || isSafeUrl)
                         {
-                            if (isSafeUrl)
-                                WriteToLog($"The url '{url}' has been allowed because it is on the safe url list");
-                            else if (isAbsoluteFileUri)
-                                WriteToLog($"The file url '{url}' has been allowed because it start with the absolute uri '{absoluteUri}'");
+                            var fetch = Fetch.FromJson(data);
+                            var requestId = fetch.Params.RequestId;
+                            var url = fetch.Params.Request.Url;
+                            var isSafeUrl = safeUrls.Contains(url);
+                            var isAbsoluteFileUri = absoluteUri != null &&
+                                                    url.StartsWith("file://", StringComparison.InvariantCultureIgnoreCase) &&
+                                                    url.StartsWith(absoluteUri, StringComparison.InvariantCultureIgnoreCase);
+
+                            if (!RegularExpression.IsRegExMatch(urlBlacklist, url, out var matchedPattern) || isAbsoluteFileUri || isSafeUrl)
+                            {
+                                if (isSafeUrl)
+                                    WriteToLog($"The url '{url}' has been allowed because it is on the safe url list");
+                                else if (isAbsoluteFileUri)
+                                    WriteToLog($"The file url '{url}' has been allowed because it start with the absolute uri '{absoluteUri}'");
+                                else
+                                    WriteToLog($"The url '{url}' has been allowed because it did not match anything on the url blacklist");
+
+                                var fetchContinue = new Message { Method = "Fetch.continueRequest" };
+                                fetchContinue.Parameters.Add("requestId", requestId);
+                                _pageConnection.SendAsync(fetchContinue).GetAwaiter().GetResult();
+                            }
                             else
-                                WriteToLog($"The url '{url}' has been allowed because it did not match anything on the url blacklist");
+                            {
+                                WriteToLog($"The url '{url}' has been blocked by url blacklist pattern '{matchedPattern}'");
 
-                            var fetchContinue = new Message {Method = "Fetch.continueRequest"};
-                            fetchContinue.Parameters.Add("requestId", requestId);
-                            _pageConnection.SendAsync(fetchContinue, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
+                                var fetchFail = new Message { Method = "Fetch.failRequest" };
+                                fetchFail.Parameters.Add("requestId", requestId);
+
+                                // Failed, Aborted, TimedOut, AccessDenied, ConnectionClosed, ConnectionReset, ConnectionRefused,
+                                // ConnectionAborted, ConnectionFailed, NameNotResolved, InternetDisconnected, AddressUnreachable,
+                                // BlockedByClient, BlockedByResponse
+                                fetchFail.Parameters.Add("errorReason", "BlockedByClient");
+                                _pageConnection.SendAsync(fetchFail).GetAwaiter().GetResult();
+                            }
+
+                            break;
                         }
-                        else
-                        {
-                            WriteToLog($"The url '{url}' has been blocked by url blacklist pattern '{matchedPattern}'");
-
-                            var fetchFail = new Message {Method = "Fetch.failRequest"};
-                            fetchFail.Parameters.Add("requestId", requestId);
-
-                            // Failed, Aborted, TimedOut, AccessDenied, ConnectionClosed, ConnectionReset, ConnectionRefused,
-                            // ConnectionAborted, ConnectionFailed, NameNotResolved, InternetDisconnected, AddressUnreachable,
-                            // BlockedByClient, BlockedByResponse
-                            fetchFail.Parameters.Add("errorReason", "BlockedByClient");
-                            _pageConnection.SendAsync(fetchFail, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
-                        }
-
-                        break;
-                    }
 
                     default:
-                    {
-                        var page = Protocol.Page.Event.FromJson(data);
-
-                        switch (page.Method)
                         {
-                            // The DOMContentLoaded event is fired when the document has been completely loaded and parsed, without
-                            // waiting for stylesheets, images, and sub frames to finish loading (the load event can be used to
-                            // detect a fully-loaded page).
-                            case "Page.lifecycleEvent" when page.Params?.Name == "DOMContentLoaded":
-                                
-                                WriteToLog("The 'Page.lifecycleEvent' with param name 'DomContentLoaded' has been fired, the dom content is now loaded and parsed, waiting for stylesheets, images and sub frames to finish loading");
-                                
-                                if (mediaLoadTimeout.HasValue && !mediaTimeoutTaskSet)
-                                {
-                                    try
-                                    {
-                                        WriteToLog($"Media load timeout has a value of {mediaLoadTimeout.Value} milliseconds, setting media load timeout task");
+                            var page = Protocol.Page.Event.FromJson(data);
 
-                                        Task.Run(async delegate
+                            switch (page.Method)
+                            {
+                                // The DOMContentLoaded event is fired when the document has been completely loaded and parsed, without
+                                // waiting for stylesheets, images, and sub frames to finish loading (the load event can be used to
+                                // detect a fully-loaded page).
+                                case "Page.lifecycleEvent" when page.Params?.Name == "DOMContentLoaded":
+
+                                    WriteToLog("The 'Page.lifecycleEvent' with param name 'DomContentLoaded' has been fired, the dom content is now loaded and parsed, waiting for stylesheets, images and sub frames to finish loading");
+
+                                    if (mediaLoadTimeout.HasValue && !mediaTimeoutTaskSet)
+                                    {
+                                        try
                                         {
-                                            await Task.Delay(mediaLoadTimeout.Value, mediaLoadTimeoutCancellationTokenSource.Token);
-                                            WriteToLog($"Media load timeout task timed out after {mediaLoadTimeout.Value} milliseconds");
-                                            waitEvent?.Set();
-                                        }, mediaLoadTimeoutCancellationTokenSource.Token);
+                                            WriteToLog($"Media load timeout has a value of {mediaLoadTimeout.Value} milliseconds, setting media load timeout task");
 
-                                        mediaTimeoutTaskSet = true;
+                                            Task.Run(async delegate
+                                            {
+                                                await Task.Delay(mediaLoadTimeout.Value, mediaLoadTimeoutCancellationTokenSource.Token);
+                                                WriteToLog($"Media load timeout task timed out after {mediaLoadTimeout.Value} milliseconds");
+                                                waitEvent?.Set();
+                                            }, mediaLoadTimeoutCancellationTokenSource.Token);
+
+                                            mediaTimeoutTaskSet = true;
+                                        }
+                                        catch
+                                        {
+                                            // Ignore
+                                        }
                                     }
-                                    catch 
-                                    {
-                                        // Ignore
-                                    }
-                                }
 
-                                break;
+                                    break;
 
-                            case "Page.frameNavigated":
-                                WriteToLog("The 'Page.frameNavigated' event has been fired, waiting for the 'Page.lifecycleEvent' with name 'networkIdle'");
-                                waitForNetworkIdle = true;
-                                break;
+                                case "Page.frameNavigated":
+                                    WriteToLog("The 'Page.frameNavigated' event has been fired, waiting for the 'Page.lifecycleEvent' with name 'networkIdle'");
+                                    waitForNetworkIdle = true;
+                                    break;
 
-                            case "Page.lifecycleEvent" when page.Params?.Name == "networkIdle" && waitForNetworkIdle:
-                                WriteToLog("The 'Page.lifecycleEvent' event with name 'networkIdle' has been fired, the page is now fully loaded");
-                                waitEvent?.Set();
-                                break;
-
-                            default:
-                                var pageNavigateResponse = Protocol.Page.NavigateResponse.FromJson(data);
-                                if (!string.IsNullOrEmpty(pageNavigateResponse.Result?.ErrorText) &&
-                                    !pageNavigateResponse.Result.ErrorText.Contains("net::ERR_BLOCKED_BY_CLIENT"))
-                                {
-                                    navigationError = $"{pageNavigateResponse.Result.ErrorText} occurred when navigating to the page '{uri}'";
+                                case "Page.lifecycleEvent" when page.Params?.Name == "networkIdle" && waitForNetworkIdle:
+                                    WriteToLog("The 'Page.lifecycleEvent' event with name 'networkIdle' has been fired, the page is now fully loaded");
                                     waitEvent?.Set();
-                                }
+                                    break;
 
-                                break;
+                                default:
+                                    var pageNavigateResponse = Protocol.Page.NavigateResponse.FromJson(data);
+                                    if (!string.IsNullOrEmpty(pageNavigateResponse.Result?.ErrorText) &&
+                                        !pageNavigateResponse.Result.ErrorText.Contains("net::ERR_BLOCKED_BY_CLIENT"))
+                                    {
+                                        navigationError = $"{pageNavigateResponse.Result.ErrorText} occurred when navigating to the page '{uri}'";
+                                        waitEvent?.Set();
+                                    }
+
+                                    break;
+                            }
+
+                            break;
                         }
-
-                        break;
-                    }
                 }
             });
             #endregion
@@ -320,29 +321,29 @@ namespace ChromeHtmlToPdfLib
             if (logNetworkTraffic)
             {
                 WriteToLog("Enabling network traffic logging");
-                var networkMessage = new Message {Method = "Network.enable"};
-                _pageConnection.SendForResponseAsync(networkMessage, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
+                var networkMessage = new Message { Method = "Network.enable" };
+                _pageConnection.SendForResponseAsync(networkMessage).GetAwaiter().GetResult();
             }
 
             WriteToLog(useCache ? "Enabling caching" : "Disabling caching");
 
-            var cacheMessage = new Message {Method = "Network.setCacheDisabled"};
+            var cacheMessage = new Message { Method = "Network.setCacheDisabled" };
             cacheMessage.Parameters.Add("cacheDisabled", !useCache);
-            _pageConnection.SendForResponseAsync(cacheMessage, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
+            _pageConnection.SendForResponseAsync(cacheMessage).GetAwaiter().GetResult();
 
             // Enables issuing of requestPaused events. A request will be paused until client calls one of failRequest, fulfillRequest or continueRequest/continueWithAuth
             if (urlBlacklist?.Count > 0)
             {
                 WriteToLog("Enabling Fetch to block url's that are in the url blacklist'");
-                _pageConnection.SendForResponseAsync(new Message {Method = "Fetch.enable"}, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
+                _pageConnection.SendForResponseAsync(new Message { Method = "Fetch.enable" }).GetAwaiter().GetResult();
             }
 
             // Enables page domain notifications
-            _pageConnection.SendForResponseAsync(new Message {Method = "Page.enable"}, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
+            _pageConnection.SendForResponseAsync(new Message { Method = "Page.enable" }).GetAwaiter().GetResult();
 
-            var lifecycleEventEnabledMessage = new Message {Method = "Page.setLifecycleEventsEnabled"};
+            var lifecycleEventEnabledMessage = new Message { Method = "Page.setLifecycleEventsEnabled" };
             lifecycleEventEnabledMessage.AddParameter("enabled", true);
-            _pageConnection.SendForResponseAsync(lifecycleEventEnabledMessage, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
+            _pageConnection.SendForResponseAsync(lifecycleEventEnabledMessage).GetAwaiter().GetResult();
 
             _pageConnection.MessageReceived += messageHandler;
             _pageConnection.Closed += (sender, args) => waitEvent?.Set();
@@ -352,13 +353,13 @@ namespace ChromeHtmlToPdfLib
                 // Navigates current page to the given URL
                 var pageNavigateMessage = new Message { Method = "Page.navigate" };
                 pageNavigateMessage.AddParameter("url", uri.ToString());
-                _pageConnection.SendAsync(pageNavigateMessage, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
+                _pageConnection.SendAsync(pageNavigateMessage).GetAwaiter().GetResult();
             }
             else if (!string.IsNullOrWhiteSpace(html))
             {
                 WriteToLog("Getting page frame tree");
                 var pageGetFrameTree = new Message { Method = "Page.getFrameTree" };
-                var frameTree = _pageConnection.SendForResponseAsync(pageGetFrameTree, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
+                var frameTree = _pageConnection.SendForResponseAsync(pageGetFrameTree).GetAwaiter().GetResult();
                 var frameResult = Protocol.Page.FrameTree.FromJson(frameTree);
 
                 WriteToLog("Setting document content");
@@ -366,7 +367,7 @@ namespace ChromeHtmlToPdfLib
                 var pageSetDocumentContent = new Message { Method = "Page.setDocumentContent" };
                 pageSetDocumentContent.AddParameter("frameId", frameResult.Result.FrameTree.Frame.Id);
                 pageSetDocumentContent.AddParameter("html", html);
-                _pageConnection.SendForResponseAsync(pageSetDocumentContent, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
+                _pageConnection.SendForResponseAsync(pageSetDocumentContent).GetAwaiter().GetResult();
                 // When using setDocumentContent a Page.frameNavigated event is never fired so we have to set the waitForNetworkIdle to true our self
                 waitForNetworkIdle = true;
 
@@ -390,25 +391,25 @@ namespace ChromeHtmlToPdfLib
                 mediaLoadTimeoutCancellationTokenSource.Dispose();
             }
 
-            var lifecycleEventDisabledMessage = new Message {Method = "Page.setLifecycleEventsEnabled"};
+            var lifecycleEventDisabledMessage = new Message { Method = "Page.setLifecycleEventsEnabled" };
             lifecycleEventDisabledMessage.AddParameter("enabled", false);
 
             // Disables page domain notifications
-            _pageConnection.SendForResponseAsync(lifecycleEventDisabledMessage, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
-            _pageConnection.SendForResponseAsync(new Message {Method = "Page.disable"}, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
+            _pageConnection.SendForResponseAsync(lifecycleEventDisabledMessage).GetAwaiter().GetResult();
+            _pageConnection.SendForResponseAsync(new Message { Method = "Page.disable" }).GetAwaiter().GetResult();
 
             // Disables the fetch domain
             if (urlBlacklist?.Count > 0)
             {
                 WriteToLog("Disabling Fetch");
-                _pageConnection.SendForResponseAsync(new Message {Method = "Fetch.disable"}, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
+                _pageConnection.SendForResponseAsync(new Message { Method = "Fetch.disable" }).GetAwaiter().GetResult();
             }
 
             if (logNetworkTraffic)
             {
                 WriteToLog("Disabling network traffic logging");
-                var networkMessage = new Message {Method = "Network.disable"};
-                _pageConnection.SendForResponseAsync(networkMessage, mediaLoadTimeoutCancellationTokenSource.Token).GetAwaiter().GetResult();
+                var networkMessage = new Message { Method = "Network.disable" };
+                _pageConnection.SendForResponseAsync(networkMessage).GetAwaiter().GetResult();
             }
 
             _pageConnection.MessageReceived -= messageHandler;
@@ -434,7 +435,7 @@ namespace ChromeHtmlToPdfLib
         /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
         public bool WaitForWindowStatus(string status, int timeout = 60000)
         {
-            var message = new Message {Method = "Runtime.evaluate"};
+            var message = new Message { Method = "Runtime.evaluate" };
             message.AddParameter("expression", "window.status;");
             message.AddParameter("silent", true);
             message.AddParameter("returnByValue", true);
@@ -468,7 +469,7 @@ namespace ChromeHtmlToPdfLib
             return match;
         }
         #endregion
-        
+
         #region RunJavascript
         /// <summary>
         ///     Runs the given javascript after the page has been fully loaded
@@ -477,7 +478,7 @@ namespace ChromeHtmlToPdfLib
         /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
         public void RunJavascript(string script)
         {
-            var message = new Message {Method = "Runtime.evaluate"};
+            var message = new Message { Method = "Runtime.evaluate" };
             message.AddParameter("expression", script);
             message.AddParameter("silent", false);
             message.AddParameter("returnByValue", false);
@@ -532,10 +533,10 @@ namespace ChromeHtmlToPdfLib
         /// <exception cref="ConversionException">Raised when Chrome returns an empty string</exception>
         /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer"/> reaches zero</exception>
         internal async Task PrintToPdf(Stream outputStream,
-            PageSettings pageSettings, 
+            PageSettings pageSettings,
             CountdownTimer countdownTimer = null)
         {
-            var message = new Message {Method = "Page.printToPDF"};
+            var message = new Message { Method = "Page.printToPDF" };
             message.AddParameter("landscape", pageSettings.Landscape);
             message.AddParameter("displayHeaderFooter", pageSettings.DisplayHeaderFooter);
             message.AddParameter("printBackground", pageSettings.PrintBackground);
@@ -566,9 +567,9 @@ namespace ChromeHtmlToPdfLib
 
             if (!outputStream.CanWrite)
                 throw new ConversionException("The output stream is not writable, please provide a writable stream");
-            
+
             WriteToLog("Resetting output stream to position 0");
-            message = new Message {Method = "IO.read"};
+            message = new Message { Method = "IO.read" };
             message.AddParameter("handle", printToPdfResponse.Result.Stream);
             message.AddParameter("size", 1048576); // Get the pdf in chunks of 1MB
 
@@ -596,7 +597,7 @@ namespace ChromeHtmlToPdfLib
 
                 WriteToLog("Last chunk received");
                 WriteToLog($"Closing stream with id {printToPdfResponse.Result.Stream}");
-                message = new Message {Method = "IO.close"};
+                message = new Message { Method = "IO.close" };
                 message.AddParameter("handle", printToPdfResponse.Result.Stream);
                 await _pageConnection.SendForResponseAsync(message);
                 WriteToLog("Stream closed");
@@ -634,7 +635,7 @@ namespace ChromeHtmlToPdfLib
         /// </summary>
         public void Close()
         {
-            var message = new Message {Method = "Browser.close"};
+            var message = new Message { Method = "Browser.close" };
             _browserConnection.SendForResponseAsync(message).GetAwaiter().GetResult();
         }
         #endregion
