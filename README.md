@@ -1,3 +1,7 @@
+﻿ChromeHtmlToPdf
+==============
+[![NuGet](https://img.shields.io/nuget/v/ChromeHtmlToPdf.svg?style=flat-square)](https://www.nuget.org/packages/ChromeHtmlToPdf)
+
 ## What is ChromeHtmlToPdf?
 
 ChromeHtmlToPdf is a 100% managed C# .NETStandard 2.0 library and .NET Core 3.1 console application (that also works on Linux and macOS) that can be used to convert HTML to PDF format with the use of Google Chrome
