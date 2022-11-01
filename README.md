@@ -1,6 +1,5 @@
 ﻿ChromeHtmlToPdf
 ==============
-[![NuGet](https://img.shields.io/nuget/v/ChromeHtmlToPdf.svg?style=flat-square)](https://www.nuget.org/packages/ChromeHtmlToPdf)
 
 ## What is ChromeHtmlToPdf?
 
@@ -33,6 +32,8 @@ ChromeHtmlToPdf is Copyright (C)2017-2022 Kees van Spelde and is licensed under 
     THE SOFTWARE.
 
 ## Installing via NuGet
+
+[![NuGet](https://img.shields.io/nuget/v/ChromeHtmlToPdf.svg?style=flat-square)](https://www.nuget.org/packages/ChromeHtmlToPdf)
 
 The easiest way to install ChromeHtmlToPdf is via NuGet.
 
