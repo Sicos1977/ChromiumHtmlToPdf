@@ -140,10 +140,10 @@ The console app needs .NET Core 3.1 to run, you can download this framework from
 
 https://dotnet.microsoft.com/en-us/download/dotnet/3.1
 
-Installing it from scoop the package manager (thanks to https://github.com/arnos-stuff)
+Installing it from scoop the package manager
 ============================================
 
-Just run the command from any PowerShell window
+Just run the command from any PowerShell window (thanks to https://github.com/arnos-stuff)
 
 ```
 scoop install https://gist.githubusercontent.com/arnos-stuff/4f9b2d92d812b25d0ee8335c543cba78/raw/cfa861ab3078a20c69157ab45daf33f26005fd63/chrome-html-to-pdf.json
