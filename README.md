@@ -143,6 +143,8 @@ https://dotnet.microsoft.com/en-us/download/dotnet/3.1
 Installing it from scoop the package manager
 ============================================
 
+See this for more information about scoop --> https://scoop.sh/#/
+
 Just run the command from any PowerShell window (thanks to https://github.com/arnos-stuff)
 
 ```
