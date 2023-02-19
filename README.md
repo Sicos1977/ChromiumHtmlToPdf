@@ -7,7 +7,7 @@ ChromeHtmlToPdf is a 100% managed C# .NETStandard 2.0 library and .NET Core 3.1 
 
 ## Why did I make this?
 
-I needed a replacement for wkHtmlToPdf, a great tool but the activity on this project is low and it's not 100% compatible with HTML5.
+I needed a replacement for wkHtmlToPdf, a great tool but the project is archived on GitHub and no new features are added anymore also it's not 100% compatible with HTML5.
 
 ## License Information
 
