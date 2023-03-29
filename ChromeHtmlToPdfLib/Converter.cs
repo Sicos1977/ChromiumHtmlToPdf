@@ -742,7 +742,6 @@ namespace ChromeHtmlToPdfLib
             }
 
             SetWindowSize(WindowSize.HD_1366_768);
-            _useCache = false;
         }
         #endregion
 
