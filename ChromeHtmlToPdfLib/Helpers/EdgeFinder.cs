@@ -88,8 +88,10 @@ namespace ChromiumHtmlToPdfLib.Helpers
 			// in Program Files (x86) and uses the same registry key!
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                var key = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe", "Path", string.Empty);
-                
+                var key = Registry.GetValue(
+                    @"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Google Chrome",
+                    "InstallLocation", string.Empty);
+
                 if (key != null)
                 {
                     // ReSharper disable once AssignNullToNotNullAttribute
