@@ -108,7 +108,7 @@ namespace ChromiumHtmlToPdfConsole
         ///     Use the given user-agent
         /// </summary>
         [Option("user-agent", Required = false,
-            HelpText = "Let Chrome know that we want to use the given user-agent string instead of the default one")]
+            HelpText = "Let Chromium know that we want to use the given user-agent string instead of the default one")]
         public string UserAgent { get; set; }
 
         /// <summary>
@@ -149,55 +149,55 @@ namespace ChromiumHtmlToPdfConsole
         public bool IgnoreInvalidPageRanges { get; set; }
 
         /// <summary>
-        ///     The location for Chrome, when not set then the registry is accessed to get the needed information
+        ///     The location for Chrome or Edge, when not set then the registry is accessed to get the needed information
         /// </summary>
-        [Option("chrome-location", Required = false,
+        [Option("chromium-location", Required = false,
             HelpText =
-                "The location for Chrome, when not set then this tool first looks inside the folder where " +
-                "it is executed from if it can find Chrome.exe (portable) otherwise the registry is accessed " +
+                "The location for Chrome or Edge, when not set then this tool first looks inside the folder where " +
+                "it is executed from if it can find Chromium (portable) otherwise the registry is accessed " +
                 "to get the needed information")]
-        public string ChromeLocation { get; set; }
+        public string ChromiumLocation { get; set; }
 
         /// <summary>
-        ///     The location for Chrome, when not set then the registry is accessed to get the needed information
+        ///     The location for Chrome or Edge, when not set then the registry is accessed to get the needed information
         /// </summary>
-        [Option("chrome-userprofile", Required = false,
+        [Option("chromium-userprofile", Required = false,
             HelpText =
-                "The location where Chrome can store it's user profile")]
-        public string ChromeUserProfile { get; set; }
+                "The location where Chromium can store it's user profile")]
+        public string ChromiumUserProfile { get; set; }
 
         /// <summary>
-        ///     This tells Chrome to use a custom proxy configuration
+        ///     This tells Chromium to use a custom proxy configuration
         /// </summary>
-        [Option("proxy-server", Required = false, HelpText = "This tells Chrome to use a custom proxy configuration")]
+        [Option("proxy-server", Required = false, HelpText = "This tells Chromium to use a custom proxy configuration")]
         public string ProxyServer { get; set; }
 
         /// <summary>
-        ///     This tells chrome to bypass any specified proxy for the given semi-colon-separated list of hosts. This flag must be
+        ///     This tells Chromium to bypass any specified proxy for the given semi-colon-separated list of hosts. This flag must be
         ///     used (or rather, only has an effect) in
         ///     tandem with --proxy-server. For example "*.google.com;*foo.com;127.0.0.1:8080"
         /// </summary>
         [Option("proxy-bypass-list", Required = false,
             HelpText =
-                "This tells chrome to bypass any specified proxy for the given semi-colon-separated list of hosts. " +
+                "This tells Chromium to bypass any specified proxy for the given semi-colon-separated list of hosts. " +
                 "This flag must be used (or rather, only has an effect) in tandem with --proxy-server. " +
                 "For example \"*.google.com;*foo.com;127.0.0.1:8080\""
         )]
         public string ProxyByPassList { get; set; }
 
         /// <summary>
-        ///     This tells Chrome to use the PAC file at the specified URL. For example "http://wpad/windows.pac"
+        ///     This tells Chromium to use the PAC file at the specified URL. For example "http://wpad/windows.pac"
         /// </summary>
         [Option("proxy-pac-url", Required = false,
             HelpText =
-                "This tells Chrome to use the PAC file at the specified URL. For example \"http://wpad/windows.pac\"")]
+                "This tells Chromium to use the PAC file at the specified URL. For example \"http://wpad/windows.pac\"")]
         public string ProxyPacUrl { get; set; }
 
         /// <summary>
-        ///     Run Chrome under this user. This option is used in combination with --password"
+        ///     Run Chrome or Edge under this user. This option is used in combination with --password"
         /// </summary>
         [Option("user", Required = false,
-            HelpText = "Run Chrome under this user. This option is used in combination with --password")]
+            HelpText = "Run Chrome or Edge under this user. This option is used in combination with --password")]
         public string User { get; set; }
 
         /// <summary>
@@ -328,7 +328,7 @@ namespace ChromiumHtmlToPdfConsole
         /// </summary>
         [Option("url-blacklist", Required = false,
             HelpText =
-                "This tells chrome to blacklist certain urls by blocking them. " +
+                "This tells Chromium to blacklist certain urls by blocking them. " +
                 "For example \"*.google.com;*foo.com;\""
         )]
         public string UrlBlacklist { get; set; }
@@ -359,13 +359,13 @@ namespace ChromiumHtmlToPdfConsole
         public bool DiskCacheDisabled { get; set; }
         
         /// <summary>
-        ///     When set then Chrome uses this directory for caching
+        ///     When set then Chrome or Edge uses this directory for caching
         /// </summary>
-        [Option("disk-cache-directory", Required = false, HelpText = "When set then Chrome uses this directory for caching")]
+        [Option("disk-cache-directory", Required = false, HelpText = "When set then Chrome or Edge uses this directory for caching")]
         public string DiskCacheDirectory { get; set; }
 
         /// <summary>
-        ///     When set then Chrome uses this directory for caching
+        ///     When set then Chrome or Edge uses this directory for caching
         /// </summary>
         [Option("disk-cache-size", Required = false, HelpText = "The size for the '--disk-cache-directory' in megabytes")]
         public long? DiskCacheSize { get; set; }

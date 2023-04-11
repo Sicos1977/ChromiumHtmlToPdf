@@ -183,13 +183,13 @@ namespace ChromiumHtmlToPdfConsole
                 var helpText = HelpText.AutoBuild(parserResult);
 
                 helpText.AddPreOptionsText("Example usage:");
-                helpText.AddPreOptionsText("    ChromeHtmlToPdf --input https://www.google.nl --output c:\\google.pdf");
+                helpText.AddPreOptionsText("    ChromiumHtmlToPdf --input https://www.google.nl --output c:\\google.pdf");
                 helpText.AddEnumValuesToHelpText = true;
                 helpText.AdditionalNewLineAfterOption = false;
                 helpText.AddOptions(parserResult);
                 helpText.AddPostOptionsLine("Contact:");
                 helpText.AddPostOptionsLine("    If you experience bugs or want to request new features please visit");
-                helpText.AddPostOptionsLine("    https://github.com/Sicos1977/ChromeHtmlToPdf/issues");
+                helpText.AddPostOptionsLine("    https://github.com/Sicos1977/ChromiumHtmlToPdf/issues");
                 helpText.AddPostOptionsLine(string.Empty);
 
                 Console.Error.Write(helpText);
@@ -341,7 +341,7 @@ namespace ChromiumHtmlToPdfConsole
         {
             var pageSettings = GetPageSettings(options);
 
-            using var converter = new Converter(options.ChromeLocation, options.ChromeUserProfile, _logger);
+            using var converter = new Converter(options.ChromiumLocation, options.ChromiumUserProfile, _logger);
             SetConverterSettings(converter, options);
 
             converter.ConvertToPdf(CheckInput(options),
@@ -397,7 +397,7 @@ namespace ChromiumHtmlToPdfConsole
 
             using (logger)
             {
-                using var converter = new Converter(options.ChromeLocation, options.ChromeUserProfile, logger)
+                using var converter = new Converter(options.ChromiumLocation, options.ChromiumUserProfile, logger)
                 {
                     InstanceId = instanceId
                 };

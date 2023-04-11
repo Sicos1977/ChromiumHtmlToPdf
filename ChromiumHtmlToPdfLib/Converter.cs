@@ -491,7 +491,7 @@ namespace ChromiumHtmlToPdfLib
         /// <remarks>
         ///     If Chrome is already running then this step is skipped
         /// </remarks>
-        /// <exception cref="ChromeException"></exception>
+        /// <exception cref="ChromiumException"></exception>
         private void StartChromeHeadless()
         {
             if (IsChromiumRunning)
@@ -593,7 +593,7 @@ namespace ChromiumHtmlToPdfLib
                 if (_conversionTimeout.HasValue)
                 {
                     if (!_chromeWaitEvent.WaitOne(_conversionTimeout.Value))
-                        throw new ChromeException(
+                        throw new ChromiumException(
                             $"A timeout of '{_conversionTimeout.Value}' milliseconds exceeded, could not make a connection to the Chrome dev tools");
                 }
 
@@ -633,7 +633,7 @@ namespace ChromiumHtmlToPdfLib
                 WriteToLog($"Process exit time: {_chromeProcess.ExitTime:yyyy-MM-ddTHH:mm:ss.fff}");
                 var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromeProcess.ExitCode));
                 WriteToLog($"Exception: {exception}");
-                throw new ChromeException($"Chrome exited unexpectedly, {exception}");
+                throw new ChromiumException($"Chrome exited unexpectedly, {exception}");
             }
             catch (Exception exception)
             {
@@ -658,7 +658,7 @@ namespace ChromiumHtmlToPdfLib
                     timeout -= 5;
                     Thread.Sleep(5);
                     if (timeout <= 0)
-                        throw new ChromeException(
+                        throw new ChromiumException(
                             $"A timeout of '{tempTimeout}' milliseconds exceeded, the file '{_devToolsActivePortFile}' did not exist");
                 }
                 else
@@ -672,7 +672,7 @@ namespace ChromiumHtmlToPdfLib
                         timeout -= 5;
                         Thread.Sleep(5);
                         if (timeout <= 0)
-                            throw new ChromeException(
+                            throw new ChromiumException(
                                 $"A timeout of '{tempTimeout}' milliseconds exceeded, could not read the file '{_devToolsActivePortFile}'", exception);
                     }
                 }
@@ -808,7 +808,7 @@ namespace ChromiumHtmlToPdfLib
         public void AddChromiumArgument(string argument)
         {
             if (IsChromiumRunning)
-                throw new ChromeException($"The Chromium based browser is already running, you need to set the argument '{argument}' before staring the browser");
+                throw new ChromiumException($"The Chromium based browser is already running, you need to set the argument '{argument}' before staring the browser");
 
             if (string.IsNullOrWhiteSpace(argument))
                 throw new ArgumentException("Argument is null, empty or white space");
@@ -835,7 +835,7 @@ namespace ChromiumHtmlToPdfLib
         public void AddChromiumArgument(string argument, string value)
         {
             if (IsChromiumRunning)
-                throw new ChromeException($"The Chromium based browser is already running, you need to set the argument '{argument}' before staring the browser");
+                throw new ChromiumException($"The Chromium based browser is already running, you need to set the argument '{argument}' before staring the browser");
 
             if (string.IsNullOrWhiteSpace(argument))
                 throw new ArgumentException("Argument is null, empty or white space");

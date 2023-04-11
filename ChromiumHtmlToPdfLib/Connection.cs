@@ -187,7 +187,7 @@ namespace ChromiumHtmlToPdfLib
                 if (i != 30000) continue;
                 var message = $"Websocket connection timed out after 30 seconds with the state '{_webSocket.State}'";
                 WriteToLog(message);
-                throw new ChromeException(message);
+                throw new ChromiumException(message);
             }
 
             WriteToLog("Websocket opened");

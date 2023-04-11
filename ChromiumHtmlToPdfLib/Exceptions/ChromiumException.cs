@@ -34,7 +34,7 @@ namespace ChromiumHtmlToPdfLib.Exceptions
     ///     Raised when an error is returned from Chrome
     /// </summary>
     [Serializable]
-    public class ChromeException : Exception
+    public class ChromiumException : Exception
     {
         /// <summary>
         ///     Returns the error code that is returned from Chrome
@@ -46,18 +46,18 @@ namespace ChromiumHtmlToPdfLib.Exceptions
         /// </summary>
         /// <param name="info"></param>
         /// <param name="context"></param>
-        protected ChromeException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected ChromiumException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 
         /// <summary>
         ///     Raised when an error is returned from Chrome
         /// </summary>
-        public ChromeException() { }
+        public ChromiumException() { }
 
         /// <summary>
         ///     Raised when an error is returned from Chrome
         /// </summary>
         /// <param name="error"></param>
-        public ChromeException(Error error) : base(error.InnerError.Message)
+        public ChromiumException(Error error) : base(error.InnerError.Message)
         {
             Code = error.InnerError.Code;
         }
@@ -66,13 +66,13 @@ namespace ChromiumHtmlToPdfLib.Exceptions
         ///     Raised when an error is returned from Chrome
         /// </summary>
         /// <param name="message"></param>
-        public ChromeException(string message) : base(message) { }
+        public ChromiumException(string message) : base(message) { }
 
         /// <summary>
         ///     Raised when an error is returned from Chrome
         /// </summary>
         /// <param name="message"></param>
         /// <param name="innerException"></param>
-        public ChromeException(string message, Exception innerException) : base(message, innerException) { }
+        public ChromiumException(string message, Exception innerException) : base(message, innerException) { }
     }
 }

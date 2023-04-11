@@ -49,7 +49,7 @@ using Base = ChromiumHtmlToPdfLib.Protocol.Network.Base;
 namespace ChromiumHtmlToPdfLib
 {
     /// <summary>
-    ///     Handles all the communication tasks with Chrome remote dev tools
+    ///     Handles all the communication tasks with Chromium remote dev tools
     /// </summary>
     /// <remarks>
     ///     See https://chromedevtools.github.io/devtools-protocol/
@@ -68,7 +68,7 @@ namespace ChromiumHtmlToPdfLib
         private readonly ILogger _logger;
 
         /// <summary>
-        ///     A connection to the browser (Chrome)
+        ///     A connection to the browser (Chrome or Edge)
         /// </summary>
         private readonly Connection _browserConnection;
 
@@ -99,7 +99,7 @@ namespace ChromiumHtmlToPdfLib
 
         #region Constructor & destructor
         /// <summary>
-        ///     Makes this object and sets the Chrome remote debugging url
+        ///     Makes this object and sets the Chromium remote debugging url
         /// </summary>
         /// <param name="browser">The websocket to the browser</param>
         /// <param name="logger">When set then logging is written to this ILogger instance for all conversions at the Information log level</param>
@@ -133,7 +133,7 @@ namespace ChromiumHtmlToPdfLib
 
         #region NavigateTo
         /// <summary>
-        ///     Instructs Chrome to navigate to the given <paramref name="uri" />
+        ///     Instructs Chromium to navigate to the given <paramref name="uri" />
         /// </summary>
         /// <param name="safeUrls">A list with URL's that are safe to load</param>
         /// <param name="useCache">When <c>true</c> then caching will be enabled</param>
@@ -147,7 +147,7 @@ namespace ChromiumHtmlToPdfLib
         ///     has been completely loaded</param>
         /// <param name="urlBlacklist">A list with URL's that need to be blocked (use * as a wildcard)</param>
         /// <param name="logNetworkTraffic">When enabled network traffic is also logged</param>
-        /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
+        /// <exception cref="ChromiumException">Raised when an error is returned by Chromium</exception>
         /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer"/> reaches zero</exception>
         internal void NavigateTo(
             List<string> safeUrls,
@@ -423,7 +423,7 @@ namespace ChromiumHtmlToPdfLib
             if (!string.IsNullOrEmpty(navigationError))
             {
                 WriteToLog(navigationError);
-                throw new ChromeNavigationException(navigationError);
+                throw new ChromiumNavigationException(navigationError);
             }
         }
         #endregion
@@ -435,7 +435,7 @@ namespace ChromiumHtmlToPdfLib
         /// <param name="status">The case insensitive status</param>
         /// <param name="timeout">Continue after reaching the set timeout in milliseconds</param>
         /// <returns><c>true</c> when window status matched, <c>false</c> when timing out</returns>
-        /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
+        /// <exception cref="ChromiumException">Raised when an error is returned by Chromium</exception>
         public bool WaitForWindowStatus(string status, int timeout = 60000)
         {
             var message = new Message { Method = "Runtime.evaluate" };
@@ -478,7 +478,7 @@ namespace ChromiumHtmlToPdfLib
         ///     Runs the given javascript after the page has been fully loaded
         /// </summary>
         /// <param name="script">The javascript to run</param>
-        /// <exception cref="ChromeException">Raised when an error is returned by Chrome</exception>
+        /// <exception cref="ChromiumException">Raised when an error is returned by Chromium</exception>
         public void RunJavascript(string script)
         {
             var message = new Message { Method = "Runtime.evaluate" };
@@ -494,13 +494,13 @@ namespace ChromiumHtmlToPdfLib
                 errorDescription = evaluateError.Result.ExceptionDetails.Exception.Description;
 
             if (!string.IsNullOrEmpty(errorDescription))
-                throw new ChromeException(errorDescription);
+                throw new ChromiumException(errorDescription);
         }
         #endregion
 
         #region CaptureSnapshot
         /// <summary>
-        ///     Instructs Chrome to capture a snapshot from the loaded page
+        ///     Instructs Chromium to capture a snapshot from the loaded page
         /// </summary>
         /// <param name="countdownTimer">If a <see cref="CountdownTimer"/> is set then
         /// the method will raise an <see cref="ConversionTimedOutException"/> in the 
@@ -523,7 +523,7 @@ namespace ChromiumHtmlToPdfLib
 
         #region PrintToPdf
         /// <summary>
-        ///     Instructs Chrome to print the page
+        ///     Instructs Chromium to print the page
         /// </summary>
         /// <param name="outputStream">The generated PDF gets written to this stream</param>
         /// <param name="pageSettings"><see cref="PageSettings" /></param>
@@ -533,7 +533,7 @@ namespace ChromiumHtmlToPdfLib
         /// <remarks>
         ///     See https://chromedevtools.github.io/devtools-protocol/tot/Page/#method-printToPDF
         /// </remarks>
-        /// <exception cref="ConversionException">Raised when Chrome returns an empty string</exception>
+        /// <exception cref="ConversionException">Raised when Chromium returns an empty string</exception>
         /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer"/> reaches zero</exception>
         internal async Task PrintToPdf(Stream outputStream,
             PageSettings pageSettings,
@@ -566,7 +566,7 @@ namespace ChromiumHtmlToPdfLib
             var printToPdfResponse = PrintToPdfResponse.FromJson(result);
 
             if (string.IsNullOrEmpty(printToPdfResponse.Result?.Stream))
-                throw new ConversionException($"Conversion failed ... did not get the expected response from Chrome, response '{result}'");
+                throw new ConversionException($"Conversion failed ... did not get the expected response from Chromium, response '{result}'");
 
             if (!outputStream.CanWrite)
                 throw new ConversionException("The output stream is not writable, please provide a writable stream");
@@ -612,9 +612,9 @@ namespace ChromiumHtmlToPdfLib
 
         #region CaptureScreenshot
         /// <summary>
-        ///     Instructs Chrome to take a screenshot of the page
+        ///     Instructs Chromium to take a screenshot from the page
         /// </summary>
-        /// <exception cref="ConversionException">Raised when Chrome returns an empty string</exception>
+        /// <exception cref="ConversionException">Raised when Chromium returns an empty string</exception>
         /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer"/> reaches zero</exception>
         internal async Task<CaptureScreenshotResponse> CaptureScreenshot(CountdownTimer countdownTimer = null)
         {
@@ -634,7 +634,7 @@ namespace ChromiumHtmlToPdfLib
 
         #region Close
         /// <summary>
-        ///     Instructs Chrome to close
+        ///     Instructs the browser to close
         /// </summary>
         public void Close()
         {
