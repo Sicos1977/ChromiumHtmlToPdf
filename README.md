@@ -1,9 +1,9 @@
-﻿ChromeHtmlToPdf
+﻿ChromiumHtmlToPdf
 ==============
 
-## What is ChromeHtmlToPdf?
+## What is ChromiumHtmlToPdf?
 
-ChromeHtmlToPdf is a 100% managed C# .NETStandard 2.0 library and .NET Core 3.1 console application (that also works on Linux and macOS) that can be used to convert HTML to PDF format with the use of Google Chrome
+ChromiumHtmlToPdf is a 100% managed C# .NETStandard 2.0 library and .NET Core 3.1 console application (that also works on Linux and macOS) that can be used to convert HTML to PDF format with the use of Google Chromemium (Google Chrome and Microsoft Edge browser)
 
 ## Why did I make this?
 
@@ -39,7 +39,7 @@ The easiest way to install ChromeHtmlToPdf is via NuGet.
 
 In Visual Studio's Package Manager Console, simply enter the following command:
 
-    Install-Package ChromeHtmlToPdf 
+    Install-Package ChromiumHtmlToPdf 
 
 ### Converting a file or url from code
 
@@ -55,7 +55,7 @@ System.Diagnostics.Process.Start(@"c:\google.pdf");
 
 ### Converting from Internet Information Services (IIS)
 
-- Download Chrome portable and extract it
+- Download Google Chrome or Microsoft Edge portable and extract it
 - Let your website run under the ApplicationPool identity
 - Copy the files to the same location as where your project exists on the webserver
 - Reference the ChromeHtmlToPdfLib.dll from your webproject
@@ -63,14 +63,14 @@ System.Diagnostics.Process.Start(@"c:\google.pdf");
 
 Thats it.
 
-If you get strange errors when starting Chrome than this is due to the account that is used to run your site. I had a simular problem and solved it by hosting ChromeHtmlToPdf in a Windows service and making calls to it with a WCF service.
+If you get strange errors when starting Chrome than this is due to the account that is used to run your site. I had a simular problem and solved it by hosting ChromiumHtmlToPdf in a Windows service and making calls to it with a WCF service.
 
 ### Converting from the command line
 
 ```csharp
-ChromeHtmlToPdf.exe --input https://www.google.com --output c:\google.pdf
+ChromiumHtmlToPdf.exe --input https://www.google.com --output c:\google.pdf
 ```
-![screenshot](https://github.com/Sicos1977/ChromeHtmlToPdf/blob/master/console.png)
+![screenshot](https://github.com/Sicos1977/ChromiumHtmlToPdf/blob/master/console.png)
 
 ### Console app exit codes
 
@@ -126,13 +126,13 @@ https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.6.5/ChromeHtmlt
 
 Older versions
 --------------
-https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.6.4/ChromeHtmlToPDF_264.zip
-https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.6.0/ChromeHtmlToPDF_260.zip
-https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.5.33/ChromeHtmlToPdf_253.zip
-https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.5.1/ChromeHtmlToPdf_251.zip
-https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.2/ChromeHtmlToPdf_220.zip
-https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.1.6/ChromeHtmlToPdf_216.zip
-https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.0.11/ChromeHtmlToPdf_211.zip
+https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/2.6.4/ChromeHtmlToPDF_264.zip
+https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/2.6.0/ChromeHtmlToPDF_260.zip
+https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/2.5.33/ChromeHtmlToPdf_253.zip
+https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/2.5.1/ChromeHtmlToPdf_251.zip
+https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/2.2/ChromeHtmlToPdf_220.zip
+https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/2.1.6/ChromeHtmlToPdf_216.zip
+https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/2.0.11/ChromeHtmlToPdf_211.zip
 
 .NET Core 3.1 for the console app
 ---------------------------------
@@ -154,9 +154,9 @@ scoop install https://gist.githubusercontent.com/arnos-stuff/4f9b2d92d812b25d0ee
 Logging
 =======
 
-From version 2.5.0 ChromeHtmlToPdfLib uses the Microsoft ILogger interface (https://docs.microsoft.com/en-us/dotnet/api/microsoft.extensions.logging.ilogger?view=dotnet-plat-ext-5.0). You can use any logging library that uses this interface.
+From version 2.5.0 ChromiumHtmlToPdfLib uses the Microsoft ILogger interface (https://docs.microsoft.com/en-us/dotnet/api/microsoft.extensions.logging.ilogger?view=dotnet-plat-ext-5.0). You can use any logging library that uses this interface.
 
-ChromeHtmlToPdfLib has some build in loggers that can be found in the ```ChromeHtmlToPdfLib.Logger``` namespace. 
+ChromiumHtmlToPdfLib has some build in loggers that can be found in the ```ChromiumHtmlToPdfLib.Logger``` namespace. 
 
 For example
 
@@ -166,12 +166,12 @@ var logger = !string.IsNullOrWhiteSpace(<some logfile>)
                 : new ChromeHtmlToPdfLib.Loggers.Console();
 ```
 
-Setting a common Chrome cache directory
-=======================================
+Setting a common Google Chrome or Microsoft Edge cache directory
+================================================================
 
-You can not share a cache directory between Chrome instances because the first instance that is using the cache directory will lock it for its own use. The most efficient way to make optimal use of a cache directory is to create one for each instance that you are running. 
+You can not share a cache directory between a Google Chrome or Microsoft Edge instances because the first instance that is using the cache directory will lock it for its own use. The most efficient way to make optimal use of a cache directory is to create one for each instance that you are running. 
 
-I'm using Chrome from a WCF service and used the class below to make optimal use of cache directories. The class will create an instance id that I use to create a cache directory for each running Chrome instance. When the instance shuts down the instance id is put back in a stack so that the next executing instance can use this directory again.
+I'm using Google Chrome from a WCF service and used the class below to make optimal use of cache directories. The class will create an instance id that I use to create a cache directory for each running Chrome instance. When the instance shuts down the instance id is put back in a stack so that the next executing instance can use this directory again.
 
 ```csharp
 public static class InstanceId
