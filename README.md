@@ -11,7 +11,7 @@ I needed a replacement for wkHtmlToPdf, a great tool but the project is archived
 
 ## License Information
 
-ChromeHtmlToPdf is Copyright (C)2017-2023 Kees van Spelde and is licensed under the MIT license:
+ChromiumHtmlToPdf is Copyright (C)2017-2023 Kees van Spelde and is licensed under the MIT license:
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,7 @@ ChromeHtmlToPdf is Copyright (C)2017-2023 Kees van Spelde and is licensed under 
 
 [![NuGet](https://img.shields.io/nuget/v/ChromeHtmlToPdf.svg?style=flat-square)](https://www.nuget.org/packages/ChromeHtmlToPdf)
 
-The easiest way to install ChromeHtmlToPdf is via NuGet.
+The easiest way to install ChromiumHtmlToPdf is via NuGet.
 
 In Visual Studio's Package Manager Console, simply enter the following command:
 
@@ -63,7 +63,7 @@ System.Diagnostics.Process.Start(@"c:\google.pdf");
 
 Thats it.
 
-If you get strange errors when starting Chrome than this is due to the account that is used to run your site. I had a simular problem and solved it by hosting ChromiumHtmlToPdf in a Windows service and making calls to it with a WCF service.
+If you get strange errors when starting Google Chrome or Microsoft Edge than this is due to the account that is used to run your site. I had a simular problem and solved it by hosting ChromiumHtmlToPdf in a Windows service and making calls to it with a WCF service.
 
 ### Converting from the command line
 
@@ -162,8 +162,8 @@ For example
 
 ```csharp
 var logger = !string.IsNullOrWhiteSpace(<some logfile>)
-                ? new ChromeHtmlToPdfLib.Loggers.Stream(File.OpenWrite(<some logfile>))
-                : new ChromeHtmlToPdfLib.Loggers.Console();
+                ? new ChromiumHtmlToPdfLib.Loggers.Stream(File.OpenWrite(<some logfile>))
+                : new ChromiumHtmlToPdfLib.Loggers.Console();
 ```
 
 Setting a common Google Chrome or Microsoft Edge cache directory
@@ -257,7 +257,7 @@ See this issue for more information --> https://github.com/Sicos1977/ChromeHtmlT
 To make the library work the flag --no-sandbox will be set by default (on Windows this flag is not set). The library automaticly detect on which system you are running the code and sets the flag when needed. If for whatever reason you get a converting error then check if this flag is set and if not then add it manually.
 
 ```csharp
-converter.AddChromeArgument("--no-sandbox")
+converter.AddChromiumArgument("--no-sandbox")
 ```
 
 Core Team
@@ -266,6 +266,6 @@ Core Team
 
 ## Reporting Bugs
 
-Have a bug or a feature request? [Please open a new issue](https://github.com/Sicos1977/ChromeHtmlToPdf/issues).
+Have a bug or a feature request? [Please open a new issue](https://github.com/Sicos1977/ChromiumHtmlToPdf/issues).
 
 Before opening a new issue, please search for existing issues to avoid submitting duplicates.
