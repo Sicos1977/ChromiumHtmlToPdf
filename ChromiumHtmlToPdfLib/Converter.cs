@@ -50,7 +50,7 @@ using Microsoft.Extensions.Logging;
 namespace ChromiumHtmlToPdfLib
 {
     /// <summary>
-    /// A converter class around Google Chrome headless to convert html to pdf
+    /// A converter class around Chromium headless to convert html to pdf
     /// </summary>
     public class Converter : IDisposable
     {
@@ -74,6 +74,11 @@ namespace ChromiumHtmlToPdfLib
 
         #region Fields
         /// <summary>
+        ///     <see cref="Enums.Browser"/>
+        /// </summary>
+        private readonly Enums.Browser _browserUsed;
+
+        /// <summary>
         ///     The default Chromium arguments
         /// </summary>
         private List<string> _defaultChromiumArgument;
@@ -89,7 +94,7 @@ namespace ChromiumHtmlToPdfLib
         private ILogger _logger;
 
         /// <summary>
-        ///     Chrome with it's full path
+        ///     Chrome or Edge with it's full path
         /// </summary>
         private readonly string _chromiumExeFileName;
 
@@ -121,7 +126,7 @@ namespace ChromiumHtmlToPdfLib
         /// <summary>
         ///     The process id under which the Chromium based browser is running
         /// </summary>
-        private Process _chromeProcess;
+        private Process _chromiumProcess;
 
         /// <summary>
         ///     Handles the communication with the Chromium based browser dev tools
@@ -152,10 +157,10 @@ namespace ChromiumHtmlToPdfLib
         /// <summary>
         ///     Flag to wait in code when starting the Chromium based browser
         /// </summary>
-        private ManualResetEvent _chromeWaitEvent;
+        private ManualResetEvent _chromiumWaitEvent;
 
         /// <summary>
-        ///     Exceptions thrown from a Chrome startup event
+        ///     Exceptions thrown from a Chromium startup event
         /// </summary>
         private Exception _chromiumEventException;
 
@@ -170,7 +175,7 @@ namespace ChromiumHtmlToPdfLib
         private readonly bool _userProfileSet;
 
         /// <summary>
-        ///     The file that Chrome creates to tell us on what port it is listening with the devtools
+        ///     The file that Chromium creates to tell us on what port it is listening with the devtools
         /// </summary>
         private readonly string _devToolsActivePortFile;
 
@@ -181,6 +186,22 @@ namespace ChromiumHtmlToPdfLib
         #endregion
 
         #region Properties
+        private string BrowserName
+        {
+            get
+            {
+                switch (_browserUsed)
+                {
+                    case Enums.Browser.Chrome:
+                        return "Google Chrome";
+                    case Enums.Browser.Edge:
+                        return "Microsoft Edge";
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+        }
+
         /// <summary>
         ///     Returns <c>true</c> when the Chromium based browser is running
         /// </summary>
@@ -189,11 +210,11 @@ namespace ChromiumHtmlToPdfLib
         {
             get
             {
-                if (_chromeProcess == null)
+                if (_chromiumProcess == null)
                     return false;
 
-                _chromeProcess.Refresh();
-                return !_chromeProcess.HasExited;
+                _chromiumProcess.Refresh();
+                return !_chromiumProcess.HasExited;
             }
         }
 
@@ -210,7 +231,7 @@ namespace ChromiumHtmlToPdfLib
 
         /// <summary>
         ///     Used to add the extension of text based files that needed to be wrapped in an HTML PRE
-        ///     tag so that they can be opened by Chrome
+        ///     tag so that they can be opened by Chromium
         /// </summary>
         /// <example>
         ///     <code>
@@ -424,7 +445,7 @@ namespace ChromiumHtmlToPdfLib
         /// </param>
         /// <param name="logger">When set then logging is written to this ILogger instance for all conversions at the Information log level</param>
         /// <param name="useCache">When <c>true</c> (default) then Chrome or Edge uses it disk cache when possible</param>
-        /// <param name="browser">THe Chromium based browser to use in this library, currently Google Chrome or Microsoft Edge are supported</param>
+        /// <param name="browser">The Chromium based browser to use in this library, currently Google Chrome or Microsoft Edge are supported</param>
         /// <exception cref="FileNotFoundException">Raised when <see cref="chromiumExeFileName" /> does not exists</exception>
         /// <exception cref="DirectoryNotFoundException">
         ///     Raised when the <paramref name="userProfile" /> directory is given but does not exists
@@ -438,10 +459,9 @@ namespace ChromiumHtmlToPdfLib
             _preWrapExtensions = new List<string>();
             _logger = logger;
             _useCache = useCache;
+            _browserUsed = browser;
 
             ResetChromiumArguments();
-
-            string browserName = null;
 
             if (string.IsNullOrWhiteSpace(chromiumExeFileName))
             {
@@ -449,11 +469,9 @@ namespace ChromiumHtmlToPdfLib
                 {
                     case Enums.Browser.Chrome:
                         chromiumExeFileName = ChromeFinder.Find();
-                        browserName = "Google Chrome";
                         break;
                     case Enums.Browser.Edge:
                         chromiumExeFileName = EdgeFinder.Find();
-                        browserName = "Microsoft Edge";
                         break;
                     default:
                         throw new ArgumentOutOfRangeException(nameof(browser), browser, null);
@@ -461,7 +479,7 @@ namespace ChromiumHtmlToPdfLib
             }
 
             if (!File.Exists(chromiumExeFileName))
-                throw new FileNotFoundException($"Could not find {browserName} in location '{chromiumExeFileName}'");
+                throw new FileNotFoundException($"Could not find {BrowserName} in location '{chromiumExeFileName}'");
 
             _chromiumExeFileName = chromiumExeFileName;
 
@@ -484,29 +502,29 @@ namespace ChromiumHtmlToPdfLib
         }
         #endregion
 
-        #region StartChromeHeadless
+        #region StartChromiumHeadless
         /// <summary>
         ///     Start Chrome headless
         /// </summary>
         /// <remarks>
-        ///     If Chrome is already running then this step is skipped
+        ///     If Chrome or Edge is already running then this step is skipped
         /// </remarks>
         /// <exception cref="ChromiumException"></exception>
-        private void StartChromeHeadless()
+        private void StartChromiumHeadless()
         {
             if (IsChromiumRunning)
             {
-                WriteToLog($"Chrome is already running on PID {_chromeProcess.Id}... skipped");
+                WriteToLog($"{BrowserName} is already running on PID {_chromiumProcess.Id}... skipped");
                 return;
             }
 
             _chromiumEventException = null;
             var workingDirectory = Path.GetDirectoryName(_chromiumExeFileName);
 
-            WriteToLog($"Starting Chrome from location '{_chromiumExeFileName}' with working directory '{workingDirectory}'");
+            WriteToLog($"Starting {BrowserName} from location '{_chromiumExeFileName}' with working directory '{workingDirectory}'");
             WriteToLog($"\"{_chromiumExeFileName}\" {string.Join(" ", DefaultChromiumArguments)}");
 
-            _chromeProcess = new Process();
+            _chromiumProcess = new Process();
             var processStartInfo = new ProcessStartInfo
             {
                 FileName = _chromiumExeFileName,
@@ -529,7 +547,7 @@ namespace ChromiumHtmlToPdfLib
 
                 if (!string.IsNullOrWhiteSpace(domain) && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    WriteToLog($"Starting Chrome with username '{userName}' on domain '{domain}'");
+                    WriteToLog($"Starting {BrowserName} with username '{userName}' on domain '{domain}'");
                     processStartInfo.Domain = domain;
                 }
                 else
@@ -537,7 +555,7 @@ namespace ChromiumHtmlToPdfLib
                     if (!string.IsNullOrWhiteSpace(domain) && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                         WriteToLog($"Ignoring domain '{domain}' because this is only supported on Windows");
 
-                    WriteToLog($"Starting Chrome with username '{userName}'");
+                    WriteToLog($"Starting {BrowserName} with username '{userName}'");
                 }
 
                 processStartInfo.UseShellExecute = false;
@@ -562,44 +580,44 @@ namespace ChromiumHtmlToPdfLib
 
             if (!_userProfileSet)
             {
-                _chromeProcess.ErrorDataReceived += _chromeProcess_ErrorDataReceived;
-                _chromeProcess.EnableRaisingEvents = true;
+                _chromiumProcess.ErrorDataReceived += _chromeProcess_ErrorDataReceived;
+                _chromiumProcess.EnableRaisingEvents = true;
                 processStartInfo.UseShellExecute = false;
                 processStartInfo.RedirectStandardError = true;
             }
             else if (File.Exists(_devToolsActivePortFile))
                 File.Delete(_devToolsActivePortFile);
 
-            _chromeProcess.StartInfo = processStartInfo;
-            _chromeProcess.Exited += _chromeProcess_Exited;
+            _chromiumProcess.StartInfo = processStartInfo;
+            _chromiumProcess.Exited += _chromeProcess_Exited;
 
             try
             {
-                _chromeProcess.Start();
+                _chromiumProcess.Start();
             }
             catch (Exception exception)
             {
-                WriteToLog("Could not start the Chrome process due to the following reason: " + ExceptionHelpers.GetInnerException(exception));
+                WriteToLog($"Could not start the {BrowserName} process due to the following reason: " + ExceptionHelpers.GetInnerException(exception));
                 throw;
             }
 
-            WriteToLog("Chrome process started");
+            WriteToLog($"{BrowserName} process started");
 
             if (!_userProfileSet)
             {
-                _chromeWaitEvent = new ManualResetEvent(false);
-                _chromeProcess.BeginErrorReadLine();
+                _chromiumWaitEvent = new ManualResetEvent(false);
+                _chromiumProcess.BeginErrorReadLine();
 
                 if (_conversionTimeout.HasValue)
                 {
-                    if (!_chromeWaitEvent.WaitOne(_conversionTimeout.Value))
+                    if (!_chromiumWaitEvent.WaitOne(_conversionTimeout.Value))
                         throw new ChromiumException(
-                            $"A timeout of '{_conversionTimeout.Value}' milliseconds exceeded, could not make a connection to the Chrome dev tools");
+                            $"A timeout of '{_conversionTimeout.Value}' milliseconds exceeded, could not make a connection to the Chromium dev tools");
                 }
 
-                _chromeWaitEvent.WaitOne();
+                _chromiumWaitEvent.WaitOne();
 
-                _chromeProcess.ErrorDataReceived -= _chromeProcess_ErrorDataReceived;
+                _chromiumProcess.ErrorDataReceived -= _chromeProcess_ErrorDataReceived;
 
                 if (_chromiumEventException != null)
                 {
@@ -614,8 +632,8 @@ namespace ChromiumHtmlToPdfLib
                 ConnectToDevProtocol(uri);
             }
 
-            _chromeProcess.Exited -= _chromeProcess_Exited;
-            WriteToLog("Chrome started");
+            _chromiumProcess.Exited -= _chromeProcess_Exited;
+            WriteToLog($"{BrowserName} started");
         }
 
         /// <summary>
@@ -627,18 +645,18 @@ namespace ChromiumHtmlToPdfLib
         {
             try
             {
-                if (_chromeProcess == null) return;
+                if (_chromiumProcess == null) return;
                 WriteToLog($"Chrome exited unexpectedly, arguments used: {string.Join(" ", DefaultChromiumArguments)}");
-                WriteToLog($"Process id: {_chromeProcess.Id}");
-                WriteToLog($"Process exit time: {_chromeProcess.ExitTime:yyyy-MM-ddTHH:mm:ss.fff}");
-                var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromeProcess.ExitCode));
+                WriteToLog($"Process id: {_chromiumProcess.Id}");
+                WriteToLog($"Process exit time: {_chromiumProcess.ExitTime:yyyy-MM-ddTHH:mm:ss.fff}");
+                var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromiumProcess.ExitCode));
                 WriteToLog($"Exception: {exception}");
                 throw new ChromiumException($"Chrome exited unexpectedly, {exception}");
             }
             catch (Exception exception)
             {
                 _chromiumEventException = exception;
-                _chromeWaitEvent.Set();
+                _chromiumWaitEvent.Set();
             }
         }
 
@@ -703,13 +721,13 @@ namespace ChromiumHtmlToPdfLib
                 // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
                 var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
                 ConnectToDevProtocol(uri);
-                _chromeProcess.ErrorDataReceived -= _chromeProcess_ErrorDataReceived;
-                _chromeWaitEvent.Set();
+                _chromiumProcess.ErrorDataReceived -= _chromeProcess_ErrorDataReceived;
+                _chromiumWaitEvent.Set();
             }
             catch (Exception exception)
             {
                 _chromiumEventException = exception;
-                _chromeWaitEvent.Set();
+                _chromiumWaitEvent.Set();
             }
         }
         #endregion
@@ -910,7 +928,7 @@ namespace ChromiumHtmlToPdfLib
 
         #region SetProxyPacUrl
         /// <summary>
-        ///     This tells Chrome to use the PAC file at the specified URL.
+        ///     This tells Chromium to use the PAC file at the specified URL.
         /// </summary>
         /// <param name="value"></param>
         /// <example>
@@ -1242,7 +1260,7 @@ namespace ChromiumHtmlToPdfLib
                     }
                 }
 
-                StartChromeHeadless();
+                StartChromiumHeadless();
 
                 CountdownTimer countdownTimer = null;
 
@@ -1866,15 +1884,15 @@ namespace ChromiumHtmlToPdfLib
 
         #region Dispose
         /// <summary>
-        ///     Disposes the running <see cref="_chromeProcess" />
+        ///     Disposes the running <see cref="_chromiumProcess" />
         /// </summary>
         public void Dispose()
         {
             if (_disposed) 
                 return;
 
-            _chromeWaitEvent?.Dispose();
-            _chromeWaitEvent = null;
+            _chromiumWaitEvent?.Dispose();
+            _chromiumWaitEvent = null;
 
             if (_browser != null)
             {
@@ -1908,11 +1926,11 @@ namespace ChromiumHtmlToPdfLib
             if (IsChromiumRunning)
             {
                 // Sometimes Chrome does not close all processes so kill them
-                WriteToLog($"Chrome did not close gracefully, closing it by killing it's process on id '{_chromeProcess.Id}'");
-                KillProcessAndChildren(_chromeProcess.Id);
+                WriteToLog($"Chrome did not close gracefully, closing it by killing it's process on id '{_chromiumProcess.Id}'");
+                KillProcessAndChildren(_chromiumProcess.Id);
                 WriteToLog("Chrome killed");
 
-                _chromeProcess = null;
+                _chromiumProcess = null;
             }
 
             _disposed = true;

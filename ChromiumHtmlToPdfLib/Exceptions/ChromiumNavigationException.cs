@@ -33,14 +33,14 @@ namespace ChromiumHtmlToPdfLib.Exceptions
     /// Raised when an error is returned when navigation to a page in Chrome
     /// </summary>
     [Serializable]
-    public class ChromeNavigationException : Exception
+    public class ChromiumNavigationException : Exception
     {
-        protected ChromeNavigationException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected ChromiumNavigationException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 
-        internal ChromeNavigationException() { }
+        internal ChromiumNavigationException() { }
 
-        internal ChromeNavigationException(string message) : base(message) { }
+        internal ChromiumNavigationException(string message) : base(message) { }
 
-        internal ChromeNavigationException(string message, Exception innerException) : base(message, innerException) { }
+        internal ChromiumNavigationException(string message, Exception innerException) : base(message, innerException) { }
     }
 }
