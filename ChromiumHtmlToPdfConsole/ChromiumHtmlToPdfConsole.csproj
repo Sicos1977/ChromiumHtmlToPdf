@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <StartupObject>ChromeHtmlToPdfConsole.Program</StartupObject>
+    <StartupObject>ChromiumHtmlToPdfConsole.Program</StartupObject>
     <ApplicationIcon />
     <AssemblyVersion>2.6.5.0</AssemblyVersion>
     <Version>2.6.5</Version>
@@ -20,14 +20,10 @@
     <PackageReleaseNotes></PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageId />
-    <AssemblyName>ChromeHtmlToPdfConsole</AssemblyName>
-    <RootNamespace>ChromeHtmlToPdfConsole</RootNamespace>
+    <AssemblyName>ChromiumHtmlToPdfConsole</AssemblyName>
+    <RootNamespace>ChromiumHtmlToPdfConsole</RootNamespace>
     <FileVersion>2.6.5.0</FileVersion>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\ChromeHtmlToPdfLib\ChromiumHtmlToPdfLib.csproj" />
-  </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Properties\" />
@@ -43,6 +39,10 @@
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ChromiumHtmlToPdfLib\ChromiumHtmlToPdfLib.csproj" />
   </ItemGroup>
 
 </Project>

@@ -4,7 +4,7 @@ using CommandLine;
 // ReSharper disable StringLiteralTypo
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 
-namespace ChromeHtmlToPdfConsole
+namespace ChromiumHtmlToPdfConsole
 {
     /// <summary>
     ///     The parameters that can be used when calling this application

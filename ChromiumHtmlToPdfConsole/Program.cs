@@ -7,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ChromHtmlToPdfConsole;
 using ChromiumHtmlToPdfLib;
 using ChromiumHtmlToPdfLib.Enums;
 using ChromiumHtmlToPdfLib.Settings;
@@ -16,7 +15,7 @@ using CommandLine.Text;
 using Microsoft.Extensions.Logging;
 using Stream = ChromiumHtmlToPdfLib.Loggers.Stream;
 
-namespace ChromeHtmlToPdfConsole
+namespace ChromiumHtmlToPdfConsole
 {
     static class Program
     {
