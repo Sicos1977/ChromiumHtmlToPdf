@@ -27,7 +27,7 @@
 using System;
 using Newtonsoft.Json;
 
-namespace ChromeHtmlToPdfLib.Protocol
+namespace ChromiumHtmlToPdfLib.Protocol
 {
     /// <summary>
     ///     Returned by an <see cref="Evaluate" /> message when an error occurs

@@ -27,7 +27,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace ChromeHtmlToPdfLib.Protocol
+namespace ChromiumHtmlToPdfLib.Protocol
 {
     /// <summary>
     /// The JSON message that is sent to Chrome

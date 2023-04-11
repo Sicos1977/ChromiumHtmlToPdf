@@ -29,16 +29,17 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using ChromeHtmlToPdfLib.Settings;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Threading;
-using ChromeHtmlToPdfLib.Enums;
-using ChromeHtmlToPdfLib.Exceptions;
-using ChromeHtmlToPdfLib.Helpers;
+using ChromiumHtmlToPdfLib.Enums;
+using ChromiumHtmlToPdfLib.Exceptions;
+using ChromiumHtmlToPdfLib.Helpers;
+using ChromiumHtmlToPdfLib.Settings;
 using Ganss.Xss;
 using Microsoft.Extensions.Logging;
+
 // ReSharper disable ConvertToUsingDeclaration
 
 // ReSharper disable UnusedAutoPropertyAccessor.Global
@@ -46,7 +47,7 @@ using Microsoft.Extensions.Logging;
 // ReSharper disable UnusedMember.Global
 // ReSharper disable UnusedMember.Local
 
-namespace ChromeHtmlToPdfLib
+namespace ChromiumHtmlToPdfLib
 {
     /// <summary>
     /// A converter class around Google Chrome headless to convert html to pdf

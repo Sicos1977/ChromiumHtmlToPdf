@@ -27,7 +27,7 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 
-namespace ChromeHtmlToPdfLib.Helpers
+namespace ChromiumHtmlToPdfLib.Helpers
 {
     internal static class RegularExpression
     {

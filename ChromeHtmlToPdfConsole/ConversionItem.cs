@@ -1,5 +1,5 @@
 ﻿using System;
-using ChromeHtmlToPdfLib;
+using ChromiumHtmlToPdfLib;
 
 namespace ChromeHtmlToPdfConsole
 {

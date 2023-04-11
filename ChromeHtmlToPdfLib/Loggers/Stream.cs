@@ -2,7 +2,7 @@
 using System.Text;
 using Microsoft.Extensions.Logging;
 
-namespace ChromeHtmlToPdfLib.Loggers
+namespace ChromiumHtmlToPdfLib.Loggers
 {
     /// <summary>
     ///     Writes log information to a stream

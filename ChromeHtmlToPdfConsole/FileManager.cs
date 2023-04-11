@@ -30,7 +30,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace ChromeHtmlToPdfConsole
+namespace ChromHtmlToPdfConsole
 {
     /// <summary>
     ///     Folder and file related helper methods

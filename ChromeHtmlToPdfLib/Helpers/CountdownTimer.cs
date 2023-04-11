@@ -26,7 +26,7 @@
 
 using System.Diagnostics;
 
-namespace ChromeHtmlToPdfLib.Helpers
+namespace ChromiumHtmlToPdfLib.Helpers
 {
     internal class CountdownTimer
     {

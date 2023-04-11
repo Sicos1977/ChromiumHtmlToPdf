@@ -27,7 +27,7 @@
 using System;
 using Newtonsoft.Json;
 
-namespace ChromeHtmlToPdfLib.Protocol
+namespace ChromiumHtmlToPdfLib.Protocol
 {
     /// <summary>
     /// The JSON structure that is returned from Chrome when reading from an IO stream

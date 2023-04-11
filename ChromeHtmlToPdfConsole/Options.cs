@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using ChromeHtmlToPdfLib.Enums;
+using ChromiumHtmlToPdfLib.Enums;
 using CommandLine;
 // ReSharper disable StringLiteralTypo
 // ReSharper disable UnusedAutoPropertyAccessor.Global

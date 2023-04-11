@@ -4,21 +4,21 @@
     <TargetFrameworks>netcoreapp3.1;netstandard2.0</TargetFrameworks>
     <Version>2.6.7</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Description>ChromeHtmlToPdf is a 100% managed C# .NETStandard 2.0 library that can be used to convert HTML to PDF or PNG format with the use of Google Chrome</Description>
+    <Description>ChromiumHtmlToPdf is a 100% managed C# .NETStandard 2.0 library that can be used to convert HTML to PDF or PNG format with the use of Google Chrome or Microsoft Edge</Description>
     <Copyright>(C)2017-2023 Kees van Spelde</Copyright>
     <PackageReleaseNotes>- Updated nuget packages</PackageReleaseNotes>
-    <PackageProjectUrl>https://github.com/Sicos1977/ChromeHtmlToPdf</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/Sicos1977/ChromeHtmlToPdf</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/Sicos1977/ChromiumHtmlToPdf</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Sicos1977/ChromiumHtmlToPdf</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>convert html pdf chrome image png</PackageTags>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageIcon>chrome.png</PackageIcon>
-    <PackageId>ChromeHtmlToPdf</PackageId>
+    <PackageId>ChromiumHtmlToPdf</PackageId>
     <Authors>Kees van Spelde</Authors>
-    <Product>ChromeHtmlToPdf</Product>
+    <Product>ChromiumHtmlToPdf</Product>
     <Company>Magic-Sessions</Company>
     <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>ChromeHtmlToPdf.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>ChromiumHtmlToPdf.snk</AssemblyOriginatorKeyFile>
     <AssemblyVersion>2.6.7.0</AssemblyVersion>
     <FileVersion>2.6.7.0</FileVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>

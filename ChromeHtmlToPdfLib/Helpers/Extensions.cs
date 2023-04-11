@@ -29,11 +29,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ChromeHtmlToPdfLib.Exceptions;
+using ChromiumHtmlToPdfLib.Exceptions;
+
 // ReSharper disable ConvertToUsingDeclaration
 // ReSharper disable UnusedMember.Global
 
-namespace ChromeHtmlToPdfLib.Helpers
+namespace ChromiumHtmlToPdfLib.Helpers
 {
     internal static class Extensions
     {

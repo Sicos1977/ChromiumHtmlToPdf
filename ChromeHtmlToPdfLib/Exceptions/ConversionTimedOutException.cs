@@ -27,7 +27,7 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace ChromeHtmlToPdfLib.Exceptions
+namespace ChromiumHtmlToPdfLib.Exceptions
 {
     /// <summary>
     /// Raised when the PDF conversion times out

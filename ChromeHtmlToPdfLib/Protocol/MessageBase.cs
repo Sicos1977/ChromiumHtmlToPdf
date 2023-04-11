@@ -26,7 +26,7 @@
 
 using Newtonsoft.Json;
 
-namespace ChromeHtmlToPdfLib.Protocol
+namespace ChromiumHtmlToPdfLib.Protocol
 {
     /// <summary>
     /// The base for a <see cref="Message"/>

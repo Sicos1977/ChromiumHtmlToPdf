@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ChromeHtmlToPdfLib.Event
+namespace ChromiumHtmlToPdfLib.Event
 {
     public class ErrorEventArgs : EventArgs
     {

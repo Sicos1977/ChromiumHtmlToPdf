@@ -26,7 +26,7 @@
 
 using Newtonsoft.Json;
 
-namespace ChromeHtmlToPdfLib.Protocol.Page
+namespace ChromiumHtmlToPdfLib.Protocol.Page
 {
     /// <summary>
     /// The JSON object that is returned from Chrome when navigation to a page

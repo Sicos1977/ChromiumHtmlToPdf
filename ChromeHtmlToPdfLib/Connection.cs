@@ -30,14 +30,14 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using ChromeHtmlToPdfLib.Event;
-using ChromeHtmlToPdfLib.Exceptions;
-using ChromeHtmlToPdfLib.Helpers;
-using ChromeHtmlToPdfLib.Protocol;
+using ChromiumHtmlToPdfLib.Event;
+using ChromiumHtmlToPdfLib.Exceptions;
+using ChromiumHtmlToPdfLib.Helpers;
+using ChromiumHtmlToPdfLib.Protocol;
 using Microsoft.Extensions.Logging;
-using ErrorEventArgs = ChromeHtmlToPdfLib.Event.ErrorEventArgs;
+using ErrorEventArgs = ChromiumHtmlToPdfLib.Event.ErrorEventArgs;
 
-namespace ChromeHtmlToPdfLib
+namespace ChromiumHtmlToPdfLib
 {
     /// <summary>
     /// A connection to a page (tab) in Chrome

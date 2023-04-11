@@ -28,11 +28,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
-
-//This needs the NuGet package Microsoft.Windows.Compatibility!!!
 using Microsoft.Win32;
+//This needs the NuGet package Microsoft.Windows.Compatibility!!!
 
-namespace ChromeHtmlToPdfLib.Helpers
+namespace ChromiumHtmlToPdfLib.Helpers
 {
     /// <summary>
     /// This class searches for the Chrome or Chromium executables cross-platform.

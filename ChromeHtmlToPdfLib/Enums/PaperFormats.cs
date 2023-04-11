@@ -24,7 +24,7 @@
 // THE SOFTWARE.
 //
 
-namespace ChromeHtmlToPdfLib.Enums
+namespace ChromiumHtmlToPdfLib.Enums
 {
     /// <summary>
     ///     The paper formats to use when converting to PDF

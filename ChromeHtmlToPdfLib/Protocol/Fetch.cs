@@ -27,7 +27,7 @@
 
 using Newtonsoft.Json;
 
-namespace ChromeHtmlToPdfLib.Protocol
+namespace ChromiumHtmlToPdfLib.Protocol
 {
     /// <summary>
     /// The JSON object that is returned when the <b>Fetch.enable</b> is activated in Chrome

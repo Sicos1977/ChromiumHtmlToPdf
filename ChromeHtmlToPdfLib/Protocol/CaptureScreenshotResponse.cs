@@ -27,7 +27,7 @@
 using System;
 using Newtonsoft.Json;
 
-namespace ChromeHtmlToPdfLib.Protocol
+namespace ChromiumHtmlToPdfLib.Protocol
 {
     /// <summary>
     ///     Placeholder for the result of a page snapshot

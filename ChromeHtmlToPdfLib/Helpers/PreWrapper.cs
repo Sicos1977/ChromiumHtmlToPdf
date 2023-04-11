@@ -35,7 +35,7 @@ using Microsoft.Extensions.Logging;
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
 
-namespace ChromeHtmlToPdfLib.Helpers
+namespace ChromiumHtmlToPdfLib.Helpers
 {
     /// <summary>
     ///     Wraps a file in HTML PRE tags

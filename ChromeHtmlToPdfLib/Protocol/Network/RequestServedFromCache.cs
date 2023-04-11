@@ -26,7 +26,7 @@
 
 using Newtonsoft.Json;
 
-namespace ChromeHtmlToPdfLib.Protocol.Network
+namespace ChromiumHtmlToPdfLib.Protocol.Network
 {
     public class RequestServedFromCache : Base
     {

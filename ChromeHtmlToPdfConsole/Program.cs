@@ -7,12 +7,14 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ChromeHtmlToPdfLib;
-using ChromeHtmlToPdfLib.Enums;
-using ChromeHtmlToPdfLib.Settings;
+using ChromHtmlToPdfConsole;
+using ChromiumHtmlToPdfLib;
+using ChromiumHtmlToPdfLib.Enums;
+using ChromiumHtmlToPdfLib.Settings;
 using CommandLine;
 using CommandLine.Text;
 using Microsoft.Extensions.Logging;
+using Stream = ChromiumHtmlToPdfLib.Loggers.Stream;
 
 namespace ChromeHtmlToPdfConsole
 {
@@ -22,7 +24,7 @@ namespace ChromeHtmlToPdfConsole
         /// <summary>
         ///     When set then logging is written to this stream
         /// </summary>
-        private static ChromeHtmlToPdfLib.Loggers.Stream _logger;
+        private static Stream _logger;
 
         /// <summary>
         ///     <see cref="LimitedConcurrencyLevel" />
@@ -63,8 +65,8 @@ namespace ChromeHtmlToPdfConsole
                 throw new ArgumentException(nameof(options));
 
             _logger = !string.IsNullOrWhiteSpace(options.LogFile)
-                ? new ChromeHtmlToPdfLib.Loggers.Stream(File.OpenWrite(ReplaceWildCards(options.LogFile)))
-                : new ChromeHtmlToPdfLib.Loggers.Console();
+                ? new Stream(File.OpenWrite(ReplaceWildCards(options.LogFile)))
+                : new ChromiumHtmlToPdfLib.Loggers.Console();
 
             using (_logger)
             {
@@ -391,8 +393,8 @@ namespace ChromeHtmlToPdfConsole
             var pageSettings = GetPageSettings(options);
 
             var logger = !string.IsNullOrWhiteSpace(options.LogFile)
-                ? new ChromeHtmlToPdfLib.Loggers.Stream(File.OpenWrite(ReplaceWildCards(options.LogFile)))
-                : new ChromeHtmlToPdfLib.Loggers.Console();
+                ? new Stream(File.OpenWrite(ReplaceWildCards(options.LogFile)))
+                : new ChromiumHtmlToPdfLib.Loggers.Console();
 
             using (logger)
             {

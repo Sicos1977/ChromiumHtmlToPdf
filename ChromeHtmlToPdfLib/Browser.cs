@@ -30,12 +30,15 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using ChromeHtmlToPdfLib.Exceptions;
-using ChromeHtmlToPdfLib.Helpers;
-using ChromeHtmlToPdfLib.Protocol;
-using ChromeHtmlToPdfLib.Protocol.Network;
-using ChromeHtmlToPdfLib.Settings;
+using ChromiumHtmlToPdfLib.Exceptions;
+using ChromiumHtmlToPdfLib.Helpers;
+using ChromiumHtmlToPdfLib.Protocol;
+using ChromiumHtmlToPdfLib.Protocol.Network;
+using ChromiumHtmlToPdfLib.Protocol.Page;
+using ChromiumHtmlToPdfLib.Settings;
 using Microsoft.Extensions.Logging;
+using Base = ChromiumHtmlToPdfLib.Protocol.Network.Base;
+
 // ReSharper disable MethodSupportsCancellation
 
 // ReSharper disable MemberCanBePrivate.Global
@@ -43,7 +46,7 @@ using Microsoft.Extensions.Logging;
 // ReSharper disable AccessToDisposedClosure
 // ReSharper disable AccessToModifiedClosure
 
-namespace ChromeHtmlToPdfLib
+namespace ChromiumHtmlToPdfLib
 {
     /// <summary>
     ///     Handles all the communication tasks with Chrome remote dev tools
@@ -112,7 +115,7 @@ namespace ChromeHtmlToPdfLib
             message.Parameters.Add("url", "about:blank");
 
             var result = _browserConnection.SendForResponseAsync(message).GetAwaiter().GetResult();
-            var page = Protocol.Page.Page.FromJson(result);
+            var page = Page.FromJson(result);
             var pageUrl = $"{browser.Scheme}://{browser.Host}:{browser.Port}/devtools/page/{page.Result.TargetId}";
 
             // Open a websocket to the page
@@ -256,7 +259,7 @@ namespace ChromeHtmlToPdfLib
 
                     default:
                         {
-                            var page = Protocol.Page.Event.FromJson(data);
+                            var page = ChromiumHtmlToPdfLib.Protocol.Page.Event.FromJson(data);
 
                             switch (page.Method)
                             {
@@ -301,7 +304,7 @@ namespace ChromeHtmlToPdfLib
                                     break;
 
                                 default:
-                                    var pageNavigateResponse = Protocol.Page.NavigateResponse.FromJson(data);
+                                    var pageNavigateResponse = NavigateResponse.FromJson(data);
                                     if (!string.IsNullOrEmpty(pageNavigateResponse.Result?.ErrorText) &&
                                         !pageNavigateResponse.Result.ErrorText.Contains("net::ERR_BLOCKED_BY_CLIENT"))
                                     {
@@ -360,7 +363,7 @@ namespace ChromeHtmlToPdfLib
                 WriteToLog("Getting page frame tree");
                 var pageGetFrameTree = new Message { Method = "Page.getFrameTree" };
                 var frameTree = _pageConnection.SendForResponseAsync(pageGetFrameTree).GetAwaiter().GetResult();
-                var frameResult = Protocol.Page.FrameTree.FromJson(frameTree);
+                var frameResult = FrameTree.FromJson(frameTree);
 
                 WriteToLog("Setting document content");
 

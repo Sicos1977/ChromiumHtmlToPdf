@@ -10,12 +10,12 @@
     <Company>Magic-Sessions</Company>
     <Authors>Kees van Spelde</Authors>
     <Copyright>(C)2017-2022 Kees van Spelde</Copyright>
-    <PackageProjectUrl>https://github.com/Sicos1977/ChromeHtmlToPdf</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/Sicos1977/ChromiumHtmlToPdf</PackageProjectUrl>
     <PackageIcon>Chrome-icon.png</PackageIcon>
     <PackageIconUrl />
-    <RepositoryUrl>https://www.nuget.org/packages/ChromeHtmlToPdf/</RepositoryUrl>
+    <RepositoryUrl>https://www.nuget.org/packages/ChromiumHtmlToPdf/</RepositoryUrl>
     <RepositoryType>NuGet</RepositoryType>
-    <PackageTags>convert html pdf chrome</PackageTags>
+    <PackageTags>convert html pdf chrome edge</PackageTags>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageReleaseNotes></PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -26,7 +26,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ChromeHtmlToPdfLib\ChromeHtmlToPdfLib.csproj" />
+    <ProjectReference Include="..\ChromeHtmlToPdfLib\ChromiumHtmlToPdfLib.csproj" />
   </ItemGroup>
 
   <ItemGroup>

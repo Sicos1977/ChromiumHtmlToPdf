@@ -26,7 +26,7 @@
 
 using Newtonsoft.Json;
 
-namespace ChromeHtmlToPdfLib.Protocol.Page
+namespace ChromiumHtmlToPdfLib.Protocol.Page
 {
     public class FrameTree
     {

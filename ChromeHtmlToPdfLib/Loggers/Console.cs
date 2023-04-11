@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ChromeHtmlToPdfLib.Loggers
+﻿namespace ChromiumHtmlToPdfLib.Loggers
 {
     /// <summary>
     ///     Writes log information to the console

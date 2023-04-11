@@ -25,11 +25,12 @@
 //
 
 using System;
-using ChromeHtmlToPdfLib.Enums;
+using ChromiumHtmlToPdfLib.Enums;
+
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable MemberCanBePrivate.Global
 
-namespace ChromeHtmlToPdfLib.Settings
+namespace ChromiumHtmlToPdfLib.Settings
 {
     /// <summary>
     /// The page settings to use when converting to PDF

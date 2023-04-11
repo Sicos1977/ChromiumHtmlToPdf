@@ -2,7 +2,7 @@
 using System.IO;
 using System.Linq;
 
-namespace ChromeHtmlToPdfLib.Helpers
+namespace ChromiumHtmlToPdfLib.Helpers
 {
     internal static class FileManager
     {

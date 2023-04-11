@@ -41,7 +41,7 @@ using AngleSharp.Dom;
 using AngleSharp.Html;
 using AngleSharp.Html.Dom;
 using AngleSharp.Io.Network;
-using ChromeHtmlToPdfLib.Settings;
+using ChromiumHtmlToPdfLib.Settings;
 using Ganss.Xss;
 using Microsoft.Extensions.Logging;
 using Image = System.Drawing.Image;
@@ -50,7 +50,7 @@ using Image = System.Drawing.Image;
 // ReSharper disable AssignNullToNotNullAttribute
 // ReSharper disable PossibleNullReferenceException
 
-namespace ChromeHtmlToPdfLib.Helpers
+namespace ChromiumHtmlToPdfLib.Helpers
 {
     /// <summary>
     ///     This class contains helper methods
