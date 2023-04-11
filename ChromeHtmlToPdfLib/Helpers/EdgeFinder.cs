@@ -1,5 +1,5 @@
 ﻿//
-// ChromeFinder.cs
+// EdgeFinder.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
@@ -34,17 +34,16 @@ using Microsoft.Win32;
 namespace ChromiumHtmlToPdfLib.Helpers
 {
     /// <summary>
-    /// This class searches for the Chrome or Chromium executables cross-platform.
+    ///     This class searches for Microsoft Edge cross-platform.
     /// </summary>
-    public static class ChromeFinder
+    public static class EdgeFinder
     {
         #region GetApplicationDirectories
         private static void GetApplicationDirectories(ICollection<string> directories)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                // c:\Program Files\Google\Chrome\Application\
-                const string subDirectory = "Google\\Chrome\\Application";
+                const string subDirectory = "Microsoft\\Edge\\Application";
                 directories.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), subDirectory));
                 directories.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), subDirectory));
             }
@@ -56,10 +55,10 @@ namespace ChromiumHtmlToPdfLib.Helpers
                 directories.Add("/usr/bin");
                 directories.Add("/sbin");
                 directories.Add("/bin");
-                directories.Add("/opt/google/chrome");
+                directories.Add("/opt/microsoft/edge");
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                throw new Exception("Finding Chrome on MacOS is currently not supported, please contact the programmer.");
+                throw new Exception("Finding Edge on MacOS is currently not supported, please contact the programmer.");
         }
         #endregion
 
@@ -88,14 +87,12 @@ namespace ChromiumHtmlToPdfLib.Helpers
 			// in Program Files (x86) and uses the same registry key!
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                var key = Registry.GetValue(
-                    @"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Google Chrome",
-                    "InstallLocation", string.Empty);
+                var key = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\App Paths\msedge.exe", "Path", string.Empty);
 
                 if (key != null)
                 {
                     // ReSharper disable once AssignNullToNotNullAttribute
-                    var path = Path.Combine(key.ToString(), "chrome.exe");
+                    var path = Path.Combine(key.ToString(), "msedge.exe");
                     if (File.Exists(path))
                         return path;
                 }
@@ -105,19 +102,14 @@ namespace ChromiumHtmlToPdfLib.Helpers
             var exeNames = new List<string>();
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                exeNames.Add("chrome.exe");
+                exeNames.Add("msedge.exe");
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                exeNames.Add("google-chrome");
-                exeNames.Add("chrome");
-                exeNames.Add("chromium");
-                exeNames.Add("chromium-browser");
+                throw new Exception("Finding Microsoft Edge on Linux is not yet supported, please contact the programma on GitHub");
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                exeNames.Add("Google Chrome.app/Contents/MacOS/Google Chrome");
-                exeNames.Add("Chromium.app/Contents/MacOS/Chromium");
-                exeNames.Add("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
+                throw new Exception("Finding Microsoft Edge on MaxOS is not yet supported, please contact the programma on GitHub");
             }
             
             // Check the directory of this assembly/application

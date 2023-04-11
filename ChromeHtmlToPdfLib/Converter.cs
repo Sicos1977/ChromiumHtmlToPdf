@@ -74,9 +74,9 @@ namespace ChromiumHtmlToPdfLib
 
         #region Fields
         /// <summary>
-        ///     The default Chrome arguments
+        ///     The default Chromium arguments
         /// </summary>
-        private List<string> _defaultChromeArgument;
+        private List<string> _defaultChromiumArgument;
 
         /// <summary>
         ///     Used to make the logging thread safe
@@ -91,10 +91,10 @@ namespace ChromiumHtmlToPdfLib
         /// <summary>
         ///     Chrome with it's full path
         /// </summary>
-        private readonly string _chromeExeFileName;
+        private readonly string _chromiumExeFileName;
 
         /// <summary>
-        ///     The user to use when starting Chrome, when blank then Chrome is started under the code running user
+        ///     The user to use when starting the Chromium based browser, when blank then it is started under the code running user
         /// </summary>
         private string _userName;
 
@@ -119,12 +119,12 @@ namespace ChromiumHtmlToPdfLib
         private WebProxy _webProxy;
 
         /// <summary>
-        ///     The process id under which Chrome is running
+        ///     The process id under which the Chromium based browser is running
         /// </summary>
         private Process _chromeProcess;
 
         /// <summary>
-        ///     Handles the communication with Chrome dev tools
+        ///     Handles the communication with the Chromium based browser dev tools
         /// </summary>
         private Browser _browser;
 
@@ -145,19 +145,19 @@ namespace ChromiumHtmlToPdfLib
 
         /// <summary>
         ///     Used to add the extension of text based files that needed to be wrapped in an HTML PRE
-        ///     tag so that they can be opened by Chrome
+        ///     tag so that they can be opened by the Chromium based browser
         /// </summary>
         private List<string> _preWrapExtensions;
 
         /// <summary>
-        ///     Flag to wait in code when starting Chrome
+        ///     Flag to wait in code when starting the Chromium based browser
         /// </summary>
         private ManualResetEvent _chromeWaitEvent;
 
         /// <summary>
         ///     Exceptions thrown from a Chrome startup event
         /// </summary>
-        private Exception _chromeEventException;
+        private Exception _chromiumEventException;
 
         /// <summary>
         ///     A list with URL's to blacklist
@@ -182,10 +182,10 @@ namespace ChromiumHtmlToPdfLib
 
         #region Properties
         /// <summary>
-        ///     Returns <c>true</c> when Chrome is running
+        ///     Returns <c>true</c> when the Chromium based browser is running
         /// </summary>
         /// <returns></returns>
-        private bool IsChromeRunning
+        private bool IsChromiumRunning
         {
             get
             {
@@ -198,9 +198,9 @@ namespace ChromiumHtmlToPdfLib
         }
 
         /// <summary>
-        ///     Returns the list with default arguments that are send to Chrome when starting
+        ///     Returns the list with default arguments that are send to the Chromium based browser when starting
         /// </summary>
-        public IReadOnlyCollection<string> DefaultChromeArguments => _defaultChromeArgument.AsReadOnly();
+        public IReadOnlyCollection<string> DefaultChromiumArguments => _defaultChromiumArgument.AsReadOnly();
 
         /// <summary>
         ///     An unique id that can be used to identify the logging of the converter when
@@ -414,37 +414,56 @@ namespace ChromiumHtmlToPdfLib
         /// <summary>
         ///     Creates this object and sets it's needed properties
         /// </summary>
-        /// <param name="chromeExeFileName">When set then this has to be the full path to the chrome executable.
-        ///     When not set then then the converter tries to find Chrome.exe by first looking in the path
-        ///     where this library exists. After that it tries to find it by looking into the registry</param>
+        /// <param name="chromiumExeFileName">When set then this has to be the full path to the Google Chrome
+        ///     or Microsoft Edge executable. When not set then then the converter tries to find Chrome.exe or
+        ///     msEdge.exe by first looking in the path where this library exists. After that it tries to find
+        ///     it by looking into the registry</param>
         /// <param name="userProfile">
         ///     If set then this directory will be used to store a user profile.
-        ///     Leave blank or set to <c>null</c> if you want to use the default Chrome user profile location
+        ///     Leave blank or set to <c>null</c> if you want to use the default Chrome or Edge user profile location
         /// </param>
         /// <param name="logger">When set then logging is written to this ILogger instance for all conversions at the Information log level</param>
-        /// <param name="useCache">When <c>true</c> (default) then Chrome uses it disk cache when possible</param>
-        /// <exception cref="FileNotFoundException">Raised when <see cref="chromeExeFileName" /> does not exists</exception>
+        /// <param name="useCache">When <c>true</c> (default) then Chrome or Edge uses it disk cache when possible</param>
+        /// <param name="browser">THe Chromium based browser to use in this library, currently Google Chrome or Microsoft Edge are supported</param>
+        /// <exception cref="FileNotFoundException">Raised when <see cref="chromiumExeFileName" /> does not exists</exception>
         /// <exception cref="DirectoryNotFoundException">
         ///     Raised when the <paramref name="userProfile" /> directory is given but does not exists
         /// </exception>
-        public Converter(string chromeExeFileName = null,
+        public Converter(string chromiumExeFileName = null,
                          string userProfile = null,
                          ILogger logger = null,
-                         bool useCache = true)
+                         bool useCache = true,
+                         Enums.Browser browser = Enums.Browser.Chrome)
         {
             _preWrapExtensions = new List<string>();
             _logger = logger;
             _useCache = useCache;
 
-            ResetChromeArguments();
+            ResetChromiumArguments();
 
-            if (string.IsNullOrWhiteSpace(chromeExeFileName))
-                chromeExeFileName = ChromeFinder.Find();
+            string browserName = null;
 
-            if (!File.Exists(chromeExeFileName))
-                throw new FileNotFoundException($"Could not find chrome.exe in location '{chromeExeFileName}'");
+            if (string.IsNullOrWhiteSpace(chromiumExeFileName))
+            {
+                switch (browser)
+                {
+                    case Enums.Browser.Chrome:
+                        chromiumExeFileName = ChromeFinder.Find();
+                        browserName = "Google Chrome";
+                        break;
+                    case Enums.Browser.Edge:
+                        chromiumExeFileName = EdgeFinder.Find();
+                        browserName = "Microsoft Edge";
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(browser), browser, null);
+                }
+            }
 
-            _chromeExeFileName = chromeExeFileName;
+            if (!File.Exists(chromiumExeFileName))
+                throw new FileNotFoundException($"Could not find {browserName} in location '{chromiumExeFileName}'");
+
+            _chromiumExeFileName = chromiumExeFileName;
 
             if (string.IsNullOrWhiteSpace(userProfile)) return;
             var userProfileDirectory = new DirectoryInfo(userProfile);
@@ -453,7 +472,7 @@ namespace ChromiumHtmlToPdfLib
 
             _userProfileSet = true;
             _devToolsActivePortFile = Path.Combine(userProfileDirectory.FullName, "DevToolsActivePort");
-            AddChromeArgument("--user-data-dir", userProfileDirectory.FullName);
+            AddChromiumArgument("--user-data-dir", userProfileDirectory.FullName);
         }
 
         /// <summary>
@@ -475,23 +494,23 @@ namespace ChromiumHtmlToPdfLib
         /// <exception cref="ChromeException"></exception>
         private void StartChromeHeadless()
         {
-            if (IsChromeRunning)
+            if (IsChromiumRunning)
             {
                 WriteToLog($"Chrome is already running on PID {_chromeProcess.Id}... skipped");
                 return;
             }
 
-            _chromeEventException = null;
-            var workingDirectory = Path.GetDirectoryName(_chromeExeFileName);
+            _chromiumEventException = null;
+            var workingDirectory = Path.GetDirectoryName(_chromiumExeFileName);
 
-            WriteToLog($"Starting Chrome from location '{_chromeExeFileName}' with working directory '{workingDirectory}'");
-            WriteToLog($"\"{_chromeExeFileName}\" {string.Join(" ", DefaultChromeArguments)}");
+            WriteToLog($"Starting Chrome from location '{_chromiumExeFileName}' with working directory '{workingDirectory}'");
+            WriteToLog($"\"{_chromiumExeFileName}\" {string.Join(" ", DefaultChromiumArguments)}");
 
             _chromeProcess = new Process();
             var processStartInfo = new ProcessStartInfo
             {
-                FileName = _chromeExeFileName,
-                Arguments = string.Join(" ", DefaultChromeArguments),
+                FileName = _chromiumExeFileName,
+                Arguments = string.Join(" ", DefaultChromiumArguments),
                 CreateNoWindow = true,
             };
 
@@ -582,10 +601,10 @@ namespace ChromiumHtmlToPdfLib
 
                 _chromeProcess.ErrorDataReceived -= _chromeProcess_ErrorDataReceived;
 
-                if (_chromeEventException != null)
+                if (_chromiumEventException != null)
                 {
-                    WriteToLog("Exception: " + ExceptionHelpers.GetInnerException(_chromeEventException));
-                    throw _chromeEventException;
+                    WriteToLog("Exception: " + ExceptionHelpers.GetInnerException(_chromiumEventException));
+                    throw _chromiumEventException;
                 }
             }
             else
@@ -609,7 +628,7 @@ namespace ChromiumHtmlToPdfLib
             try
             {
                 if (_chromeProcess == null) return;
-                WriteToLog($"Chrome exited unexpectedly, arguments used: {string.Join(" ", DefaultChromeArguments)}");
+                WriteToLog($"Chrome exited unexpectedly, arguments used: {string.Join(" ", DefaultChromiumArguments)}");
                 WriteToLog($"Process id: {_chromeProcess.Id}");
                 WriteToLog($"Process exit time: {_chromeProcess.ExitTime:yyyy-MM-ddTHH:mm:ss.fff}");
                 var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromeProcess.ExitCode));
@@ -618,7 +637,7 @@ namespace ChromiumHtmlToPdfLib
             }
             catch (Exception exception)
             {
-                _chromeEventException = exception;
+                _chromiumEventException = exception;
                 _chromeWaitEvent.Set();
             }
         }
@@ -689,7 +708,7 @@ namespace ChromiumHtmlToPdfLib
             }
             catch (Exception exception)
             {
-                _chromeEventException = exception;
+                _chromiumEventException = exception;
                 _chromeWaitEvent.Set();
             }
         }
@@ -702,7 +721,7 @@ namespace ChromiumHtmlToPdfLib
         /// </summary>
         /// <param name="outputFile"></param>
         /// <exception cref="DirectoryNotFoundException"></exception>
-        private void CheckIfOutputFolderExists(string outputFile)
+        private static void CheckIfOutputFolderExists(string outputFile)
         {
             var directory = new FileInfo(outputFile).Directory;
             if (directory != null && !directory.Exists)
@@ -710,36 +729,36 @@ namespace ChromiumHtmlToPdfLib
         }
         #endregion
 
-        #region ResetChromeArguments
+        #region ResetChromiumArguments
         /// <summary>
-        ///     Resets the <see cref="DefaultChromeArguments" /> to their default settings
+        ///     Resets the <see cref="DefaultChromiumArguments" /> to their default settings
         /// </summary>
-        public void ResetChromeArguments()
+        public void ResetChromiumArguments()
         {
-            WriteToLog("Resetting Chrome arguments to default");
+            WriteToLog("Resetting Chromium arguments to default");
 
-            _defaultChromeArgument = new List<string>();
-            AddChromeArgument("--headless");
-            AddChromeArgument("--disable-gpu");
-            AddChromeArgument("--hide-scrollbars");
-            AddChromeArgument("--mute-audio");
-            AddChromeArgument("--disable-background-networking");
-            AddChromeArgument("--disable-background-timer-throttling");
-            AddChromeArgument("--disable-default-apps");
-            AddChromeArgument("--disable-extensions");
-            AddChromeArgument("--disable-hang-monitor");
-            AddChromeArgument("--disable-prompt-on-repost");
-            AddChromeArgument("--disable-sync");
-            AddChromeArgument("--disable-translate");
-            AddChromeArgument("--metrics-recording-only");
-            AddChromeArgument("--no-first-run");
-            AddChromeArgument("--disable-crash-reporter");
-            AddChromeArgument("--remote-debugging-port", "0");
+            _defaultChromiumArgument = new List<string>();
+            AddChromiumArgument("--headless");
+            AddChromiumArgument("--disable-gpu");
+            AddChromiumArgument("--hide-scrollbars");
+            AddChromiumArgument("--mute-audio");
+            AddChromiumArgument("--disable-background-networking");
+            AddChromiumArgument("--disable-background-timer-throttling");
+            AddChromiumArgument("--disable-default-apps");
+            AddChromiumArgument("--disable-extensions");
+            AddChromiumArgument("--disable-hang-monitor");
+            AddChromiumArgument("--disable-prompt-on-repost");
+            AddChromiumArgument("--disable-sync");
+            AddChromiumArgument("--disable-translate");
+            AddChromiumArgument("--metrics-recording-only");
+            AddChromiumArgument("--no-first-run");
+            AddChromiumArgument("--disable-crash-reporter");
+            AddChromiumArgument("--remote-debugging-port", "0");
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 WriteToLog("Detected Linux operating system, adding the parameter '--no-sandbox'");
-                AddChromeArgument("--no-sandbox");
+                AddChromiumArgument("--no-sandbox");
             }
 
             SetWindowSize(WindowSize.HD_1366_768);
@@ -748,11 +767,11 @@ namespace ChromiumHtmlToPdfLib
 
         #region RemoveChromeArgument
         /// <summary>
-        ///     Removes the given <paramref name="argument" /> from <see cref="DefaultChromeArguments" />
+        ///     Removes the given <paramref name="argument" /> from <see cref="DefaultChromiumArguments" />
         /// </summary>
         /// <param name="argument">The Chrome argument</param>
         // ReSharper disable once UnusedMember.Local
-        public void RemoveChromeArgument(string argument)
+        public void RemoveChromiumArgument(string argument)
         {
             if (string.IsNullOrWhiteSpace(argument))
                 throw new ArgumentException("Argument is null, empty or white space");
@@ -769,69 +788,69 @@ namespace ChromiumHtmlToPdfLib
                     throw new ArgumentException("Can't remove '---remote-debugging-port=\"0\"' argument, this argument is always needed");
             }
 
-            if (_defaultChromeArgument.Contains(argument))
+            if (_defaultChromiumArgument.Contains(argument))
             {
-                _defaultChromeArgument.Remove(argument);
-                WriteToLog($"Removed Chrome argument '{argument}'");
+                _defaultChromiumArgument.Remove(argument);
+                WriteToLog($"Removed Chromium argument '{argument}'");
             }
         }
         #endregion
 
-        #region AddChromedArgument
+        #region AddChromiumArgument
         /// <summary>
-        ///     Adds an extra conversion argument to the <see cref="DefaultChromeArguments" />
+        ///     Adds an extra conversion argument to the <see cref="DefaultChromiumArguments" />
         /// </summary>
         /// <remarks>
         ///     This is a one time only default setting which can not be changed when doing multiple conversions.
-        ///     Set this before doing any conversions. You can get all the set argument through the <see cref="DefaultChromeArguments"/> property
+        ///     Set this before doing any conversions. You can get all the set argument through the <see cref="DefaultChromiumArguments"/> property
         /// </remarks>
         /// <param name="argument">The Chrome argument</param>
-        public void AddChromeArgument(string argument)
+        public void AddChromiumArgument(string argument)
         {
-            if (IsChromeRunning)
-                throw new ChromeException($"Chrome is already running, you need to set the argument '{argument}' before staring Chrome");
+            if (IsChromiumRunning)
+                throw new ChromeException($"The Chromium based browser is already running, you need to set the argument '{argument}' before staring the browser");
 
             if (string.IsNullOrWhiteSpace(argument))
                 throw new ArgumentException("Argument is null, empty or white space");
 
-            if (!_defaultChromeArgument.Contains(argument, StringComparison.CurrentCultureIgnoreCase))
+            if (!_defaultChromiumArgument.Contains(argument, StringComparison.CurrentCultureIgnoreCase))
             {
-                WriteToLog($"Adding Chrome argument '{argument}'");
-                _defaultChromeArgument.Add(argument);
+                WriteToLog($"Adding Chromium argument '{argument}'");
+                _defaultChromiumArgument.Add(argument);
             }
             else
-                WriteToLog($"The Chrome argument '{argument}' has already been set, ignoring it");
+                WriteToLog($"The Chromium argument '{argument}' has already been set, ignoring it");
         }
 
         /// <summary>
-        ///     Adds an extra conversion argument with value to the <see cref="DefaultChromeArguments" />
+        ///     Adds an extra conversion argument with value to the <see cref="DefaultChromiumArguments" />
         ///     or replaces it when it already exists
         /// </summary>
         /// <remarks>
         ///     This is a one time only default setting which can not be changed when doing multiple conversions.
-        ///     Set this before doing any conversions. You can get all the set argument through the <see cref="DefaultChromeArguments"/> property
+        ///     Set this before doing any conversions. You can get all the set argument through the <see cref="DefaultChromiumArguments"/> property
         /// </remarks>
         /// <param name="argument">The Chrome argument</param>
         /// <param name="value">The argument value</param>
-        public void AddChromeArgument(string argument, string value)
+        public void AddChromiumArgument(string argument, string value)
         {
-            if (IsChromeRunning)
-                throw new ChromeException($"Chrome is already running, you need to set the argument '{argument}' before staring Chrome");
+            if (IsChromiumRunning)
+                throw new ChromeException($"The Chromium based browser is already running, you need to set the argument '{argument}' before staring the browser");
 
             if (string.IsNullOrWhiteSpace(argument))
                 throw new ArgumentException("Argument is null, empty or white space");
 
-            for (var i = 0; i < DefaultChromeArguments.Count; i++)
+            for (var i = 0; i < DefaultChromiumArguments.Count; i++)
             {
-                if (!_defaultChromeArgument[i].StartsWith(argument + "=")) continue;
+                if (!_defaultChromiumArgument[i].StartsWith(argument + "=")) continue;
 
-                WriteToLog($"Updating Chrome argument '{_defaultChromeArgument[i]}' with value '{value}'");
-                _defaultChromeArgument[i] = $"{argument}=\"{value}\"";
+                WriteToLog($"Updating Chromium argument '{_defaultChromiumArgument[i]}' with value '{value}'");
+                _defaultChromiumArgument[i] = $"{argument}=\"{value}\"";
                 return;
             }
 
-            WriteToLog($"Adding Chrome argument '{argument}=\"{value}\"'");
-            _defaultChromeArgument.Add($"{argument}=\"{value}\"");
+            WriteToLog($"Adding Chromium argument '{argument}=\"{value}\"'");
+            _defaultChromiumArgument.Add($"{argument}=\"{value}\"");
         }
         #endregion
 
@@ -860,7 +879,7 @@ namespace ChromiumHtmlToPdfLib
         public void SetProxyServer(string value)
         {
             _proxyServer = value;
-            AddChromeArgument("--proxy-server", value);
+            AddChromiumArgument("--proxy-server", value);
         }
         #endregion
 
@@ -885,7 +904,7 @@ namespace ChromiumHtmlToPdfLib
         public void SetProxyBypassList(string values)
         {
             _proxyBypassList = values;
-            AddChromeArgument("--proxy-bypass-list", values);
+            AddChromiumArgument("--proxy-bypass-list", values);
         }
         #endregion
 
@@ -903,7 +922,7 @@ namespace ChromiumHtmlToPdfLib
         /// </remarks>
         public void SetProxyPacUrl(string value)
         {
-            AddChromeArgument("--proxy-pac-url", value);
+            AddChromiumArgument("--proxy-pac-url", value);
         }
         #endregion
 
@@ -917,7 +936,7 @@ namespace ChromiumHtmlToPdfLib
         /// </remarks>
         public void SetUserAgent(string value)
         {
-            AddChromeArgument("--user-agent", value);
+            AddChromiumArgument("--user-agent", value);
         }
         #endregion
 
@@ -937,14 +956,14 @@ namespace ChromiumHtmlToPdfLib
             if (!Directory.Exists(directory))
                 throw new DirectoryNotFoundException($"The directory '{directory}' does not exists");
 
-            AddChromeArgument("--disk-cache-dir", directory.TrimEnd('\\', '/'));
+            AddChromiumArgument("--disk-cache-dir", directory.TrimEnd('\\', '/'));
 
             if (size.HasValue)
             {
                 if (size.Value <= 0)
                     throw new ArgumentException("Has to be a value of 1 or greater", nameof(size));
 
-                AddChromeArgument("--disk-cache-size", (size.Value * 1024 * 1024).ToString());
+                AddChromiumArgument("--disk-cache-size", (size.Value * 1024 * 1024).ToString());
             }
 
             _useCache = true;
@@ -990,7 +1009,7 @@ namespace ChromiumHtmlToPdfLib
             if (height <= 0)
                 throw new ArgumentOutOfRangeException(nameof(height));
 
-            AddChromeArgument("--window-size", width + "," + height);
+            AddChromiumArgument("--window-size", width + "," + height);
         }
 
         /// <summary>
@@ -1002,58 +1021,58 @@ namespace ChromiumHtmlToPdfLib
             switch (size)
             {
                 case WindowSize.SVGA:
-                    AddChromeArgument("--window-size", 800 + "," + 600);
+                    AddChromiumArgument("--window-size", 800 + "," + 600);
                     break;
                 case WindowSize.WSVGA:
-                    AddChromeArgument("--window-size", 1024 + "," + 600);
+                    AddChromiumArgument("--window-size", 1024 + "," + 600);
                     break;
                 case WindowSize.XGA:
-                    AddChromeArgument("--window-size", 1024 + "," + 768);
+                    AddChromiumArgument("--window-size", 1024 + "," + 768);
                     break;
                 case WindowSize.XGAPLUS:
-                    AddChromeArgument("--window-size", 1152 + "," + 864);
+                    AddChromiumArgument("--window-size", 1152 + "," + 864);
                     break;
                 case WindowSize.WXGA_5_3:
-                    AddChromeArgument("--window-size", 1280 + "," + 768);
+                    AddChromiumArgument("--window-size", 1280 + "," + 768);
                     break;
                 case WindowSize.WXGA_16_10:
-                    AddChromeArgument("--window-size", 1280 + "," + 800);
+                    AddChromiumArgument("--window-size", 1280 + "," + 800);
                     break;
                 case WindowSize.SXGA:
-                    AddChromeArgument("--window-size", 1280 + "," + 1024);
+                    AddChromiumArgument("--window-size", 1280 + "," + 1024);
                     break;
                 case WindowSize.HD_1360_768:
-                    AddChromeArgument("--window-size", 1360 + "," + 768);
+                    AddChromiumArgument("--window-size", 1360 + "," + 768);
                     break;
                 case WindowSize.HD_1366_768:
-                    AddChromeArgument("--window-size", 1366 + "," + 768);
+                    AddChromiumArgument("--window-size", 1366 + "," + 768);
                     break;
                 case WindowSize.OTHER_1536_864:
-                    AddChromeArgument("--window-size", 1536 + "," + 864);
+                    AddChromiumArgument("--window-size", 1536 + "," + 864);
                     break;
                 case WindowSize.HD_PLUS:
-                    AddChromeArgument("--window-size", 1600 + "," + 900);
+                    AddChromiumArgument("--window-size", 1600 + "," + 900);
                     break;
                 case WindowSize.WSXGA_PLUS:
-                    AddChromeArgument("--window-size", 1680 + "," + 1050);
+                    AddChromiumArgument("--window-size", 1680 + "," + 1050);
                     break;
                 case WindowSize.FHD:
-                    AddChromeArgument("--window-size", 1920 + "," + 1080);
+                    AddChromiumArgument("--window-size", 1920 + "," + 1080);
                     break;
                 case WindowSize.WUXGA:
-                    AddChromeArgument("--window-size", 1920 + "," + 1200);
+                    AddChromiumArgument("--window-size", 1920 + "," + 1200);
                     break;
                 case WindowSize.OTHER_2560_1070:
-                    AddChromeArgument("--window-size", 2560 + "," + 1070);
+                    AddChromiumArgument("--window-size", 2560 + "," + 1070);
                     break;
                 case WindowSize.WQHD:
-                    AddChromeArgument("--window-size", 2560 + "," + 1440);
+                    AddChromiumArgument("--window-size", 2560 + "," + 1440);
                     break;
                 case WindowSize.OTHER_3440_1440:
-                    AddChromeArgument("--window-size", 3440 + "," + 1440);
+                    AddChromiumArgument("--window-size", 3440 + "," + 1440);
                     break;
                 case WindowSize._4K_UHD:
-                    AddChromeArgument("--window-size", 3840 + "," + 2160);
+                    AddChromiumArgument("--window-size", 3840 + "," + 2160);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(size), size, null);
@@ -1876,7 +1895,7 @@ namespace ChromiumHtmlToPdfLib
             // Give Chrome 2 seconds to close
             while (counter < 200)
             {
-                if (!IsChromeRunning)
+                if (!IsChromiumRunning)
                 {
                     WriteToLog("Chrome closed gracefully");
                     break;
@@ -1886,7 +1905,7 @@ namespace ChromiumHtmlToPdfLib
                 Thread.Sleep(10);
             }
 
-            if (IsChromeRunning)
+            if (IsChromiumRunning)
             {
                 // Sometimes Chrome does not close all processes so kill them
                 WriteToLog($"Chrome did not close gracefully, closing it by killing it's process on id '{_chromeProcess.Id}'");
