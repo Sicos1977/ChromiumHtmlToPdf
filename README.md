@@ -250,7 +250,7 @@ RUN apt-get update && \
     mv chromedriver /usr/bin && rm -f chromedriver_linux64.zip
 ```
 
-See this issue for more information --> https://github.com/Sicos1977/ChromeHtmlToPdf/issues/39
+See this issue for more information --> https://github.com/Sicos1977/ChromiumHtmlToPdf/issues/39
 
 # Using this library on Linux or from a docker container
 

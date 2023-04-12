@@ -35,12 +35,29 @@ namespace ChromiumHtmlToPdfLib.Exceptions
     [Serializable]
     public class ChromiumNavigationException : Exception
     {
+        /// <summary>
+        ///     Raised when a navigation exception occurs in Chromium
+        /// </summary>
+        /// <param name="info"></param>
+        /// <param name="context"></param>
         protected ChromiumNavigationException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 
+        /// <summary>
+        ///     Raised when a navigation exception occurs in Chromium
+        /// </summary>
         internal ChromiumNavigationException() { }
 
+        /// <summary>
+        ///     Raised when a navigation exception occurs in Chromium
+        /// </summary>
+        /// <param name="message"></param>
         internal ChromiumNavigationException(string message) : base(message) { }
 
+        /// <summary>
+        ///     Raised when a navigation exception occurs in Chromium
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="innerException"></param>
         internal ChromiumNavigationException(string message, Exception innerException) : base(message, innerException) { }
     }
 }

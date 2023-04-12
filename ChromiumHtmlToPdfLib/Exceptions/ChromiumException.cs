@@ -31,30 +31,30 @@ using ChromiumHtmlToPdfLib.Protocol;
 namespace ChromiumHtmlToPdfLib.Exceptions
 {
     /// <summary>
-    ///     Raised when an error is returned from Chrome
+    ///     Raised when an error is returned from Chromium
     /// </summary>
     [Serializable]
     public class ChromiumException : Exception
     {
         /// <summary>
-        ///     Returns the error code that is returned from Chrome
+        ///     Returns the error code that is returned from Chromium
         /// </summary>
         public double Code { get; }
 
         /// <summary>
-        ///     Raised when an error is returned from Chrome
+        ///     Raised when an error is returned from Chromium
         /// </summary>
         /// <param name="info"></param>
         /// <param name="context"></param>
         protected ChromiumException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 
         /// <summary>
-        ///     Raised when an error is returned from Chrome
+        ///     Raised when an error is returned from Chromium
         /// </summary>
         public ChromiumException() { }
 
         /// <summary>
-        ///     Raised when an error is returned from Chrome
+        ///     Raised when an error is returned from Chromium
         /// </summary>
         /// <param name="error"></param>
         public ChromiumException(Error error) : base(error.InnerError.Message)
@@ -63,13 +63,13 @@ namespace ChromiumHtmlToPdfLib.Exceptions
         }
 
         /// <summary>
-        ///     Raised when an error is returned from Chrome
+        ///     Raised when an error is returned from Chromium
         /// </summary>
         /// <param name="message"></param>
         public ChromiumException(string message) : base(message) { }
 
         /// <summary>
-        ///     Raised when an error is returned from Chrome
+        ///     Raised when an error is returned from Chromium
         /// </summary>
         /// <param name="message"></param>
         /// <param name="innerException"></param>

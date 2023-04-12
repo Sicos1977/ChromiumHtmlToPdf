@@ -34,11 +34,14 @@ namespace ChromiumHtmlToPdfLib.Protocol
     public class Evaluate : MessageBase
     {
         #region Properties
+        /// <summary>
+        ///     The returned result
+        /// </summary>
         [JsonProperty("result")]
         public EvaluateResult Result { get; set; }
 
         /// <summary>
-        /// The method that we want to execute in Chrome
+        /// The method that we want to execute in Chromium
         /// </summary>
         [JsonProperty("method")]
         public string Method { get; set; }

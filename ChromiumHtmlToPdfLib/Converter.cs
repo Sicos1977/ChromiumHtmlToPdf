@@ -504,7 +504,7 @@ namespace ChromiumHtmlToPdfLib
 
         #region StartChromiumHeadless
         /// <summary>
-        ///     Start Chrome headless
+        ///     Start Google Chrome or Microsoft Edge headless
         /// </summary>
         /// <remarks>
         ///     If Chrome or Edge is already running then this step is skipped
@@ -580,7 +580,7 @@ namespace ChromiumHtmlToPdfLib
 
             if (!_userProfileSet)
             {
-                _chromiumProcess.ErrorDataReceived += _chromeProcess_ErrorDataReceived;
+                _chromiumProcess.ErrorDataReceived += _chromiumProcess_ErrorDataReceived;
                 _chromiumProcess.EnableRaisingEvents = true;
                 processStartInfo.UseShellExecute = false;
                 processStartInfo.RedirectStandardError = true;
@@ -589,7 +589,7 @@ namespace ChromiumHtmlToPdfLib
                 File.Delete(_devToolsActivePortFile);
 
             _chromiumProcess.StartInfo = processStartInfo;
-            _chromiumProcess.Exited += _chromeProcess_Exited;
+            _chromiumProcess.Exited += _chromiumProcess_Exited;
 
             try
             {
@@ -617,7 +617,7 @@ namespace ChromiumHtmlToPdfLib
 
                 _chromiumWaitEvent.WaitOne();
 
-                _chromiumProcess.ErrorDataReceived -= _chromeProcess_ErrorDataReceived;
+                _chromiumProcess.ErrorDataReceived -= _chromiumProcess_ErrorDataReceived;
 
                 if (_chromiumEventException != null)
                 {
@@ -632,26 +632,26 @@ namespace ChromiumHtmlToPdfLib
                 ConnectToDevProtocol(uri);
             }
 
-            _chromiumProcess.Exited -= _chromeProcess_Exited;
+            _chromiumProcess.Exited -= _chromiumProcess_Exited;
             WriteToLog($"{BrowserName} started");
         }
 
         /// <summary>
-        ///     Raised when the Chrome process exits
+        ///     Raised when the Chromium process exits
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _chromeProcess_Exited(object sender, EventArgs e)
+        private void _chromiumProcess_Exited(object sender, EventArgs e)
         {
             try
             {
                 if (_chromiumProcess == null) return;
-                WriteToLog($"Chrome exited unexpectedly, arguments used: {string.Join(" ", DefaultChromiumArguments)}");
+                WriteToLog($"{BrowserName} exited unexpectedly, arguments used: {string.Join(" ", DefaultChromiumArguments)}");
                 WriteToLog($"Process id: {_chromiumProcess.Id}");
                 WriteToLog($"Process exit time: {_chromiumProcess.ExitTime:yyyy-MM-ddTHH:mm:ss.fff}");
                 var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromiumProcess.ExitCode));
                 WriteToLog($"Exception: {exception}");
-                throw new ChromiumException($"Chrome exited unexpectedly, {exception}");
+                throw new ChromiumException($"{BrowserName} exited unexpectedly, {exception}");
             }
             catch (Exception exception)
             {
@@ -705,23 +705,23 @@ namespace ChromiumHtmlToPdfLib
         }
 
         /// <summary>
-        ///     Raised when Chrome sends data to the error output
+        ///     Raised when Chromium sends data to the error output
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
-        private void _chromeProcess_ErrorDataReceived(object sender, DataReceivedEventArgs args)
+        private void _chromiumProcess_ErrorDataReceived(object sender, DataReceivedEventArgs args)
         {
             try
             {
                 if (args.Data == null || string.IsNullOrEmpty(args.Data) || args.Data.StartsWith("[")) return;
 
-                WriteToLog($"Received Chrome error data: '{args.Data}'");
+                WriteToLog($"Received Chromium error data: '{args.Data}'");
 
                 if (!args.Data.StartsWith("DevTools listening on")) return;
                 // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
                 var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
                 ConnectToDevProtocol(uri);
-                _chromiumProcess.ErrorDataReceived -= _chromeProcess_ErrorDataReceived;
+                _chromiumProcess.ErrorDataReceived -= _chromiumProcess_ErrorDataReceived;
                 _chromiumWaitEvent.Set();
             }
             catch (Exception exception)
@@ -783,11 +783,11 @@ namespace ChromiumHtmlToPdfLib
         }
         #endregion
 
-        #region RemoveChromeArgument
+        #region RemoveChromiumArgument
         /// <summary>
         ///     Removes the given <paramref name="argument" /> from <see cref="DefaultChromiumArguments" />
         /// </summary>
-        /// <param name="argument">The Chrome argument</param>
+        /// <param name="argument">The Chromium argument</param>
         // ReSharper disable once UnusedMember.Local
         public void RemoveChromiumArgument(string argument)
         {
@@ -822,11 +822,11 @@ namespace ChromiumHtmlToPdfLib
         ///     This is a one time only default setting which can not be changed when doing multiple conversions.
         ///     Set this before doing any conversions. You can get all the set argument through the <see cref="DefaultChromiumArguments"/> property
         /// </remarks>
-        /// <param name="argument">The Chrome argument</param>
+        /// <param name="argument">The Chromium argument</param>
         public void AddChromiumArgument(string argument)
         {
             if (IsChromiumRunning)
-                throw new ChromiumException($"The Chromium based browser is already running, you need to set the argument '{argument}' before staring the browser");
+                throw new ChromiumException($"{BrowserName} is already running, you need to set the argument '{argument}' before staring the browser");
 
             if (string.IsNullOrWhiteSpace(argument))
                 throw new ArgumentException("Argument is null, empty or white space");
@@ -848,12 +848,12 @@ namespace ChromiumHtmlToPdfLib
         ///     This is a one time only default setting which can not be changed when doing multiple conversions.
         ///     Set this before doing any conversions. You can get all the set argument through the <see cref="DefaultChromiumArguments"/> property
         /// </remarks>
-        /// <param name="argument">The Chrome argument</param>
+        /// <param name="argument">The Chromium argument</param>
         /// <param name="value">The argument value</param>
         public void AddChromiumArgument(string argument, string value)
         {
             if (IsChromiumRunning)
-                throw new ChromiumException($"The Chromium based browser is already running, you need to set the argument '{argument}' before staring the browser");
+                throw new ChromiumException($"{BrowserName} is already running, you need to set the argument '{argument}' before staring the browser");
 
             if (string.IsNullOrWhiteSpace(argument))
                 throw new ArgumentException("Argument is null, empty or white space");
@@ -874,12 +874,12 @@ namespace ChromiumHtmlToPdfLib
 
         #region SetProxyServer
         /// <summary>
-        ///     Instructs Chrome to use the provided proxy server
+        ///     Instructs Chromium to use the provided proxy server
         /// </summary>
         /// <param name="value"></param>
         /// <example>
         ///     &lt;scheme&gt;=&lt;uri&gt;[:&lt;port&gt;][;...] | &lt;uri&gt;[:&lt;port&gt;] | "direct://"
-        ///     This tells Chrome to use a custom proxy configuration. You can specify a custom proxy configuration in three ways:
+        ///     This tells Chromium to use a custom proxy configuration. You can specify a custom proxy configuration in three ways:
         ///     1) By providing a semi-colon-separated mapping of list scheme to url/port pairs.
         ///     For example, you can specify:
         ///     "http=foopy:80;ftp=foopy2"
@@ -892,7 +892,7 @@ namespace ChromiumHtmlToPdfLib
         ///     "direct://" will cause all connections to not use a proxy.
         /// </example>
         /// <remarks>
-        ///     Set this parameter before starting Chrome
+        ///     Set this parameter before starting Google Chrome or Microsoft Edge
         /// </remarks>
         public void SetProxyServer(string value)
         {
@@ -903,7 +903,7 @@ namespace ChromiumHtmlToPdfLib
 
         #region SetProxyBypassList
         /// <summary>
-        ///     This tells chrome to bypass any specified proxy for the given semi-colon-separated list of hosts.
+        ///     This tells Chromium to bypass any specified proxy for the given semi-colon-separated list of hosts.
         ///     This flag must be used (or rather, only has an effect) in tandem with <see cref="SetProxyServer" />.
         ///     Note that trailing-domain matching doesn't require "." separators so "*google.com" will match "igoogle.com" for
         ///     example.
@@ -917,7 +917,7 @@ namespace ChromiumHtmlToPdfLib
         ///     specified.
         /// </example>
         /// <remarks>
-        ///     Set this parameter before starting Chrome
+        ///     Set this parameter before starting Google Chrome or Microsoft Edge
         /// </remarks>
         public void SetProxyBypassList(string values)
         {
@@ -933,10 +933,10 @@ namespace ChromiumHtmlToPdfLib
         /// <param name="value"></param>
         /// <example>
         ///     "http://wpad/windows.pac"
-        ///     will tell Chrome to resolve proxy information for URL requests using the windows.pac file.
+        ///     will tell Chromium to resolve proxy information for URL requests using the windows.pac file.
         /// </example>
         /// <remarks>
-        ///     Set this parameter before starting Chrome
+        ///     Set this parameter before starting Google Chrome or Microsoft Edge
         /// </remarks>
         public void SetProxyPacUrl(string value)
         {
@@ -946,11 +946,11 @@ namespace ChromiumHtmlToPdfLib
 
         #region SetUserAgent
         /// <summary>
-        ///     This tells Chrome to use the given user-agent string
+        ///     This tells Chromium to use the given user-agent string
         /// </summary>
         /// <param name="value"></param>
         /// <remarks>
-        ///     Set this parameter before starting Chrome
+        ///     Set this parameter before starting Google Chrome or Microsoft Edge
         /// </remarks>
         public void SetUserAgent(string value)
         {
@@ -960,14 +960,14 @@ namespace ChromiumHtmlToPdfLib
 
         #region SetDiskCache
         /// <summary>
-        ///     This tells Chrome to cache it's content to the given <paramref name="directory"/> instead of the user profile
+        ///     This tells Chromium to cache it's content to the given <paramref name="directory"/> instead of the user profile
         /// </summary>
         /// <param name="directory">The cache directory</param>
-        /// <param name="size">The maximum size in megabytes for the cache directory, <c>null</c> to let Chrome decide</param>
+        /// <param name="size">The maximum size in megabytes for the cache directory, <c>null</c> to let Chromium decide</param>
         /// <remarks>
-        ///     You can not share a cache folder between multiple instances that are running at the same time because a Chrome
-        ///     instance locks the cache for it self. If you want to use caching in a multi threaded environment then assign
-        ///     a unique cache folder to each running Chrome instance
+        ///     You can not share a cache folder between multiple instances that are running at the same time because a Google Chrome
+        ///     or Microsoft Edge instance locks the cache for it self. If you want to use caching in a multi threaded environment
+        ///     then assign a unique cache folder to each running Google Chrome or Microsoft Edge instance
         /// </remarks>
         public void SetDiskCache(string directory, long? size)
         {
@@ -990,14 +990,14 @@ namespace ChromiumHtmlToPdfLib
 
         #region SetUser
         /// <summary>
-        ///     Sets the user under which Chrome wil run. This is useful if you are on a server and
+        ///     Sets the user under which Chromium wil run. This is useful if you are on a server and
         ///     the user under which the code runs doesn't have access to the internet.
         /// </summary>
         /// <param name="userName">The username with or without a domain name (e.g DOMAIN\USERNAME)</param>
         /// <param name="password">The password for the <paramref name="userName" /></param>
         /// <remarks>
-        ///     Set this parameter before starting Chrome. On systems other than Windows the password can
-        ///     be left empty because this is only supported on Windows.
+        ///     Set this parameter before starting Google Chrome or Microsoft Edge. On systems other than
+        ///     Windows the password can be left empty because this is only supported on Windows.
         /// </remarks>
         public void SetUser(string userName, string password = null)
         {
@@ -1898,13 +1898,13 @@ namespace ChromiumHtmlToPdfLib
             {
                 try
                 {
-                    WriteToLog("Closing Chrome browser gracefully");
+                    WriteToLog($"Closing {BrowserName} browser gracefully");
                     _browser.Close();
                     _browser.Dispose();
                 }
                 catch (Exception exception)
                 {
-                    WriteToLog($"An error occurred while trying to close Chrome gracefully, error '{ExceptionHelpers.GetInnerException(exception)}'");
+                    WriteToLog($"An error occurred while trying to close {BrowserName} gracefully, error '{ExceptionHelpers.GetInnerException(exception)}'");
                 }
             }
 
@@ -1915,7 +1915,7 @@ namespace ChromiumHtmlToPdfLib
             {
                 if (!IsChromiumRunning)
                 {
-                    WriteToLog("Chrome closed gracefully");
+                    WriteToLog($"{BrowserName} closed gracefully");
                     break;
                 }
 
@@ -1926,9 +1926,9 @@ namespace ChromiumHtmlToPdfLib
             if (IsChromiumRunning)
             {
                 // Sometimes Chrome does not close all processes so kill them
-                WriteToLog($"Chrome did not close gracefully, closing it by killing it's process on id '{_chromiumProcess.Id}'");
+                WriteToLog($"{BrowserName} did not close gracefully, closing it by killing it's process on id '{_chromiumProcess.Id}'");
                 KillProcessAndChildren(_chromiumProcess.Id);
-                WriteToLog("Chrome killed");
+                WriteToLog($"{BrowserName} killed");
 
                 _chromiumProcess = null;
             }

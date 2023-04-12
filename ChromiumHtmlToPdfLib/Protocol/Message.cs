@@ -30,7 +30,7 @@ using Newtonsoft.Json;
 namespace ChromiumHtmlToPdfLib.Protocol
 {
     /// <summary>
-    /// The JSON message that is sent to Chrome
+    /// The JSON message that is sent to Chromium
     /// </summary>
     public class Message : MessageBase
     {
@@ -42,7 +42,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
         public string Method { get; set; }
 
         /// <summary>
-        /// The parameters that we want to feed into Chrome
+        /// The parameters that we want to feed into Chromium
         /// </summary>
         [JsonProperty("params")]
         public Dictionary<string, object> Parameters { get; set; }

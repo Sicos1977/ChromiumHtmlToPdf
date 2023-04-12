@@ -29,7 +29,7 @@ using Newtonsoft.Json;
 namespace ChromiumHtmlToPdfLib.Protocol.Page
 {
     /// <summary>
-    /// The JSON object that is returned from Chrome when navigation to a page
+    /// The JSON object that is returned from Chromium when navigation to a page
     /// </summary>
     public class NavigateResponse : MessageBase
     {
@@ -48,6 +48,9 @@ namespace ChromiumHtmlToPdfLib.Protocol.Page
         #endregion
     }
 
+    /// <summary>
+    /// The response
+    /// </summary>
     public class NavigateResponseResult
     {
         #region Properties

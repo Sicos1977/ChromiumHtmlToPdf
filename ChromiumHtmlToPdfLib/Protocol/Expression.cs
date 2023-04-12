@@ -29,7 +29,7 @@ using Newtonsoft.Json;
 namespace ChromiumHtmlToPdfLib.Protocol
 {
     /// <summary>
-    /// The JSON structure that is returned from Chrome when an expression is evaluated
+    /// The JSON structure that is returned from Chromium when an expression is evaluated
     /// </summary>
     public class Expression : MessageBase
     {
@@ -58,7 +58,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     {
         #region Properties
         /// <summary>
-        /// Returns an object when an exception occurs when Chrome evaluated the given epxression
+        /// Returns an object when an exception occurs when Chromium evaluated the given expression
         /// </summary>
         [JsonProperty("exceptionDetails")]
         public ExpressionExceptionDetails ExceptionDetails { get; set; }
@@ -72,7 +72,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     }
 
     /// <summary>
-    /// The exact exception details for the expression that is sent to Chrome
+    /// The exact exception details for the expression that is sent to Chromium
     /// </summary>
     public class ExpressionExceptionDetails
     {

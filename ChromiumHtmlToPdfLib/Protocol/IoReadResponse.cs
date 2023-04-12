@@ -30,7 +30,7 @@ using Newtonsoft.Json;
 namespace ChromiumHtmlToPdfLib.Protocol
 {
     /// <summary>
-    /// The JSON structure that is returned from Chrome when reading from an IO stream
+    /// The JSON structure that is returned from Chromium when reading from an IO stream
     /// </summary>
     public class IoReadResponse : MessageBase
     {

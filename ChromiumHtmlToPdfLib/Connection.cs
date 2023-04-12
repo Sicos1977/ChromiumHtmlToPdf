@@ -40,7 +40,7 @@ using ErrorEventArgs = ChromiumHtmlToPdfLib.Event.ErrorEventArgs;
 namespace ChromiumHtmlToPdfLib
 {
     /// <summary>
-    /// A connection to a page (tab) in Chrome
+    /// A connection to a page (tab) in Chromium
     /// </summary>
     internal class Connection : IDisposable
     {

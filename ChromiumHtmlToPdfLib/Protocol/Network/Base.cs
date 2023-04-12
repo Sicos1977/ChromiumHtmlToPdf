@@ -35,7 +35,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Network
     {
         #region Properties
         /// <summary>
-        /// The method executed by Chrome
+        /// The method executed by Chromium
         /// </summary>
         [JsonProperty("method")]
         public string Method { get; set; }

@@ -30,7 +30,7 @@ using Newtonsoft.Json;
 namespace ChromiumHtmlToPdfLib.Protocol
 {
     /// <summary>
-    /// The JSON object that is returned when the <b>Fetch.enable</b> is activated in Chrome
+    /// The JSON object that is returned when the <b>Fetch.enable</b> is activated in Chromium
     /// </summary>
     public class Fetch
     {

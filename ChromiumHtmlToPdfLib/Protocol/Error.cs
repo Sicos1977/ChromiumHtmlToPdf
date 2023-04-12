@@ -29,7 +29,7 @@ using Newtonsoft.Json;
 namespace ChromiumHtmlToPdfLib.Protocol
 {
     /// <summary>
-    /// The JSON structure that is returned from Chrome when an Error occurs
+    /// The JSON structure that is returned from Chromium when an Error occurs
     /// </summary>
     public class Error : MessageBase
     {
