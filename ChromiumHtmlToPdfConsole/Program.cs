@@ -319,6 +319,8 @@ namespace ChromiumHtmlToPdfConsole
             converter.DiskCacheDisabled = options.DiskCacheDisabled;
             converter.ImageLoadTimeout = options.ImageLoadTimeout;
 
+            if (options.NoMargins)
+                converter.AddChromiumArgument("--no-margins");
         }
         #endregion
 

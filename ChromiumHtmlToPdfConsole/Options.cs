@@ -29,12 +29,6 @@ namespace ChromiumHtmlToPdfConsole
         public bool InputIsList { get; set; }
 
         /// <summary>
-        ///     A file with input urls and/or files
-        /// </summary>
-        [Option("input-is-content", Required = false, HelpText = "Tells this app that --input is pure html and not an url, file or file list")]
-        public bool InputIsContent { get; set; }
-
-        /// <summary>
         ///     The output file
         /// </summary>
         [Option("output", Required = true, HelpText = "The output file")]
@@ -83,6 +77,12 @@ namespace ChromiumHtmlToPdfConsole
         /// </summary>
         [Option("paper-height", Default = 11.0, Required = false, HelpText = "Paper height in inches")]
         public double PaperHeight { get; set; }
+
+        /// <summary>
+        ///     A file with input urls and/or files
+        /// </summary>
+        [Option("no-margins", Required = false, HelpText = "Tells this app that the parameter '--no-margins' needs to be set on Chromium")]
+        public bool NoMargins { get; set; }
 
         /// <summary>
         ///     The widow size to use, when this option is set it will override <see cref="WindowWidth" /> and
