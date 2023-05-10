@@ -51,13 +51,13 @@ namespace ChromiumHtmlToPdfLib.Exceptions
         /// <summary>
         ///     Raised when an error is returned from Chromium
         /// </summary>
-        public ChromiumException() { }
+        internal ChromiumException() { }
 
         /// <summary>
         ///     Raised when an error is returned from Chromium
         /// </summary>
         /// <param name="error"></param>
-        public ChromiumException(Error error) : base(error.InnerError.Message)
+        internal ChromiumException(Error error) : base(error.InnerError.Message)
         {
             Code = error.InnerError.Code;
         }
@@ -66,13 +66,13 @@ namespace ChromiumHtmlToPdfLib.Exceptions
         ///     Raised when an error is returned from Chromium
         /// </summary>
         /// <param name="message"></param>
-        public ChromiumException(string message) : base(message) { }
+        internal ChromiumException(string message) : base(message) { }
 
         /// <summary>
         ///     Raised when an error is returned from Chromium
         /// </summary>
         /// <param name="message"></param>
         /// <param name="innerException"></param>
-        public ChromiumException(string message, Exception innerException) : base(message, innerException) { }
+        internal ChromiumException(string message, Exception innerException) : base(message, innerException) { }
     }
 }

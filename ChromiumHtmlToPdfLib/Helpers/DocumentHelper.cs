@@ -171,7 +171,6 @@ namespace ChromiumHtmlToPdfLib.Helpers
         /// Sanitizes the HTML by removing all forbidden elements
         /// </summary>
         /// <param name="inputUri">The uri of the webpage</param>
-        /// <param name="mediaLoadTimeout">The media load timeout or <c>null</c> when not set</param>
         /// <param name="sanitizer"><see cref="HtmlSanitizer"/></param>
         /// <param name="outputUri">The outputUri when this method returns <c>false</c> otherwise
         ///     <c>null</c> is returned</param>
@@ -179,7 +178,6 @@ namespace ChromiumHtmlToPdfLib.Helpers
         /// <returns></returns>
         public bool SanitizeHtml(
             ConvertUri inputUri,
-            int? mediaLoadTimeout,
             HtmlSanitizer sanitizer, 
             out ConvertUri outputUri,
             ref List<string> safeUrls)

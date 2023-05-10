@@ -26,6 +26,12 @@ namespace ChromiumHtmlToPdfLib.Loggers
         #endregion
 
         #region BeginScope
+        /// <summary>
+        ///     Beginning of the logging scope
+        /// </summary>
+        /// <typeparam name="TState"></typeparam>
+        /// <param name="state"></param>
+        /// <returns></returns>
         public IDisposable BeginScope<TState>(TState state)
         {
             _instanceId = state?.ToString();
@@ -46,6 +52,15 @@ namespace ChromiumHtmlToPdfLib.Loggers
         #endregion
 
         #region Log
+        /// <summary>
+        ///     Write logging to the <see cref="ILogger"/>
+        /// </summary>
+        /// <typeparam name="TState"></typeparam>
+        /// <param name="logLevel"></param>
+        /// <param name="eventId"></param>
+        /// <param name="state"></param>
+        /// <param name="exception"></param>
+        /// <param name="formatter"></param>
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
             var message = $"{formatter(state, exception)}";
@@ -59,6 +74,9 @@ namespace ChromiumHtmlToPdfLib.Loggers
         #endregion
 
         #region Dispose
+        /// <summary>
+        ///     Disposes this object
+        /// </summary>
         public void Dispose()
         {
             if (_stream == null)

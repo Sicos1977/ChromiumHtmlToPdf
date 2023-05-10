@@ -31,11 +31,11 @@ namespace ChromiumHtmlToPdfLib.Protocol.Page
     /// <summary>
     /// The JSON object that is returned when we asked Chrome to send page events
     /// </summary>
-    public class Event : Base
+    internal class Event : Base
     {
         #region Properties
         /// <summary>
-        /// The parameters used with this <see cref="Method"/>
+        /// The parameters used with this <see cref="Base.Method"/>
         /// </summary>
         [JsonProperty("params")]
         public EventParams Params { get; set; }
@@ -54,7 +54,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Page
     /// <summary>
     /// Part of the <see cref="Event"/> class
     /// </summary>
-    public class EventParams
+    internal class EventParams
     {
         #region Properties
         /// <summary>

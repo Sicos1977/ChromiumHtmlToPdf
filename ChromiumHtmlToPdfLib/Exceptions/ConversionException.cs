@@ -35,6 +35,11 @@ namespace ChromiumHtmlToPdfLib.Exceptions
     [Serializable]
     public class ConversionException : Exception
     {
+        /// <summary>
+        ///     To be raised when a conversion error occurs
+        /// </summary>
+        /// <param name="info"></param>
+        /// <param name="context"></param>
         protected ConversionException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 
         internal ConversionException() { }

@@ -32,12 +32,18 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     ///     Placeholder for the result of a page snapshot
     /// </summary>
-    public class SnapshotResponse
+    internal class SnapshotResponse
     {
         #region Properties
+        /// <summary>
+        ///     The message id
+        /// </summary>
         [JsonProperty("id")]
         public long Id { get; set; }
 
+        /// <summary>
+        ///     The snapshot result
+        /// </summary>
         [JsonProperty("result")]
         public SnapshotResult Result { get; set; }
 
@@ -60,7 +66,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     ///     Part of the <see cref="SnapshotResponse"/> class
     /// </summary>
-    public class SnapshotResult
+    internal class SnapshotResult
     {
         #region Properties
         [JsonProperty("data")]

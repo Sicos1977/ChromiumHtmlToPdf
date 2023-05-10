@@ -446,7 +446,7 @@ namespace ChromiumHtmlToPdfLib
         /// <param name="logger">When set then logging is written to this ILogger instance for all conversions at the Information log level</param>
         /// <param name="useCache">When <c>true</c> (default) then Chrome or Edge uses it disk cache when possible</param>
         /// <param name="browser">The Chromium based browser to use in this library, currently Google Chrome or Microsoft Edge are supported</param>
-        /// <exception cref="FileNotFoundException">Raised when <see cref="chromiumExeFileName" /> does not exists</exception>
+        /// <exception cref="FileNotFoundException">Raised when <paramref name="chromiumExeFileName"/> does not exists</exception>
         /// <exception cref="DirectoryNotFoundException">
         ///     Raised when the <paramref name="userProfile" /> directory is given but does not exists
         /// </exception>
@@ -580,7 +580,7 @@ namespace ChromiumHtmlToPdfLib
 
             if (!_userProfileSet)
             {
-                _chromiumProcess.ErrorDataReceived += _chromiumProcess_ErrorDataReceived;
+                _chromiumProcess.ErrorDataReceived += ChromiumProcess_ErrorDataReceived;
                 _chromiumProcess.EnableRaisingEvents = true;
                 processStartInfo.UseShellExecute = false;
                 processStartInfo.RedirectStandardError = true;
@@ -589,7 +589,7 @@ namespace ChromiumHtmlToPdfLib
                 File.Delete(_devToolsActivePortFile);
 
             _chromiumProcess.StartInfo = processStartInfo;
-            _chromiumProcess.Exited += _chromiumProcess_Exited;
+            _chromiumProcess.Exited += ChromiumProcess_Exited;
 
             try
             {
@@ -617,7 +617,7 @@ namespace ChromiumHtmlToPdfLib
 
                 _chromiumWaitEvent.WaitOne();
 
-                _chromiumProcess.ErrorDataReceived -= _chromiumProcess_ErrorDataReceived;
+                _chromiumProcess.ErrorDataReceived -= ChromiumProcess_ErrorDataReceived;
 
                 if (_chromiumEventException != null)
                 {
@@ -632,7 +632,7 @@ namespace ChromiumHtmlToPdfLib
                 ConnectToDevProtocol(uri);
             }
 
-            _chromiumProcess.Exited -= _chromiumProcess_Exited;
+            _chromiumProcess.Exited -= ChromiumProcess_Exited;
             WriteToLog($"{BrowserName} started");
         }
 
@@ -641,7 +641,7 @@ namespace ChromiumHtmlToPdfLib
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void _chromiumProcess_Exited(object sender, EventArgs e)
+        private void ChromiumProcess_Exited(object sender, EventArgs e)
         {
             try
             {
@@ -709,7 +709,7 @@ namespace ChromiumHtmlToPdfLib
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="args"></param>
-        private void _chromiumProcess_ErrorDataReceived(object sender, DataReceivedEventArgs args)
+        private void ChromiumProcess_ErrorDataReceived(object sender, DataReceivedEventArgs args)
         {
             try
             {
@@ -721,7 +721,7 @@ namespace ChromiumHtmlToPdfLib
                 // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
                 var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
                 ConnectToDevProtocol(uri);
-                _chromiumProcess.ErrorDataReceived -= _chromiumProcess_ErrorDataReceived;
+                _chromiumProcess.ErrorDataReceived -= ChromiumProcess_ErrorDataReceived;
                 _chromiumWaitEvent.Set();
             }
             catch (Exception exception)
@@ -1223,7 +1223,7 @@ namespace ChromiumHtmlToPdfLib
                         {
                             if (SanitizeHtml)
                             {
-                                if (documentHelper.SanitizeHtml(inputUri, mediaLoadTimeout, Sanitizer, out var outputUri, ref safeUrls))
+                                if (documentHelper.SanitizeHtml(inputUri, Sanitizer, out var outputUri, ref safeUrls))
                                     inputUri = outputUri;
                                 else
                                 {
@@ -1378,7 +1378,7 @@ namespace ChromiumHtmlToPdfLib
 
         #region WriteSnapShot
         /// <summary>
-        /// Writes the snap shot to the given <param name="outputFile"></param>
+        /// Writes the snap shot to the given <paramref name="outputFile"/>
         /// </summary>
         /// <param name="outputFile"></param>
         private void WriteSnapShot(string outputFile)
@@ -1455,7 +1455,7 @@ namespace ChromiumHtmlToPdfLib
         /// event has fired. After a timeout the NavigateTo method will exit as if the page has been completely loaded</param>
         /// <param name="logger">When set then this will give a logging for each conversion. Use the logger
         ///     option in the constructor if you want one log for all conversions</param>
-        /// <exception cref="ConversionTimedOutException">Raised when <see cref="conversionTimeout"/> is set and the 
+        /// <exception cref="ConversionTimedOutException">Raised when <paramref name="conversionTimeout"/> is set and the 
         /// conversion fails to finish in this amount of time</exception>
         /// <exception cref="DirectoryNotFoundException"></exception>
         /// <remarks>
@@ -1706,7 +1706,7 @@ namespace ChromiumHtmlToPdfLib
         /// event has fired. After a timeout the NavigateTo method will exit as if the page has been completely loaded</param>
         /// <param name="logger">When set then this will give a logging for each conversion. Use the logger
         ///     option in the constructor if you want one log for all conversions</param>
-        /// <exception cref="ConversionTimedOutException">Raised when <see cref="conversionTimeout"/> is set and the 
+        /// <exception cref="ConversionTimedOutException">Raised when<paramref name="conversionTimeout"/> is set and the 
         /// conversion fails to finish in this amount of time</exception>
         /// <exception cref="DirectoryNotFoundException"></exception>
         /// /// <remarks>
@@ -1762,7 +1762,7 @@ namespace ChromiumHtmlToPdfLib
         /// event has fired. After a timeout the NavigateTo method will exit as if the page has been completely loaded</param>
         /// <param name="logger">When set then this will give a logging for each conversion. Use the logger
         ///     option in the constructor if you want one log for all conversions</param>
-        /// <exception cref="ConversionTimedOutException">Raised when <see cref="conversionTimeout"/> is set and the 
+        /// <exception cref="ConversionTimedOutException">Raised when <paramref name="conversionTimeout"/> is set and the 
         /// conversion fails to finish in this amount of time</exception>
         /// <exception cref="DirectoryNotFoundException"></exception>
         /// /// <remarks>

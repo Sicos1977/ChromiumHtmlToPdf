@@ -31,7 +31,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Page
     /// <summary>
     /// The base
     /// </summary>
-    public class Base
+    internal class Base
     {
         #region Properties
         /// <summary>

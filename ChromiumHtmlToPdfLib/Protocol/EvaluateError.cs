@@ -32,7 +32,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     ///     Returned by an <see cref="Evaluate" /> message when an error occurs
     /// </summary>
-    public class EvaluateError : MessageBase
+    internal class EvaluateError : MessageBase
     {
         #region Properties
         [JsonProperty("result")]
@@ -47,7 +47,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     /// Part of the <see cref="EvaluateError"/> class
     /// </summary>
-    public class EvaluateErrorResult
+    internal class EvaluateErrorResult
     {
         #region Properties
         [JsonProperty("result")]
@@ -61,7 +61,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     /// Part of the <see cref="EvaluateError"/> class
     /// </summary>
-    public class EvaluateErrorExceptionDetails
+    internal class EvaluateErrorExceptionDetails
     {
         #region Properties
         [JsonProperty("exceptionId")]
@@ -88,7 +88,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     /// Part of the <see cref="EvaluateError"/> class
     /// </summary>
-    public class ExceptionClass
+    internal class ExceptionClass
     {
         #region Properties
         [JsonProperty("type")]

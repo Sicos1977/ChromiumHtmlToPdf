@@ -31,7 +31,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     /// 
     /// </summary>
-    public class Evaluate : MessageBase
+    internal class Evaluate : MessageBase
     {
         #region Properties
         /// <summary>
@@ -60,7 +60,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     /// Part of the <see cref="Evaluate"/> class
     /// </summary>
-    public class EvaluateResult
+    internal class EvaluateResult
     {
         #region Propreties
         [JsonProperty("result")]
@@ -71,7 +71,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     /// Part of the <see cref="EvaluateResult"/> class
     /// </summary>
-    public class EvaluateInnerResult
+    internal class EvaluateInnerResult
     {
         #region Properties
         [JsonProperty("type")]

@@ -28,7 +28,7 @@ using Newtonsoft.Json;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Page
 {
-    public class FrameTree
+    internal class FrameTree
     {
         #region Properties
         [JsonProperty("id")]
@@ -43,7 +43,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Page
         #endregion
     }
 
-    public class FrameTreeResponse
+    internal class FrameTreeResponse
     {
         #region Properties
         [JsonProperty("frameTree")]
@@ -51,7 +51,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Page
         #endregion
     }
 
-    public class FrameResponse
+    internal class FrameResponse
     {
         #region Properties
         [JsonProperty("frame")]
@@ -59,7 +59,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Page
         #endregion
     }
 
-    public class FrameBody
+    internal class FrameBody
     {
         #region Properties
         [JsonProperty("id")]

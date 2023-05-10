@@ -30,7 +30,7 @@ using Newtonsoft.Json.Converters;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Network
 {
-    public class RequestWillBeSent : Base
+    internal class RequestWillBeSent : Base
     {
         #region Properties
         [JsonProperty("params")]
@@ -47,7 +47,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Network
         #endregion
     }
 
-    public class RequestWillBeSentParams
+    internal class RequestWillBeSentParams
     {
         #region Properties
         [JsonProperty("requestId")]
@@ -82,7 +82,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Network
         #endregion
     }
 
-    public class WillBeSentInitiator
+    internal class WillBeSentInitiator
     {
         #region Properties
         [JsonProperty("type")]
@@ -90,7 +90,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Network
         #endregion
     }
 
-    public class RequestWillBeSentRequest
+    internal class RequestWillBeSentRequest
     {
         #region Properties
         [JsonProperty("url")]
@@ -114,7 +114,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Network
     }
 
     // ReSharper disable once ClassNeverInstantiated.Global
-    public class RequestWillBeSentHeaders
+    internal class RequestWillBeSentHeaders
     {
     }
 

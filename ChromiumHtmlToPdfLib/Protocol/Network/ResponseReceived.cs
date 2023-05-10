@@ -31,7 +31,7 @@ using Newtonsoft.Json.Converters;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Network
 {
-    public class ResponseReceived : Base
+    internal class ResponseReceived : Base
     {
         #region Properties
         [JsonProperty("params")]
@@ -48,7 +48,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Network
         #endregion
     }
 
-    public class ResponseReceivedParams
+    internal class ResponseReceivedParams
     {
         #region Properties
         [JsonProperty("requestId")]
@@ -71,7 +71,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Network
         #endregion
     }
 
-    public class ResponseReceivedResponse
+    internal class ResponseReceivedResponse
     {
         #region Properties
         /// <summary>
@@ -178,7 +178,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Network
         #endregion
     }
 
-    public class ResponseReceiveSecurityDetails
+    internal class ResponseReceiveSecurityDetails
     {
         #region Properties
         [JsonProperty("protocol")]

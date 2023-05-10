@@ -31,7 +31,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     /// The base for a <see cref="Message"/>
     /// </summary>
-    public class MessageBase
+    internal class MessageBase
     {
         #region Properties
         /// <summary>

@@ -31,7 +31,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     /// The JSON structure that is returned from Chromium when an expression is evaluated
     /// </summary>
-    public class Expression : MessageBase
+    internal class Expression : MessageBase
     {
         #region Properties
         /// <summary>
@@ -54,7 +54,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     /// The result for an expression
     /// </summary>
-    public class ExpressionResult
+    internal class ExpressionResult
     {
         #region Properties
         /// <summary>
@@ -74,7 +74,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     /// The exact exception details for the expression that is sent to Chromium
     /// </summary>
-    public class ExpressionExceptionDetails
+    internal class ExpressionExceptionDetails
     {
         #region Properties
         /// <summary>
@@ -118,7 +118,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     /// Part of the <see cref="ExpressionExceptionDetails"/> class
     /// </summary>
-    public class ExpressionInnerResult
+    internal class ExpressionInnerResult
     {
         #region Properties
         [JsonProperty("className")]

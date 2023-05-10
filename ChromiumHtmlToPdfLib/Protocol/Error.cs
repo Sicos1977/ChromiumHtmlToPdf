@@ -31,7 +31,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     /// The JSON structure that is returned from Chromium when an Error occurs
     /// </summary>
-    public class Error : MessageBase
+    internal class Error : MessageBase
     {
         #region Properties
         /// <summary>
@@ -54,7 +54,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     /// The inner error
     /// </summary>
-    public class ErrorInnerError
+    internal class ErrorInnerError
     {
         #region Properties
         /// <summary>

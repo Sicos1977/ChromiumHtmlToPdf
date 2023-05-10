@@ -2,6 +2,9 @@
 
 namespace ChromiumHtmlToPdfLib.Event
 {
+    /// <summary>
+    ///     Raised when an error is thrown from Chromium
+    /// </summary>
     public class ErrorEventArgs : EventArgs
     {
         /// <summary>

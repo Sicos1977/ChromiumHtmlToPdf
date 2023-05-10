@@ -32,7 +32,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     /// The JSON structure that is returned from Chromium when reading from an IO stream
     /// </summary>
-    public class IoReadResponse : MessageBase
+    internal class IoReadResponse : MessageBase
     {
         #region Properties        
         /// <summary>
@@ -55,7 +55,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     /// The chunk read
     /// </summary>
-    public class IoReadResponseResult
+    internal class IoReadResponseResult
     {
         #region Properties
         /// <summary>

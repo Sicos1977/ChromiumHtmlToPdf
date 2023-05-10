@@ -28,7 +28,7 @@ using Newtonsoft.Json;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Network
 {
-    public class RequestServedFromCache : Base
+    internal class RequestServedFromCache : Base
     {
         #region Properties
         [JsonProperty("params")]
@@ -45,7 +45,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Network
         #endregion
     }
 
-    public class RequestServedFromCacheParams
+    internal class RequestServedFromCacheParams
     {
         #region Properties
         [JsonProperty("requestId")]

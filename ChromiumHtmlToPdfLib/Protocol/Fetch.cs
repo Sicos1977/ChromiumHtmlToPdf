@@ -32,7 +32,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     /// The JSON object that is returned when the <b>Fetch.enable</b> is activated in Chromium
     /// </summary>
-    public class Fetch
+    internal class Fetch
     {
         #region Properties
         [JsonProperty("method")] 
@@ -55,7 +55,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     /// Part of the <see cref="Fetch"/> class
     /// </summary>
-    public class FetchParams
+    internal class FetchParams
     {
         #region Properties
         [JsonProperty("requestId")] 
@@ -78,7 +78,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     /// Part of the <see cref="Fetch"/> class
     /// </summary>
-    public class FetchRequest
+    internal class FetchRequest
     {
         #region Properties
         [JsonProperty("url")] 
@@ -101,7 +101,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     /// Part of the <see cref="FetchRequest"/> class
     /// </summary>
-    public class FetchHeaders
+    internal class FetchHeaders
     {
         #region Properties
         [JsonProperty("Accept")] 

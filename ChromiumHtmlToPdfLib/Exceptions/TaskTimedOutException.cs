@@ -35,6 +35,11 @@ namespace ChromiumHtmlToPdfLib.Exceptions
     [Serializable]
     public class TaskTimedOutException : Exception
     {
+        /// <summary>
+        ///     To be raised when the conversion times out
+        /// </summary>
+        /// <param name="info"></param>
+        /// <param name="context"></param>
         protected TaskTimedOutException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 
         internal TaskTimedOutException() { }

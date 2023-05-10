@@ -7,6 +7,9 @@ namespace ChromiumHtmlToPdfLib.Event
     /// </summary>
     public class MessageReceivedEventArgs : EventArgs
     {
+        /// <summary>
+        ///     The received message
+        /// </summary>
         public string Message { get; }
 
         /// <summary>

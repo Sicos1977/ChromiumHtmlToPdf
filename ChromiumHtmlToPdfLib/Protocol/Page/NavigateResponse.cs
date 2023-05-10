@@ -31,7 +31,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Page
     /// <summary>
     /// The JSON object that is returned from Chromium when navigation to a page
     /// </summary>
-    public class NavigateResponse : MessageBase
+    internal class NavigateResponse : MessageBase
     {
         #region Properties
         [JsonProperty("result")]
@@ -51,7 +51,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Page
     /// <summary>
     /// The response
     /// </summary>
-    public class NavigateResponseResult
+    internal class NavigateResponseResult
     {
         #region Properties
         [JsonProperty("frameId")]

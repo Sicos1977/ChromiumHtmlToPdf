@@ -23,6 +23,7 @@
     <AssemblyName>ChromiumHtmlToPdfConsole</AssemblyName>
     <RootNamespace>ChromiumHtmlToPdfConsole</RootNamespace>
     <FileVersion>2.6.5.0</FileVersion>
+    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,6 +31,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AngleSharp" Version="0.17.1" />
+    <PackageReference Include="AngleSharp.Io" Version="0.17.0" />
+    <PackageReference Include="AngleSharp.Xml" Version="0.17.0" />
     <PackageReference Include="CommandLineParser" Version="2.9.1" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
   </ItemGroup>

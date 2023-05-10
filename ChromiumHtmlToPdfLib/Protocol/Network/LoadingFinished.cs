@@ -30,7 +30,7 @@ using Newtonsoft.Json.Converters;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Network
 {
-    public class LoadingFinished : Base
+    internal class LoadingFinished : Base
     {
         #region Properties
         [JsonProperty("params")]
@@ -47,7 +47,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Network
         #endregion
     }
 
-    public class LoadingFinishedParams
+    internal class LoadingFinishedParams
     {
         #region Properties
         [JsonProperty("requestId")]

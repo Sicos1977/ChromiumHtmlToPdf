@@ -32,7 +32,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     /// The JSON message that is sent to Chromium
     /// </summary>
-    public class Message : MessageBase
+    internal class Message : MessageBase
     {
         #region Properties
         /// <summary>

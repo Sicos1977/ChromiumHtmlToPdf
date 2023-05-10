@@ -31,7 +31,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Page
     /// <summary>
     /// The JSON object that is returned when we create a new Target (page)
     /// </summary>
-    public class Page
+    internal class Page
     {
         #region Properties
         /// <summary>
@@ -54,7 +54,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Page
     /// <summary>
     /// Part of the <see cref="Page"/> class
     /// </summary>
-    public class PageResult
+    internal class PageResult
     {
         #region Propertie
         [JsonProperty("targetId")]

@@ -32,7 +32,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     /// The JSON object that is returned from Chrome when calling the <see cref="Converter"/> ConvertToPdf method
     /// </summary>
-    public class PrintToPdfResponse
+    internal class PrintToPdfResponse
     {
         #region Properties
         /// <summary>
@@ -60,7 +60,7 @@ namespace ChromiumHtmlToPdfLib.Protocol
     /// <summary>
     /// The result returned from the <see cref="Converter"/> ConvertToPdf  method
     /// </summary>
-    public class PrintToPdfResult
+    internal class PrintToPdfResult
     {
         #region Properties
         /// <summary>
