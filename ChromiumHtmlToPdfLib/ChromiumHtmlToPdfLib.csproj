@@ -2,11 +2,13 @@
 
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.1;netstandard2.0</TargetFrameworks>
-    <Version>2.6.7</Version>
+    <Version>3.0.0</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>ChromiumHtmlToPdf is a 100% managed C# .NETStandard 2.0 library that can be used to convert HTML to PDF or PNG format with the use of Google Chrome or Microsoft Edge</Description>
     <Copyright>(C)2017-2023 Kees van Spelde</Copyright>
-    <PackageReleaseNotes>- Updated nuget packages</PackageReleaseNotes>
+    <PackageReleaseNotes>- This project now targets Chromium instead of Chrome
+- Added support for Microsoft Edge
+- Renamed library from ChromeHtmlToPdfLib to ChromiumHtmlToPdfLib (so you need to update the namespaces)</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/Sicos1977/ChromiumHtmlToPdf</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Sicos1977/ChromiumHtmlToPdf</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -19,8 +21,8 @@
     <Company>Magic-Sessions</Company>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>ChromiumHtmlToPdf.snk</AssemblyOriginatorKeyFile>
-    <AssemblyVersion>2.6.7.0</AssemblyVersion>
-    <FileVersion>2.6.7.0</FileVersion>
+    <AssemblyVersion>3.0.0.0</AssemblyVersion>
+    <FileVersion>3.0.0.0</FileVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -36,7 +38,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="System.Drawing.Common" Version="7.0.0" />
+    <PackageReference Include="System.Drawing.Common" Version="6.0.0" />
     <PackageReference Include="System.Management" Version="7.0.1" />
     <PackageReference Include="Ude.NetStandard" Version="1.2.0" />
   </ItemGroup>
