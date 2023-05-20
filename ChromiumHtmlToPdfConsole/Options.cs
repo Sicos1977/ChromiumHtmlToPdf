@@ -209,7 +209,7 @@ namespace ChromiumHtmlToPdfConsole
         /// <summary>
         ///     The password needed for --user
         /// </summary>
-        [Option("tempfolder", Required = false, HelpText = "A folder where this tool kan put temporary files")]
+        [Option("tempfolder", Required = false, HelpText = "A folder where this tool can put temporary files")]
         public string TempFolder { get; set; }
 
         /// <summary>
