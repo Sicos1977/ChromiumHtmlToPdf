@@ -67,8 +67,8 @@ If you get strange errors when starting Google Chrome or Microsoft Edge than thi
 
 ### Converting from the command line
 
-```csharp
-ChromiumHtmlToPdf.exe --input https://www.google.com --output c:\google.pdf
+```
+ChromiumHtmlToPdfConsole --input https://www.google.com --output c:\google.pdf
 ```
 ![screenshot](https://github.com/Sicos1977/ChromiumHtmlToPdf/blob/master/console.png)
 
