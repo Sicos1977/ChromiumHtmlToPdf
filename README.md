@@ -35,7 +35,7 @@ ChromiumHtmlToPdf is Copyright (C)2017-2023 Kees van Spelde and is licensed unde
 
 [![NuGet](https://img.shields.io/nuget/v/ChromeHtmlToPdf.svg?style=flat-square)](https://www.nuget.org/packages/ChromeHtmlToPdf)
 
-The easiest way to install ChromiumHtmlToPdf is via NuGet (Yes I know the nuget package has another name, this is because there is already was already a package with the new name I used).
+The easiest way to install ChromiumHtmlToPdf is via NuGet (Yes I know the nuget package has another name, this is because there is already a package with the new name I used).
 
 In Visual Studio's Package Manager Console, simply enter the following command:
 
