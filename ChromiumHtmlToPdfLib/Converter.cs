@@ -756,7 +756,8 @@ namespace ChromiumHtmlToPdfLib
             WriteToLog("Resetting Chromium arguments to default");
 
             _defaultChromiumArgument = new List<string>();
-            AddChromiumArgument("--headless");
+            // https://developer.chrome.com/articles/new-headless/
+            AddChromiumArgument("--headless=new");
             AddChromiumArgument("--disable-gpu");
             AddChromiumArgument("--hide-scrollbars");
             AddChromiumArgument("--mute-audio");
