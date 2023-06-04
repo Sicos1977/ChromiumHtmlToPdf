@@ -25,6 +25,7 @@
 //
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Text;
 
@@ -43,11 +44,18 @@ namespace ChromiumHtmlToPdfLib
         public Encoding Encoding { get; }
 
         /// <summary>
+        ///     The request headers to sent
+        /// </summary>
+        public Dictionary<string, string> RequestHeaders { get; }
+
+        /// <summary>
         ///     The uri to converter
         /// </summary>
         /// <param name="uriString"></param>
-        public ConvertUri(string uriString) : base(uriString)
+        /// <param name="requestHeaders">The request headers to sent</param>
+        public ConvertUri(string uriString, Dictionary<string, string> requestHeaders = null) : base(uriString)
         {
+            RequestHeaders = requestHeaders;
         }
 
         /// <summary>
@@ -55,9 +63,11 @@ namespace ChromiumHtmlToPdfLib
         /// </summary>
         /// <param name="uriString">The uri, e.g. file://c:\test.txt</param>
         /// <param name="encoding">The encoding used for this file, e.g UTF-8</param>
-        public ConvertUri(string uriString, Encoding encoding) : base(uriString)
+        /// <param name="requestHeaders">The request headers to sent</param>
+        public ConvertUri(string uriString, Encoding encoding, Dictionary<string, string> requestHeaders = null) : base(uriString)
         {
             Encoding = encoding;
+            RequestHeaders = requestHeaders;
         }
 
         /// <summary>
@@ -65,11 +75,13 @@ namespace ChromiumHtmlToPdfLib
         /// </summary>
         /// <param name="uriString">The uri, e.g. file://c:\test.txt</param>
         /// <param name="encoding">The encoding used for this file, e.g UTF-8</param>
-        public ConvertUri(string uriString, string encoding) : base(uriString)
+        public ConvertUri(string uriString, string encoding, Dictionary<string, string> requestHeaders = null) : base(uriString)
         {
             Encoding = !string.IsNullOrWhiteSpace(encoding)
                 ? Encoding.GetEncoding(encoding)
                 : null;
+
+            RequestHeaders = requestHeaders;
         }
 
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -78,8 +90,10 @@ namespace ChromiumHtmlToPdfLib
         /// </summary>
         /// <param name="uriString"></param>
         /// <param name="dontEscape"></param>
-        public ConvertUri(string uriString, bool dontEscape) : base(uriString, dontEscape)
+        /// <param name="requestHeaders">The request headers to sent</param>
+        public ConvertUri(string uriString, bool dontEscape, Dictionary<string, string> requestHeaders = null) : base(uriString, dontEscape)
         {
+            RequestHeaders = requestHeaders;
         }
 
         /// <summary>
@@ -88,8 +102,10 @@ namespace ChromiumHtmlToPdfLib
         /// <param name="baseUri"></param>
         /// <param name="relativeUri"></param>
         /// <param name="dontEscape"></param>
-        public ConvertUri(Uri baseUri, string relativeUri, bool dontEscape) : base(baseUri, relativeUri, dontEscape)
+        /// <param name="requestHeaders">The request headers to sent</param>
+        public ConvertUri(Uri baseUri, string relativeUri, bool dontEscape, Dictionary<string, string> requestHeaders = null) : base(baseUri, relativeUri, dontEscape)
         {
+            RequestHeaders = requestHeaders;
         }
 #pragma warning restore CS0618 // Type or member is obsolete
 
@@ -98,8 +114,10 @@ namespace ChromiumHtmlToPdfLib
         /// </summary>
         /// <param name="uriString"></param>
         /// <param name="uriKind"></param>
-        public ConvertUri(string uriString, UriKind uriKind) : base(uriString, uriKind)
+        /// <param name="requestHeaders">The request headers to sent</param>
+        public ConvertUri(string uriString, UriKind uriKind, Dictionary<string, string> requestHeaders = null) : base(uriString, uriKind)
         {
+            RequestHeaders = requestHeaders;
         }
 
         /// <summary>
@@ -107,8 +125,10 @@ namespace ChromiumHtmlToPdfLib
         /// </summary>
         /// <param name="baseUri"></param>
         /// <param name="relativeUri"></param>
-        public ConvertUri(Uri baseUri, string relativeUri) : base(baseUri, relativeUri)
+        /// <param name="requestHeaders">The request headers to sent</param>
+        public ConvertUri(Uri baseUri, string relativeUri, Dictionary<string, string> requestHeaders = null) : base(baseUri, relativeUri)
         {
+            RequestHeaders = requestHeaders;
         }
 
         /// <summary>
@@ -116,8 +136,10 @@ namespace ChromiumHtmlToPdfLib
         /// </summary>
         /// <param name="baseUri"></param>
         /// <param name="relativeUri"></param>
-        public ConvertUri(Uri baseUri, Uri relativeUri) : base(baseUri, relativeUri)
+        /// <param name="requestHeaders">The request headers to sent</param>
+        public ConvertUri(Uri baseUri, Uri relativeUri, Dictionary<string, string> requestHeaders = null) : base(baseUri, relativeUri)
         {
+            RequestHeaders = requestHeaders;
         }
 
         /// <summary>
@@ -125,8 +147,10 @@ namespace ChromiumHtmlToPdfLib
         /// </summary>
         /// <param name="serializationInfo"></param>
         /// <param name="streamingContext"></param>
-        protected ConvertUri(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
+        /// <param name="requestHeaders">The request headers to sent</param>
+        protected ConvertUri(SerializationInfo serializationInfo, StreamingContext streamingContext, Dictionary<string, string> requestHeaders = null) : base(serializationInfo, streamingContext)
         {
+            RequestHeaders = requestHeaders;
         }
     }
 }

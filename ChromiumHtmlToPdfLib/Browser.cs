@@ -152,7 +152,7 @@ namespace ChromiumHtmlToPdfLib
         internal void NavigateTo(
             List<string> safeUrls,
             bool useCache,
-            Uri uri = null,
+            ConvertUri uri = null,
             string html = null,
             CountdownTimer countdownTimer = null,
             int? mediaLoadTimeout = null,
@@ -320,6 +320,15 @@ namespace ChromiumHtmlToPdfLib
                 }
             });
             #endregion
+
+            if (uri?.RequestHeaders?.Count > 0)
+            {
+                WriteToLog("Setting request headers");
+                var networkMessage = new Message { Method = "Network.setExtraHTTPHeaders" };
+                networkMessage.AddParameter("headers", uri.RequestHeaders);
+
+                _pageConnection.SendForResponseAsync(networkMessage).GetAwaiter().GetResult();
+            }
 
             if (logNetworkTraffic)
             {
