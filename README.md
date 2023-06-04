@@ -35,11 +35,11 @@ ChromiumHtmlToPdf is Copyright (C)2017-2023 Kees van Spelde and is licensed unde
 
 [![NuGet](https://img.shields.io/nuget/v/ChromeHtmlToPdf.svg?style=flat-square)](https://www.nuget.org/packages/ChromeHtmlToPdf)
 
-The easiest way to install ChromiumHtmlToPdf is via NuGet.
+The easiest way to install ChromiumHtmlToPdf is via NuGet (Yes I know the nuget package has another name, this is because there is already a package with the new name I used).
 
 In Visual Studio's Package Manager Console, simply enter the following command:
 
-    Install-Package ChromiumHtmlToPdf 
+    Install-Package ChromeHtmlToPdf 
 
 ### Converting a file or url from code
 
@@ -67,8 +67,8 @@ If you get strange errors when starting Google Chrome or Microsoft Edge than thi
 
 ### Converting from the command line
 
-```csharp
-ChromiumHtmlToPdf.exe --input https://www.google.com --output c:\google.pdf
+```
+ChromiumHtmlToPdfConsole --input https://www.google.com --output c:\google.pdf
 ```
 ![screenshot](https://github.com/Sicos1977/ChromiumHtmlToPdf/blob/master/console.png)
 
@@ -122,10 +122,11 @@ You can find pre compiled binaries for Windows, Linux and macOS over here
 
 Latest version
 ---------------
-https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.6.5/ChromeHtmltoPdf_265.zip
+https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/3.0.0/ChromiumHtmlToPdf_v3_0_0.zip
 
 Older versions
 --------------
+https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.6.5/ChromeHtmltoPdf_265.zip
 https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/2.6.4/ChromeHtmlToPDF_264.zip
 https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/2.6.0/ChromeHtmlToPDF_260.zip
 https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/2.5.33/ChromeHtmlToPdf_253.zip
