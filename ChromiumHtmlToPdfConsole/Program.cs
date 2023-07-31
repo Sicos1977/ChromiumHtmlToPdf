@@ -343,7 +343,7 @@ namespace ChromiumHtmlToPdfConsole
         {
             var pageSettings = GetPageSettings(options);
 
-            using var converter = new Converter(options.ChromiumLocation, options.ChromiumUserProfile, _logger);
+            using var converter = new Converter(options.ChromiumLocation, options.ChromiumUserProfile, _logger, true, Browser.Chrome);
             SetConverterSettings(converter, options);
 
             converter.ConvertToPdf(CheckInput(options),

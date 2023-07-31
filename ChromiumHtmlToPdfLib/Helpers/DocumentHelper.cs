@@ -661,11 +661,18 @@ namespace ChromiumHtmlToPdfLib.Helpers
                             : unchangedImage.Source);
                         var fileName = GetTempFile(extension);
 
-                        WriteToLog($"Unchanged image saved to location '{fileName}'");
-                        image.Save(fileName);
-                        var newSrc = new Uri(fileName).ToString();
-                        safeUrls.Add(newSrc);
-                        unchangedImage.Source = newSrc;
+                        try
+                        {
+                            image.Save(fileName);
+                            var newSrc = new Uri(fileName).ToString();
+                            safeUrls.Add(newSrc);
+                            unchangedImage.Source = newSrc;
+                            WriteToLog($"Unchanged image saved to location '{fileName}'");
+                        }
+                        catch (Exception exception)
+                        {
+                            WriteToLog($"Could not write unchanged image because of an exception: {ExceptionHelpers.GetInnerException(exception)}");
+                        }
                     }
                 }
 
