@@ -59,7 +59,7 @@ namespace ChromiumHtmlToPdfLib.Helpers
                 directories.Add("/opt/google/chrome");
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                throw new Exception("Finding Chrome on MacOS is currently not supported, please contact the programmer.");
+                directories.Add("/Applications");
         }
         #endregion
 
@@ -115,7 +115,7 @@ namespace ChromiumHtmlToPdfLib.Helpers
             {
                 exeNames.Add("Google Chrome.app/Contents/MacOS/Google Chrome");
                 exeNames.Add("Chromium.app/Contents/MacOS/Chromium");
-                exeNames.Add("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
+                exeNames.Add("Google Chrome.app/Contents/MacOS/Google Chrome");
             }
             
             // Check the directory of this assembly/application
