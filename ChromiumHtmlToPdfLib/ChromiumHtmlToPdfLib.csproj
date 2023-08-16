@@ -29,11 +29,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AngleSharp" Version="0.17.1" />
+    <PackageReference Include="AngleSharp" Version="1.0.4" />
     <PackageReference Include="AngleSharp.Css" Version="0.17.0" />
-    <PackageReference Include="AngleSharp.Io" Version="0.17.0" />
-    <PackageReference Include="AngleSharp.Xml" Version="0.17.0" />
-    <PackageReference Include="HtmlSanitizer" Version="8.0.645" />
+    <PackageReference Include="AngleSharp.Io" Version="1.0.0" />
+    <PackageReference Include="AngleSharp.Xml" Version="1.0.0" />
+    <PackageReference Include="HtmlSanitizer" Version="8.0.692" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
