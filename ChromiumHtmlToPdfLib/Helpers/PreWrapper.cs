@@ -141,8 +141,9 @@ namespace ChromiumHtmlToPdfLib.Helpers
                 using (var fileStream = File.OpenRead(inputFile))
                 {
                     WriteToLog("Trying to detect encoding");
-                    encoding = UtfUnknown.CharsetDetector.DetectFromStream(fileStream).Detected.Encoding;
-                    WriteToLog($"Encoding detected as '{encoding.WebName}'");
+                    var result = UtfUnknown.CharsetDetector.DetectFromStream(fileStream);
+                    encoding = result.Detected.Encoding;
+                    WriteToLog(result.Detected.StatusLog);
                 }
             }
 
