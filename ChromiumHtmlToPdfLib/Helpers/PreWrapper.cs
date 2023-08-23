@@ -138,29 +138,11 @@ namespace ChromiumHtmlToPdfLib.Helpers
 
             if (encoding == null)
             {
-                var charsetDetector = new Ude.CharsetDetector();
                 using (var fileStream = File.OpenRead(inputFile))
                 {
                     WriteToLog("Trying to detect encoding");
-                    charsetDetector.Feed(fileStream);
-                    charsetDetector.DataEnd();
-                    if (charsetDetector.Charset != null)
-                    {
-                        try
-                        {
-                            encoding = Encoding.GetEncoding(charsetDetector.Charset);
-                        }
-                        catch 
-                        {
-                            Console.WriteLine("Detection failed assuming standard encoding");
-                            encoding = Encoding.Default;
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine("Detection failed assuming standard encoding");
-                        encoding = Encoding.Default;
-                    }
+                    encoding = UtfUnknown.CharsetDetector.DetectFromStream(fileStream).Detected.Encoding;
+                    WriteToLog($"Encoding detected as '{encoding.WebName}'");
                 }
             }
 
