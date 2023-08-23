@@ -15,7 +15,7 @@
     <PackageTags>convert html pdf chrome image png</PackageTags>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageIcon>chrome.png</PackageIcon>
-    <PackageId>ChromiumHtmlToPdf</PackageId>
+    <PackageId>ChromeHtmlToPdf</PackageId>
     <Authors>Kees van Spelde</Authors>
     <Product>ChromiumHtmlToPdf</Product>
     <Company>Magic-Sessions</Company>
