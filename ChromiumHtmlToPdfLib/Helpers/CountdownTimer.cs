@@ -26,87 +26,86 @@
 
 using System.Diagnostics;
 
-namespace ChromiumHtmlToPdfLib.Helpers
+namespace ChromiumHtmlToPdfLib.Helpers;
+
+internal class CountdownTimer
 {
-    internal class CountdownTimer
+    #region Fields
+    private readonly Stopwatch _stopwatch;
+    private readonly int _timeoutMilliseconds;
+    #endregion
+
+    #region Properties
+    /// <summary>
+    ///     Returns the milliseconds that are left before the countdown reaches zero
+    /// </summary>
+    public int MillisecondsLeft
     {
-        #region Fields
-        private readonly Stopwatch _stopwatch;
-        private readonly int _timeoutMilliseconds;
-        #endregion
-
-        #region Properties
-        /// <summary>
-        ///     Returns the milliseconds that are left before the countdown reaches zero
-        /// </summary>
-        public int MillisecondsLeft
+        get
         {
-            get
-            {
-                if (!_stopwatch.IsRunning)
-                    return 0;
+            if (!_stopwatch.IsRunning)
+                return 0;
 
-                var value = _timeoutMilliseconds - (int) _stopwatch.ElapsedMilliseconds;
-                return value <= 0 ? 0 : value;
-            }
+            var value = _timeoutMilliseconds - (int)_stopwatch.ElapsedMilliseconds;
+            return value <= 0 ? 0 : value;
         }
-
-        /// <summary>
-        ///     Returns <c>true</c> when the countdown timer is running
-        /// </summary>
-        public bool IsRunning => _stopwatch.IsRunning;
-        #endregion
-
-        #region Constructor
-        /// <summary>
-        ///     Makes this object and sets the timeout in milliseconds
-        /// </summary>
-        /// <param name="timeoutMilliseconds">Timeout in milliseconds</param>
-        internal CountdownTimer(int timeoutMilliseconds)
-        {
-            _stopwatch = new Stopwatch();
-            _timeoutMilliseconds = timeoutMilliseconds;
-        }
-        #endregion
-
-        #region Reset
-        /// <summary>
-        ///     Stops the countdown and reset 
-        /// </summary>
-        public void Reset()
-        {
-            _stopwatch.Reset();
-        }
-        #endregion
-
-        #region Restart
-        /// <summary>
-        ///     Stops time interval measurement, resets the elapsed time to zero, and starts measuring elapsed time.
-        /// </summary>
-        public void Restart()
-        {
-            _stopwatch.Restart();
-        }
-        #endregion
-
-        #region Start
-        /// <summary>
-        ///     Starts, or resumes, measuring elapsed time for an interval.
-        /// </summary>
-        public void Start()
-        {
-            _stopwatch.Start();
-        }
-        #endregion
-
-        #region Stop
-        /// <summary>
-        ///     Stops measuring elapsed time for an interval.
-        /// </summary>
-        public void Stop()
-        {
-            _stopwatch.Stop();
-        }
-        #endregion
     }
+
+    /// <summary>
+    ///     Returns <c>true</c> when the countdown timer is running
+    /// </summary>
+    public bool IsRunning => _stopwatch.IsRunning;
+    #endregion
+
+    #region Constructor
+    /// <summary>
+    ///     Makes this object and sets the timeout in milliseconds
+    /// </summary>
+    /// <param name="timeoutMilliseconds">Timeout in milliseconds</param>
+    internal CountdownTimer(int timeoutMilliseconds)
+    {
+        _stopwatch = new Stopwatch();
+        _timeoutMilliseconds = timeoutMilliseconds;
+    }
+    #endregion
+
+    #region Reset
+    /// <summary>
+    ///     Stops the countdown and reset
+    /// </summary>
+    public void Reset()
+    {
+        _stopwatch.Reset();
+    }
+    #endregion
+
+    #region Restart
+    /// <summary>
+    ///     Stops time interval measurement, resets the elapsed time to zero, and starts measuring elapsed time.
+    /// </summary>
+    public void Restart()
+    {
+        _stopwatch.Restart();
+    }
+    #endregion
+
+    #region Start
+    /// <summary>
+    ///     Starts, or resumes, measuring elapsed time for an interval.
+    /// </summary>
+    public void Start()
+    {
+        _stopwatch.Start();
+    }
+    #endregion
+
+    #region Stop
+    /// <summary>
+    ///     Stops measuring elapsed time for an interval.
+    /// </summary>
+    public void Stop()
+    {
+        _stopwatch.Stop();
+    }
+    #endregion
 }

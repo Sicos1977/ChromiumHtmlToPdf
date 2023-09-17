@@ -30,247 +30,249 @@ using ChromiumHtmlToPdfLib.Enums;
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable MemberCanBePrivate.Global
 
-namespace ChromiumHtmlToPdfLib.Settings
+namespace ChromiumHtmlToPdfLib.Settings;
+
+/// <summary>
+///     The page settings to use when converting to PDF
+/// </summary>
+public class PageSettings : ICloneable
 {
+    #region Properties
     /// <summary>
-    /// The page settings to use when converting to PDF
+    ///     Paper orientation. Defaults to false.
     /// </summary>
-    public class PageSettings : ICloneable
+    public bool Landscape { get; set; }
+
+    /// <summary>
+    ///     Display header and footer. Defaults to false.
+    /// </summary>
+    public bool DisplayHeaderFooter { get; set; }
+
+    /// <summary>
+    ///     HTML template for the print header.
+    ///     Should be valid HTML markup with following classes used to inject printing values into them:
+    ///     - date - formatted print date - title - document title - url - document location - pageNumber - current page number
+    ///     - totalPages - total pages in the document For example, would generate span containing the title.
+    /// </summary>
+    public string HeaderTemplate { get; set; }
+
+    /// <summary>
+    ///     HTML template for the print footer. Should use the same format as the headerTemplate.
+    /// </summary>
+    public string FooterTemplate { get; set; }
+
+    /// <summary>
+    ///     Print background graphics. Defaults to false.
+    /// </summary>
+    public bool PrintBackground { get; set; }
+
+    /// <summary>
+    ///     Scale of the webpage rendering. Defaults to 1.
+    /// </summary>
+    public double Scale { get; set; }
+
+    /// <summary>
+    ///     Paper width in inches. Defaults to 8.5 inches.
+    /// </summary>
+    public double PaperWidth { get; set; }
+
+    /// <summary>
+    ///     Paper height in inches. Defaults to 11 inches.
+    /// </summary>
+    public double PaperHeight { get; set; }
+
+    /// <summary>
+    ///     Top margin in inches. Defaults to 1cm (~0.4 inches).
+    /// </summary>
+    public double MarginTop { get; set; }
+
+    /// <summary>
+    ///     Bottom margin in inches. Defaults to 1cm (~0.4 inches).
+    /// </summary>
+    public double MarginBottom { get; set; }
+
+    /// <summary>
+    ///     Left margin in inches. Defaults to 1cm (~0.4 inches).
+    /// </summary>
+    public double MarginLeft { get; set; }
+
+    /// <summary>
+    ///     Right margin in inches. Defaults to 1cm (~0.4 inches).
+    /// </summary>
+    public double MarginRight { get; set; }
+
+    /// <summary>
+    ///     Paper ranges to print, e.g., '1-5, 8, 11-13'. Defaults to the empty string, which means print all pages.
+    /// </summary>
+    public string PageRanges { get; set; }
+
+    /// <summary>
+    ///     Whether to silently ignore invalid but successfully parsed page ranges, such as '3-2'. Defaults to false.
+    /// </summary>
+    public bool IgnoreInvalidPageRanges { get; set; }
+
+    /// <summary>
+    ///     Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled
+    ///     to fit the paper size.
+    /// </summary>
+    // ReSharper disable once InconsistentNaming
+    public bool PreferCSSPageSize { get; set; }
+
+    /// <summary>
+    ///     The paper format
+    /// </summary>
+    public PaperFormat PaperFormat { get; private set; }
+    #endregion
+
+    #region PageSettings
+    /// <summary>
+    ///     Makes this object and sets all the settings to it's default values
+    /// </summary>
+    /// <remarks>
+    ///     Default paper settings are set to <see cref="Enums.PaperFormat.A4" />
+    /// </remarks>
+    public PageSettings()
     {
-        #region Properties
-        /// <summary>
-        ///     Paper orientation. Defaults to false.
-        /// </summary>
-        public bool Landscape { get; set; }
-
-        /// <summary>
-        ///     Display header and footer. Defaults to false.
-        /// </summary>
-        public bool DisplayHeaderFooter { get; set; }
-        
-        /// <summary>
-        ///     HTML template for the print header. 
-        ///     Should be valid HTML markup with following classes used to inject printing values into them: 
-        ///     - date - formatted print date - title - document title - url - document location - pageNumber - current page number 
-        ///     - totalPages - total pages in the document For example, would generate span containing the title.
-        /// </summary>
-        public string HeaderTemplate { get; set; }
-        
-        /// <summary>
-        ///     HTML template for the print footer. Should use the same format as the headerTemplate.
-        /// </summary>
-        public string FooterTemplate { get; set; }
-
-        /// <summary>
-        ///     Print background graphics. Defaults to false.
-        /// </summary>
-        public bool PrintBackground { get; set; }
-
-        /// <summary>
-        ///     Scale of the webpage rendering. Defaults to 1.
-        /// </summary>
-        public double Scale { get; set; }
-
-        /// <summary>
-        ///     Paper width in inches. Defaults to 8.5 inches.
-        /// </summary>
-        public double PaperWidth { get; set; }
-
-        /// <summary>
-        ///     Paper height in inches. Defaults to 11 inches.
-        /// </summary>
-        public double PaperHeight { get; set; }
-
-        /// <summary>
-        ///     Top margin in inches. Defaults to 1cm (~0.4 inches).
-        /// </summary>
-        public double MarginTop { get; set; }
-
-        /// <summary>
-        ///     Bottom margin in inches. Defaults to 1cm (~0.4 inches).
-        /// </summary>
-        public double MarginBottom { get; set; }
-
-        /// <summary>
-        ///     Left margin in inches. Defaults to 1cm (~0.4 inches).
-        /// </summary>
-        public double MarginLeft { get; set; }
-
-        /// <summary>
-        ///     Right margin in inches. Defaults to 1cm (~0.4 inches).
-        /// </summary>
-        public double MarginRight { get; set; }
-
-        /// <summary>
-        ///     Paper ranges to print, e.g., '1-5, 8, 11-13'. Defaults to the empty string, which means print all pages.
-        /// </summary>
-        public string PageRanges { get; set; }
-
-        /// <summary>
-        ///     Whether to silently ignore invalid but successfully parsed page ranges, such as '3-2'. Defaults to false.
-        /// </summary>
-        public bool IgnoreInvalidPageRanges { get; set; }
-        
-        /// <summary>
-        ///     Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled to fit the paper size.
-        /// </summary>
-        // ReSharper disable once InconsistentNaming
-        public bool PreferCSSPageSize { get; set; }
-
-        /// <summary>
-        ///     The paper format
-        /// </summary>
-        public PaperFormat PaperFormat { get; private set; }
-        #endregion
-
-        #region PageSettings
-        /// <summary>
-        /// Makes this object and sets all the settings to it's default values
-        /// </summary>
-        /// <remarks>
-        /// Default paper settings are set to <see cref="Enums.PaperFormat.A4"/>
-        /// </remarks>
-        public PageSettings()
-        {
-            ResetToDefaultSettings();
-        }
-
-        /// <summary>
-        /// Makes this object and sets all the settings to it's default values
-        /// </summary>
-        /// <remarks>
-        /// Default paper settings are set to <see cref="Enums.PaperFormat.A4"/>
-        /// </remarks>
-        /// <param name="paperFormat"></param>
-        public PageSettings(PaperFormat paperFormat)
-        {
-            ResetToDefaultSettings();
-            PaperFormat = paperFormat;
-            SetPaperFormat(paperFormat);
-        }
-        #endregion
-
-        #region ResetToDefaultSettings
-        /// <summary>
-        /// Resets the <see cref="PageSettings"/> to it's default settings
-        /// </summary>
-        public void ResetToDefaultSettings()
-        {
-            Landscape = false;
-            DisplayHeaderFooter = false;
-            PrintBackground = false;
-            Scale = 1.0;
-            SetPaperFormat(PaperFormat.A4);
-            MarginTop = 0.4;
-            MarginBottom = 0.4;
-            MarginLeft = 0.4;
-            MarginRight = 0.4;
-            PageRanges = string.Empty;
-        }
-        #endregion
-
-        #region SetPaperFormat
-        /// <summary>
-        /// Set the given <paramref name="paperFormat"/>
-        /// </summary>
-        /// <param name="paperFormat"><see cref="PaperFormat"/></param>
-        public void SetPaperFormat(PaperFormat paperFormat)
-        {
-            PaperFormat = paperFormat;
-
-            switch (paperFormat)
-            {
-                case PaperFormat.Letter:
-                    PaperWidth = 8.5;
-                    PaperHeight = 11;
-                    break;
-
-                case PaperFormat.Legal:
-                    PaperWidth = 8.5;
-                    PaperHeight = 14;
-                    break;
-
-                case PaperFormat.Tabloid:
-                    PaperWidth = 11;
-                    PaperHeight = 17;
-                    break;
-
-                case PaperFormat.Ledger:
-                    PaperWidth = 17;
-                    PaperHeight = 11;
-                    break;
-
-                case PaperFormat.A0:
-                    PaperWidth = 33.1;
-                    PaperHeight = 46.8;
-                    break;
-
-                case PaperFormat.A1:
-                    PaperWidth = 23.4;
-                    PaperHeight = 33.1;
-                    break;
-
-                case PaperFormat.A2:
-                    PaperWidth = 16.5;
-                    PaperHeight = 23.4;
-                    break;
-
-                case PaperFormat.A3:
-                    PaperWidth = 11.7;
-                    PaperHeight = 16.5;
-                    break;
-
-                case PaperFormat.A4:
-                    PaperWidth = 8.3;
-                    PaperHeight = 11.7;
-                    break;
-
-                case PaperFormat.A5:
-                    PaperWidth = 5.8;
-                    PaperHeight = 8.3;
-                    break;
-
-                case PaperFormat.A6:
-                    PaperWidth = 4.1;
-                    PaperHeight = 5.8;
-                    break;
-
-                case PaperFormat.FitPageToContent:
-                    PreferCSSPageSize = true;
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(paperFormat), paperFormat, null);
-            }
-        }
-        #endregion
-
-        #region Clone
-        /// <summary>
-        /// Creates a new object that is a copy of the current instance.
-        /// </summary>
-        /// <returns>A new object that is a copy of this instance.</returns>
-        public object Clone()
-        {
-            return new PageSettings(PaperFormat)
-            {
-                Landscape = Landscape,
-                DisplayHeaderFooter = DisplayHeaderFooter,
-                HeaderTemplate = HeaderTemplate,
-                FooterTemplate = FooterTemplate,
-                PrintBackground = PrintBackground,
-                Scale = Scale,
-                PaperWidth = PaperWidth,
-                PaperHeight = PaperHeight,
-                MarginTop = MarginTop,
-                MarginBottom = MarginBottom,
-                MarginLeft = MarginLeft,
-                MarginRight = MarginRight,
-                PageRanges = PageRanges,
-                IgnoreInvalidPageRanges = IgnoreInvalidPageRanges,
-                PreferCSSPageSize = PreferCSSPageSize
-            };
-        }
-        #endregion
+        ResetToDefaultSettings();
     }
+
+    /// <summary>
+    ///     Makes this object and sets all the settings to it's default values
+    /// </summary>
+    /// <remarks>
+    ///     Default paper settings are set to <see cref="Enums.PaperFormat.A4" />
+    /// </remarks>
+    /// <param name="paperFormat"></param>
+    public PageSettings(PaperFormat paperFormat)
+    {
+        ResetToDefaultSettings();
+        PaperFormat = paperFormat;
+        SetPaperFormat(paperFormat);
+    }
+    #endregion
+
+    #region ResetToDefaultSettings
+    /// <summary>
+    ///     Resets the <see cref="PageSettings" /> to it's default settings
+    /// </summary>
+    public void ResetToDefaultSettings()
+    {
+        Landscape = false;
+        DisplayHeaderFooter = false;
+        PrintBackground = false;
+        Scale = 1.0;
+        SetPaperFormat(PaperFormat.A4);
+        MarginTop = 0.4;
+        MarginBottom = 0.4;
+        MarginLeft = 0.4;
+        MarginRight = 0.4;
+        PageRanges = string.Empty;
+    }
+    #endregion
+
+    #region SetPaperFormat
+    /// <summary>
+    ///     Set the given <paramref name="paperFormat" />
+    /// </summary>
+    /// <param name="paperFormat">
+    ///     <see cref="PaperFormat" />
+    /// </param>
+    public void SetPaperFormat(PaperFormat paperFormat)
+    {
+        PaperFormat = paperFormat;
+
+        switch (paperFormat)
+        {
+            case PaperFormat.Letter:
+                PaperWidth = 8.5;
+                PaperHeight = 11;
+                break;
+
+            case PaperFormat.Legal:
+                PaperWidth = 8.5;
+                PaperHeight = 14;
+                break;
+
+            case PaperFormat.Tabloid:
+                PaperWidth = 11;
+                PaperHeight = 17;
+                break;
+
+            case PaperFormat.Ledger:
+                PaperWidth = 17;
+                PaperHeight = 11;
+                break;
+
+            case PaperFormat.A0:
+                PaperWidth = 33.1;
+                PaperHeight = 46.8;
+                break;
+
+            case PaperFormat.A1:
+                PaperWidth = 23.4;
+                PaperHeight = 33.1;
+                break;
+
+            case PaperFormat.A2:
+                PaperWidth = 16.5;
+                PaperHeight = 23.4;
+                break;
+
+            case PaperFormat.A3:
+                PaperWidth = 11.7;
+                PaperHeight = 16.5;
+                break;
+
+            case PaperFormat.A4:
+                PaperWidth = 8.3;
+                PaperHeight = 11.7;
+                break;
+
+            case PaperFormat.A5:
+                PaperWidth = 5.8;
+                PaperHeight = 8.3;
+                break;
+
+            case PaperFormat.A6:
+                PaperWidth = 4.1;
+                PaperHeight = 5.8;
+                break;
+
+            case PaperFormat.FitPageToContent:
+                PreferCSSPageSize = true;
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(paperFormat), paperFormat, null);
+        }
+    }
+    #endregion
+
+    #region Clone
+    /// <summary>
+    ///     Creates a new object that is a copy of the current instance.
+    /// </summary>
+    /// <returns>A new object that is a copy of this instance.</returns>
+    public object Clone()
+    {
+        return new PageSettings(PaperFormat)
+        {
+            Landscape = Landscape,
+            DisplayHeaderFooter = DisplayHeaderFooter,
+            HeaderTemplate = HeaderTemplate,
+            FooterTemplate = FooterTemplate,
+            PrintBackground = PrintBackground,
+            Scale = Scale,
+            PaperWidth = PaperWidth,
+            PaperHeight = PaperHeight,
+            MarginTop = MarginTop,
+            MarginBottom = MarginBottom,
+            MarginLeft = MarginLeft,
+            MarginRight = MarginRight,
+            PageRanges = PageRanges,
+            IgnoreInvalidPageRanges = IgnoreInvalidPageRanges,
+            PreferCSSPageSize = PreferCSSPageSize
+        };
+    }
+    #endregion
 }

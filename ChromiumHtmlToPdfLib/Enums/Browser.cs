@@ -24,21 +24,20 @@
 // THE SOFTWARE.
 //
 
-namespace ChromiumHtmlToPdfLib.Enums
+namespace ChromiumHtmlToPdfLib.Enums;
+
+/// <summary>
+///     The paper formats to use when converting to PDF
+/// </summary>
+public enum Browser
 {
     /// <summary>
-    ///     The paper formats to use when converting to PDF
+    ///     Use Google Chrome to as headless browser
     /// </summary>
-    public enum Browser
-    {
-        /// <summary>
-        ///     Use Google Chrome to as headless browser
-        /// </summary>
-        Chrome,
+    Chrome,
 
-        /// <summary>
-        ///     Use Microsoft Edge as headless browser
-        /// </summary>
-        Edge
-    }
+    /// <summary>
+    ///     Use Microsoft Edge as headless browser
+    /// </summary>
+    Edge
 }

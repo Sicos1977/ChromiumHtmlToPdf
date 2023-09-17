@@ -27,25 +27,32 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace ChromiumHtmlToPdfLib.Exceptions
+namespace ChromiumHtmlToPdfLib.Exceptions;
+
+/// <summary>
+///     Raised when the PDF conversion times out
+/// </summary>
+[Serializable]
+public class ConversionTimedOutException : Exception
 {
     /// <summary>
-    /// Raised when the PDF conversion times out
+    ///     To be raised when the PDF conversion times out
     /// </summary>
-    [Serializable]
-    public class ConversionTimedOutException : Exception
+    /// <param name="info"></param>
+    /// <param name="context"></param>
+    protected ConversionTimedOutException(SerializationInfo info, StreamingContext context) : base(info, context)
     {
-        /// <summary>
-        /// To be raised when the PDF conversion times out
-        /// </summary>
-        /// <param name="info"></param>
-        /// <param name="context"></param>
-        protected ConversionTimedOutException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+    }
 
-        internal ConversionTimedOutException() { }
+    internal ConversionTimedOutException()
+    {
+    }
 
-        internal ConversionTimedOutException(string message) : base(message) { }
+    internal ConversionTimedOutException(string message) : base(message)
+    {
+    }
 
-        internal ConversionTimedOutException(string message, Exception innerException) : base(message, innerException) { }
+    internal ConversionTimedOutException(string message, Exception innerException) : base(message, innerException)
+    {
     }
 }

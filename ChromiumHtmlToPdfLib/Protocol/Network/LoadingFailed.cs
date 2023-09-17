@@ -28,54 +28,50 @@ using System.Globalization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
-namespace ChromiumHtmlToPdfLib.Protocol.Network
+namespace ChromiumHtmlToPdfLib.Protocol.Network;
+
+internal class LoadingFailed : Base
 {
-    internal class LoadingFailed : Base
+    #region Properties
+    [JsonProperty("params")] public LoadingFailedParams Params { get; set; }
+    #endregion
+
+    #region FromJson
+    /// <summary>
+    ///     Returns this object deserialized from the given <paramref name="json" /> string
+    /// </summary>
+    /// <param name="json"></param>
+    /// <returns></returns>
+    public new static LoadingFailed FromJson(string json)
     {
-        #region Properties
-        [JsonProperty("params")]
-        public LoadingFailedParams Params { get; set; }
-        #endregion
-
-        #region FromJson
-        /// <summary>
-        /// Returns this object deserialized from the given <paramref name="json"/> string
-        /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
-        public new static LoadingFailed FromJson(string json) => JsonConvert.DeserializeObject<LoadingFailed>(json, LoadingFailedConverter.Settings);
-        #endregion
-    }
-
-    internal class LoadingFailedParams
-    {
-        #region Properties
-        [JsonProperty("requestId")]
-        public string RequestId { get; set; }
-
-        [JsonProperty("timestamp")]
-        public double Timestamp { get; set; }
-
-        [JsonProperty("type")]
-        public string Type { get; set; }
-
-        [JsonProperty("errorText")]
-        public string ErrorText { get; set; }
-
-        [JsonProperty("canceled")]
-        public bool Canceled { get; set; }
-        #endregion
-    }
-
-    #region Static class LoadingFailedConverter
-    internal static class LoadingFailedConverter
-    {
-        public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings
-        {
-            MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
-            DateParseHandling = DateParseHandling.None,
-            Converters = {new IsoDateTimeConverter {DateTimeStyles = DateTimeStyles.AssumeUniversal}}
-        };
+        return JsonConvert.DeserializeObject<LoadingFailed>(json, LoadingFailedConverter.Settings);
     }
     #endregion
 }
+
+internal class LoadingFailedParams
+{
+    #region Properties
+    [JsonProperty("requestId")] public string RequestId { get; set; }
+
+    [JsonProperty("timestamp")] public double Timestamp { get; set; }
+
+    [JsonProperty("type")] public string Type { get; set; }
+
+    [JsonProperty("errorText")] public string ErrorText { get; set; }
+
+    [JsonProperty("canceled")] public bool Canceled { get; set; }
+    #endregion
+}
+
+#region Static class LoadingFailedConverter
+internal static class LoadingFailedConverter
+{
+    public static readonly JsonSerializerSettings Settings = new()
+    {
+        MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
+        DateParseHandling = DateParseHandling.None,
+        Converters = { new IsoDateTimeConverter { DateTimeStyles = DateTimeStyles.AssumeUniversal } }
+    };
+}
+#endregion

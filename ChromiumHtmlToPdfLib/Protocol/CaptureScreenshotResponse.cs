@@ -27,44 +27,43 @@
 using System;
 using Newtonsoft.Json;
 
-namespace ChromiumHtmlToPdfLib.Protocol
+namespace ChromiumHtmlToPdfLib.Protocol;
+
+/// <summary>
+///     Placeholder for the result of a page snapshot
+/// </summary>
+internal class CaptureScreenshotResponse
 {
-    /// <summary>
-    ///     Placeholder for the result of a page snapshot
-    /// </summary>
-    internal class CaptureScreenshotResponse
-    {
-        #region Properties
-        [JsonProperty("id")]
-        public long Id { get; set; }
+    #region Properties
+    [JsonProperty("id")] public long Id { get; set; }
 
-        [JsonProperty("result")]
-        public CaptureScreenshotResult Result { get; set; }
-
-        /// <summary>
-        /// Returns <see cref="PrintToPdfResult.Data"/> as array of bytes
-        /// </summary>
-        public byte[] Bytes => Convert.FromBase64String(Result.Data);
-        #endregion
-
-        #region FromJson
-        /// <summary>
-        /// Returns this object deserialized from the given <paramref name="json"/> string
-        /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
-        public static CaptureScreenshotResponse FromJson(string json) => JsonConvert.DeserializeObject<CaptureScreenshotResponse>(json);
-        #endregion
-    }
+    [JsonProperty("result")] public CaptureScreenshotResult Result { get; set; }
 
     /// <summary>
-    ///     Part of the <see cref="CaptureScreenshotResponse"/> class
+    ///     Returns <see cref="PrintToPdfResult.Data" /> as array of bytes
     /// </summary>
-    internal class CaptureScreenshotResult
+    public byte[] Bytes => Convert.FromBase64String(Result.Data);
+    #endregion
+
+    #region FromJson
+    /// <summary>
+    ///     Returns this object deserialized from the given <paramref name="json" /> string
+    /// </summary>
+    /// <param name="json"></param>
+    /// <returns></returns>
+    public static CaptureScreenshotResponse FromJson(string json)
     {
-        #region Properties
-        [JsonProperty("data")]
-        public string Data { get; set; }
-        #endregion
+        return JsonConvert.DeserializeObject<CaptureScreenshotResponse>(json);
     }
+    #endregion
+}
+
+/// <summary>
+///     Part of the <see cref="CaptureScreenshotResponse" /> class
+/// </summary>
+internal class CaptureScreenshotResult
+{
+    #region Properties
+    [JsonProperty("data")] public string Data { get; set; }
+    #endregion
 }

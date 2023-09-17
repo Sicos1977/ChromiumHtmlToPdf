@@ -27,50 +27,51 @@
 using System.Text;
 using Newtonsoft.Json;
 
-namespace ChromiumHtmlToPdfLib.Protocol
+namespace ChromiumHtmlToPdfLib.Protocol;
+
+/// <summary>
+///     Placeholder for the result of a page snapshot
+/// </summary>
+internal class SnapshotResponse
 {
+    #region Properties
     /// <summary>
-    ///     Placeholder for the result of a page snapshot
+    ///     The message id
     /// </summary>
-    internal class SnapshotResponse
-    {
-        #region Properties
-        /// <summary>
-        ///     The message id
-        /// </summary>
-        [JsonProperty("id")]
-        public long Id { get; set; }
-
-        /// <summary>
-        ///     The snapshot result
-        /// </summary>
-        [JsonProperty("result")]
-        public SnapshotResult Result { get; set; }
-
-        /// <summary>
-        /// Returns <see cref="SnapshotResult.Data"/> as array of bytes
-        /// </summary>
-        public byte[] Bytes => Encoding.ASCII.GetBytes(Result.Data);
-        #endregion
-
-        #region FromJson
-        /// <summary>
-        /// Returns this object deserialized from the given <paramref name="json"/> string
-        /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
-        public static SnapshotResponse FromJson(string json) => JsonConvert.DeserializeObject<SnapshotResponse>(json);
-        #endregion
-    }
+    [JsonProperty("id")]
+    public long Id { get; set; }
 
     /// <summary>
-    ///     Part of the <see cref="SnapshotResponse"/> class
+    ///     The snapshot result
     /// </summary>
-    internal class SnapshotResult
+    [JsonProperty("result")]
+    public SnapshotResult Result { get; set; }
+
+    /// <summary>
+    ///     Returns <see cref="SnapshotResult.Data" /> as array of bytes
+    /// </summary>
+    public byte[] Bytes => Encoding.ASCII.GetBytes(Result.Data);
+    #endregion
+
+    #region FromJson
+    /// <summary>
+    ///     Returns this object deserialized from the given <paramref name="json" /> string
+    /// </summary>
+    /// <param name="json"></param>
+    /// <returns></returns>
+    public static SnapshotResponse FromJson(string json)
     {
-        #region Properties
-        [JsonProperty("data")]
-        public string Data { get; set; }
-        #endregion
+        return JsonConvert.DeserializeObject<SnapshotResponse>(json);
     }
+    #endregion
+}
+
+/// <summary>
+///     Part of the <see cref="SnapshotResponse" /> class
+/// </summary>
+internal class SnapshotResult
+{
+    #region Properties
+    [JsonProperty("data")] public string Data { get; set; }
+    #endregion
 }

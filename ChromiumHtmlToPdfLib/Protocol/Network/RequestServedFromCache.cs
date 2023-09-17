@@ -26,30 +26,30 @@
 
 using Newtonsoft.Json;
 
-namespace ChromiumHtmlToPdfLib.Protocol.Network
+namespace ChromiumHtmlToPdfLib.Protocol.Network;
+
+internal class RequestServedFromCache : Base
 {
-    internal class RequestServedFromCache : Base
-    {
-        #region Properties
-        [JsonProperty("params")]
-        public RequestServedFromCacheParams Params { get; set; }
-        #endregion
+    #region Properties
+    [JsonProperty("params")] public RequestServedFromCacheParams Params { get; set; }
+    #endregion
 
-        #region FromJson
-        /// <summary>
-        /// Returns this object deserialized from the given <paramref name="json"/> string
-        /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
-        public new static RequestServedFromCache FromJson(string json) => JsonConvert.DeserializeObject<RequestServedFromCache>(json);
-        #endregion
-    }
-
-    internal class RequestServedFromCacheParams
+    #region FromJson
+    /// <summary>
+    ///     Returns this object deserialized from the given <paramref name="json" /> string
+    /// </summary>
+    /// <param name="json"></param>
+    /// <returns></returns>
+    public new static RequestServedFromCache FromJson(string json)
     {
-        #region Properties
-        [JsonProperty("requestId")]
-        public string RequestId { get; set; }
-        #endregion
+        return JsonConvert.DeserializeObject<RequestServedFromCache>(json);
     }
+    #endregion
+}
+
+internal class RequestServedFromCacheParams
+{
+    #region Properties
+    [JsonProperty("requestId")] public string RequestId { get; set; }
+    #endregion
 }

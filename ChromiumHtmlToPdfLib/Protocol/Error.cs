@@ -26,49 +26,50 @@
 
 using Newtonsoft.Json;
 
-namespace ChromiumHtmlToPdfLib.Protocol
+namespace ChromiumHtmlToPdfLib.Protocol;
+
+/// <summary>
+///     The JSON structure that is returned from Chromium when an Error occurs
+/// </summary>
+internal class Error : MessageBase
 {
+    #region Properties
     /// <summary>
-    /// The JSON structure that is returned from Chromium when an Error occurs
+    ///     <see cref="InnerError" />
     /// </summary>
-    internal class Error : MessageBase
-    {
-        #region Properties
-        /// <summary>
-        /// <see cref="InnerError"/>
-        /// </summary>
-        [JsonProperty("error")]
-        public ErrorInnerError InnerError { get; set; }
-        #endregion
+    [JsonProperty("error")]
+    public ErrorInnerError InnerError { get; set; }
+    #endregion
 
-        #region FromJson
-        /// <summary>
-        /// Returns this object deserialized from the given <paramref name="json"/> string
-        /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
-        public new static Error FromJson(string json) => JsonConvert.DeserializeObject<Error>(json);
-        #endregion
-    }
-
+    #region FromJson
     /// <summary>
-    /// The inner error
+    ///     Returns this object deserialized from the given <paramref name="json" /> string
     /// </summary>
-    internal class ErrorInnerError
+    /// <param name="json"></param>
+    /// <returns></returns>
+    public new static Error FromJson(string json)
     {
-        #region Properties
-        /// <summary>
-        /// The error code
-        /// </summary>
-        [JsonProperty("code")]
-        public double Code { get; set; }
-
-        /// <summary>
-        /// The error message
-        /// </summary>
-        [JsonProperty("message")]
-        public string Message { get; set; }
-        #endregion
+        return JsonConvert.DeserializeObject<Error>(json);
     }
+    #endregion
 }
 
+/// <summary>
+///     The inner error
+/// </summary>
+internal class ErrorInnerError
+{
+    #region Properties
+    /// <summary>
+    ///     The error code
+    /// </summary>
+    [JsonProperty("code")]
+    public double Code { get; set; }
+
+    /// <summary>
+    ///     The error message
+    /// </summary>
+    [JsonProperty("message")]
+    public string Message { get; set; }
+    #endregion
+}

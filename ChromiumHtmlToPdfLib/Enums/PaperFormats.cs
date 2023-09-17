@@ -24,71 +24,70 @@
 // THE SOFTWARE.
 //
 
-namespace ChromiumHtmlToPdfLib.Enums
+namespace ChromiumHtmlToPdfLib.Enums;
+
+/// <summary>
+///     The paper formats to use when converting to PDF
+/// </summary>
+public enum PaperFormat
 {
     /// <summary>
-    ///     The paper formats to use when converting to PDF
+    ///     Letter format
     /// </summary>
-    public enum PaperFormat
-    {
-        /// <summary>
-        ///     Letter format
-        /// </summary>
-        Letter,
+    Letter,
 
-        /// <summary>
-        ///     Legal format
-        /// </summary>
-        Legal,
+    /// <summary>
+    ///     Legal format
+    /// </summary>
+    Legal,
 
-        /// <summary>
-        ///     Tabloid format
-        /// </summary>
-        Tabloid,
+    /// <summary>
+    ///     Tabloid format
+    /// </summary>
+    Tabloid,
 
-        /// <summary>
-        ///     Ledger format
-        /// </summary>
-        Ledger,
+    /// <summary>
+    ///     Ledger format
+    /// </summary>
+    Ledger,
 
-        /// <summary>
-        ///     A0 format
-        /// </summary>
-        A0,
+    /// <summary>
+    ///     A0 format
+    /// </summary>
+    A0,
 
-        /// <summary>
-        ///     A1 format
-        /// </summary>
-        A1,
+    /// <summary>
+    ///     A1 format
+    /// </summary>
+    A1,
 
-        /// <summary>
-        ///     A2 format
-        /// </summary>
-        A2,
+    /// <summary>
+    ///     A2 format
+    /// </summary>
+    A2,
 
-        /// <summary>
-        ///     A3 format
-        /// </summary>
-        A3,
+    /// <summary>
+    ///     A3 format
+    /// </summary>
+    A3,
 
-        /// <summary>
-        ///     A4 format
-        /// </summary>
-        A4,
+    /// <summary>
+    ///     A4 format
+    /// </summary>
+    A4,
 
-        /// <summary>
-        ///     A5 format
-        /// </summary>
-        A5,
+    /// <summary>
+    ///     A5 format
+    /// </summary>
+    A5,
 
-        /// <summary>
-        ///     A6 format
-        /// </summary>
-        A6,
+    /// <summary>
+    ///     A6 format
+    /// </summary>
+    A6,
 
-        /// <summary>
-        ///     Fit the page to the width and height of the content it is displaying
-        /// </summary>
-        FitPageToContent
-    }
+    /// <summary>
+    ///     Fit the page to the width and height of the content it is displaying
+    /// </summary>
+    FitPageToContent
 }

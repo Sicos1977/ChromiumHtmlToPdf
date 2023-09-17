@@ -28,51 +28,58 @@ using System;
 using System.Runtime.Serialization;
 using ChromiumHtmlToPdfLib.Protocol;
 
-namespace ChromiumHtmlToPdfLib.Exceptions
+namespace ChromiumHtmlToPdfLib.Exceptions;
+
+/// <summary>
+///     Raised when an error is returned from Chromium
+/// </summary>
+[Serializable]
+public class ChromiumException : Exception
 {
+    /// <summary>
+    ///     Returns the error code that is returned from Chromium
+    /// </summary>
+    public double Code { get; }
+
     /// <summary>
     ///     Raised when an error is returned from Chromium
     /// </summary>
-    [Serializable]
-    public class ChromiumException : Exception
+    /// <param name="info"></param>
+    /// <param name="context"></param>
+    protected ChromiumException(SerializationInfo info, StreamingContext context) : base(info, context)
     {
-        /// <summary>
-        ///     Returns the error code that is returned from Chromium
-        /// </summary>
-        public double Code { get; }
+    }
 
-        /// <summary>
-        ///     Raised when an error is returned from Chromium
-        /// </summary>
-        /// <param name="info"></param>
-        /// <param name="context"></param>
-        protected ChromiumException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+    /// <summary>
+    ///     Raised when an error is returned from Chromium
+    /// </summary>
+    internal ChromiumException()
+    {
+    }
 
-        /// <summary>
-        ///     Raised when an error is returned from Chromium
-        /// </summary>
-        internal ChromiumException() { }
+    /// <summary>
+    ///     Raised when an error is returned from Chromium
+    /// </summary>
+    /// <param name="error"></param>
+    internal ChromiumException(Error error) : base(error.InnerError.Message)
+    {
+        Code = error.InnerError.Code;
+    }
 
-        /// <summary>
-        ///     Raised when an error is returned from Chromium
-        /// </summary>
-        /// <param name="error"></param>
-        internal ChromiumException(Error error) : base(error.InnerError.Message)
-        {
-            Code = error.InnerError.Code;
-        }
+    /// <summary>
+    ///     Raised when an error is returned from Chromium
+    /// </summary>
+    /// <param name="message"></param>
+    internal ChromiumException(string message) : base(message)
+    {
+    }
 
-        /// <summary>
-        ///     Raised when an error is returned from Chromium
-        /// </summary>
-        /// <param name="message"></param>
-        internal ChromiumException(string message) : base(message) { }
-
-        /// <summary>
-        ///     Raised when an error is returned from Chromium
-        /// </summary>
-        /// <param name="message"></param>
-        /// <param name="innerException"></param>
-        internal ChromiumException(string message, Exception innerException) : base(message, innerException) { }
+    /// <summary>
+    ///     Raised when an error is returned from Chromium
+    /// </summary>
+    /// <param name="message"></param>
+    /// <param name="innerException"></param>
+    internal ChromiumException(string message, Exception innerException) : base(message, innerException)
+    {
     }
 }

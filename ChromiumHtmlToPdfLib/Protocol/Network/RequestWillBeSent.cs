@@ -28,105 +28,89 @@ using System.Globalization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
-namespace ChromiumHtmlToPdfLib.Protocol.Network
+namespace ChromiumHtmlToPdfLib.Protocol.Network;
+
+internal class RequestWillBeSent : Base
 {
-    internal class RequestWillBeSent : Base
+    #region Properties
+    [JsonProperty("params")] public RequestWillBeSentParams Params { get; set; }
+    #endregion
+
+    #region FromJson
+    /// <summary>
+    ///     Returns this object deserialized from the given <paramref name="json" /> string
+    /// </summary>
+    /// <param name="json"></param>
+    /// <returns></returns>
+    public new static RequestWillBeSent FromJson(string json)
     {
-        #region Properties
-        [JsonProperty("params")]
-        public RequestWillBeSentParams Params { get; set; }
-        #endregion
-
-        #region FromJson
-        /// <summary>
-        /// Returns this object deserialized from the given <paramref name="json"/> string
-        /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
-        public new static RequestWillBeSent FromJson(string json) => JsonConvert.DeserializeObject<RequestWillBeSent>(json, RequestWillBeSentConverter.Settings);
-        #endregion
-    }
-
-    internal class RequestWillBeSentParams
-    {
-        #region Properties
-        [JsonProperty("requestId")]
-        public string RequestId { get; set; }
-
-        [JsonProperty("loaderId")]
-        public string LoaderId { get; set; }
-
-        [JsonProperty("documentURL")]
-        public string DocumentUrl { get; set; }
-
-        [JsonProperty("request")]
-        public RequestWillBeSentRequest Request { get; set; }
-
-        [JsonProperty("timestamp")]
-        public double Timestamp { get; set; }
-
-        [JsonProperty("wallTime")]
-        public double WallTime { get; set; }
-
-        [JsonProperty("initiator")]
-        public WillBeSentInitiator Initiator { get; set; }
-
-        [JsonProperty("type")]
-        public string Type { get; set; }
-
-        [JsonProperty("frameId")]
-        public string FrameId { get; set; }
-
-        [JsonProperty("hasUserGesture")]
-        public bool HasUserGesture { get; set; }
-        #endregion
-    }
-
-    internal class WillBeSentInitiator
-    {
-        #region Properties
-        [JsonProperty("type")]
-        public string Type { get; set; }
-        #endregion
-    }
-
-    internal class RequestWillBeSentRequest
-    {
-        #region Properties
-        [JsonProperty("url")]
-        public string Url { get; set; }
-
-        [JsonProperty("method")]
-        public string Method { get; set; }
-
-        [JsonProperty("headers")]
-        public RequestWillBeSentHeaders Headers { get; set; }
-
-        [JsonProperty("mixedContentType")]
-        public string MixedContentType { get; set; }
-
-        [JsonProperty("initialPriority")]
-        public string InitialPriority { get; set; }
-
-        [JsonProperty("referrerPolicy")]
-        public string ReferrerPolicy { get; set; }
-        #endregion
-    }
-
-    // ReSharper disable once ClassNeverInstantiated.Global
-    internal class RequestWillBeSentHeaders
-    {
-    }
-
-    #region Static class RequestWillBeSentConverter
-    internal static class RequestWillBeSentConverter
-    {
-        public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings
-        {
-            MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
-            DateParseHandling = DateParseHandling.None,
-            Converters = {new IsoDateTimeConverter {DateTimeStyles = DateTimeStyles.AssumeUniversal}}
-        };
+        return JsonConvert.DeserializeObject<RequestWillBeSent>(json, RequestWillBeSentConverter.Settings);
     }
     #endregion
 }
+
+internal class RequestWillBeSentParams
+{
+    #region Properties
+    [JsonProperty("requestId")] public string RequestId { get; set; }
+
+    [JsonProperty("loaderId")] public string LoaderId { get; set; }
+
+    [JsonProperty("documentURL")] public string DocumentUrl { get; set; }
+
+    [JsonProperty("request")] public RequestWillBeSentRequest Request { get; set; }
+
+    [JsonProperty("timestamp")] public double Timestamp { get; set; }
+
+    [JsonProperty("wallTime")] public double WallTime { get; set; }
+
+    [JsonProperty("initiator")] public WillBeSentInitiator Initiator { get; set; }
+
+    [JsonProperty("type")] public string Type { get; set; }
+
+    [JsonProperty("frameId")] public string FrameId { get; set; }
+
+    [JsonProperty("hasUserGesture")] public bool HasUserGesture { get; set; }
+    #endregion
+}
+
+internal class WillBeSentInitiator
+{
+    #region Properties
+    [JsonProperty("type")] public string Type { get; set; }
+    #endregion
+}
+
+internal class RequestWillBeSentRequest
+{
+    #region Properties
+    [JsonProperty("url")] public string Url { get; set; }
+
+    [JsonProperty("method")] public string Method { get; set; }
+
+    [JsonProperty("headers")] public RequestWillBeSentHeaders Headers { get; set; }
+
+    [JsonProperty("mixedContentType")] public string MixedContentType { get; set; }
+
+    [JsonProperty("initialPriority")] public string InitialPriority { get; set; }
+
+    [JsonProperty("referrerPolicy")] public string ReferrerPolicy { get; set; }
+    #endregion
+}
+
+// ReSharper disable once ClassNeverInstantiated.Global
+internal class RequestWillBeSentHeaders
+{
+}
+
+#region Static class RequestWillBeSentConverter
+internal static class RequestWillBeSentConverter
+{
+    public static readonly JsonSerializerSettings Settings = new()
+    {
+        MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
+        DateParseHandling = DateParseHandling.None,
+        Converters = { new IsoDateTimeConverter { DateTimeStyles = DateTimeStyles.AssumeUniversal } }
+    };
+}
+#endregion

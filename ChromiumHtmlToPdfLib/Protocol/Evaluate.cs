@@ -26,59 +26,57 @@
 
 using Newtonsoft.Json;
 
-namespace ChromiumHtmlToPdfLib.Protocol
+namespace ChromiumHtmlToPdfLib.Protocol;
+
+/// <summary>
+/// </summary>
+internal class Evaluate : MessageBase
 {
+    #region Properties
     /// <summary>
-    /// 
+    ///     The returned result
     /// </summary>
-    internal class Evaluate : MessageBase
-    {
-        #region Properties
-        /// <summary>
-        ///     The returned result
-        /// </summary>
-        [JsonProperty("result")]
-        public EvaluateResult Result { get; set; }
-
-        /// <summary>
-        /// The method that we want to execute in Chromium
-        /// </summary>
-        [JsonProperty("method")]
-        public string Method { get; set; }
-        #endregion
-
-        #region FromJson
-        /// <summary>
-        /// Returns this object deserialized from the given <paramref name="json"/> string
-        /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
-        public new static Evaluate FromJson(string json) => JsonConvert.DeserializeObject<Evaluate>(json);
-        #endregion
-    }
+    [JsonProperty("result")]
+    public EvaluateResult Result { get; set; }
 
     /// <summary>
-    /// Part of the <see cref="Evaluate"/> class
+    ///     The method that we want to execute in Chromium
     /// </summary>
-    internal class EvaluateResult
-    {
-        #region Propreties
-        [JsonProperty("result")]
-        public EvaluateInnerResult Result { get; set; }
-        #endregion
-    }
-    
-    /// <summary>
-    /// Part of the <see cref="EvaluateResult"/> class
-    /// </summary>
-    internal class EvaluateInnerResult
-    {
-        #region Properties
-        [JsonProperty("type")]
-        public string Type { get; set; }
+    [JsonProperty("method")]
+    public string Method { get; set; }
+    #endregion
 
-        [JsonProperty("value")]
-        public string Value { get; set; }
-        #endregion
+    #region FromJson
+    /// <summary>
+    ///     Returns this object deserialized from the given <paramref name="json" /> string
+    /// </summary>
+    /// <param name="json"></param>
+    /// <returns></returns>
+    public new static Evaluate FromJson(string json)
+    {
+        return JsonConvert.DeserializeObject<Evaluate>(json);
     }
+    #endregion
+}
+
+/// <summary>
+///     Part of the <see cref="Evaluate" /> class
+/// </summary>
+internal class EvaluateResult
+{
+    #region Propreties
+    [JsonProperty("result")] public EvaluateInnerResult Result { get; set; }
+    #endregion
+}
+
+/// <summary>
+///     Part of the <see cref="EvaluateResult" /> class
+/// </summary>
+internal class EvaluateInnerResult
+{
+    #region Properties
+    [JsonProperty("type")] public string Type { get; set; }
+
+    [JsonProperty("value")] public string Value { get; set; }
+    #endregion
 }

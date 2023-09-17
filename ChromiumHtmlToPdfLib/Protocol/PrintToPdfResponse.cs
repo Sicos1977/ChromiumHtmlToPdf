@@ -27,53 +27,55 @@
 using System;
 using Newtonsoft.Json;
 
-namespace ChromiumHtmlToPdfLib.Protocol
+namespace ChromiumHtmlToPdfLib.Protocol;
+
+/// <summary>
+///     The JSON object that is returned from Chrome when calling the <see cref="Converter" /> ConvertToPdf method
+/// </summary>
+internal class PrintToPdfResponse
 {
+    #region Properties
     /// <summary>
-    /// The JSON object that is returned from Chrome when calling the <see cref="Converter"/> ConvertToPdf method
+    ///     <see cref="PrintToPdfResult" />
     /// </summary>
-    internal class PrintToPdfResponse
-    {
-        #region Properties
-        /// <summary>
-        /// <see cref="PrintToPdfResult"/>
-        /// </summary>
-        [JsonProperty("result")]
-        public PrintToPdfResult Result { get; set; }
-
-        /// <summary>
-        /// Returns <see cref="PrintToPdfResult.Data"/> as array of bytes
-        /// </summary>
-        public byte[] Bytes => Convert.FromBase64String(Result.Data);
-        #endregion
-
-        #region FromJson
-        /// <summary>
-        /// Returns this object deserialized from the given <paramref name="json"/> string
-        /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
-        public static PrintToPdfResponse FromJson(string json) => JsonConvert.DeserializeObject<PrintToPdfResponse>(json);
-        #endregion
-    }
+    [JsonProperty("result")]
+    public PrintToPdfResult Result { get; set; }
 
     /// <summary>
-    /// The result returned from the <see cref="Converter"/> ConvertToPdf  method
+    ///     Returns <see cref="PrintToPdfResult.Data" /> as array of bytes
     /// </summary>
-    internal class PrintToPdfResult
-    {
-        #region Properties
-        /// <summary>
-        /// The PDF as base64 string
-        /// </summary>
-        [JsonProperty("data")]
-        public string Data { get; set; }
+    public byte[] Bytes => Convert.FromBase64String(Result.Data);
+    #endregion
 
-        /// <summary>
-        /// Returns a stream handle number
-        /// </summary>
-        [JsonProperty("stream")]
-        public string Stream { get; set; }
-        #endregion
+    #region FromJson
+    /// <summary>
+    ///     Returns this object deserialized from the given <paramref name="json" /> string
+    /// </summary>
+    /// <param name="json"></param>
+    /// <returns></returns>
+    public static PrintToPdfResponse FromJson(string json)
+    {
+        return JsonConvert.DeserializeObject<PrintToPdfResponse>(json);
     }
+    #endregion
+}
+
+/// <summary>
+///     The result returned from the <see cref="Converter" /> ConvertToPdf  method
+/// </summary>
+internal class PrintToPdfResult
+{
+    #region Properties
+    /// <summary>
+    ///     The PDF as base64 string
+    /// </summary>
+    [JsonProperty("data")]
+    public string Data { get; set; }
+
+    /// <summary>
+    ///     Returns a stream handle number
+    /// </summary>
+    [JsonProperty("stream")]
+    public string Stream { get; set; }
+    #endregion
 }

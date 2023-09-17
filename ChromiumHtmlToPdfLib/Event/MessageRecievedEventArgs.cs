@@ -1,24 +1,23 @@
 ﻿using System;
 
-namespace ChromiumHtmlToPdfLib.Event
+namespace ChromiumHtmlToPdfLib.Event;
+
+/// <summary>
+///     <see cref="EventArgs" />
+/// </summary>
+public class MessageReceivedEventArgs : EventArgs
 {
     /// <summary>
-    ///     <see cref="EventArgs"/>
+    ///     The received message
     /// </summary>
-    public class MessageReceivedEventArgs : EventArgs
-    {
-        /// <summary>
-        ///     The received message
-        /// </summary>
-        public string Message { get; }
+    public string Message { get; }
 
-        /// <summary>
-        ///     Raised when a massage is received
-        /// </summary>
-        /// <param name="message"></param>
-        public MessageReceivedEventArgs(string message)
-        {
-            Message = message;
-        }
+    /// <summary>
+    ///     Raised when a massage is received
+    /// </summary>
+    /// <param name="message"></param>
+    public MessageReceivedEventArgs(string message)
+    {
+        Message = message;
     }
 }

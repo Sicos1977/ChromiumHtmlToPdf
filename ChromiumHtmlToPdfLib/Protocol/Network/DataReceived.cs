@@ -28,54 +28,50 @@ using System.Globalization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
-namespace ChromiumHtmlToPdfLib.Protocol.Network
+namespace ChromiumHtmlToPdfLib.Protocol.Network;
+
+internal class DataReceived
 {
-    internal class DataReceived
+    #region Properties
+    [JsonProperty("method")] public string Method { get; set; }
+
+    [JsonProperty("params")] public DataReceivedParams Params { get; set; }
+    #endregion
+
+    #region FromJson
+    /// <summary>
+    ///     Returns this object deserialized from the given <paramref name="json" /> string
+    /// </summary>
+    /// <param name="json"></param>
+    /// <returns></returns>
+    public static DataReceived FromJson(string json)
     {
-        #region Properties
-        [JsonProperty("method")]
-        public string Method { get; set; }
-
-        [JsonProperty("params")]
-        public DataReceivedParams Params { get; set; }
-        #endregion
-
-        #region FromJson
-        /// <summary>
-        /// Returns this object deserialized from the given <paramref name="json"/> string
-        /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
-        public static DataReceived FromJson(string json) => JsonConvert.DeserializeObject<DataReceived>(json, DataReceivedConverter.Settings);
-        #endregion
-    }
-
-    internal class DataReceivedParams
-    {
-        #region Properties
-        [JsonProperty("requestId")]
-        public string RequestId { get; set; }
-
-        [JsonProperty("timestamp")]
-        public double Timestamp { get; set; }
-
-        [JsonProperty("dataLength")]
-        public long DataLength { get; set; }
-
-        [JsonProperty("encodedDataLength")]
-        public long EncodedDataLength { get; set; }
-        #endregion
-    }
-
-    #region Static class DataReceivedConverter
-    internal static class DataReceivedConverter
-    {
-        public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings
-        {
-            MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
-            DateParseHandling = DateParseHandling.None,
-            Converters = {new IsoDateTimeConverter {DateTimeStyles = DateTimeStyles.AssumeUniversal}}
-        };
+        return JsonConvert.DeserializeObject<DataReceived>(json, DataReceivedConverter.Settings);
     }
     #endregion
 }
+
+internal class DataReceivedParams
+{
+    #region Properties
+    [JsonProperty("requestId")] public string RequestId { get; set; }
+
+    [JsonProperty("timestamp")] public double Timestamp { get; set; }
+
+    [JsonProperty("dataLength")] public long DataLength { get; set; }
+
+    [JsonProperty("encodedDataLength")] public long EncodedDataLength { get; set; }
+    #endregion
+}
+
+#region Static class DataReceivedConverter
+internal static class DataReceivedConverter
+{
+    public static readonly JsonSerializerSettings Settings = new()
+    {
+        MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
+        DateParseHandling = DateParseHandling.None,
+        Converters = { new IsoDateTimeConverter { DateTimeStyles = DateTimeStyles.AssumeUniversal } }
+    };
+}
+#endregion

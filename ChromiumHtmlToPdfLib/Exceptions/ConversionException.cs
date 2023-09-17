@@ -27,25 +27,32 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace ChromiumHtmlToPdfLib.Exceptions
+namespace ChromiumHtmlToPdfLib.Exceptions;
+
+/// <summary>
+///     Raised when the PDF conversion fails
+/// </summary>
+[Serializable]
+public class ConversionException : Exception
 {
     /// <summary>
-    /// Raised when the PDF conversion fails
+    ///     To be raised when a conversion error occurs
     /// </summary>
-    [Serializable]
-    public class ConversionException : Exception
+    /// <param name="info"></param>
+    /// <param name="context"></param>
+    protected ConversionException(SerializationInfo info, StreamingContext context) : base(info, context)
     {
-        /// <summary>
-        ///     To be raised when a conversion error occurs
-        /// </summary>
-        /// <param name="info"></param>
-        /// <param name="context"></param>
-        protected ConversionException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+    }
 
-        internal ConversionException() { }
+    internal ConversionException()
+    {
+    }
 
-        internal ConversionException(string message) : base(message) { }
+    internal ConversionException(string message) : base(message)
+    {
+    }
 
-        internal ConversionException(string message, Exception innerException) : base(message, innerException) { }
+    internal ConversionException(string message, Exception innerException) : base(message, innerException)
+    {
     }
 }

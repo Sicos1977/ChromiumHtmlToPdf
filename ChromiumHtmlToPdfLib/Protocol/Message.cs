@@ -27,57 +27,59 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace ChromiumHtmlToPdfLib.Protocol
+namespace ChromiumHtmlToPdfLib.Protocol;
+
+/// <summary>
+///     The JSON message that is sent to Chromium
+/// </summary>
+internal class Message : MessageBase
 {
+    #region Properties
     /// <summary>
-    /// The JSON message that is sent to Chromium
+    ///     The method executed by Chrome
     /// </summary>
-    internal class Message : MessageBase
+    [JsonProperty("method")]
+    public string Method { get; set; }
+
+    /// <summary>
+    ///     The parameters that we want to feed into Chromium
+    /// </summary>
+    [JsonProperty("params")]
+    public Dictionary<string, object> Parameters { get; set; }
+    #endregion
+
+    #region Constructor
+    /// <summary>
+    ///     Creates this object and sets it's needed properties
+    /// </summary>
+    public Message()
     {
-        #region Properties
-        /// <summary>
-        /// The method executed by Chrome
-        /// </summary>
-        [JsonProperty("method")]
-        public string Method { get; set; }
-
-        /// <summary>
-        /// The parameters that we want to feed into Chromium
-        /// </summary>
-        [JsonProperty("params")]
-        public Dictionary<string, object> Parameters { get; set; }
-        #endregion
-
-        #region Constructor
-        /// <summary>
-        /// Creates this object and sets it's needed properties
-        /// </summary>
-        public Message()
-        {
-            Id = 1;
-            Parameters = new Dictionary<string, object>();
-        }
-        #endregion
-
-        #region AddParaneter
-        /// <summary>
-        /// Add's a parameter to <see cref="Parameters"/>
-        /// </summary>
-        /// <param name="name">The name</param>
-        /// <param name="value">The value</param>
-        public void AddParameter(string name, object value)
-        {
-            Parameters.Add(name, value);   
-        }
-        #endregion
-
-        #region FromJson
-        /// <summary>
-        /// Returns this object deserialized from the given <paramref name="json"/> string
-        /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
-        public new static Message FromJson(string json) => JsonConvert.DeserializeObject<Message>(json);
-        #endregion
+        Id = 1;
+        Parameters = new Dictionary<string, object>();
     }
+    #endregion
+
+    #region AddParaneter
+    /// <summary>
+    ///     Add's a parameter to <see cref="Parameters" />
+    /// </summary>
+    /// <param name="name">The name</param>
+    /// <param name="value">The value</param>
+    public void AddParameter(string name, object value)
+    {
+        Parameters.Add(name, value);
+    }
+    #endregion
+
+    #region FromJson
+    /// <summary>
+    ///     Returns this object deserialized from the given <paramref name="json" /> string
+    /// </summary>
+    /// <param name="json"></param>
+    /// <returns></returns>
+    public new static Message FromJson(string json)
+    {
+        return JsonConvert.DeserializeObject<Message>(json);
+    }
+    #endregion
 }

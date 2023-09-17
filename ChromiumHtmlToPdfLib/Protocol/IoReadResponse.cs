@@ -27,59 +27,61 @@
 using System;
 using Newtonsoft.Json;
 
-namespace ChromiumHtmlToPdfLib.Protocol
+namespace ChromiumHtmlToPdfLib.Protocol;
+
+/// <summary>
+///     The JSON structure that is returned from Chromium when reading from an IO stream
+/// </summary>
+internal class IoReadResponse : MessageBase
 {
+    #region Properties
     /// <summary>
-    /// The JSON structure that is returned from Chromium when reading from an IO stream
+    ///     <see cref="IoReadResponseResult" />
     /// </summary>
-    internal class IoReadResponse : MessageBase
-    {
-        #region Properties        
-        /// <summary>
-        /// <see cref="IoReadResponseResult"/>
-        /// </summary>
-        [JsonProperty("result")]
-        public IoReadResponseResult Result { get; set; }
-        #endregion
+    [JsonProperty("result")]
+    public IoReadResponseResult Result { get; set; }
+    #endregion
 
-        #region FromJson
-        /// <summary>
-        /// Returns this object deserialized from the given <paramref name="json"/> string
-        /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
-        public new static IoReadResponse FromJson(string json) => JsonConvert.DeserializeObject<IoReadResponse>(json);
-        #endregion
+    #region FromJson
+    /// <summary>
+    ///     Returns this object deserialized from the given <paramref name="json" /> string
+    /// </summary>
+    /// <param name="json"></param>
+    /// <returns></returns>
+    public new static IoReadResponse FromJson(string json)
+    {
+        return JsonConvert.DeserializeObject<IoReadResponse>(json);
     }
+    #endregion
+}
+
+/// <summary>
+///     The chunk read
+/// </summary>
+internal class IoReadResponseResult
+{
+    #region Properties
+    /// <summary>
+    ///     Returns <c>true</c> when <see cref="Data" /> is base64 encoded
+    /// </summary>
+    [JsonProperty("base64Encoded")]
+    public bool Base64Encoded { get; set; }
 
     /// <summary>
-    /// The chunk read
+    ///     Returns the data as a base64 encoded string
     /// </summary>
-    internal class IoReadResponseResult
-    {
-        #region Properties
-        /// <summary>
-        /// Returns <c>true</c> when <see cref="Data"/> is base64 encoded
-        /// </summary>
-        [JsonProperty("base64Encoded")]
-        public bool Base64Encoded { get; set; }
+    [JsonProperty("data")]
+    public string Data { get; set; }
 
-        /// <summary>
-        /// Returns the data as a base64 encoded string
-        /// </summary>
-        [JsonProperty("data")]
-        public string Data { get; set; }
+    /// <summary>
+    ///     Returns <see cref="PrintToPdfResult.Data" /> as array of bytes
+    /// </summary>
+    public byte[] Bytes => Convert.FromBase64String(Data);
 
-        /// <summary>
-        /// Returns <see cref="PrintToPdfResult.Data"/> as array of bytes
-        /// </summary>
-        public byte[] Bytes => Convert.FromBase64String(Data);
-
-        /// <summary>
-        /// Returns <c>true</c> when at the end of the file
-        /// </summary>
-        [JsonProperty("eof")]
-        public bool Eof { get; set; }
-        #endregion
-    }
+    /// <summary>
+    ///     Returns <c>true</c> when at the end of the file
+    /// </summary>
+    [JsonProperty("eof")]
+    public bool Eof { get; set; }
+    #endregion
 }

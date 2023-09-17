@@ -26,118 +26,114 @@
 
 using Newtonsoft.Json;
 
-namespace ChromiumHtmlToPdfLib.Protocol
+namespace ChromiumHtmlToPdfLib.Protocol;
+
+/// <summary>
+///     The JSON structure that is returned from Chromium when an expression is evaluated
+/// </summary>
+internal class Expression : MessageBase
 {
+    #region Properties
     /// <summary>
-    /// The JSON structure that is returned from Chromium when an expression is evaluated
+    ///     <see cref="ExpressionResult" />
     /// </summary>
-    internal class Expression : MessageBase
-    {
-        #region Properties
-        /// <summary>
-        /// <see cref="ExpressionResult"/>
-        /// </summary>
-        [JsonProperty("result")]
-        public ExpressionResult Result { get; set; }
-        #endregion
+    [JsonProperty("result")]
+    public ExpressionResult Result { get; set; }
+    #endregion
 
-        #region FromJson
-        /// <summary>
-        /// Returns this object deserialized from the given <paramref name="json"/> string
-        /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
-        public new static Expression FromJson(string json) => JsonConvert.DeserializeObject<Expression>(json);
-        #endregion
-    }
-
+    #region FromJson
     /// <summary>
-    /// The result for an expression
+    ///     Returns this object deserialized from the given <paramref name="json" /> string
     /// </summary>
-    internal class ExpressionResult
+    /// <param name="json"></param>
+    /// <returns></returns>
+    public new static Expression FromJson(string json)
     {
-        #region Properties
-        /// <summary>
-        /// Returns an object when an exception occurs when Chromium evaluated the given expression
-        /// </summary>
-        [JsonProperty("exceptionDetails")]
-        public ExpressionExceptionDetails ExceptionDetails { get; set; }
-
-        /// <summary>
-        /// Returns the results for the given expression
-        /// </summary>
-        [JsonProperty("result")]
-        public ExpressionInnerResult InnerResult { get; set; }
-        #endregion
+        return JsonConvert.DeserializeObject<Expression>(json);
     }
+    #endregion
+}
+
+/// <summary>
+///     The result for an expression
+/// </summary>
+internal class ExpressionResult
+{
+    #region Properties
+    /// <summary>
+    ///     Returns an object when an exception occurs when Chromium evaluated the given expression
+    /// </summary>
+    [JsonProperty("exceptionDetails")]
+    public ExpressionExceptionDetails ExceptionDetails { get; set; }
 
     /// <summary>
-    /// The exact exception details for the expression that is sent to Chromium
+    ///     Returns the results for the given expression
     /// </summary>
-    internal class ExpressionExceptionDetails
-    {
-        #region Properties
-        /// <summary>
-        /// The column number where the exception occured
-        /// </summary>
-        [JsonProperty("columnNumber")]
-        public long ColumnNumber { get; set; }
+    [JsonProperty("result")]
+    public ExpressionInnerResult InnerResult { get; set; }
+    #endregion
+}
 
-        /// <summary>
-        /// <see cref="ExpressionInnerResult"/>
-        /// </summary>
-        [JsonProperty("exception")]
-        public ExpressionInnerResult Exception { get; set; }
-
-        /// <summary>
-        /// The exception id
-        /// </summary>
-        [JsonProperty("exceptionId")]
-        public long ExceptionId { get; set; }
-
-        /// <summary>
-        /// The line number where the exception occured
-        /// </summary>
-        [JsonProperty("lineNumber")]
-        public long LineNumber { get; set; }
-
-        /// <summary>
-        /// The script <see cref="MessageBase.Id"/>
-        /// </summary>
-        [JsonProperty("scriptId")]
-        public string ScriptId { get; set; }
-
-        /// <summary>
-        /// The text
-        /// </summary>
-        [JsonProperty("text")]
-        public string Text { get; set; }
-        #endregion
-    }
+/// <summary>
+///     The exact exception details for the expression that is sent to Chromium
+/// </summary>
+internal class ExpressionExceptionDetails
+{
+    #region Properties
+    /// <summary>
+    ///     The column number where the exception occured
+    /// </summary>
+    [JsonProperty("columnNumber")]
+    public long ColumnNumber { get; set; }
 
     /// <summary>
-    /// Part of the <see cref="ExpressionExceptionDetails"/> class
+    ///     <see cref="ExpressionInnerResult" />
     /// </summary>
-    internal class ExpressionInnerResult
-    {
-        #region Properties
-        [JsonProperty("className")]
-        public string ClassName { get; set; }
+    [JsonProperty("exception")]
+    public ExpressionInnerResult Exception { get; set; }
 
-        [JsonProperty("description")]
-        public string Description { get; set; }
+    /// <summary>
+    ///     The exception id
+    /// </summary>
+    [JsonProperty("exceptionId")]
+    public long ExceptionId { get; set; }
 
-        [JsonProperty("objectId")]
-        public string ObjectId { get; set; }
+    /// <summary>
+    ///     The line number where the exception occured
+    /// </summary>
+    [JsonProperty("lineNumber")]
+    public long LineNumber { get; set; }
 
-        [JsonProperty("subtype")]
-        public string Subtype { get; set; }
+    /// <summary>
+    ///     The script <see cref="MessageBase.Id" />
+    /// </summary>
+    [JsonProperty("scriptId")]
+    public string ScriptId { get; set; }
 
-        [JsonProperty("type")]
-        public string Type { get; set; }
+    /// <summary>
+    ///     The text
+    /// </summary>
+    [JsonProperty("text")]
+    public string Text { get; set; }
+    #endregion
+}
 
-        [JsonProperty("value")]
-        public string Value { get; set; }
-        #endregion
-    }
+/// <summary>
+///     Part of the <see cref="ExpressionExceptionDetails" /> class
+/// </summary>
+internal class ExpressionInnerResult
+{
+    #region Properties
+    [JsonProperty("className")] public string ClassName { get; set; }
+
+    [JsonProperty("description")] public string Description { get; set; }
+
+    [JsonProperty("objectId")] public string ObjectId { get; set; }
+
+    [JsonProperty("subtype")] public string Subtype { get; set; }
+
+    [JsonProperty("type")] public string Type { get; set; }
+
+    [JsonProperty("value")] public string Value { get; set; }
+    #endregion
 }

@@ -26,36 +26,41 @@
 
 using Newtonsoft.Json;
 
-namespace ChromiumHtmlToPdfLib.Protocol
+namespace ChromiumHtmlToPdfLib.Protocol;
+
+/// <summary>
+///     The base for a <see cref="Message" />
+/// </summary>
+internal class MessageBase
 {
+    #region Properties
     /// <summary>
-    /// The base for a <see cref="Message"/>
+    ///     The message id
     /// </summary>
-    internal class MessageBase
+    [JsonProperty("id")]
+    public int Id { get; set; }
+    #endregion
+
+    #region FromJson
+    /// <summary>
+    ///     Returns this object deserialized from the given <paramref name="json" /> string
+    /// </summary>
+    /// <param name="json"></param>
+    /// <returns></returns>
+    public static MessageBase FromJson(string json)
     {
-        #region Properties
-        /// <summary>
-        /// The message id
-        /// </summary>
-        [JsonProperty("id")]
-        public int Id { get; set; }
-        #endregion
-
-        #region FromJson
-        /// <summary>
-        /// Returns this object deserialized from the given <paramref name="json"/> string
-        /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
-        public static MessageBase FromJson(string json) => JsonConvert.DeserializeObject<MessageBase>(json);
-        #endregion
-
-        #region ToJson
-        /// <summary>
-        /// Returns this object as a JSON string
-        /// </summary>
-        /// <returns></returns>
-        public string ToJson() => JsonConvert.SerializeObject(this);
-        #endregion
+        return JsonConvert.DeserializeObject<MessageBase>(json);
     }
+    #endregion
+
+    #region ToJson
+    /// <summary>
+    ///     Returns this object as a JSON string
+    /// </summary>
+    /// <returns></returns>
+    public string ToJson()
+    {
+        return JsonConvert.SerializeObject(this);
+    }
+    #endregion
 }

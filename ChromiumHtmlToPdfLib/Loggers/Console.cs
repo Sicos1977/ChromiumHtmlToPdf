@@ -1,15 +1,14 @@
-﻿namespace ChromiumHtmlToPdfLib.Loggers
+﻿namespace ChromiumHtmlToPdfLib.Loggers;
+
+/// <summary>
+///     Writes log information to the console
+/// </summary>
+public class Console : Stream
 {
     /// <summary>
-    ///     Writes log information to the console
+    ///     Writes logging to the console
     /// </summary>
-    public class Console: Stream
+    public Console() : base(System.Console.OpenStandardOutput())
     {
-        /// <summary>
-        ///     Writes logging to the console
-        /// </summary>
-        public Console() : base(System.Console.OpenStandardOutput())
-        {
-        }
     }
 }

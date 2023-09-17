@@ -26,42 +26,40 @@
 
 using Newtonsoft.Json;
 
-namespace ChromiumHtmlToPdfLib.Protocol.Page
+namespace ChromiumHtmlToPdfLib.Protocol.Page;
+
+/// <summary>
+///     The JSON object that is returned from Chromium when navigation to a page
+/// </summary>
+internal class NavigateResponse : MessageBase
 {
+    #region Properties
+    [JsonProperty("result")] public NavigateResponseResult Result { get; set; }
+    #endregion
+
+    #region FromJson
     /// <summary>
-    /// The JSON object that is returned from Chromium when navigation to a page
+    ///     Returns this object deserialized from the given <paramref name="json" /> string
     /// </summary>
-    internal class NavigateResponse : MessageBase
+    /// <param name="json"></param>
+    /// <returns></returns>
+    public new static NavigateResponse FromJson(string json)
     {
-        #region Properties
-        [JsonProperty("result")]
-        public NavigateResponseResult Result { get; set; }
-        #endregion
-
-        #region FromJson
-        /// <summary>
-        /// Returns this object deserialized from the given <paramref name="json"/> string
-        /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
-        public new static NavigateResponse FromJson(string json) => JsonConvert.DeserializeObject<NavigateResponse>(json);
-        #endregion
+        return JsonConvert.DeserializeObject<NavigateResponse>(json);
     }
+    #endregion
+}
 
-    /// <summary>
-    /// The response
-    /// </summary>
-    internal class NavigateResponseResult
-    {
-        #region Properties
-        [JsonProperty("frameId")]
-        public string FrameId { get; set; }
+/// <summary>
+///     The response
+/// </summary>
+internal class NavigateResponseResult
+{
+    #region Properties
+    [JsonProperty("frameId")] public string FrameId { get; set; }
 
-        [JsonProperty("loaderId")]
-        public string LoaderId { get; set; }
+    [JsonProperty("loaderId")] public string LoaderId { get; set; }
 
-        [JsonProperty("errorText")]
-        public string ErrorText { get; set; }
-        #endregion
-    }
+    [JsonProperty("errorText")] public string ErrorText { get; set; }
+    #endregion
 }

@@ -27,119 +27,108 @@
 using System;
 using Newtonsoft.Json;
 
-namespace ChromiumHtmlToPdfLib.Protocol
+namespace ChromiumHtmlToPdfLib.Protocol;
+
+/// <summary>
+///     Returned by an <see cref="Evaluate" /> message when an error occurs
+/// </summary>
+internal class EvaluateError : MessageBase
 {
-    /// <summary>
-    ///     Returned by an <see cref="Evaluate" /> message when an error occurs
-    /// </summary>
-    internal class EvaluateError : MessageBase
-    {
-        #region Properties
-        [JsonProperty("result")]
-        public EvaluateErrorResult Result { get; set; }
-        #endregion
+    #region Properties
+    [JsonProperty("result")] public EvaluateErrorResult Result { get; set; }
+    #endregion
 
-        #region FromJson
-        public new static EvaluateError FromJson(string json) => JsonConvert.DeserializeObject<EvaluateError>(json);
-        #endregion
+    #region FromJson
+    public new static EvaluateError FromJson(string json)
+    {
+        return JsonConvert.DeserializeObject<EvaluateError>(json);
     }
+    #endregion
+}
 
-    /// <summary>
-    /// Part of the <see cref="EvaluateError"/> class
-    /// </summary>
-    internal class EvaluateErrorResult
+/// <summary>
+///     Part of the <see cref="EvaluateError" /> class
+/// </summary>
+internal class EvaluateErrorResult
+{
+    #region Properties
+    [JsonProperty("result")] public ExceptionClass Result { get; set; }
+
+    [JsonProperty("exceptionDetails")] public EvaluateErrorExceptionDetails ExceptionDetails { get; set; }
+    #endregion
+}
+
+/// <summary>
+///     Part of the <see cref="EvaluateError" /> class
+/// </summary>
+internal class EvaluateErrorExceptionDetails
+{
+    #region Properties
+    [JsonProperty("exceptionId")] public long ExceptionId { get; set; }
+
+    [JsonProperty("text")] public string Text { get; set; }
+
+    [JsonProperty("lineNumber")] public long LineNumber { get; set; }
+
+    [JsonProperty("columnNumber")] public long ColumnNumber { get; set; }
+
+    [JsonProperty("scriptId")]
+    [JsonConverter(typeof(EvaluateErrorParseStringConverter))]
+    public long ScriptId { get; set; }
+
+    [JsonProperty("exception")] public ExceptionClass Exception { get; set; }
+    #endregion
+}
+
+/// <summary>
+///     Part of the <see cref="EvaluateError" /> class
+/// </summary>
+internal class ExceptionClass
+{
+    #region Properties
+    [JsonProperty("type")] public string Type { get; set; }
+
+    [JsonProperty("subtype")] public string Subtype { get; set; }
+
+    [JsonProperty("className")] public string ClassName { get; set; }
+
+    [JsonProperty("description")] public string Description { get; set; }
+
+    [JsonProperty("objectId")] public string ObjectId { get; set; }
+    #endregion
+}
+
+internal class EvaluateErrorParseStringConverter : JsonConverter
+{
+    #region Properties
+    public override bool CanConvert(Type t)
     {
-        #region Properties
-        [JsonProperty("result")]
-        public ExceptionClass Result { get; set; }
-
-        [JsonProperty("exceptionDetails")]
-        public EvaluateErrorExceptionDetails ExceptionDetails { get; set; }
-        #endregion
+        return t == typeof(long) || t == typeof(long?);
     }
-    
-    /// <summary>
-    /// Part of the <see cref="EvaluateError"/> class
-    /// </summary>
-    internal class EvaluateErrorExceptionDetails
+    #endregion
+
+    #region ReadJson
+    public override object ReadJson(JsonReader reader, Type t, object existingValue, JsonSerializer serializer)
     {
-        #region Properties
-        [JsonProperty("exceptionId")]
-        public long ExceptionId { get; set; }
-
-        [JsonProperty("text")]
-        public string Text { get; set; }
-
-        [JsonProperty("lineNumber")]
-        public long LineNumber { get; set; }
-
-        [JsonProperty("columnNumber")]
-        public long ColumnNumber { get; set; }
-
-        [JsonProperty("scriptId")]
-        [JsonConverter(typeof(EvaluateErrorParseStringConverter))]
-        public long ScriptId { get; set; }
-
-        [JsonProperty("exception")]
-        public ExceptionClass Exception { get; set; }
-        #endregion
+        if (reader.TokenType == JsonToken.Null) return null;
+        var value = serializer.Deserialize<string>(reader);
+        if (long.TryParse(value, out var l))
+            return l;
+        throw new Exception("Cannot unmarshal type long");
     }
+    #endregion
 
-    /// <summary>
-    /// Part of the <see cref="EvaluateError"/> class
-    /// </summary>
-    internal class ExceptionClass
+    #region WriteJson
+    public override void WriteJson(JsonWriter writer, object untypedValue, JsonSerializer serializer)
     {
-        #region Properties
-        [JsonProperty("type")]
-        public string Type { get; set; }
-
-        [JsonProperty("subtype")]
-        public string Subtype { get; set; }
-
-        [JsonProperty("className")]
-        public string ClassName { get; set; }
-
-        [JsonProperty("description")]
-        public string Description { get; set; }
-
-        [JsonProperty("objectId")]
-        public string ObjectId { get; set; }
-        #endregion
-    }
-
-    internal class EvaluateErrorParseStringConverter : JsonConverter
-    {
-        #region Properties
-        public override bool CanConvert(Type t)
+        if (untypedValue == null)
         {
-            return t == typeof(long) || t == typeof(long?);
+            serializer.Serialize(writer, null);
+            return;
         }
-        #endregion
 
-        #region ReadJson
-        public override object ReadJson(JsonReader reader, Type t, object existingValue, JsonSerializer serializer)
-        {
-            if (reader.TokenType == JsonToken.Null) return null;
-            var value = serializer.Deserialize<string>(reader);
-            if (long.TryParse(value, out var l))
-                return l;
-            throw new Exception("Cannot unmarshal type long");
-        }
-        #endregion
-
-        #region WriteJson
-        public override void WriteJson(JsonWriter writer, object untypedValue, JsonSerializer serializer)
-        {
-            if (untypedValue == null)
-            {
-                serializer.Serialize(writer, null);
-                return;
-            }
-
-            var value = (long) untypedValue;
-            serializer.Serialize(writer, value.ToString());
-        }
-        #endregion
+        var value = (long)untypedValue;
+        serializer.Serialize(writer, value.ToString());
     }
+    #endregion
 }

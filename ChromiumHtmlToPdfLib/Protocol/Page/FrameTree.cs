@@ -26,51 +26,45 @@
 
 using Newtonsoft.Json;
 
-namespace ChromiumHtmlToPdfLib.Protocol.Page
+namespace ChromiumHtmlToPdfLib.Protocol.Page;
+
+internal class FrameTree
 {
-    internal class FrameTree
+    #region Properties
+    [JsonProperty("id")] public int Id { get; set; }
+
+    [JsonProperty("result")] public FrameTreeResponse Result { get; set; }
+    #endregion
+
+    #region FromJson
+    public static FrameTree FromJson(string json)
     {
-        #region Properties
-        [JsonProperty("id")]
-        public int Id { get; set; }
-
-        [JsonProperty("result")]
-        public FrameTreeResponse Result { get; set; }
-        #endregion
-
-        #region FromJson
-        public static FrameTree FromJson(string json) => JsonConvert.DeserializeObject<FrameTree>(json);
-        #endregion
+        return JsonConvert.DeserializeObject<FrameTree>(json);
     }
-
-    internal class FrameTreeResponse
-    {
-        #region Properties
-        [JsonProperty("frameTree")]
-        public FrameResponse FrameTree { get; set; }
-        #endregion
-    }
-
-    internal class FrameResponse
-    {
-        #region Properties
-        [JsonProperty("frame")]
-        public FrameBody Frame { get; set; }
-        #endregion
-    }
-
-    internal class FrameBody
-    {
-        #region Properties
-        [JsonProperty("id")]
-        public string Id { get; set; }
-
-        [JsonProperty("loaderId")]
-        public string LoaderId { get; set; }
-
-        [JsonProperty("url")]
-        public string Url { get; set; }
-        #endregion
-    }
+    #endregion
 }
 
+internal class FrameTreeResponse
+{
+    #region Properties
+    [JsonProperty("frameTree")] public FrameResponse FrameTree { get; set; }
+    #endregion
+}
+
+internal class FrameResponse
+{
+    #region Properties
+    [JsonProperty("frame")] public FrameBody Frame { get; set; }
+    #endregion
+}
+
+internal class FrameBody
+{
+    #region Properties
+    [JsonProperty("id")] public string Id { get; set; }
+
+    [JsonProperty("loaderId")] public string LoaderId { get; set; }
+
+    [JsonProperty("url")] public string Url { get; set; }
+    #endregion
+}

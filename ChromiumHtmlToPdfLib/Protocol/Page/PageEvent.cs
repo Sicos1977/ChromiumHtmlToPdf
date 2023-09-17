@@ -26,48 +26,50 @@
 
 using Newtonsoft.Json;
 
-namespace ChromiumHtmlToPdfLib.Protocol.Page
+namespace ChromiumHtmlToPdfLib.Protocol.Page;
+
+/// <summary>
+///     The JSON object that is returned when we asked Chrome to send page events
+/// </summary>
+internal class Event : Base
 {
+    #region Properties
     /// <summary>
-    /// The JSON object that is returned when we asked Chrome to send page events
+    ///     The parameters used with this <see cref="Base.Method" />
     /// </summary>
-    internal class Event : Base
-    {
-        #region Properties
-        /// <summary>
-        /// The parameters used with this <see cref="Base.Method"/>
-        /// </summary>
-        [JsonProperty("params")]
-        public EventParams Params { get; set; }
-        #endregion
+    [JsonProperty("params")]
+    public EventParams Params { get; set; }
+    #endregion
 
-        #region FromJson
-        /// <summary>
-        /// Returns this object deserialized from the given <paramref name="json"/> string
-        /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
-        public new static Event FromJson(string json) => JsonConvert.DeserializeObject<Event>(json);
-        #endregion
+    #region FromJson
+    /// <summary>
+    ///     Returns this object deserialized from the given <paramref name="json" /> string
+    /// </summary>
+    /// <param name="json"></param>
+    /// <returns></returns>
+    public new static Event FromJson(string json)
+    {
+        return JsonConvert.DeserializeObject<Event>(json);
     }
+    #endregion
+}
+
+/// <summary>
+///     Part of the <see cref="Event" /> class
+/// </summary>
+internal class EventParams
+{
+    #region Properties
+    /// <summary>
+    ///     The parameters name
+    /// </summary>
+    [JsonProperty("name")]
+    public string Name { get; set; }
 
     /// <summary>
-    /// Part of the <see cref="Event"/> class
+    ///     The timestamp
     /// </summary>
-    internal class EventParams
-    {
-        #region Properties
-        /// <summary>
-        /// The parameters name
-        /// </summary>
-        [JsonProperty("name")]
-        public string Name { get; set; }
-
-        /// <summary>
-        /// The timestamp
-        /// </summary>
-        [JsonProperty("timestamp")]
-        public long Timestamp { get; set; }
-        #endregion
-    }
+    [JsonProperty("timestamp")]
+    public long Timestamp { get; set; }
+    #endregion
 }

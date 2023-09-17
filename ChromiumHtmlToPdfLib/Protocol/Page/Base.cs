@@ -26,31 +26,30 @@
 
 using Newtonsoft.Json;
 
-namespace ChromiumHtmlToPdfLib.Protocol.Page
-{
-    /// <summary>
-    /// The base
-    /// </summary>
-    internal class Base
-    {
-        #region Properties
-        /// <summary>
-        /// The method executed by Chromium
-        /// </summary>
-        [JsonProperty("method")]
-        public string Method { get; set; }
-        #endregion
+namespace ChromiumHtmlToPdfLib.Protocol.Page;
 
-        #region FromJson
-        /// <summary>
-        /// Returns this object deserialized from the given <paramref name="json"/> string
-        /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
-        public static Base FromJson(string json)
-        {
-            return JsonConvert.DeserializeObject<Base>(json);
-        }
-        #endregion
+/// <summary>
+///     The base
+/// </summary>
+internal class Base
+{
+    #region Properties
+    /// <summary>
+    ///     The method executed by Chromium
+    /// </summary>
+    [JsonProperty("method")]
+    public string Method { get; set; }
+    #endregion
+
+    #region FromJson
+    /// <summary>
+    ///     Returns this object deserialized from the given <paramref name="json" /> string
+    /// </summary>
+    /// <param name="json"></param>
+    /// <returns></returns>
+    public static Base FromJson(string json)
+    {
+        return JsonConvert.DeserializeObject<Base>(json);
     }
+    #endregion
 }

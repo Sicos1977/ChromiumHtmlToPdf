@@ -28,51 +28,49 @@ using System.Globalization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
-namespace ChromiumHtmlToPdfLib.Protocol.Network
+namespace ChromiumHtmlToPdfLib.Protocol.Network;
+
+internal class LoadingFinished : Base
 {
-    internal class LoadingFinished : Base
+    #region Properties
+    [JsonProperty("params")] public LoadingFinishedParams Params { get; set; }
+    #endregion
+
+    #region FromJson
+    /// <summary>
+    ///     Returns this object deserialized from the given <paramref name="json" /> string
+    /// </summary>
+    /// <param name="json"></param>
+    /// <returns></returns>
+    public new static LoadingFinished FromJson(string json)
     {
-        #region Properties
-        [JsonProperty("params")]
-        public LoadingFinishedParams Params { get; set; }
-        #endregion
-
-        #region FromJson
-        /// <summary>
-        /// Returns this object deserialized from the given <paramref name="json"/> string
-        /// </summary>
-        /// <param name="json"></param>
-        /// <returns></returns>
-        public new static LoadingFinished FromJson(string json) => JsonConvert.DeserializeObject<LoadingFinished>(json, LoadingFinishedConverter.Settings);
-        #endregion
-    }
-
-    internal class LoadingFinishedParams
-    {
-        #region Properties
-        [JsonProperty("requestId")]
-        public string RequestId { get; set; }
-
-        [JsonProperty("timestamp")]
-        public double Timestamp { get; set; }
-
-        [JsonProperty("encodedDataLength")]
-        public long EncodedDataLength { get; set; }
-
-        [JsonProperty("shouldReportCorbBlocking")]
-        public bool ShouldReportCorbBlocking { get; set; }
-        #endregion
-    }
-
-    #region Static class LoadingFinishedConverter
-    internal static class LoadingFinishedConverter
-    {
-        public static readonly JsonSerializerSettings Settings = new JsonSerializerSettings
-        {
-            MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
-            DateParseHandling = DateParseHandling.None,
-            Converters = {new IsoDateTimeConverter {DateTimeStyles = DateTimeStyles.AssumeUniversal}}
-        };
+        return JsonConvert.DeserializeObject<LoadingFinished>(json, LoadingFinishedConverter.Settings);
     }
     #endregion
 }
+
+internal class LoadingFinishedParams
+{
+    #region Properties
+    [JsonProperty("requestId")] public string RequestId { get; set; }
+
+    [JsonProperty("timestamp")] public double Timestamp { get; set; }
+
+    [JsonProperty("encodedDataLength")] public long EncodedDataLength { get; set; }
+
+    [JsonProperty("shouldReportCorbBlocking")]
+    public bool ShouldReportCorbBlocking { get; set; }
+    #endregion
+}
+
+#region Static class LoadingFinishedConverter
+internal static class LoadingFinishedConverter
+{
+    public static readonly JsonSerializerSettings Settings = new()
+    {
+        MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
+        DateParseHandling = DateParseHandling.None,
+        Converters = { new IsoDateTimeConverter { DateTimeStyles = DateTimeStyles.AssumeUniversal } }
+    };
+}
+#endregion
