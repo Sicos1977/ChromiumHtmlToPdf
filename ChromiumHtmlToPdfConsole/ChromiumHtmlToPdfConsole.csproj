@@ -24,6 +24,7 @@
     <RootNamespace>ChromiumHtmlToPdfConsole</RootNamespace>
     <FileVersion>3.0.0.0</FileVersion>
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
