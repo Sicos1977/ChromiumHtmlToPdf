@@ -430,16 +430,6 @@ public class Converter : IDisposable
         get => !_useCache;
         set => _useCache = !value;
     }
-
-    /// <summary>
-    ///     When set then the new Chromium headless mode is used
-    /// </summary>
-    /// <remarks>
-    ///     In the near feature when Chromium decides to make this the default then
-    ///     probably this property will be removed. See https://developer.chrome.com/articles/new-headless/
-    ///     for more information
-    /// </remarks>
-    public bool UseNewHeadlessMode { get; set; }
     #endregion
 
     #region Constructor & Destructor
@@ -780,17 +770,7 @@ public class Converter : IDisposable
 
         _defaultChromiumArgument = new List<string>();
         // https://developer.chrome.com/articles/new-headless/
-        if (UseNewHeadlessMode)
-        {
-            WriteToLog("The property UseNewHeadlessMode has been set ... using the new --headless=new mode");
-            AddChromiumArgument("--headless", "new");
-        }
-        else
-        {
-            WriteToLog("Using the 'old' headless mode");
-            AddChromiumArgument("--headless");
-        }
-
+        AddChromiumArgument("--headless", "new");
         AddChromiumArgument("--disable-gpu");
         AddChromiumArgument("--hide-scrollbars");
         AddChromiumArgument("--mute-audio");
