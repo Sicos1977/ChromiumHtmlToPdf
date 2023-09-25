@@ -194,144 +194,131 @@ internal class DocumentHelper : IDisposable
     {
         outputUri = null;
 
-        using (var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : OpenDownloadStream(inputUri))
+        using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : OpenDownloadStream(inputUri);
+        var htmlChanged = false;
+        var config = Configuration.Default.WithCss();
+        var context = BrowsingContext.New(config);
+
+        IDocument document;
+
+        try
         {
-            var htmlChanged = false;
-            var config = Configuration.Default.WithCss();
-            var context = BrowsingContext.New(config);
+            // ReSharper disable AccessToDisposedClosure
+            document = inputUri.Encoding != null
+                ? context.OpenAsync(m =>
+                    m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}")
+                        .Address(inputUri.ToString())).Result
+                : context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString())).Result;
+            // ReSharper restore AccessToDisposedClosure
+        }
+        catch (Exception exception)
+        {
+            WriteToLog($"Exception occurred in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
+            return false;
+        }
 
-            IDocument document;
+        WriteToLog("Sanitizing HTML");
 
-            try
+        sanitizer ??= new HtmlSanitizer();
+
+        sanitizer.FilterUrl += delegate(object _, FilterUrlEventArgs args)
+        {
+            if (args.OriginalUrl == args.SanitizedUrl) return;
+            WriteToLog($"URL sanitized from '{args.OriginalUrl}' to '{args.SanitizedUrl}'");
+            htmlChanged = true;
+        };
+
+        sanitizer.RemovingAtRule += delegate(object _, RemovingAtRuleEventArgs args)
+        {
+            WriteToLog($"Removing CSS at-rule '{args.Rule.CssText}' from tag '{args.Tag.TagName}'");
+            htmlChanged = true;
+        };
+
+        sanitizer.RemovingAttribute += delegate(object _, RemovingAttributeEventArgs args)
+        {
+            WriteToLog($"Removing attribute '{args.Attribute.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+            htmlChanged = true;
+        };
+
+        sanitizer.RemovingComment += delegate(object _, RemovingCommentEventArgs args)
+        {
+            WriteToLog($"Removing comment '{args.Comment.TextContent}'");
+            htmlChanged = true;
+        };
+
+        sanitizer.RemovingCssClass += delegate(object _, RemovingCssClassEventArgs args)
+        {
+            WriteToLog($"Removing CSS class '{args.CssClass}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+            htmlChanged = true;
+        };
+
+        sanitizer.RemovingStyle += delegate(object _, RemovingStyleEventArgs args)
+        {
+            WriteToLog($"Removing style '{args.Style.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+            htmlChanged = true;
+        };
+
+        sanitizer.RemovingTag += delegate(object _, RemovingTagEventArgs args)
+        {
+            WriteToLog($"Removing tag '{args.Tag.TagName}', reason '{args.Reason}'");
+            htmlChanged = true;
+        };
+
+        sanitizer.SanitizeDom(document as IHtmlDocument);
+
+        if (!htmlChanged)
+        {
+            WriteToLog("HTML did not need any sanitization");
+            return false;
+        }
+
+        WriteToLog("HTML sanitized");
+
+        var sanitizedOutputFile = GetTempFile(".htm");
+        outputUri = new ConvertUri(sanitizedOutputFile, inputUri.Encoding);
+        var url = outputUri.ToString();
+        WriteToLog($"Adding url '{url}' to the safe url list");
+        safeUrls.Add(url);
+
+        try
+        {
+            if (document.BaseUrl.Scheme.StartsWith("file"))
             {
-                // ReSharper disable AccessToDisposedClosure
-                document = inputUri.Encoding != null
-                    ? context.OpenAsync(m =>
-                        m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}")
-                            .Address(inputUri.ToString())).Result
-                    : context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString())).Result;
-                // ReSharper restore AccessToDisposedClosure
-            }
-            catch (Exception exception)
-            {
-                WriteToLog($"Exception occurred in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
-                return false;
-            }
+                var images = document.DocumentElement.Descendents()
+                    .Where(x => x.NodeType == NodeType.Element)
+                    .OfType<IHtmlImageElement>();
 
-            WriteToLog("Sanitizing HTML");
-
-            if (sanitizer == null)
-                sanitizer = new HtmlSanitizer();
-
-            sanitizer.FilterUrl += delegate(object sender, FilterUrlEventArgs args)
-            {
-                if (args.OriginalUrl != args.SanitizedUrl)
+                foreach (var image in images)
                 {
-                    WriteToLog($"URL sanitized from '{args.OriginalUrl}' to '{args.SanitizedUrl}'");
-                    htmlChanged = true;
+                    var src = image.Source;
+
+                    if (src.StartsWith("http://", StringComparison.InvariantCultureIgnoreCase) ||
+                        src.StartsWith("https://", StringComparison.InvariantCultureIgnoreCase)) continue;
+
+                    WriteToLog($"Updating image source to '{src}' and adding it to the safe url list");
+                    safeUrls.Add(src);
+                    image.Source = src;
                 }
-            };
-
-            sanitizer.RemovingAtRule += delegate(object sender, RemovingAtRuleEventArgs args)
-            {
-                WriteToLog($"Removing CSS at-rule '{args.Rule.CssText}' from tag '{args.Tag.TagName}'");
-                htmlChanged = true;
-            };
-
-            sanitizer.RemovingAttribute += delegate(object sender, RemovingAttributeEventArgs args)
-            {
-                WriteToLog(
-                    $"Removing attribute '{args.Attribute.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
-                htmlChanged = true;
-            };
-
-            sanitizer.RemovingComment += delegate(object sender, RemovingCommentEventArgs args)
-            {
-                WriteToLog($"Removing comment '{args.Comment.TextContent}'");
-                htmlChanged = true;
-            };
-
-            sanitizer.RemovingCssClass += delegate(object sender, RemovingCssClassEventArgs args)
-            {
-                WriteToLog(
-                    $"Removing CSS class '{args.CssClass}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
-                htmlChanged = true;
-            };
-
-            sanitizer.RemovingStyle += delegate(object sender, RemovingStyleEventArgs args)
-            {
-                WriteToLog($"Removing style '{args.Style.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
-                htmlChanged = true;
-            };
-
-            sanitizer.RemovingTag += delegate(object sender, RemovingTagEventArgs args)
-            {
-                WriteToLog($"Removing tag '{args.Tag.TagName}', reason '{args.Reason}'");
-                htmlChanged = true;
-            };
-
-            sanitizer.SanitizeDom(document as IHtmlDocument);
-
-            if (!htmlChanged)
-            {
-                WriteToLog("HTML did not need any sanitization");
-                return false;
             }
 
-            WriteToLog("HTML sanitized");
+            WriteToLog($"Writing sanitized webpage to '{sanitizedOutputFile}'");
 
-            var sanitizedOutputFile = GetTempFile(".htm");
-            outputUri = new ConvertUri(sanitizedOutputFile, inputUri.Encoding);
-            var url = outputUri.ToString();
-            WriteToLog($"Adding url '{url}' to the safe url list");
-            safeUrls.Add(url);
+            using var fileStream = new FileStream(sanitizedOutputFile, FileMode.CreateNew, FileAccess.Write);
+            if (inputUri.Encoding != null)
+                using (var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
+                    document.ToHtml(textWriter, new HtmlMarkupFormatter());
+            else
+                using (var textWriter = new StreamWriter(fileStream))
+                    document.ToHtml(textWriter, new HtmlMarkupFormatter());
 
-            try
-            {
-                if (document.BaseUrl.Scheme.StartsWith("file"))
-                {
-                    var images = document.DocumentElement.Descendents()
-                        .Where(x => x.NodeType == NodeType.Element)
-                        .OfType<IHtmlImageElement>();
-
-                    foreach (var image in images)
-                    {
-                        var src = image.Source;
-
-                        if (src.StartsWith("http://", StringComparison.InvariantCultureIgnoreCase) ||
-                            src.StartsWith("https://", StringComparison.InvariantCultureIgnoreCase)) continue;
-
-                        WriteToLog($"Updating image source to '{src}' and adding it to the safe url list");
-                        safeUrls.Add(src);
-                        image.Source = src;
-                    }
-                }
-
-                WriteToLog($"Writing sanitized webpage to '{sanitizedOutputFile}'");
-
-                using (var fileStream = new FileStream(sanitizedOutputFile, FileMode.CreateNew, FileAccess.Write))
-                {
-                    if (inputUri.Encoding != null)
-                        using (var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
-                        {
-                            document.ToHtml(textWriter, new HtmlMarkupFormatter());
-                        }
-                    else
-                        using (var textWriter = new StreamWriter(fileStream))
-                        {
-                            document.ToHtml(textWriter, new HtmlMarkupFormatter());
-                        }
-                }
-
-                WriteToLog("Sanitized webpage written");
-                return true;
-            }
-            catch (Exception exception)
-            {
-                WriteToLog(
-                    $"Could not write new html file '{sanitizedOutputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
-                return false;
-            }
+            WriteToLog("Sanitized webpage written");
+            return true;
+        }
+        catch (Exception exception)
+        {
+            WriteToLog(
+                $"Could not write new html file '{sanitizedOutputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
+            return false;
         }
     }
     #endregion
@@ -509,7 +496,7 @@ internal class DocumentHelper : IDisposable
                 var httpClientHandler = new HttpClientHandler
                 {
                     Proxy = _webProxy,
-                    ServerCertificateCustomValidationCallback = (message, certificate, arg1, arg2) =>
+                    ServerCertificateCustomValidationCallback = (message, certificate, _, _) =>
                     {
                         WriteToLog($"Accepting certificate '{certificate.Subject}', message '{message}'");
                         return true;
@@ -767,15 +754,13 @@ internal class DocumentHelper : IDisposable
 
             try
             {
-                var base64Data = Regex.Match(imageSource, @"data:image/(?<type>.+?),(?<data>.+)").Groups["data"].Value;
+                var base64Data = Regex.Match(imageSource, "data:image/(?<type>.+?),(?<data>.+)").Groups["data"].Value;
                 var binaryData = Convert.FromBase64String(base64Data);
 
-                using (var stream = new MemoryStream(binaryData))
-                {
-                    var image = Image.FromStream(stream);
-                    WriteToLog("Image decoded");
-                    return image;
-                }
+                using var stream = new MemoryStream(binaryData);
+                var image = Image.FromStream(stream);
+                WriteToLog("Image decoded");
+                return image;
             }
             catch (Exception exception)
             {
