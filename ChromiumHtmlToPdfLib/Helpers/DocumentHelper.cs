@@ -221,54 +221,62 @@ internal class DocumentHelper : IDisposable
 
         sanitizer ??= new HtmlSanitizer();
 
-        sanitizer.FilterUrl += delegate(object _, FilterUrlEventArgs args)
+        try
         {
-            if (args.OriginalUrl == args.SanitizedUrl) return;
-            WriteToLog($"URL sanitized from '{args.OriginalUrl}' to '{args.SanitizedUrl}'");
-            htmlChanged = true;
-        };
+            sanitizer.FilterUrl += delegate(object _, FilterUrlEventArgs args)
+            {
+                if (args.OriginalUrl == args.SanitizedUrl) return;
+                WriteToLog($"URL sanitized from '{args.OriginalUrl}' to '{args.SanitizedUrl}'");
+                htmlChanged = true;
+            };
 
-        sanitizer.RemovingAtRule += delegate(object _, RemovingAtRuleEventArgs args)
+            sanitizer.RemovingAtRule += delegate(object _, RemovingAtRuleEventArgs args)
+            {
+                WriteToLog($"Removing CSS at-rule '{args.Rule.CssText}' from tag '{args.Tag.TagName}'");
+                htmlChanged = true;
+            };
+
+            sanitizer.RemovingAttribute += delegate(object _, RemovingAttributeEventArgs args)
+            {
+                WriteToLog($"Removing attribute '{args.Attribute.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                htmlChanged = true;
+            };
+
+            sanitizer.RemovingComment += delegate(object _, RemovingCommentEventArgs args)
+            {
+                WriteToLog($"Removing comment '{args.Comment.TextContent}'");
+                htmlChanged = true;
+            };
+
+            sanitizer.RemovingCssClass += delegate(object _, RemovingCssClassEventArgs args)
+            {
+                WriteToLog($"Removing CSS class '{args.CssClass}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                htmlChanged = true;
+            };
+
+            sanitizer.RemovingStyle += delegate(object _, RemovingStyleEventArgs args)
+            {
+                WriteToLog($"Removing style '{args.Style.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                htmlChanged = true;
+            };
+
+            sanitizer.RemovingTag += delegate(object _, RemovingTagEventArgs args)
+            {
+                WriteToLog($"Removing tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                htmlChanged = true;
+            };
+
+            sanitizer.SanitizeDom(document as IHtmlDocument);
+
+            if (!htmlChanged)
+            {
+                WriteToLog("HTML did not need any sanitization");
+                return false;
+            }
+        }
+        catch (Exception exception)
         {
-            WriteToLog($"Removing CSS at-rule '{args.Rule.CssText}' from tag '{args.Tag.TagName}'");
-            htmlChanged = true;
-        };
-
-        sanitizer.RemovingAttribute += delegate(object _, RemovingAttributeEventArgs args)
-        {
-            WriteToLog($"Removing attribute '{args.Attribute.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
-            htmlChanged = true;
-        };
-
-        sanitizer.RemovingComment += delegate(object _, RemovingCommentEventArgs args)
-        {
-            WriteToLog($"Removing comment '{args.Comment.TextContent}'");
-            htmlChanged = true;
-        };
-
-        sanitizer.RemovingCssClass += delegate(object _, RemovingCssClassEventArgs args)
-        {
-            WriteToLog($"Removing CSS class '{args.CssClass}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
-            htmlChanged = true;
-        };
-
-        sanitizer.RemovingStyle += delegate(object _, RemovingStyleEventArgs args)
-        {
-            WriteToLog($"Removing style '{args.Style.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
-            htmlChanged = true;
-        };
-
-        sanitizer.RemovingTag += delegate(object _, RemovingTagEventArgs args)
-        {
-            WriteToLog($"Removing tag '{args.Tag.TagName}', reason '{args.Reason}'");
-            htmlChanged = true;
-        };
-
-        sanitizer.SanitizeDom(document as IHtmlDocument);
-
-        if (!htmlChanged)
-        {
-            WriteToLog("HTML did not need any sanitization");
+            WriteToLog($"Exception occurred in HtmlSanitizer: {ExceptionHelpers.GetInnerException(exception)}");
             return false;
         }
 
