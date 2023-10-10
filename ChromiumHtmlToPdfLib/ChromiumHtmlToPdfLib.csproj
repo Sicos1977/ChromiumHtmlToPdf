@@ -30,7 +30,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AngleSharp" Version="1.0.4" />
+    <PackageReference Include="AngleSharp" Version="1.0.5" />
     <PackageReference Include="AngleSharp.Css" Version="0.17.0" />
     <PackageReference Include="AngleSharp.Io" Version="1.0.0" />
     <PackageReference Include="AngleSharp.Xml" Version="1.0.0" />
