@@ -35,6 +35,7 @@ using System.Net;
 using System.Net.Cache;
 using System.Net.Http;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using AngleSharp;
 using AngleSharp.Css.Dom;
 using AngleSharp.Dom;
@@ -172,7 +173,7 @@ internal class DocumentHelper : IDisposable
     }
     #endregion
 
-    #region SanitizeHtml
+    #region SanitizeHtmlAsync
     /// <summary>
     ///     Sanitizes the HTML by removing all forbidden elements
     /// </summary>
@@ -180,21 +181,11 @@ internal class DocumentHelper : IDisposable
     /// <param name="sanitizer">
     ///     <see cref="HtmlSanitizer" />
     /// </param>
-    /// <param name="outputUri">
-    ///     The outputUri when this method returns <c>false</c> otherwise
-    ///     <c>null</c> is returned
-    /// </param>
     /// <param name="safeUrls">A list of safe URL's</param>
     /// <returns></returns>
-    public bool SanitizeHtml(
-        ConvertUri inputUri,
-        HtmlSanitizer sanitizer,
-        out ConvertUri outputUri,
-        ref List<string> safeUrls)
+    public async Task<SanitizeHtmlResult> SanitizeHtmlAsync(ConvertUri inputUri, HtmlSanitizer sanitizer, List<string> safeUrls)
     {
-        outputUri = null;
-
-        using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : OpenDownloadStream(inputUri);
+        await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri);
         var htmlChanged = false;
         var config = Configuration.Default.WithCss();
         var context = BrowsingContext.New(config);
@@ -205,16 +196,14 @@ internal class DocumentHelper : IDisposable
         {
             // ReSharper disable AccessToDisposedClosure
             document = inputUri.Encoding != null
-                ? context.OpenAsync(m =>
-                    m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}")
-                        .Address(inputUri.ToString())).Result
-                : context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString())).Result;
+                ? await context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString()))
+                : await context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString()));
             // ReSharper restore AccessToDisposedClosure
         }
         catch (Exception exception)
         {
             WriteToLog($"Exception occurred in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
-            return false;
+            return new SanitizeHtmlResult(false, inputUri, safeUrls);
         }
 
         WriteToLog("Sanitizing HTML");
@@ -271,19 +260,19 @@ internal class DocumentHelper : IDisposable
             if (!htmlChanged)
             {
                 WriteToLog("HTML did not need any sanitization");
-                return false;
+                return new SanitizeHtmlResult(false, inputUri, safeUrls);
             }
         }
         catch (Exception exception)
         {
             WriteToLog($"Exception occurred in HtmlSanitizer: {ExceptionHelpers.GetInnerException(exception)}");
-            return false;
+            return new SanitizeHtmlResult(false, inputUri, safeUrls);
         }
 
         WriteToLog("HTML sanitized");
 
         var sanitizedOutputFile = GetTempFile(".htm");
-        outputUri = new ConvertUri(sanitizedOutputFile, inputUri.Encoding);
+        var outputUri = new ConvertUri(sanitizedOutputFile, inputUri.Encoding);
         var url = outputUri.ToString();
         WriteToLog($"Adding url '{url}' to the safe url list");
         safeUrls.Add(url);
@@ -311,140 +300,125 @@ internal class DocumentHelper : IDisposable
 
             WriteToLog($"Writing sanitized webpage to '{sanitizedOutputFile}'");
 
-            using var fileStream = new FileStream(sanitizedOutputFile, FileMode.CreateNew, FileAccess.Write);
+            await using var fileStream = new FileStream(sanitizedOutputFile, FileMode.CreateNew, FileAccess.Write);
             if (inputUri.Encoding != null)
-                using (var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
+                await using (var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
                     document.ToHtml(textWriter, new HtmlMarkupFormatter());
             else
-                using (var textWriter = new StreamWriter(fileStream))
+                await using (var textWriter = new StreamWriter(fileStream))
                     document.ToHtml(textWriter, new HtmlMarkupFormatter());
 
             WriteToLog("Sanitized webpage written");
-            return true;
+            return new SanitizeHtmlResult(true, outputUri, safeUrls);
         }
         catch (Exception exception)
         {
-            WriteToLog(
-                $"Could not write new html file '{sanitizedOutputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
-            return false;
+            WriteToLog($"Could not write new html file '{sanitizedOutputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
+            return new SanitizeHtmlResult(false, inputUri, safeUrls);
         }
     }
     #endregion
 
-    #region FitPageToContent
+    #region FitPageToContentAsync
     /// <summary>
     ///     Opens the webpage and adds code to make it fit the page
     /// </summary>
     /// <param name="inputUri">The uri of the webpage</param>
-    /// <param name="outputUri">
-    ///     The outputUri when this method returns <c>false</c> otherwise
-    ///     <c>null</c> is returned
-    /// </param>
-    /// <returns></returns>
-    public bool FitPageToContent(ConvertUri inputUri, out ConvertUri outputUri)
+    /// <returns><see cref="FitPageToContentResult"/></returns>
+    public async Task<FitPageToContentResult> FitPageToContentAsync(ConvertUri inputUri)
     {
-        outputUri = null;
+        await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri);
 
-        using (var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : OpenDownloadStream(inputUri))
+        var config = Configuration.Default.WithCss();
+        var context = BrowsingContext.New(config);
+
+        IDocument document;
+
+        try
         {
-            var config = Configuration.Default.WithCss();
-            var context = BrowsingContext.New(config);
+            // ReSharper disable AccessToDisposedClosure
+            document = inputUri.Encoding != null
+                ? await context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString()))
+                : await context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString()));
+            // ReSharper restore AccessToDisposedClosure
 
-            IDocument document;
-
-            try
+            var styleElement = new HtmlElement(document as Document, "style")
             {
-                // ReSharper disable AccessToDisposedClosure
-                document = inputUri.Encoding != null
-                    ? context.OpenAsync(m =>
-                        m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}")
-                            .Address(inputUri.ToString())).Result
-                    : context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString())).Result;
-                // ReSharper restore AccessToDisposedClosure
+                InnerHtml = "html, body " + Environment.NewLine +
+                            "{" + Environment.NewLine +
+                            "   width: fit-content;" + Environment.NewLine +
+                            "   height: fit-content;" + Environment.NewLine +
+                            "   margin: 0px;" + Environment.NewLine +
+                            "   padding: 0px;" + Environment.NewLine +
+                            "}" + Environment.NewLine
+            };
 
-                var styleElement = new HtmlElement(document as Document, "style")
-                {
-                    InnerHtml = "html, body " + Environment.NewLine +
-                                "{" + Environment.NewLine +
-                                "   width: fit-content;" + Environment.NewLine +
-                                "   height: fit-content;" + Environment.NewLine +
-                                "   margin: 0px;" + Environment.NewLine +
-                                "   padding: 0px;" + Environment.NewLine +
-                                "}" + Environment.NewLine
-                };
+            document.Head.AppendElement(styleElement);
 
-                document.Head.AppendElement(styleElement);
-
-                var pageStyleElement = new HtmlElement(document as Document, "style")
-                {
-                    Id = "pagestyle",
-                    InnerHtml = "@page " + Environment.NewLine +
-                                "{ " + Environment.NewLine +
-                                "   size: 595px 842px ; " + Environment.NewLine +
-                                "   margin: 0px " + Environment.NewLine +
-                                "}" + Environment.NewLine
-                };
-
-                document.Head.AppendElement(pageStyleElement);
-
-                var pageElement = new HtmlElement(document as Document, "script")
-                {
-                    InnerHtml = "window.onload = function () {" + Environment.NewLine +
-                                "" + Environment.NewLine +
-                                "   var page = document.getElementsByTagName('html')[0];" + Environment.NewLine +
-                                "   var pageInfo = window.getComputedStyle(page);" + Environment.NewLine + "" +
-                                Environment.NewLine +
-                                "   var height = parseInt(pageInfo.height) + 10 + 'px';" + Environment.NewLine +
-                                "" + Environment.NewLine +
-                                "   var pageCss = '@page { size: ' + pageInfo.width + ' ' + height + '; margin: 0; }'" +
-                                Environment.NewLine +
-                                "   document.getElementById('pagestyle').innerHTML = pageCss;" + Environment.NewLine +
-                                "}" + Environment.NewLine
-                };
-
-                document.Body.AppendElement(pageElement);
-            }
-            catch (Exception exception)
+            var pageStyleElement = new HtmlElement(document as Document, "style")
             {
-                WriteToLog($"Exception occurred in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
-                return false;
-            }
+                Id = "pagestyle",
+                InnerHtml = "@page " + Environment.NewLine +
+                            "{ " + Environment.NewLine +
+                            "   size: 595px 842px ; " + Environment.NewLine +
+                            "   margin: 0px " + Environment.NewLine +
+                            "}" + Environment.NewLine
+            };
 
-            var outputFile = GetTempFile(".htm");
-            outputUri = new ConvertUri(outputFile, inputUri.Encoding);
+            document.Head.AppendElement(pageStyleElement);
 
-            try
+            var pageElement = new HtmlElement(document as Document, "script")
             {
-                WriteToLog($"Writing changed webpage to '{outputFile}'");
+                InnerHtml = "window.onload = function () {" + Environment.NewLine +
+                            "" + Environment.NewLine +
+                            "   var page = document.getElementsByTagName('html')[0];" + Environment.NewLine +
+                            "   var pageInfo = window.getComputedStyle(page);" + Environment.NewLine + "" +
+                            Environment.NewLine +
+                            "   var height = parseInt(pageInfo.height) + 10 + 'px';" + Environment.NewLine +
+                            "" + Environment.NewLine +
+                            "   var pageCss = '@page { size: ' + pageInfo.width + ' ' + height + '; margin: 0; }'" +
+                            Environment.NewLine +
+                            "   document.getElementById('pagestyle').innerHTML = pageCss;" + Environment.NewLine +
+                            "}" + Environment.NewLine
+            };
 
-                using (var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write))
-                {
-                    if (inputUri.Encoding != null)
-                        using (var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
-                        {
-                            document.ToHtml(textWriter, new HtmlMarkupFormatter());
-                        }
-                    else
-                        using (var textWriter = new StreamWriter(fileStream))
-                        {
-                            document.ToHtml(textWriter, new HtmlMarkupFormatter());
-                        }
-                }
+            document.Body.AppendElement(pageElement);
+        }
+        catch (Exception exception)
+        {
+            WriteToLog($"Exception occurred in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
+            return new FitPageToContentResult(false, inputUri);
+        }
 
-                WriteToLog("Changed webpage written");
-                return true;
-            }
-            catch (Exception exception)
+        var outputFile = GetTempFile(".htm");
+        var outputUri = new ConvertUri(outputFile, inputUri.Encoding);
+
+        try
+        {
+            WriteToLog($"Writing changed webpage to '{outputFile}'");
+
+            await using (var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write))
             {
-                WriteToLog(
-                    $"Could not write new html file '{outputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
-                return false;
+                if (inputUri.Encoding != null)
+                    await using (var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
+                        document.ToHtml(textWriter, new HtmlMarkupFormatter());
+                else
+                    await using (var textWriter = new StreamWriter(fileStream))
+                        document.ToHtml(textWriter, new HtmlMarkupFormatter());
             }
+
+            WriteToLog("Changed webpage written");
+            return new FitPageToContentResult(true, outputUri);
+        }
+        catch (Exception exception)
+        {
+            WriteToLog($"Could not write new html file '{outputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
+            return new FitPageToContentResult(false, inputUri);
         }
     }
     #endregion
 
-    #region ValidateImages
+    #region ValidateImagesAsync
     /// <summary>
     ///     Validates all images if they are rotated correctly (when <paramref name="rotate" /> is set
     ///     to <c>true</c>) and fit on the given <paramref name="pageSettings" />.
@@ -457,304 +431,280 @@ internal class DocumentHelper : IDisposable
     ///     When set to <c>true</c> then the EXIF information of an
     ///     image is read and when needed the image is automatic rotated
     /// </param>
-    /// <param name="pageSettings">
-    ///     <see cref="PageSettings" />
-    /// </param>
-    /// <param name="outputUri">
-    ///     The outputUri when this method returns <c>true</c> otherwise
-    ///     <c>null</c> is returned
-    /// </param>
+    /// <param name="pageSettings"><see cref="PageSettings" /></param>
     /// <param name="urlBlacklist">A list of URL's that need to be blocked (use * as a wildcard)</param>
     /// <param name="safeUrls">A list with URL's that are safe to load</param>
     /// <returns>Returns <c>false</c> when the images dit not fit the page, otherwise <c>true</c></returns>
     /// <exception cref="WebException">Raised when the webpage from <paramref name="inputUri" /> could not be downloaded</exception>
-    public bool ValidateImages(
+    public async Task<ValidateImagesResult> ValidateImagesAsync(
         ConvertUri inputUri,
         bool resize,
         bool rotate,
         PageSettings pageSettings,
-        out ConvertUri outputUri,
-        ref List<string> safeUrls,
+        List<string> safeUrls,
         List<string> urlBlacklist)
     {
-        outputUri = null;
+        using var graphics = Graphics.FromHwnd(IntPtr.Zero);
+        await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri);
+        
+        WriteToLog($"DPI settings for image, x: '{graphics.DpiX}' and y: '{graphics.DpiY}'");
+        var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft - pageSettings.MarginRight) * graphics.DpiX;
+        var maxHeight = (pageSettings.PaperHeight - pageSettings.MarginTop - pageSettings.MarginBottom) * graphics.DpiY;
 
-        using (var graphics = Graphics.FromHwnd(IntPtr.Zero))
-        using (var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : OpenDownloadStream(inputUri))
+        string localDirectory = null;
+
+        if (inputUri.IsFile)
+            localDirectory = Path.GetDirectoryName(inputUri.OriginalString);
+
+        var htmlChanged = false;
+
+        IConfiguration config;
+
+        if (_webProxy != null)
         {
-            WriteToLog($"DPI settings for image, x: '{graphics.DpiX}' and y: '{graphics.DpiY}'");
-            var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft - pageSettings.MarginRight) *
-                           graphics.DpiX;
-            var maxHeight = (pageSettings.PaperHeight - pageSettings.MarginTop - pageSettings.MarginBottom) *
-                            graphics.DpiY;
+            WriteToLog($"Using web proxy '{_webProxy.Address}' to download images");
 
-            string localDirectory = null;
-
-            if (inputUri.IsFile)
-                localDirectory = Path.GetDirectoryName(inputUri.OriginalString);
-
-            var htmlChanged = false;
-
-            IConfiguration config;
-
-            if (_webProxy != null)
+            var httpClientHandler = new HttpClientHandler
             {
-                WriteToLog($"Using web proxy '{_webProxy.Address}' to download images");
-
-                var httpClientHandler = new HttpClientHandler
+                Proxy = _webProxy,
+                ServerCertificateCustomValidationCallback = (message, certificate, _, _) =>
                 {
-                    Proxy = _webProxy,
-                    ServerCertificateCustomValidationCallback = (message, certificate, _, _) =>
-                    {
-                        WriteToLog($"Accepting certificate '{certificate.Subject}', message '{message}'");
-                        return true;
-                    }
-                };
+                    WriteToLog($"Accepting certificate '{certificate.Subject}', message '{message}'");
+                    return true;
+                }
+            };
 
-                var client = new HttpClient(httpClientHandler);
-                config = Configuration.Default
-                    .With(new HttpClientRequester(client))
-                    .WithTemporaryCookies()
-                    .WithDefaultLoader()
-                    .WithCss();
+            var client = new HttpClient(httpClientHandler);
+            config = Configuration.Default
+                .With(new HttpClientRequester(client))
+                .WithTemporaryCookies()
+                .WithDefaultLoader()
+                .WithCss();
+        }
+        else
+        {
+            config = Configuration.Default.WithCss();
+        }
+
+        var context = BrowsingContext.New(config);
+
+        IDocument document;
+
+        try
+        {
+            document = inputUri.Encoding != null
+                ? await context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString()))
+                : await context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString()));
+        }
+        catch (Exception exception)
+        {
+            WriteToLog($"Exception occurred in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
+            return new ValidateImagesResult(false, inputUri);
+        }
+
+        WriteToLog("Validating all images if they need to be rotated and if they fit the page");
+        var unchangedImages = new List<IHtmlImageElement>();
+        var absoluteUri = inputUri.AbsoluteUri.Substring(0, inputUri.AbsoluteUri.LastIndexOf('/') + 1);
+
+        // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
+        foreach (var htmlImage in document.Images)
+        {
+            var imageChanged = false;
+
+            if (string.IsNullOrWhiteSpace(htmlImage.Source))
+            {
+                WriteToLog($"HTML image tag '{htmlImage.TagName}' has no image source '{htmlImage.Source}'");
+                continue;
+            }
+
+            Image image = null;
+
+            var source = htmlImage.Source.Contains("?") ? htmlImage.Source.Split('?')[0] : htmlImage.Source;
+            var isSafeUrl = safeUrls.Contains(source);
+            var isAbsoluteUri = source.StartsWith(absoluteUri, StringComparison.InvariantCultureIgnoreCase);
+
+            if (!RegularExpression.IsRegExMatch(urlBlacklist, source, out var matchedPattern) || isAbsoluteUri || isSafeUrl)
+            {
+                if (isAbsoluteUri)
+                    WriteToLog($"The url '{source}' has been allowed because it start with the absolute uri '{absoluteUri}'");
+                else if (isSafeUrl)
+                    WriteToLog($"The url '{source}' has been allowed because it is on the safe url list");
+                else
+                    WriteToLog($"The url '{source}' has been allowed because it did not match anything on the url blacklist");
             }
             else
             {
-                config = Configuration.Default.WithCss();
+                WriteToLog($"The url '{source}' has been blocked by url blacklist pattern '{matchedPattern}'");
+                continue;
             }
 
-            var context = BrowsingContext.New(config);
-
-            IDocument document;
+            var extension = Path.GetExtension(FileManager.RemoveInvalidFileNameChars(source));
+            var fileName = GetTempFile(extension);
 
             try
             {
-                // ReSharper disable AccessToDisposedClosure
-                document = inputUri.Encoding != null
-                    ? context.OpenAsync(m =>
-                        m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}")
-                            .Address(inputUri.ToString())).Result
-                    : context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString())).Result;
-                // ReSharper restore AccessToDisposedClosure
-            }
-            catch (Exception exception)
-            {
-                WriteToLog($"Exception occurred in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
-                return false;
-            }
+                // The local width and height attributes always go before css width and height
+                var width = htmlImage.DisplayWidth;
+                var height = htmlImage.DisplayHeight;
 
-            WriteToLog("Validating all images if they need to be rotated and if they fit the page");
-            var unchangedImages = new List<IHtmlImageElement>();
-            var absoluteUri = inputUri.AbsoluteUri.Substring(0, inputUri.AbsoluteUri.LastIndexOf('/') + 1);
-
-            // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
-            foreach (var htmlImage in document.Images)
-            {
-                var imageChanged = false;
-
-                if (string.IsNullOrWhiteSpace(htmlImage.Source))
+                if (rotate)
                 {
-                    WriteToLog($"HTML image tag '{htmlImage.TagName}' has no image source '{htmlImage.Source}'");
-                    continue;
-                }
+                    image = await GetImageAsync(htmlImage.Source, localDirectory);
 
-                Image image = null;
+                    if (image == null) continue;
 
-                var source = htmlImage.Source.Contains("?") ? htmlImage.Source.Split('?')[0] : htmlImage.Source;
-                var isSafeUrl = safeUrls.Contains(source);
-                var isAbsoluteUri = source.StartsWith(absoluteUri, StringComparison.InvariantCultureIgnoreCase);
-
-                if (!RegularExpression.IsRegExMatch(urlBlacklist, source, out var matchedPattern) ||
-                    isAbsoluteUri || isSafeUrl)
-                {
-                    if (isAbsoluteUri)
-                        WriteToLog(
-                            $"The url '{source}' has been allowed because it start with the absolute uri '{absoluteUri}'");
-                    else if (isSafeUrl)
-                        WriteToLog($"The url '{source}' has been allowed because it is on the safe url list");
-                    else
-                        WriteToLog(
-                            $"The url '{source}' has been allowed because it did not match anything on the url blacklist");
-                }
-                else
-                {
-                    WriteToLog($"The url '{source}' has been blocked by url blacklist pattern '{matchedPattern}'");
-                    continue;
-                }
-
-                var extension = Path.GetExtension(FileManager.RemoveInvalidFileNameChars(source));
-                var fileName = GetTempFile(extension);
-
-                try
-                {
-                    // The local width and height attributes always go before css width and height
-                    var width = htmlImage.DisplayWidth;
-                    var height = htmlImage.DisplayHeight;
-
-                    if (rotate)
+                    if (RotateImageByExifOrientationData(image))
                     {
-                        image = GetImage(htmlImage.Source, localDirectory);
+                        htmlImage.DisplayWidth = image.Width;
+                        htmlImage.DisplayHeight = image.Height;
+                        WriteToLog($"Image rotated and saved to location '{fileName}'");
+                        image.Save(fileName);
+                        htmlImage.DisplayWidth = image.Width;
+                        htmlImage.DisplayHeight = image.Height;
+                        htmlImage.SetStyle(string.Empty);
+                        var newSrc = new Uri(fileName).ToString();
+                        WriteToLog($"Adding url '{newSrc}' to the safe url list");
+                        safeUrls.Add(newSrc);
+                        htmlImage.Source = newSrc;
+                        htmlChanged = true;
+                        imageChanged = true;
+                    }
 
-                        if (image == null) continue;
+                    width = image.Width;
+                    height = image.Height;
+                }
 
-                        if (RotateImageByExifOrientationData(image))
+                if (resize)
+                {
+                    if (height == 0 && width == 0)
+                    {
+                        ICssStyleDeclaration style = null;
+
+                        try
                         {
-                            htmlImage.DisplayWidth = image.Width;
-                            htmlImage.DisplayHeight = image.Height;
-                            WriteToLog($"Image rotated and saved to location '{fileName}'");
-                            image.Save(fileName);
-                            htmlImage.DisplayWidth = image.Width;
-                            htmlImage.DisplayHeight = image.Height;
-                            htmlImage.SetStyle(string.Empty);
-                            var newSrc = new Uri(fileName).ToString();
-                            WriteToLog($"Adding url '{newSrc}' to the safe url list");
-                            safeUrls.Add(newSrc);
-                            htmlImage.Source = newSrc;
-                            htmlChanged = true;
-                            imageChanged = true;
+                            style = context.Current.GetComputedStyle(htmlImage);
+                        }
+                        catch (Exception exception)
+                        {
+                            WriteToLog(
+                                $"Could not get computed style from html image, exception: '{exception.Message}'");
                         }
 
+                        if (style != null)
+                        {
+                            width = ParseValue(style.GetPropertyValue("width"));
+                            height = ParseValue(style.GetPropertyValue("height"));
+                        }
+                    }
+
+                    // If we don't know the image size then get if from the image itself
+                    if (width <= 0 || height <= 0)
+                    {
+                        image ??= await GetImageAsync(htmlImage.Source, localDirectory);
+                        if (image == null) continue;
                         width = image.Width;
                         height = image.Height;
                     }
 
-                    if (resize)
+                    if (width > maxWidth || height > maxHeight)
                     {
-                        if (height == 0 && width == 0)
-                        {
-                            ICssStyleDeclaration style = null;
+                        // If we did not load the image already then load it
 
-                            try
-                            {
-                                style = context.Current.GetComputedStyle(htmlImage);
-                            }
-                            catch (Exception exception)
-                            {
-                                WriteToLog(
-                                    $"Could not get computed style from html image, exception: '{exception.Message}'");
-                            }
+                        image ??= await GetImageAsync(htmlImage.Source, localDirectory);
+                        if (image == null) continue;
 
-                            if (style != null)
-                            {
-                                width = ParseValue(style.GetPropertyValue("width"));
-                                height = ParseValue(style.GetPropertyValue("height"));
-                            }
-                        }
-
-                        // If we don't know the image size then get if from the image itself
-                        if (width <= 0 || height <= 0)
-                        {
-                            if (image == null)
-                                image = GetImage(htmlImage.Source, localDirectory);
-
-                            if (image == null) continue;
-                            width = image.Width;
-                            height = image.Height;
-                        }
-
-                        if (width > maxWidth || height > maxHeight)
-                        {
-                            // If we did not load the image already then load it
-
-                            if (image == null)
-                                image = GetImage(htmlImage.Source, localDirectory);
-
-                            if (image == null) continue;
-
-                            ScaleImage(image, (int)maxWidth, out var newWidth, out var newHeight);
-                            WriteToLog($"Image rescaled to width {newWidth} and height {newHeight}");
-                            htmlImage.DisplayWidth = newWidth;
-                            htmlImage.DisplayHeight = newHeight;
-                            htmlImage.SetStyle(string.Empty);
-                            htmlChanged = true;
-                        }
+                        ScaleImage(image, (int)maxWidth, out var newWidth, out var newHeight);
+                        WriteToLog($"Image rescaled to width {newWidth} and height {newHeight}");
+                        htmlImage.DisplayWidth = newWidth;
+                        htmlImage.DisplayHeight = newHeight;
+                        htmlImage.SetStyle(string.Empty);
+                        htmlChanged = true;
                     }
                 }
-                finally
-                {
-                    image?.Dispose();
-                }
-
-                if (!imageChanged)
-                    unchangedImages.Add(htmlImage);
+            }
+            finally
+            {
+                image?.Dispose();
             }
 
-            if (!htmlChanged)
-                return false;
+            if (!imageChanged)
+                unchangedImages.Add(htmlImage);
+        }
 
-            foreach (var unchangedImage in unchangedImages)
-                using (var image = GetImage(unchangedImage.Source, localDirectory))
-                {
-                    if (image == null)
-                    {
-                        WriteToLog($"Could not load unchanged image from location '{unchangedImage.Source}'");
-                        continue;
-                    }
+        if (!htmlChanged)
+            return new ValidateImagesResult(false, inputUri);
 
-                    var extension = Path.GetExtension(unchangedImage.Source.Contains("?")
-                        ? unchangedImage.Source.Split('?')[0]
-                        : unchangedImage.Source);
-                    var fileName = GetTempFile(extension);
+        foreach (var unchangedImage in unchangedImages)
+        {
+            using var image = await GetImageAsync(unchangedImage.Source, localDirectory);
+            
+            if (image == null)
+            {
+                WriteToLog($"Could not load unchanged image from location '{unchangedImage.Source}'");
+                continue;
+            }
 
-                    try
-                    {
-                        image.Save(fileName);
-                        var newSrc = new Uri(fileName).ToString();
-                        safeUrls.Add(newSrc);
-                        unchangedImage.Source = newSrc;
-                        WriteToLog($"Unchanged image saved to location '{fileName}'");
-                    }
-                    catch (Exception exception)
-                    {
-                        WriteToLog(
-                            $"Could not write unchanged image because of an exception: {ExceptionHelpers.GetInnerException(exception)}");
-                    }
-                }
-
-            var outputFile = GetTempFile(".htm");
-            outputUri = new ConvertUri(outputFile, inputUri.Encoding);
-            safeUrls.Add(outputUri.ToString());
+            var extension = Path.GetExtension(unchangedImage.Source.Contains("?")
+                ? unchangedImage.Source.Split('?')[0]
+                : unchangedImage.Source);
+            var fileName = GetTempFile(extension);
 
             try
             {
-                WriteToLog($"Writing changed webpage to '{outputFile}'");
-
-                using (var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write))
-                {
-                    if (inputUri.Encoding != null)
-                        using (var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
-                        {
-                            document.ToHtml(textWriter, new HtmlMarkupFormatter());
-                        }
-                    else
-                        using (var textWriter = new StreamWriter(fileStream))
-                        {
-                            document.ToHtml(textWriter, new HtmlMarkupFormatter());
-                        }
-                }
-
-                WriteToLog("Changed webpage written");
-
-                return true;
+                image.Save(fileName);
+                var newSrc = new Uri(fileName).ToString();
+                safeUrls.Add(newSrc);
+                unchangedImage.Source = newSrc;
+                WriteToLog($"Unchanged image saved to location '{fileName}'");
             }
             catch (Exception exception)
             {
-                WriteToLog(
-                    $"Could not write new html file '{outputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
-                return false;
+                WriteToLog($"Could not write unchanged image because of an exception: {ExceptionHelpers.GetInnerException(exception)}");
             }
+        }
+
+        var outputFile = GetTempFile(".htm");
+        var outputUri = new ConvertUri(outputFile, inputUri.Encoding);
+        safeUrls.Add(outputUri.ToString());
+
+        try
+        {
+            WriteToLog($"Writing changed webpage to '{outputFile}'");
+
+            await using var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write);
+            
+            if (inputUri.Encoding != null)
+            {
+                await using var textWriter = new StreamWriter(fileStream, inputUri.Encoding);
+                document.ToHtml(textWriter, new HtmlMarkupFormatter());
+            }
+            else
+            {
+                await using var textWriter = new StreamWriter(fileStream);
+                document.ToHtml(textWriter, new HtmlMarkupFormatter());
+            }
+
+
+            WriteToLog("Changed webpage written");
+
+            return new ValidateImagesResult(true, outputUri);
+        }
+        catch (Exception exception)
+        {
+            WriteToLog($"Could not write new html file '{outputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
+            return new ValidateImagesResult(false, inputUri);
         }
     }
     #endregion
 
-    #region GetImage
+    #region GetImageAsync
     /// <summary>
     ///     Returns the <see cref="Image" /> for the given <paramref name="imageSource" />
     /// </summary>
     /// <param name="imageSource"></param>
     /// <param name="localDirectory"></param>
     /// <returns></returns>
-    private Image GetImage(string imageSource, string localDirectory)
+    private async Task<Image> GetImageAsync(string imageSource, string localDirectory)
     {
         if (imageSource.StartsWith("data:", StringComparison.InvariantCultureIgnoreCase))
         {
@@ -801,13 +751,10 @@ internal class DocumentHelper : IDisposable
             {
                 case "https":
                 case "http":
-                    using (var webStream = OpenDownloadStream(imageUri, true))
-                    {
-                        if (webStream != null)
-                            return Image.FromStream(webStream, true, false);
-                    }
-
-                    break;
+                {
+                    await using var webStream = await OpenDownloadStream(imageUri, true);
+                    return Image.FromStream(webStream, true, false);
+                }
 
                 case "file":
                     WriteToLog("Ignoring local file");
@@ -941,7 +888,7 @@ internal class DocumentHelper : IDisposable
     /// <param name="sourceUri"></param>
     /// <param name="checkTimeout"></param>
     /// <returns></returns>
-    private Stream OpenDownloadStream(Uri sourceUri, bool checkTimeout = false)
+    private async Task<Stream> OpenDownloadStream(Uri sourceUri, bool checkTimeout = false)
     {
         try
         {
@@ -965,9 +912,8 @@ internal class DocumentHelper : IDisposable
             if (_useCache)
                 request.CachePolicy = new HttpRequestCachePolicy(HttpCacheAgeControl.MaxAge, TimeSpan.FromDays(1));
 
-            WriteToLog(
-                $"Opening stream to url '{sourceUri}'{(_stopwatch != null ? $" with a timeout of {timeLeft} milliseconds" : string.Empty)}");
-            var response = (HttpWebResponse)request.GetResponse();
+            WriteToLog($"Opening stream to url '{sourceUri}'{(_stopwatch != null ? $" with a timeout of {timeLeft} milliseconds" : string.Empty)}");
+            var response = (HttpWebResponse)await request.GetResponseAsync();
 
             WriteToLog($"Opened {(response.IsFromCache ? "cached " : string.Empty)}stream to url '{sourceUri}'");
             return response.GetResponseStream();

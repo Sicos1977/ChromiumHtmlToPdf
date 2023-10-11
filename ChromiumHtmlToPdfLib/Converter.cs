@@ -1273,7 +1273,7 @@ public class Converter : IDisposable
                         }
 
                         if (ImageResize || ImageRotate)
-                            if (documentHelper.ValidateImages(
+                            if (documentHelper.ValidateImagesAsync(
                                     inputUri,
                                     ImageResize,
                                     ImageRotate,
