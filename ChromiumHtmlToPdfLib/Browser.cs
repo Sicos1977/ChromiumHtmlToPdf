@@ -176,7 +176,7 @@ internal class Browser : IDisposable
         var absoluteUri = uri?.AbsoluteUri.Substring(0, uri.AbsoluteUri.LastIndexOf('/') + 1);
 
         #region Message handler
-        var messageHandler = new EventHandler<string>(async delegate(object sender, string data)
+        var messageHandler = new EventHandler<string>(async delegate(object _, string data)
         {
             //System.IO.File.AppendAllText("d:\\logs.txt", $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fff} - {data}{Environment.NewLine}");
             var message = Base.FromJson(data);
@@ -244,11 +244,9 @@ internal class Browser : IDisposable
                         if (isSafeUrl)
                             WriteToLog($"The url '{url}' has been allowed because it is on the safe url list");
                         else if (isAbsoluteFileUri)
-                            WriteToLog(
-                                $"The file url '{url}' has been allowed because it start with the absolute uri '{absoluteUri}'");
+                            WriteToLog($"The file url '{url}' has been allowed because it start with the absolute uri '{absoluteUri}'");
                         else
-                            WriteToLog(
-                                $"The url '{url}' has been allowed because it did not match anything on the url blacklist");
+                            WriteToLog($"The url '{url}' has been allowed because it did not match anything on the url blacklist");
 
                         var fetchContinue = new Message { Method = "Fetch.continueRequest" };
                         fetchContinue.Parameters.Add("requestId", requestId);
@@ -290,7 +288,7 @@ internal class Browser : IDisposable
                                 {
                                     WriteToLog($"Media load timeout has a value of {mediaLoadTimeout.Value} milliseconds, setting media load timeout task");
 
-                                    Task.Run(async delegate
+                                    await Task.Run(async delegate
                                     {
                                         await Task.Delay(mediaLoadTimeout.Value, mediaLoadTimeoutCancellationTokenSource.Token);
                                         WriteToLog($"Media load timeout task timed out after {mediaLoadTimeout.Value} milliseconds");
@@ -321,8 +319,7 @@ internal class Browser : IDisposable
                             if (!string.IsNullOrEmpty(pageNavigateResponse.Result?.ErrorText) &&
                                 !pageNavigateResponse.Result.ErrorText.Contains("net::ERR_BLOCKED_BY_CLIENT"))
                             {
-                                navigationError =
-                                    $"{pageNavigateResponse.Result.ErrorText} occurred when navigating to the page '{uri}'";
+                                navigationError = $"{pageNavigateResponse.Result.ErrorText} occurred when navigating to the page '{uri}'";
                                 waitEvent?.Set();
                             }
 
@@ -340,36 +337,35 @@ internal class Browser : IDisposable
             WriteToLog("Setting request headers");
             var networkMessage = new Message { Method = "Network.setExtraHTTPHeaders" };
             networkMessage.AddParameter("headers", uri.RequestHeaders);
-
-            _pageConnection.SendForResponseAsync(networkMessage).GetAwaiter().GetResult();
+            await _pageConnection.SendForResponseAsync(networkMessage, cancellationToken);
         }
 
         if (logNetworkTraffic)
         {
             WriteToLog("Enabling network traffic logging");
             var networkMessage = new Message { Method = "Network.enable" };
-            _pageConnection.SendForResponseAsync(networkMessage).GetAwaiter().GetResult();
+            await _pageConnection.SendForResponseAsync(networkMessage, cancellationToken);
         }
 
         WriteToLog(useCache ? "Enabling caching" : "Disabling caching");
 
         var cacheMessage = new Message { Method = "Network.setCacheDisabled" };
         cacheMessage.Parameters.Add("cacheDisabled", !useCache);
-        _pageConnection.SendForResponseAsync(cacheMessage).GetAwaiter().GetResult();
+        await _pageConnection.SendForResponseAsync(cacheMessage, cancellationToken);
 
         // Enables issuing of requestPaused events. A request will be paused until client calls one of failRequest, fulfillRequest or continueRequest/continueWithAuth
         if (urlBlacklist?.Count > 0)
         {
             WriteToLog("Enabling Fetch to block url's that are in the url blacklist'");
-            _pageConnection.SendForResponseAsync(new Message { Method = "Fetch.enable" }).GetAwaiter().GetResult();
+            await _pageConnection.SendForResponseAsync(new Message { Method = "Fetch.enable" }, cancellationToken);
         }
 
         // Enables page domain notifications
-        _pageConnection.SendForResponseAsync(new Message { Method = "Page.enable" }).GetAwaiter().GetResult();
+        await _pageConnection.SendForResponseAsync(new Message { Method = "Page.enable" }, cancellationToken);
 
         var lifecycleEventEnabledMessage = new Message { Method = "Page.setLifecycleEventsEnabled" };
         lifecycleEventEnabledMessage.AddParameter("enabled", true);
-        _pageConnection.SendForResponseAsync(lifecycleEventEnabledMessage).GetAwaiter().GetResult();
+        await _pageConnection.SendForResponseAsync(lifecycleEventEnabledMessage, cancellationToken);
 
         _pageConnection.MessageReceived += messageHandler;
         _pageConnection.Closed += (sender, args) => waitEvent?.Set();
@@ -379,13 +375,13 @@ internal class Browser : IDisposable
             // Navigates current page to the given URL
             var pageNavigateMessage = new Message { Method = "Page.navigate" };
             pageNavigateMessage.AddParameter("url", uri.ToString());
-            _pageConnection.SendAsync(pageNavigateMessage).GetAwaiter().GetResult();
+            await _pageConnection.SendAsync(pageNavigateMessage, cancellationToken);
         }
         else if (!string.IsNullOrWhiteSpace(html))
         {
             WriteToLog("Getting page frame tree");
             var pageGetFrameTree = new Message { Method = "Page.getFrameTree" };
-            var frameTree = _pageConnection.SendForResponseAsync(pageGetFrameTree).GetAwaiter().GetResult();
+            var frameTree = await _pageConnection.SendForResponseAsync(pageGetFrameTree, cancellationToken);
             var frameResult = FrameTree.FromJson(frameTree);
 
             WriteToLog("Setting document content");
@@ -393,7 +389,7 @@ internal class Browser : IDisposable
             var pageSetDocumentContent = new Message { Method = "Page.setDocumentContent" };
             pageSetDocumentContent.AddParameter("frameId", frameResult.Result.FrameTree.Frame.Id);
             pageSetDocumentContent.AddParameter("html", html);
-            _pageConnection.SendForResponseAsync(pageSetDocumentContent).GetAwaiter().GetResult();
+            await _pageConnection.SendForResponseAsync(pageSetDocumentContent, cancellationToken);
             // When using setDocumentContent a Page.frameNavigated event is never fired so we have to set the waitForNetworkIdle to true our self
             waitForNetworkIdle = true;
 
@@ -425,21 +421,21 @@ internal class Browser : IDisposable
         lifecycleEventDisabledMessage.AddParameter("enabled", false);
 
         // Disables page domain notifications
-        _pageConnection.SendForResponseAsync(lifecycleEventDisabledMessage).GetAwaiter().GetResult();
-        _pageConnection.SendForResponseAsync(new Message { Method = "Page.disable" }).GetAwaiter().GetResult();
+        await _pageConnection.SendForResponseAsync(lifecycleEventDisabledMessage, cancellationToken);
+        await _pageConnection.SendForResponseAsync(new Message { Method = "Page.disable" }, cancellationToken);
 
         // Disables the fetch domain
         if (urlBlacklist?.Count > 0)
         {
             WriteToLog("Disabling Fetch");
-            _pageConnection.SendForResponseAsync(new Message { Method = "Fetch.disable" }).GetAwaiter().GetResult();
+            await _pageConnection.SendForResponseAsync(new Message { Method = "Fetch.disable" }, cancellationToken);
         }
 
         if (logNetworkTraffic)
         {
             WriteToLog("Disabling network traffic logging");
             var networkMessage = new Message { Method = "Network.disable" };
-            _pageConnection.SendForResponseAsync(networkMessage).GetAwaiter().GetResult();
+            await _pageConnection.SendForResponseAsync(networkMessage, cancellationToken);
         }
 
         _pageConnection.MessageReceived -= messageHandler;
@@ -563,14 +559,16 @@ internal class Browser : IDisposable
     ///     the method will raise an <see cref="ConversionTimedOutException" /> in the
     ///     <see cref="CountdownTimer" /> reaches zero before finishing the printing to pdf
     /// </param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <remarks>
     ///     See https://chromedevtools.github.io/devtools-protocol/tot/Page/#method-printToPDF
     /// </remarks>
     /// <exception cref="ConversionException">Raised when Chromium returns an empty string</exception>
     /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer" /> reaches zero</exception>
-    internal async Task PrintToPdf(Stream outputStream,
+    internal async Task PrintToPdfAsync(Stream outputStream,
         PageSettings pageSettings,
-        CountdownTimer countdownTimer = null)
+        CountdownTimer countdownTimer = null,
+        CancellationToken cancellationToken = default)
     {
         var message = new Message { Method = "Page.printToPDF" };
         message.AddParameter("landscape", pageSettings.Landscape);
@@ -593,14 +591,13 @@ internal class Browser : IDisposable
         message.AddParameter("transferMode", "ReturnAsStream");
 
         var result = countdownTimer == null
-            ? await _pageConnection.SendForResponseAsync(message)
-            : await _pageConnection.SendForResponseAsync(message).Timeout(countdownTimer.MillisecondsLeft);
+            ? await _pageConnection.SendForResponseAsync(message, cancellationToken)
+            : await _pageConnection.SendForResponseAsync(message, cancellationToken).Timeout(countdownTimer.MillisecondsLeft);
 
         var printToPdfResponse = PrintToPdfResponse.FromJson(result);
 
         if (string.IsNullOrEmpty(printToPdfResponse.Result?.Stream))
-            throw new ConversionException(
-                $"Conversion failed ... did not get the expected response from Chromium, response '{result}'");
+            throw new ConversionException($"Conversion failed ... did not get the expected response from Chromium, response '{result}'");
 
         if (!outputStream.CanWrite)
             throw new ConversionException("The output stream is not writable, please provide a writable stream");
@@ -616,8 +613,8 @@ internal class Browser : IDisposable
         while (true)
         {
             result = countdownTimer == null
-                ? await _pageConnection.SendForResponseAsync(message)
-                : await _pageConnection.SendForResponseAsync(message).Timeout(countdownTimer.MillisecondsLeft);
+                ? await _pageConnection.SendForResponseAsync(message, cancellationToken)
+                : await _pageConnection.SendForResponseAsync(message, cancellationToken).Timeout(countdownTimer.MillisecondsLeft);
 
             var ioReadResponse = IoReadResponse.FromJson(result);
 
@@ -626,8 +623,7 @@ internal class Browser : IDisposable
 
             if (length > 0)
             {
-                WriteToLog(
-                    $"PDF chunk received with id {ioReadResponse.Id} and length {length}, writing it to output stream");
+                WriteToLog($"PDF chunk received with id {ioReadResponse.Id} and length {length}, writing it to output stream");
                 await outputStream.WriteAsync(bytes, 0, length);
             }
 
@@ -637,25 +633,30 @@ internal class Browser : IDisposable
             WriteToLog($"Closing stream with id {printToPdfResponse.Result.Stream}");
             message = new Message { Method = "IO.close" };
             message.AddParameter("handle", printToPdfResponse.Result.Stream);
-            await _pageConnection.SendForResponseAsync(message);
+            await _pageConnection.SendForResponseAsync(message, cancellationToken);
             WriteToLog("Stream closed");
             break;
         }
     }
     #endregion
 
-    #region CaptureScreenshot
+    #region CaptureScreenshotAsync
     /// <summary>
     ///     Instructs Chromium to take a screenshot from the page
     /// </summary>
+    /// <param name="countdownTimer"></param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+    /// <returns></returns>
     /// <exception cref="ConversionException">Raised when Chromium returns an empty string</exception>
     /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer" /> reaches zero</exception>
-    internal async Task<CaptureScreenshotResponse> CaptureScreenshot(CountdownTimer countdownTimer = null)
+    internal async Task<CaptureScreenshotResponse> CaptureScreenshotAsync(
+        CountdownTimer countdownTimer = null, 
+        CancellationToken cancellationToken = default)
     {
         var message = new Message { Method = "Page.captureScreenshot" };
         var result = countdownTimer == null
-            ? await _pageConnection.SendForResponseAsync(message)
-            : await _pageConnection.SendForResponseAsync(message).Timeout(countdownTimer.MillisecondsLeft);
+            ? await _pageConnection.SendForResponseAsync(message, cancellationToken)
+            : await _pageConnection.SendForResponseAsync(message, cancellationToken).Timeout(countdownTimer.MillisecondsLeft);
 
         var captureScreenshotResponse = CaptureScreenshotResponse.FromJson(result);
 

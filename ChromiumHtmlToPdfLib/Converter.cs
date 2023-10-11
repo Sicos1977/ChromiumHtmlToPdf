@@ -1185,7 +1185,8 @@ public class Converter : IDisposable
         int waitForWindowsStatusTimeout = 60000,
         int? conversionTimeout = null,
         int? mediaLoadTimeout = null,
-        ILogger logger = null)
+        ILogger logger = null,
+        CancellationToken cancellationToken = default)
     {
         if (logger != null)
             _logger = logger;
@@ -1267,7 +1268,7 @@ public class Converter : IDisposable
                         {
                             WriteToLog(
                                 "The paper format 'FitPageToContent' is set, modifying html so that the PDF fits the HTML content");
-                            if (documentHelper.FitPageToContent(inputUri, out var outputUri))
+                            if (documentHelper.FitPageToContentAsync(inputUri, out var outputUri))
                             {
                                 inputUri = outputUri;
                                 safeUrls.Add(outputUri.ToString());
@@ -1306,8 +1307,7 @@ public class Converter : IDisposable
             if (inputUri != null)
                 WriteToLog($"Loading {(inputUri.IsFile ? $"file {inputUri.OriginalString}" : $"url {inputUri}")}");
 
-            _browser.NavigateToAsync(safeUrls, _useCache, inputUri, html, countdownTimer, mediaLoadTimeout, _urlBlacklist,
-                LogNetworkTraffic);
+            await _browser.NavigateToAsync(safeUrls, _useCache, inputUri, html, countdownTimer, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic, cancellationToken);
 
             if (!string.IsNullOrWhiteSpace(waitForWindowStatus))
             {
@@ -1317,8 +1317,7 @@ public class Converter : IDisposable
                     countdownTimer.Stop();
                 }
 
-                WriteToLog(
-                    $"Waiting for window.status '{waitForWindowStatus}' or a timeout of {waitForWindowsStatusTimeout} milliseconds");
+                WriteToLog($"Waiting for window.status '{waitForWindowStatus}' or a timeout of {waitForWindowsStatusTimeout} milliseconds");
                 var match = _browser.WaitForWindowStatus(waitForWindowStatus, waitForWindowsStatusTimeout);
                 WriteToLog(!match ? "Waiting timed out" : $"Window status equaled {waitForWindowStatus}");
 
@@ -1352,7 +1351,7 @@ public class Converter : IDisposable
                        new MemoryStream(_browser.CaptureSnapshot(countdownTimer).GetAwaiter().GetResult().Bytes))
                 {
                     memoryStream.Position = 0;
-                    memoryStream.CopyTo(SnapshotStream);
+                    await memoryStream.CopyToAsync(SnapshotStream, cancellationToken);
                 }
 
                 WriteToLog("Taken");
@@ -1362,21 +1361,20 @@ public class Converter : IDisposable
             {
                 case OutputFormat.Pdf:
                     WriteToLog("Converting to PDF");
-                    _browser.PrintToPdf(outputStream, pageSettings, countdownTimer).GetAwaiter().GetResult();
+                    await _browser.PrintToPdfAsync(outputStream, pageSettings, countdownTimer, cancellationToken);
 
                     break;
 
                 case OutputFormat.Image:
+                {
                     WriteToLog("Converting to image");
 
-                    using (var memoryStream =
-                           new MemoryStream(_browser.CaptureScreenshot(countdownTimer).GetAwaiter().GetResult().Bytes))
-                    {
-                        memoryStream.Position = 0;
-                        memoryStream.CopyTo(outputStream);
-                    }
+                    using var memoryStream = new MemoryStream(await _browser.CaptureScreenshot(countdownTimer));
+                    memoryStream.Position = 0;
+                    await memoryStream.CopyToAsync(outputStream, cancellationToken);
 
                     break;
+                }
             }
 
             WriteToLog("Converted");
