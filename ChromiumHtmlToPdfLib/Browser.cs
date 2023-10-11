@@ -134,7 +134,7 @@ internal class Browser : IDisposable
     }
     #endregion
 
-    #region NavigateTo
+    #region NavigateToAsync
     /// <summary>
     ///     Instructs Chromium to navigate to the given <paramref name="uri" />
     /// </summary>
@@ -154,9 +154,10 @@ internal class Browser : IDisposable
     /// </param>
     /// <param name="urlBlacklist">A list with URL's that need to be blocked (use * as a wildcard)</param>
     /// <param name="logNetworkTraffic">When enabled network traffic is also logged</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <exception cref="ChromiumException">Raised when an error is returned by Chromium</exception>
     /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer" /> reaches zero</exception>
-    internal void NavigateTo(
+    internal async Task NavigateToAsync(
         List<string> safeUrls,
         bool useCache,
         ConvertUri uri = null,
@@ -164,7 +165,8 @@ internal class Browser : IDisposable
         CountdownTimer countdownTimer = null,
         int? mediaLoadTimeout = null,
         List<string> urlBlacklist = null,
-        bool logNetworkTraffic = false)
+        bool logNetworkTraffic = false,
+        CancellationToken cancellationToken = default)
     {
         var waitEvent = new ManualResetEvent(false);
         var mediaLoadTimeoutCancellationTokenSource = new CancellationTokenSource();
@@ -174,7 +176,7 @@ internal class Browser : IDisposable
         var absoluteUri = uri?.AbsoluteUri.Substring(0, uri.AbsoluteUri.LastIndexOf('/') + 1);
 
         #region Message handler
-        var messageHandler = new EventHandler<string>(delegate(object sender, string data)
+        var messageHandler = new EventHandler<string>(async delegate(object sender, string data)
         {
             //System.IO.File.AppendAllText("d:\\logs.txt", $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fff} - {data}{Environment.NewLine}");
             var message = Base.FromJson(data);
@@ -250,7 +252,7 @@ internal class Browser : IDisposable
 
                         var fetchContinue = new Message { Method = "Fetch.continueRequest" };
                         fetchContinue.Parameters.Add("requestId", requestId);
-                        _pageConnection.SendAsync(fetchContinue).GetAwaiter().GetResult();
+                        await _pageConnection.SendAsync(fetchContinue, cancellationToken);
                     }
                     else
                     {
@@ -263,7 +265,7 @@ internal class Browser : IDisposable
                         // ConnectionAborted, ConnectionFailed, NameNotResolved, InternetDisconnected, AddressUnreachable,
                         // BlockedByClient, BlockedByResponse
                         fetchFail.Parameters.Add("errorReason", "BlockedByClient");
-                        _pageConnection.SendAsync(fetchFail).GetAwaiter().GetResult();
+                        await _pageConnection.SendAsync(fetchFail, cancellationToken);
                     }
 
                     break;
@@ -286,15 +288,12 @@ internal class Browser : IDisposable
                             if (mediaLoadTimeout.HasValue && !mediaTimeoutTaskSet)
                                 try
                                 {
-                                    WriteToLog(
-                                        $"Media load timeout has a value of {mediaLoadTimeout.Value} milliseconds, setting media load timeout task");
+                                    WriteToLog($"Media load timeout has a value of {mediaLoadTimeout.Value} milliseconds, setting media load timeout task");
 
                                     Task.Run(async delegate
                                     {
-                                        await Task.Delay(mediaLoadTimeout.Value,
-                                            mediaLoadTimeoutCancellationTokenSource.Token);
-                                        WriteToLog(
-                                            $"Media load timeout task timed out after {mediaLoadTimeout.Value} milliseconds");
+                                        await Task.Delay(mediaLoadTimeout.Value, mediaLoadTimeoutCancellationTokenSource.Token);
+                                        WriteToLog($"Media load timeout task timed out after {mediaLoadTimeout.Value} milliseconds");
                                         waitEvent?.Set();
                                     }, mediaLoadTimeoutCancellationTokenSource.Token);
 
@@ -308,14 +307,12 @@ internal class Browser : IDisposable
                             break;
 
                         case "Page.frameNavigated":
-                            WriteToLog(
-                                "The 'Page.frameNavigated' event has been fired, waiting for the 'Page.lifecycleEvent' with name 'networkIdle'");
+                            WriteToLog("The 'Page.frameNavigated' event has been fired, waiting for the 'Page.lifecycleEvent' with name 'networkIdle'");
                             waitForNetworkIdle = true;
                             break;
 
                         case "Page.lifecycleEvent" when page.Params?.Name == "networkIdle" && waitForNetworkIdle:
-                            WriteToLog(
-                                "The 'Page.lifecycleEvent' event with name 'networkIdle' has been fired, the page is now fully loaded");
+                            WriteToLog("The 'Page.lifecycleEvent' event with name 'networkIdle' has been fired, the page is now fully loaded");
                             waitEvent?.Set();
                             break;
 
@@ -411,7 +408,7 @@ internal class Browser : IDisposable
         {
             waitEvent.WaitOne(countdownTimer.MillisecondsLeft);
             if (countdownTimer.MillisecondsLeft == 0)
-                throw new ConversionTimedOutException($"The {nameof(NavigateTo)} method timed out");
+                throw new ConversionTimedOutException($"The {nameof(NavigateToAsync)} method timed out");
         }
         else
         {
@@ -476,14 +473,6 @@ internal class Browser : IDisposable
         var waitEvent = new ManualResetEvent(false);
         var match = false;
 
-        void MessageReceived(object sender, string data)
-        {
-            var evaluate = Evaluate.FromJson(data);
-            if (evaluate.Result?.Result?.Value != status) return;
-            match = true;
-            waitEvent.Set();
-        }
-
         _pageConnection.MessageReceived += MessageReceived;
 
         var stopWatch = new Stopwatch();
@@ -500,6 +489,14 @@ internal class Browser : IDisposable
         _pageConnection.MessageReceived -= MessageReceived;
 
         return match;
+
+        void MessageReceived(object sender, string data)
+        {
+            var evaluate = Evaluate.FromJson(data);
+            if (evaluate.Result?.Result?.Value != status) return;
+            match = true;
+            waitEvent.Set();
+        }
     }
     #endregion
 

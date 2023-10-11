@@ -109,9 +109,8 @@ internal class Connection : IDisposable
         WriteToLog($"Creating new websocket connection to url '{url}'");
         _webSocket = new ClientWebSocket();
         _receiveLoopCts = new CancellationTokenSource();
-        OpenWebSocket();
-        Task.Factory.StartNew(ReceiveLoop, _receiveLoopCts.Token, TaskCreationOptions.LongRunning,
-            TaskScheduler.Default);
+        OpenWebSocketAsync(default).GetAwaiter().GetResult();
+        Task.Factory.StartNew(ReceiveLoop, _receiveLoopCts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
     }
     #endregion
 
@@ -121,6 +120,7 @@ internal class Connection : IDisposable
         var loopToken = _receiveLoopCts.Token;
         MemoryStream outputStream = null;
         var buffer = new ArraySegment<byte>(new byte[ReceiveBufferSize]);
+
         try
         {
             while (!loopToken.IsCancellationRequested)
@@ -138,11 +138,8 @@ internal class Connection : IDisposable
                 if (receiveResult.MessageType == WebSocketMessageType.Close) break;
 
                 outputStream.Position = 0;
-                string response;
-                using (var reader = new StreamReader(outputStream))
-                {
-                    response = await reader.ReadToEndAsync();
-                }
+                using var reader = new StreamReader(outputStream);
+                var response = await reader.ReadToEndAsync();
 
                 WebSocketOnMessageReceived(new MessageReceivedEventArgs(response));
             }
@@ -157,18 +154,14 @@ internal class Connection : IDisposable
         }
         finally
         {
-            outputStream?.Dispose();
+            if (outputStream != null)
+                await outputStream.DisposeAsync();
         }
     }
     #endregion
 
     #region OpenWebSocket
-    private void OpenWebSocket()
-    {
-        OpenWebSocketAsync().GetAwaiter().GetResult();
-    }
-
-    private async Task OpenWebSocketAsync(CancellationToken cancellationToken = default)
+    private async Task OpenWebSocketAsync(CancellationToken cancellationToken)
     {
         if (_webSocket.State == WebSocketState.Open) return;
 
@@ -234,21 +227,23 @@ internal class Connection : IDisposable
     }
     #endregion
 
-    #region SendAsync
+    #region SendForResponseAsync
     /// <summary>
     ///     Sends a message asynchronously to the <see cref="_webSocket" /> and returns response
     /// </summary>
     /// <param name="message">The message to send</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns>Response given by <see cref="_webSocket" /></returns>
-    internal async Task<string> SendForResponseAsync(Message message, CancellationToken cancellationToken = default)
+    internal async Task<string> SendForResponseAsync(Message message, CancellationToken cancellationToken)
     {
         _messageId += 1;
         message.Id = _messageId;
+
         await OpenWebSocketAsync(cancellationToken);
 
         var tcs = new TaskCompletionSource<string>();
-        var receivedHandler = new EventHandler<string>((sender, data) =>
+
+        var receivedHandler = new EventHandler<string>((_, data) =>
         {
             var messageBase = MessageBase.FromJson(data);
             if (messageBase.Id == message.Id) tcs.SetResult(data);
@@ -271,14 +266,16 @@ internal class Connection : IDisposable
 
         return response;
     }
+    #endregion
 
+    #region SendAsync
     /// <summary>
     ///     Sends a message to the <see cref="_webSocket" /> and awaits no response
     /// </summary>
     /// <param name="message">The message to send</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns></returns>
-    internal async Task SendAsync(Message message, CancellationToken cancellationToken = default)
+    internal async Task SendAsync(Message message, CancellationToken cancellationToken)
     {
         _messageId += 1;
         message.Id = _messageId;
@@ -289,9 +286,9 @@ internal class Connection : IDisposable
         {
             await _webSocket.SendAsync(MessageToBytes(message), WebSocketMessageType.Text, true, cancellationToken);
         }
-        catch (Exception e)
+        catch (Exception exception)
         {
-            WebSocketOnError(new ErrorEventArgs(e));
+            WebSocketOnError(new ErrorEventArgs(exception));
         }
     }
     #endregion

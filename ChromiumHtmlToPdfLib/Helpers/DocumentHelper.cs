@@ -35,6 +35,7 @@ using System.Net;
 using System.Net.Cache;
 using System.Net.Http;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using AngleSharp;
 using AngleSharp.Css.Dom;
@@ -182,8 +183,9 @@ internal class DocumentHelper : IDisposable
     ///     <see cref="HtmlSanitizer" />
     /// </param>
     /// <param name="safeUrls">A list of safe URL's</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns></returns>
-    public async Task<SanitizeHtmlResult> SanitizeHtmlAsync(ConvertUri inputUri, HtmlSanitizer sanitizer, List<string> safeUrls)
+    public async Task<SanitizeHtmlResult> SanitizeHtmlAsync(ConvertUri inputUri, HtmlSanitizer sanitizer, List<string> safeUrls, CancellationToken cancellationToken)
     {
         await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri);
         var htmlChanged = false;
@@ -196,8 +198,8 @@ internal class DocumentHelper : IDisposable
         {
             // ReSharper disable AccessToDisposedClosure
             document = inputUri.Encoding != null
-                ? await context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString()))
-                : await context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString()));
+                ? await context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString()), cancel: cancellationToken)
+                : await context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString()), cancel: cancellationToken);
             // ReSharper restore AccessToDisposedClosure
         }
         catch (Exception exception)
@@ -328,8 +330,9 @@ internal class DocumentHelper : IDisposable
     ///     Opens the webpage and adds code to make it fit the page
     /// </summary>
     /// <param name="inputUri">The uri of the webpage</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns><see cref="FitPageToContentResult"/></returns>
-    public async Task<FitPageToContentResult> FitPageToContentAsync(ConvertUri inputUri)
+    public async Task<FitPageToContentResult> FitPageToContentAsync(ConvertUri inputUri, CancellationToken cancellationToken)
     {
         await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri);
 
@@ -342,8 +345,8 @@ internal class DocumentHelper : IDisposable
         {
             // ReSharper disable AccessToDisposedClosure
             document = inputUri.Encoding != null
-                ? await context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString()))
-                : await context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString()));
+                ? await context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString()), cancel: cancellationToken)
+                : await context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString()), cancel: cancellationToken);
             // ReSharper restore AccessToDisposedClosure
 
             var styleElement = new HtmlElement(document as Document, "style")
@@ -436,8 +439,9 @@ internal class DocumentHelper : IDisposable
     ///     image is read and when needed the image is automatic rotated
     /// </param>
     /// <param name="pageSettings"><see cref="PageSettings" /></param>
-    /// <param name="urlBlacklist">A list of URL's that need to be blocked (use * as a wildcard)</param>
     /// <param name="safeUrls">A list with URL's that are safe to load</param>
+    /// <param name="urlBlacklist">A list of URL's that need to be blocked (use * as a wildcard)</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns>Returns <c>false</c> when the images dit not fit the page, otherwise <c>true</c></returns>
     /// <exception cref="WebException">Raised when the webpage from <paramref name="inputUri" /> could not be downloaded</exception>
     public async Task<ValidateImagesResult> ValidateImagesAsync(
@@ -446,7 +450,8 @@ internal class DocumentHelper : IDisposable
         bool rotate,
         PageSettings pageSettings,
         List<string> safeUrls,
-        List<string> urlBlacklist)
+        List<string> urlBlacklist,
+        CancellationToken cancellationToken)
     {
         using var graphics = Graphics.FromHwnd(IntPtr.Zero);
         await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri);
@@ -497,8 +502,8 @@ internal class DocumentHelper : IDisposable
         try
         {
             document = inputUri.Encoding != null
-                ? await context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString()))
-                : await context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString()));
+                ? await context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString()), cancel: cancellationToken)
+                : await context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString()), cancel: cancellationToken);
         }
         catch (Exception exception)
         {
@@ -590,8 +595,7 @@ internal class DocumentHelper : IDisposable
                         }
                         catch (Exception exception)
                         {
-                            WriteToLog(
-                                $"Could not get computed style from html image, exception: '{exception.Message}'");
+                            WriteToLog(                                $"Could not get computed style from html image, exception: '{exception.Message}'");
                         }
 
                         if (style != null)
