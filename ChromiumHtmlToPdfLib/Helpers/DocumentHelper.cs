@@ -302,11 +302,15 @@ internal class DocumentHelper : IDisposable
 
             await using var fileStream = new FileStream(sanitizedOutputFile, FileMode.CreateNew, FileAccess.Write);
             if (inputUri.Encoding != null)
-                await using (var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
-                    document.ToHtml(textWriter, new HtmlMarkupFormatter());
+            {
+                await using var textWriter = new StreamWriter(fileStream, inputUri.Encoding);
+                document.ToHtml(textWriter, new HtmlMarkupFormatter());
+            }
             else
-                await using (var textWriter = new StreamWriter(fileStream))
-                    document.ToHtml(textWriter, new HtmlMarkupFormatter());
+            {
+                await using var textWriter = new StreamWriter(fileStream);
+                document.ToHtml(textWriter, new HtmlMarkupFormatter());
+            }
 
             WriteToLog("Sanitized webpage written");
             return new SanitizeHtmlResult(true, outputUri, safeUrls);

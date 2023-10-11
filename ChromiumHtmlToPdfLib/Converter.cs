@@ -33,6 +33,7 @@ using System.Net;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Threading;
+using System.Threading.Tasks;
 using ChromiumHtmlToPdfLib.Enums;
 using ChromiumHtmlToPdfLib.Exceptions;
 using ChromiumHtmlToPdfLib.Helpers;
@@ -1174,8 +1175,8 @@ public class Converter : IDisposable
     }
     #endregion
 
-    #region Convert
-    private void Convert(
+    #region ConvertAsync
+    private async Task ConvertAsync(
         OutputFormat outputFormat,
         object input,
         Stream outputStream,
@@ -1250,7 +1251,8 @@ public class Converter : IDisposable
                     {
                         if (SanitizeHtml)
                         {
-                            if (documentHelper.SanitizeHtml(inputUri, Sanitizer, out var outputUri, ref safeUrls))
+                            var result = documentHelper.SanitizeHtmlAsync(inputUri, Sanitizer, out var outputUri, ref safeUrls)
+                            if (documentHelper.SanitizeHtmlAsync(inputUri, Sanitizer, out var outputUri, ref safeUrls))
                             {
                                 inputUri = outputUri;
                             }
@@ -1472,7 +1474,7 @@ public class Converter : IDisposable
         int? mediaLoadTimeout = null,
         ILogger logger = null)
     {
-        Convert(
+        ConvertAsync(
             OutputFormat.Pdf,
             inputUri,
             outputStream,
@@ -1599,7 +1601,7 @@ public class Converter : IDisposable
         int? mediaLoadTimeout = null,
         ILogger logger = null)
     {
-        Convert(
+        ConvertAsync(
             OutputFormat.Pdf,
             html,
             outputStream,
@@ -1729,7 +1731,7 @@ public class Converter : IDisposable
         int? mediaLoadTimeout = null,
         ILogger logger = null)
     {
-        Convert(
+        ConvertAsync(
             OutputFormat.Image,
             inputUri,
             outputStream,
@@ -1788,7 +1790,7 @@ public class Converter : IDisposable
         int? mediaLoadTimeout = null,
         ILogger logger = null)
     {
-        Convert(
+        ConvertAsync(
             OutputFormat.Image,
             html,
             outputStream,
