@@ -42,7 +42,11 @@ namespace ChromiumHtmlToPdfLib;
 /// <summary>
 ///     A connection to a page (tab) in Chromium
 /// </summary>
-internal class Connection : IDisposable
+#if (NETSTANDARD2_0)
+public class Connection : IDisposable
+#else
+public class Connection : IDisposable, IAsyncDisposable
+#endif
 {
     #region Events
     /// <summary>
@@ -328,9 +332,7 @@ internal class Connection : IDisposable
             {
                 if (_logger == null) return;
                 using (_logger.BeginScope(InstanceId))
-                {
                     _logger.LogInformation(message);
-                }
             }
             catch (ObjectDisposedException)
             {
@@ -340,11 +342,15 @@ internal class Connection : IDisposable
     }
     #endregion
 
-    #region Dispose
-    /// <summary>
-    ///     Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-    /// </summary>
-    public void Dispose()
+    #region MessageToBytes
+    private static ArraySegment<byte> MessageToBytes(MessageBase message)
+    {
+        return new ArraySegment<byte>(Encoding.UTF8.GetBytes(message.ToJson()));
+    }
+    #endregion
+
+    #region InternalDisposeAsync
+    public async Task InternalDisposeAsync()
     {
         WriteToLog($"Disposing websocket connection to url '{_url}'");
 
@@ -360,19 +366,41 @@ internal class Connection : IDisposable
         if (_webSocket.State == WebSocketState.Open)
         {
             WriteToLog("Closing websocket");
-            _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Done", default);
-            _receiveLoopCts.Cancel();
+            try
+            {
+                await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Done", default);
+                WriteToLog("Websocket connection disposed gracefully");
+            }
+            finally
+            {
+                _receiveLoopCts.Cancel();
+                _webSocket.Dispose();
+                WriteToLog("Websocket connection disposed");
+            }
         }
-
-        _webSocket.Dispose();
-        WriteToLog("Websocket connection disposed");
     }
     #endregion
 
-    #region MessageToBytes
-    private static ArraySegment<byte> MessageToBytes(MessageBase message)
+    #region Dispose
+    /// <summary>
+    ///     Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// </summary>
+    public void Dispose()
     {
-        return new ArraySegment<byte>(Encoding.UTF8.GetBytes(message.ToJson()));
+        InternalDisposeAsync().GetAwaiter().GetResult();
     }
+    #endregion
+
+    #region DisposeAsync
+#if (!NETSTANDARD2_0)    
+    /// <summary>
+    ///     Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        await InternalDisposeAsync();
+        GC.SuppressFinalize(this);
+    }
+#endif
     #endregion
 }

@@ -38,6 +38,7 @@ namespace ChromiumHtmlToPdfLib;
 /// </summary>
 public class ConvertUri : Uri
 {
+    #region Properties
     /// <summary>
     ///     The encoding of the file that will be converted
     /// </summary>
@@ -47,7 +48,9 @@ public class ConvertUri : Uri
     ///     The request headers to sent
     /// </summary>
     public Dictionary<string, string> RequestHeaders { get; }
+    #endregion
 
+    #region Constructor
     /// <summary>
     ///     The uri to converter
     /// </summary>
@@ -64,8 +67,7 @@ public class ConvertUri : Uri
     /// <param name="uriString">The uri, e.g. file://c:\test.txt</param>
     /// <param name="encoding">The encoding used for this file, e.g UTF-8</param>
     /// <param name="requestHeaders">The request headers to sent</param>
-    public ConvertUri(string uriString, Encoding encoding, Dictionary<string, string> requestHeaders = null) :
-        base(uriString)
+    public ConvertUri(string uriString, Encoding encoding, Dictionary<string, string> requestHeaders = null) : base(uriString)
     {
         Encoding = encoding;
         RequestHeaders = requestHeaders;
@@ -76,8 +78,7 @@ public class ConvertUri : Uri
     /// </summary>
     /// <param name="uriString">The uri, e.g. file://c:\test.txt</param>
     /// <param name="encoding">The encoding used for this file, e.g UTF-8</param>
-    public ConvertUri(string uriString, string encoding, Dictionary<string, string> requestHeaders = null) :
-        base(uriString)
+    public ConvertUri(string uriString, string encoding, Dictionary<string, string> requestHeaders = null) : base(uriString)
     {
         Encoding = !string.IsNullOrWhiteSpace(encoding)
             ? Encoding.GetEncoding(encoding)
@@ -93,8 +94,7 @@ public class ConvertUri : Uri
     /// <param name="uriString"></param>
     /// <param name="dontEscape"></param>
     /// <param name="requestHeaders">The request headers to sent</param>
-    public ConvertUri(string uriString, bool dontEscape, Dictionary<string, string> requestHeaders = null) : base(
-        uriString, dontEscape)
+    public ConvertUri(string uriString, bool dontEscape, Dictionary<string, string> requestHeaders = null) : base(uriString, dontEscape)
     {
         RequestHeaders = requestHeaders;
     }
@@ -106,8 +106,7 @@ public class ConvertUri : Uri
     /// <param name="relativeUri"></param>
     /// <param name="dontEscape"></param>
     /// <param name="requestHeaders">The request headers to sent</param>
-    public ConvertUri(Uri baseUri, string relativeUri, bool dontEscape,
-        Dictionary<string, string> requestHeaders = null) : base(baseUri, relativeUri, dontEscape)
+    public ConvertUri(Uri baseUri, string relativeUri, bool dontEscape, Dictionary<string, string> requestHeaders = null) : base(baseUri, relativeUri, dontEscape)
     {
         RequestHeaders = requestHeaders;
     }
@@ -119,8 +118,7 @@ public class ConvertUri : Uri
     /// <param name="uriString"></param>
     /// <param name="uriKind"></param>
     /// <param name="requestHeaders">The request headers to sent</param>
-    public ConvertUri(string uriString, UriKind uriKind, Dictionary<string, string> requestHeaders = null) : base(
-        uriString, uriKind)
+    public ConvertUri(string uriString, UriKind uriKind, Dictionary<string, string> requestHeaders = null) : base(uriString, uriKind)
     {
         RequestHeaders = requestHeaders;
     }
@@ -131,8 +129,7 @@ public class ConvertUri : Uri
     /// <param name="baseUri"></param>
     /// <param name="relativeUri"></param>
     /// <param name="requestHeaders">The request headers to sent</param>
-    public ConvertUri(Uri baseUri, string relativeUri, Dictionary<string, string> requestHeaders = null) : base(baseUri,
-        relativeUri)
+    public ConvertUri(Uri baseUri, string relativeUri, Dictionary<string, string> requestHeaders = null) : base(baseUri, relativeUri)
     {
         RequestHeaders = requestHeaders;
     }
@@ -143,8 +140,7 @@ public class ConvertUri : Uri
     /// <param name="baseUri"></param>
     /// <param name="relativeUri"></param>
     /// <param name="requestHeaders">The request headers to sent</param>
-    public ConvertUri(Uri baseUri, Uri relativeUri, Dictionary<string, string> requestHeaders = null) : base(baseUri,
-        relativeUri)
+    public ConvertUri(Uri baseUri, Uri relativeUri, Dictionary<string, string> requestHeaders = null) : base(baseUri, relativeUri)
     {
         RequestHeaders = requestHeaders;
     }
@@ -155,9 +151,9 @@ public class ConvertUri : Uri
     /// <param name="serializationInfo"></param>
     /// <param name="streamingContext"></param>
     /// <param name="requestHeaders">The request headers to sent</param>
-    protected ConvertUri(SerializationInfo serializationInfo, StreamingContext streamingContext,
-        Dictionary<string, string> requestHeaders = null) : base(serializationInfo, streamingContext)
+    protected ConvertUri(SerializationInfo serializationInfo, StreamingContext streamingContext, Dictionary<string, string> requestHeaders = null) : base(serializationInfo, streamingContext)
     {
         RequestHeaders = requestHeaders;
     }
+    #endregion
 }

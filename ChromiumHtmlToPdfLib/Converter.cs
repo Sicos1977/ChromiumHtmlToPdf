@@ -47,7 +47,11 @@ namespace ChromiumHtmlToPdfLib;
 /// <summary>
 ///     A converter class around Chromium headless to convert html to pdf
 /// </summary>
+#if (NETSTANDARD2_0)
 public class Converter : IDisposable
+#else
+public class Converter : IDisposable, IAsyncDisposable
+#endif
 {
     #region Private enum OutputFormat
     /// <summary>
@@ -493,14 +497,6 @@ public class Converter : IDisposable
         _userProfileSet = true;
         _devToolsActivePortFile = Path.Combine(userProfileDirectory.FullName, "DevToolsActivePort");
         AddChromiumArgument("--user-data-dir", userProfileDirectory.FullName);
-    }
-
-    /// <summary>
-    ///     Destructor
-    /// </summary>
-    ~Converter()
-    {
-        Dispose();
     }
     #endregion
 
@@ -1666,7 +1662,6 @@ public class Converter : IDisposable
             mediaLoadTimeout,
             logger).GetAwaiter().GetResult();
     }
-
     #endregion
 
     #region ConvertToPdfAsync
@@ -2522,24 +2517,25 @@ public class Converter : IDisposable
     }
     #endregion
 
-    #region Dispose
-    /// <summary>
-    ///     Disposes the running <see cref="_chromiumProcess" />
-    /// </summary>
-    public void Dispose()
+    #region DisposeAsync
+    private async Task InternalDisposeAsync()
     {
         if (_disposed)
             return;
 
-        _chromiumWaitEvent?.Dispose();
+        _chromiumWaitEvent.Dispose();
         _chromiumWaitEvent = null;
 
         if (_browser != null)
             try
             {
                 WriteToLog($"Closing {BrowserName} browser gracefully");
-                _browser.CloseAsync(default).GetAwaiter().GetResult();
+                await _browser.CloseAsync(default);
+#if (NETSTANDARD2_0)
                 _browser.Dispose();
+#else
+                await _browser.DisposeAsync();
+#endif
             }
             catch (Exception exception)
             {
@@ -2574,4 +2570,26 @@ public class Converter : IDisposable
         _disposed = true;
     }
     #endregion
+
+    #region Dispose
+    /// <summary>
+    ///     Disposes the running <see cref="_chromiumProcess" />
+    /// </summary>
+    public void Dispose()
+    {
+        InternalDisposeAsync().GetAwaiter().GetResult();
+    }
+    #endregion
+
+#if (!NETSTANDARD2_0)    
+    #region DisposeAsync
+    /// <summary>
+    ///     Disposes the running <see cref="_chromiumProcess" />
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        await InternalDisposeAsync();
+    }
+    #endregion
+#endif
 }

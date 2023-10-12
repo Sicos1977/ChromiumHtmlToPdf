@@ -341,6 +341,7 @@ static class Program
     /// <param name="options"></param>
     private static void Convert(Options options)
     {
+        var stopWatch = Stopwatch.StartNew();
         var pageSettings = GetPageSettings(options);
 
         using var converter = new Converter(options.ChromiumLocation, options.ChromiumUserProfile, _logger);
@@ -353,6 +354,9 @@ static class Program
             options.WaitForWindowStatusTimeOut,
             options.Timeout,
             options.MediaLoadTimeout);
+
+        stopWatch.Stop();
+        WriteToLog($"Conversion took {stopWatch.ElapsedMilliseconds} ms");
     }
     #endregion
 
@@ -437,8 +441,7 @@ static class Program
         try
         {
             if (_logger == null) return;
-            using (_logger.BeginScope(null))
-                _logger.LogInformation(message);
+            _logger.LogInformation(message);
         }
         catch (ObjectDisposedException)
         {

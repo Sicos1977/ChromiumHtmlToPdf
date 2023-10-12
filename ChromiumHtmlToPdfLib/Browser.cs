@@ -38,11 +38,7 @@ using ChromiumHtmlToPdfLib.Protocol.Page;
 using ChromiumHtmlToPdfLib.Settings;
 using Microsoft.Extensions.Logging;
 using Base = ChromiumHtmlToPdfLib.Protocol.Network.Base;
-
-// ReSharper disable MethodSupportsCancellation
-
-// ReSharper disable MemberCanBePrivate.Global
-// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable UnusedMember.Global
 // ReSharper disable AccessToDisposedClosure
 // ReSharper disable AccessToModifiedClosure
 
@@ -54,7 +50,11 @@ namespace ChromiumHtmlToPdfLib;
 /// <remarks>
 ///     See https://chromedevtools.github.io/devtools-protocol/
 /// </remarks>
-internal class Browser : IDisposable
+#if (NETSTANDARD2_0)
+public class Browser : IDisposable
+#else
+public class Browser : IDisposable, IAsyncDisposable
+#endif
 {
     #region Fields
     /// <summary>
@@ -70,12 +70,12 @@ internal class Browser : IDisposable
     /// <summary>
     ///     A connection to the browser (Chrome or Edge)
     /// </summary>
-    private readonly Connection _browserConnection;
+    private Connection _browserConnection;
 
     /// <summary>
     ///     A connection to a page
     /// </summary>
-    private readonly Connection _pageConnection;
+    private Connection _pageConnection;
 
     private string _instanceId;
     #endregion
@@ -655,7 +655,7 @@ internal class Browser : IDisposable
             if (length > 0)
             {
                 WriteToLog($"PDF chunk received with id {ioReadResponse.Id} and length {length}, writing it to output stream");
-                await outputStream.WriteAsync(bytes, 0, length);
+                await outputStream.WriteAsync(bytes, 0, length, cancellationToken);
             }
 
             if (!ioReadResponse.Result.Eof) continue;
@@ -748,5 +748,29 @@ internal class Browser : IDisposable
         _browserConnection.OnError -= OnOnError;
         _browserConnection?.Dispose();
     }
+    #endregion
+
+    #region DisposeAsync
+#if (!NETSTANDARD2_0)    
+    /// <summary>
+    ///     Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        if (_pageConnection != null)
+        {
+            _pageConnection.OnError -= OnOnError;
+            await _pageConnection.DisposeAsync();
+            _pageConnection = null;
+        }
+
+        if (_pageConnection != null)
+        {
+            _browserConnection.OnError -= OnOnError;
+            await _browserConnection.DisposeAsync();
+            _browserConnection = null;
+        }
+    }
+#endif
     #endregion
 }
