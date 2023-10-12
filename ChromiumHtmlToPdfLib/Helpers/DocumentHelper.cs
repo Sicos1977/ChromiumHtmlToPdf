@@ -32,7 +32,6 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Cache;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -152,12 +151,10 @@ internal class DocumentHelper : IDisposable
         _useCache = useCache;
         _logger = logger;
 
-        if (imageLoadTimeout.HasValue)
-        {
-            _imageLoadTimeout = imageLoadTimeout.Value;
-            WriteToLog($"Setting image load timeout to '{_imageLoadTimeout}' milliseconds");
-            _stopwatch = Stopwatch.StartNew();
-        }
+        if (!imageLoadTimeout.HasValue) return;
+        _imageLoadTimeout = imageLoadTimeout.Value;
+        WriteToLog($"Setting image load timeout to '{_imageLoadTimeout}' milliseconds");
+        _stopwatch = Stopwatch.StartNew();
     }
     #endregion
 
@@ -903,31 +900,33 @@ internal class DocumentHelper : IDisposable
     {
         try
         {
-            var request = WebRequest.Create(sourceUri);
-            var timeLeft = TimeLeft;
-
-            if (_stopwatch != null && checkTimeout)
-            {
-                if (timeLeft == 0)
-                {
-                    WriteToLog($"Image load has timed out, skipping opening stream to url '{sourceUri}'");
-                    return null;
-                }
-
-                request.Timeout = TimeLeft;
-            }
+            var httpClientHandler = new HttpClientHandler();
 
             if (_webProxy != null)
-                request.Proxy = _webProxy;
+                httpClientHandler.Proxy = _webProxy;
 
-            if (_useCache)
-                request.CachePolicy = new HttpRequestCachePolicy(HttpCacheAgeControl.MaxAge, TimeSpan.FromDays(1));
+            var handler = new FileCacheHandler(httpClientHandler);
+            using var client = new HttpClient(handler);
+            var timeLeft = TimeLeft;
+
+            //if (_stopwatch != null && checkTimeout)
+            //{
+            //    if (timeLeft == 0)
+            //    {
+            //        WriteToLog($"Image load has timed out, skipping opening stream to url '{sourceUri}'");
+            //        return null;
+            //    }
+
+            //    request.Timeout = TimeLeft;
+            //}
+
+
 
             WriteToLog($"Opening stream to url '{sourceUri}'{(_stopwatch != null ? $" with a timeout of {timeLeft} milliseconds" : string.Empty)}");
-            var response = (HttpWebResponse)await request.GetResponseAsync();
-
-            WriteToLog($"Opened {(response.IsFromCache ? "cached " : string.Empty)}stream to url '{sourceUri}'");
-            return response.GetResponseStream();
+            var response = await client.GetAsync(sourceUri);
+            
+            //WriteToLog($"Opened {(response.IsFromCache ? "cached " : string.Empty)}stream to url '{sourceUri}'");
+            return await response.Content.ReadAsStreamAsync();
         }
         catch (Exception exception)
         {

@@ -445,7 +445,7 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <remarks>
     ///     https://developer.chrome.com/articles/new-headless/
     /// </remarks>
-    public bool UseOldHeaslessMode { get; set; }
+    public bool UseOldHeadlessMode { get; set; }
     #endregion
 
     #region Constructor & Destructor
