@@ -13,11 +13,22 @@ namespace ChromiumHtmlToPdfLib.Helpers;
 
 internal class FileCacheHandler : HttpClientHandler
 {
+    #region Properties
+    /// <summary>
+    ///     <see cref="HttpClientHandler"/>
+    /// </summary>
     HttpClientHandler _httpClientHandler;
 
-    public FileCacheHandler(HttpClientHandler httpClientHandler, DirectoryInfo cacheFolder)
+    /// <summary>
+    ///     The cache folder
+    /// </summary>
+    DirectoryInfo _cacheFolder;
+    #endregion
+
+    internal FileCacheHandler(HttpClientHandler httpClientHandler, DirectoryInfo cacheFolder)
     {
         _httpClientHandler = httpClientHandler;
+        _cacheFolder = cacheFolder;
     }
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

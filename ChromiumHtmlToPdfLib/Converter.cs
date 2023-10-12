@@ -448,7 +448,7 @@ public class Converter : IDisposable, IAsyncDisposable
     public bool UseOldHeadlessMode { get; set; }
     #endregion
 
-    #region Constructor & Destructor
+    #region Constructor
     /// <summary>
     ///     Creates this object and sets it's needed properties
     /// </summary>
