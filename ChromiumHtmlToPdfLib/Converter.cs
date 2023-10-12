@@ -182,6 +182,16 @@ public class Converter : IDisposable, IAsyncDisposable
     ///     When <c>true</c> then caching will be enabled
     /// </summary>
     private bool _useCache;
+
+    /// <summary>
+    ///     <see cref="SetDiskCache"/>
+    /// </summary>
+    private DirectoryInfo _cacheDirectory;
+
+    /// <summary>
+    ///     <see cref="SetDiskCache"/>
+    /// </summary>
+    private long _cacheSize;
     #endregion
 
     #region Properties
@@ -193,8 +203,10 @@ public class Converter : IDisposable, IAsyncDisposable
             {
                 case Enums.Browser.Chrome:
                     return "Google Chrome";
+
                 case Enums.Browser.Edge:
                     return "Microsoft Edge";
+
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -428,6 +440,25 @@ public class Converter : IDisposable, IAsyncDisposable
     {
         get => !_useCache;
         set => _useCache = !value;
+    }
+
+    /// <summary>
+    ///     Returns a reference to the temp directory
+    /// </summary>
+    private DirectoryInfo GetCacheDirectory
+    {
+        get
+        {
+            // TODO: Make code work
+            CurrentTempDirectory = _tempDirectory == null
+                ? new DirectoryInfo(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()))
+                : new DirectoryInfo(Path.Combine(_tempDirectory, Guid.NewGuid().ToString()));
+
+            if (!CurrentTempDirectory.Exists)
+                CurrentTempDirectory.Create();
+
+            return CurrentTempDirectory;
+        }
     }
 
     /// <summary>
@@ -776,7 +807,7 @@ public class Converter : IDisposable, IAsyncDisposable
 
         _defaultChromiumArgument = new List<string>();
         
-        if (UseOldHeaslessMode)
+        if (UseOldHeadlessMode)
             AddChromiumArgument("--headless");
         else
             AddChromiumArgument("--headless", "new");
@@ -999,13 +1030,14 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <param name="size">The maximum size in megabytes for the cache directory, <c>null</c> to let Chromium decide</param>
     /// <remarks>
     ///     You can not share a cache folder between multiple instances that are running at the same time because a Google
-    ///     Chrome
-    ///     or Microsoft Edge instance locks the cache for it self. If you want to use caching in a multi threaded environment
-    ///     then assign a unique cache folder to each running Google Chrome or Microsoft Edge instance
+    ///     Chrome or Microsoft Edge instance locks the cache for it self. If you want to use caching in a multi threaded
+    ///     environment then assign a unique cache folder to each running Google Chrome or Microsoft Edge instance
     /// </remarks>
     public void SetDiskCache(string directory, long? size)
     {
-        if (!Directory.Exists(directory))
+        _cacheDirectory = new DirectoryInfo(directory);
+
+        if (!_cacheDirectory.Exists)
             throw new DirectoryNotFoundException($"The directory '{directory}' does not exists");
 
         AddChromiumArgument("--disk-cache-dir", directory.TrimEnd('\\', '/'));
@@ -1014,6 +1046,8 @@ public class Converter : IDisposable, IAsyncDisposable
         {
             if (size.Value <= 0)
                 throw new ArgumentException("Has to be a value of 1 or greater", nameof(size));
+
+            _cacheSize = size.Value * 1024 * 1024;
 
             AddChromiumArgument("--disk-cache-size", (size.Value * 1024 * 1024).ToString());
         }

@@ -91,6 +91,16 @@ internal class DocumentHelper : IDisposable
     private readonly Stopwatch _stopwatch;
 
     private readonly int _imageLoadTimeout;
+
+    /// <summary>
+    ///     The cache folder
+    /// </summary>
+    readonly DirectoryInfo _cacheFolder;
+
+    /// <summary>
+    ///     The cache size
+    /// </summary>
+    private readonly long _cacheSize;
     #endregion
 
     #region Properties
@@ -144,12 +154,16 @@ internal class DocumentHelper : IDisposable
         WebProxy webProxy,
         bool useCache,
         int? imageLoadTimeout,
-        ILogger logger)
+        ILogger logger,
+        DirectoryInfo cacheFolder, 
+        long cacheSize)
     {
         _tempDirectory = tempDirectory;
         _webProxy = webProxy;
         _useCache = useCache;
         _logger = logger;
+        _cacheFolder = cacheFolder;
+        _cacheSize = cacheSize;
 
         if (!imageLoadTimeout.HasValue) return;
         _imageLoadTimeout = imageLoadTimeout.Value;
