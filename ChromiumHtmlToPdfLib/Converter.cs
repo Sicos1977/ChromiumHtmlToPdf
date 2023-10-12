@@ -437,6 +437,15 @@ public class Converter : IDisposable, IAsyncDisposable
     ///     Default 30 seconds
     /// </remarks>
     public int WebsocketTimeout { get; set; } = 30000;
+
+    /// <summary>
+    ///     By default the Chromium based browser is started with the <c>--headless=new</c> argument.
+    ///     If you don't want this then set this property to <c>true</c>
+    /// </summary>
+    /// <remarks>
+    ///     https://developer.chrome.com/articles/new-headless/
+    /// </remarks>
+    public bool UseOldHeaslessMode { get; set; }
     #endregion
 
     #region Constructor & Destructor
@@ -527,8 +536,7 @@ public class Converter : IDisposable, IAsyncDisposable
         _chromiumEventException = null;
         var workingDirectory = Path.GetDirectoryName(_chromiumExeFileName);
 
-        WriteToLog(
-            $"Starting {BrowserName} from location '{_chromiumExeFileName}' with working directory '{workingDirectory}'");
+        WriteToLog($"Starting {BrowserName} from location '{_chromiumExeFileName}' with working directory '{workingDirectory}'");
         WriteToLog($"\"{_chromiumExeFileName}\" {string.Join(" ", DefaultChromiumArguments)}");
 
         _chromiumProcess = new Process();
@@ -658,8 +666,7 @@ public class Converter : IDisposable, IAsyncDisposable
         try
         {
             if (_chromiumProcess == null) return;
-            WriteToLog(
-                $"{BrowserName} exited unexpectedly, arguments used: {string.Join(" ", DefaultChromiumArguments)}");
+            WriteToLog($"{BrowserName} exited unexpectedly, arguments used: {string.Join(" ", DefaultChromiumArguments)}");
             WriteToLog($"Process id: {_chromiumProcess.Id}");
             WriteToLog($"Process exit time: {_chromiumProcess.ExitTime:yyyy-MM-ddTHH:mm:ss.fff}");
             var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromiumProcess.ExitCode));
@@ -768,7 +775,12 @@ public class Converter : IDisposable, IAsyncDisposable
         WriteToLog("Resetting Chromium arguments to default");
 
         _defaultChromiumArgument = new List<string>();
-        // https://developer.chrome.com/articles/new-headless/
+        
+        if (UseOldHeaslessMode)
+            AddChromiumArgument("--headless");
+        else
+            AddChromiumArgument("--headless", "new");
+
         AddChromiumArgument("--headless", "new");
         AddChromiumArgument("--disable-gpu");
         AddChromiumArgument("--hide-scrollbars");
