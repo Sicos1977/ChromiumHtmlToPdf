@@ -40,13 +40,7 @@ using ChromiumHtmlToPdfLib.Helpers;
 using ChromiumHtmlToPdfLib.Settings;
 using Ganss.Xss;
 using Microsoft.Extensions.Logging;
-
-// ReSharper disable ConvertToUsingDeclaration
-
-// ReSharper disable UnusedAutoPropertyAccessor.Global
-// ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable UnusedMember.Global
-// ReSharper disable UnusedMember.Local
 
 namespace ChromiumHtmlToPdfLib;
 
@@ -756,7 +750,7 @@ public class Converter : IDisposable
     private static void CheckIfOutputFolderExists(string outputFile)
     {
         var directory = new FileInfo(outputFile).Directory;
-        if (directory != null && !directory.Exists)
+        if (directory is { Exists: false })
             throw new DirectoryNotFoundException($"The path '{directory.FullName}' does not exists");
     }
     #endregion
@@ -1149,7 +1143,13 @@ public class Converter : IDisposable
     #endregion
 
     #region GetUrlFromFile
-    private bool GetUrlFromFile(string fileName, out string url)
+    /// <summary>
+    ///     Tries to read the url from a .url file
+    /// </summary>
+    /// <param name="fileName"></param>
+    /// <param name="url"></param>
+    /// <returns></returns>
+    private static bool GetUrlFromFile(string fileName, out string url)
     {
         try
         {
@@ -1158,11 +1158,10 @@ public class Converter : IDisposable
             foreach (var line in lines)
             {
                 var temp = line.ToLowerInvariant();
-                if (temp.StartsWith("url="))
-                {
-                    url = line.Substring(4);
-                    return true;
-                }
+                if (!temp.StartsWith("url=")) continue;
+                // ReSharper disable once ReplaceSubstringWithRangeIndexer
+                url = line.Substring(4).Trim();
+                return true;
             }
         }
         catch
@@ -1244,48 +1243,54 @@ public class Converter : IDisposable
                     safeUrls.Add(inputUri.ToString());
                 }
 
-                if (ImageResize || ImageRotate || SanitizeHtml ||
-                    pageSettings.PaperFormat == PaperFormat.FitPageToContent)
-                    using (var documentHelper =
-                           new DocumentHelper(GetTempDirectory, WebProxy, _useCache, ImageLoadTimeout, _logger)
-                               { InstanceId = InstanceId })
+                if (ImageResize || ImageRotate || SanitizeHtml || pageSettings.PaperFormat == PaperFormat.FitPageToContent)
+                {
+                    using var documentHelper = new DocumentHelper(GetTempDirectory, WebProxy, _useCache, ImageLoadTimeout, _logger) { InstanceId = InstanceId };
+                    
+                    if (SanitizeHtml)
                     {
-                        if (SanitizeHtml)
+                        var result = await documentHelper.SanitizeHtmlAsync(inputUri, Sanitizer, safeUrls, cancellationToken);
+                        if (result.Success)
                         {
-                            var result = documentHelper.SanitizeHtmlAsync(inputUri, Sanitizer, out var outputUri, ref safeUrls)
-                            if (documentHelper.SanitizeHtmlAsync(inputUri, Sanitizer, out var outputUri, ref safeUrls))
-                            {
-                                inputUri = outputUri;
-                            }
-                            else
-                            {
-                                WriteToLog($"Adding url '{inputUri}' to the safe url list");
-                                safeUrls.Add(inputUri.ToString());
-                            }
+                            inputUri = result.OutputUri;
+                            safeUrls = result.SafeUrls;
                         }
-
-                        if (pageSettings.PaperFormat == PaperFormat.FitPageToContent)
+                        else
                         {
-                            WriteToLog(
-                                "The paper format 'FitPageToContent' is set, modifying html so that the PDF fits the HTML content");
-                            if (documentHelper.FitPageToContentAsync(inputUri, out var outputUri))
-                            {
-                                inputUri = outputUri;
-                                safeUrls.Add(outputUri.ToString());
-                            }
+                            WriteToLog($"Adding url '{inputUri}' to the safe url list");
+                            safeUrls.Add(inputUri.ToString());
                         }
-
-                        if (ImageResize || ImageRotate)
-                            if (documentHelper.ValidateImagesAsync(
-                                    inputUri,
-                                    ImageResize,
-                                    ImageRotate,
-                                    pageSettings,
-                                    out var outputUri,
-                                    ref safeUrls,
-                                    _urlBlacklist))
-                                inputUri = outputUri;
                     }
+
+                    if (pageSettings.PaperFormat == PaperFormat.FitPageToContent)
+                    {
+                        WriteToLog("The paper format 'FitPageToContent' is set, modifying html so that the PDF fits the HTML content");
+                        var result = await documentHelper.FitPageToContentAsync(inputUri, cancellationToken);
+                        if (result.Success)
+                        {
+                            inputUri = result.OutputUri;
+                            safeUrls.Add(input.ToString());
+                        }
+                    }
+
+                    if (ImageResize || ImageRotate)
+                    {
+                        var result = await documentHelper.ValidateImagesAsync(
+                            inputUri,
+                            ImageResize,
+                            ImageRotate,
+                            pageSettings,
+                            safeUrls,
+                            _urlBlacklist,
+                            cancellationToken);
+
+                        if (result.Success)
+                        {
+                            inputUri = result.OutputUri;
+                            safeUrls.Add(inputUri.ToString());
+                        }
+                    }
+                }
             }
 
             StartChromiumHeadless();
@@ -1295,8 +1300,7 @@ public class Converter : IDisposable
             if (conversionTimeout.HasValue)
             {
                 if (conversionTimeout <= 1)
-                    throw new ArgumentOutOfRangeException(
-                        $"The value for {nameof(countdownTimer)} has to be a value equal to 1 or greater");
+                    throw new ArgumentOutOfRangeException($"The value for {nameof(countdownTimer)} has to be a value equal to 1 or greater");
 
                 WriteToLog($"Conversion timeout set to {conversionTimeout.Value} milliseconds");
 
@@ -1318,7 +1322,7 @@ public class Converter : IDisposable
                 }
 
                 WriteToLog($"Waiting for window.status '{waitForWindowStatus}' or a timeout of {waitForWindowsStatusTimeout} milliseconds");
-                var match = _browser.WaitForWindowStatus(waitForWindowStatus, waitForWindowsStatusTimeout);
+                var match = await _browser.WaitForWindowStatusAsync(waitForWindowStatus, waitForWindowsStatusTimeout, cancellationToken);
                 WriteToLog(!match ? "Waiting timed out" : $"Window status equaled {waitForWindowStatus}");
 
                 if (conversionTimeout.HasValue)
@@ -1335,24 +1339,26 @@ public class Converter : IDisposable
             {
                 WriteToLog("Start running javascript");
                 WriteToLog(RunJavascript);
-                _browser.RunJavascript(RunJavascript);
+                await _browser.RunJavascriptAsync(RunJavascript, cancellationToken);
                 WriteToLog("Done running javascript");
             }
 
             if (CaptureSnapshot)
             {
                 if (SnapshotStream == null)
-                    throw new ConversionException(
-                        "The property CaptureSnapshot has been set to true but there is no stream assigned to the SnapshotStream");
+                    throw new ConversionException("The property CaptureSnapshot has been set to true but there is no stream assigned to the SnapshotStream");
 
                 WriteToLog("Taking snapshot of the page");
 
-                using (var memoryStream =
-                       new MemoryStream(_browser.CaptureSnapshot(countdownTimer).GetAwaiter().GetResult().Bytes))
-                {
-                    memoryStream.Position = 0;
-                    await memoryStream.CopyToAsync(SnapshotStream, cancellationToken);
-                }
+                var snapshot = await _browser.CaptureSnapshotAsync(countdownTimer, cancellationToken);
+                using var memoryStream = new MemoryStream(snapshot.Bytes);
+                memoryStream.Position = 0;
+
+#if (NETSTANDARD2_0)
+                await memoryStream.CopyToAsync(SnapshotStream);
+#else
+                await memoryStream.CopyToAsync(SnapshotStream, cancellationToken);
+#endif
 
                 WriteToLog("Taken");
             }
@@ -1369,9 +1375,15 @@ public class Converter : IDisposable
                 {
                     WriteToLog("Converting to image");
 
-                    using var memoryStream = new MemoryStream(await _browser.CaptureScreenshot(countdownTimer));
+                    var snapshot = await _browser.CaptureScreenshotAsync(countdownTimer, cancellationToken);
+                    using var memoryStream = new MemoryStream(snapshot.Bytes);
                     memoryStream.Position = 0;
+
+#if (NETSTANDARD2_0)
+                    await memoryStream.CopyToAsync(outputStream);
+#else
                     await memoryStream.CopyToAsync(outputStream, cancellationToken);
+#endif
 
                     break;
                 }
@@ -1472,18 +1484,17 @@ public class Converter : IDisposable
         int? mediaLoadTimeout = null,
         ILogger logger = null)
     {
-        ConvertAsync(
-            OutputFormat.Pdf,
-            inputUri,
-            outputStream,
-            pageSettings,
-            waitForWindowStatus,
+        ConvertToPdfAsync(
+            inputUri, 
+            outputStream, 
+            pageSettings, 
+            waitForWindowStatus, 
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger);
+            logger).GetAwaiter().GetResult();
     }
-
+    
     /// <summary>
     ///     Converts the given <paramref name="inputUri" /> to PDF
     /// </summary>
@@ -1529,27 +1540,15 @@ public class Converter : IDisposable
         int? mediaLoadTimeout = null,
         ILogger logger = null)
     {
-        CheckIfOutputFolderExists(outputFile);
-
-        if (CaptureSnapshot)
-            SnapshotStream = new MemoryStream();
-
-        using (var memoryStream = new MemoryStream())
-        {
-            ConvertToPdf(inputUri, memoryStream, pageSettings, waitForWindowStatus, waitForWindowsStatusTimeout,
-                conversionTimeout, mediaLoadTimeout, logger);
-
-            using (var fileStream = File.Open(outputFile, FileMode.Create))
-            {
-                memoryStream.Position = 0;
-                memoryStream.CopyTo(fileStream);
-            }
-
-            WriteToLog($"PDF written to output file '{outputFile}'");
-        }
-
-        if (CaptureSnapshot)
-            WriteSnapShot(outputFile);
+        ConvertToPdfAsync(
+            inputUri,
+            outputFile,
+            pageSettings,
+            waitForWindowStatus,
+            waitForWindowsStatusTimeout,
+            conversionTimeout,
+            mediaLoadTimeout,
+            logger).GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -1599,8 +1598,7 @@ public class Converter : IDisposable
         int? mediaLoadTimeout = null,
         ILogger logger = null)
     {
-        ConvertAsync(
-            OutputFormat.Pdf,
+        ConvertToPdfAsync(
             html,
             outputStream,
             pageSettings,
@@ -1608,9 +1606,9 @@ public class Converter : IDisposable
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger);
+            logger).GetAwaiter().GetResult();
     }
-
+    
     /// <summary>
     ///     Converts the given <paramref name="html" /> to PDF
     /// </summary>
@@ -1640,12 +1638,9 @@ public class Converter : IDisposable
     ///     Raised when <paramref name="conversionTimeout" /> is set and the
     ///     conversion fails to finish in this amount of time
     /// </exception>
-    /// <exception cref="DirectoryNotFoundException"></exception>
-    /// ///
     /// <remarks>
     ///     When the property <see cref="CaptureSnapshot" /> has been set then the snapshot is saved to the
-    ///     property <see cref="SnapshotStream" /> and after that automatic saved to the <paramref name="outputFile" />
-    ///     (the extension will automatic be replaced with .mhtml)<br />
+    ///     property <see cref="SnapshotStream" /><br />
     ///     Warning: At the moment this method does not support the properties <see cref="ImageResize" />,
     ///     <see cref="ImageRotate" /> and <see cref="SanitizeHtml" /><br />
     ///     Warning: At the moment this method does not support <see cref="PageSettings.PaperFormat" /> ==
@@ -1661,6 +1656,263 @@ public class Converter : IDisposable
         int? mediaLoadTimeout = null,
         ILogger logger = null)
     {
+        ConvertToPdfAsync(
+            html,
+            outputFile,
+            pageSettings,
+            waitForWindowStatus,
+            waitForWindowsStatusTimeout,
+            conversionTimeout,
+            mediaLoadTimeout,
+            logger).GetAwaiter().GetResult();
+    }
+
+    #endregion
+
+    #region ConvertToPdfAsync
+    /// <summary>
+    ///     Converts the given <paramref name="inputUri" /> to PDF
+    /// </summary>
+    /// <param name="inputUri">The webpage to convert</param>
+    /// <param name="outputStream">The output stream</param>
+    /// <param name="pageSettings">
+    ///     <see cref="PageSettings" />
+    /// </param>
+    /// <param name="waitForWindowStatus">
+    ///     Wait until the javascript window.status has this value before
+    ///     rendering the PDF
+    /// </param>
+    /// <param name="waitForWindowsStatusTimeout"></param>
+    /// <param name="conversionTimeout">
+    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
+    /// </param>
+    /// <param name="mediaLoadTimeout">
+    ///     When set a timeout will be started after the DomContentLoaded
+    ///     event has fired. After a timeout the NavigateTo method will exit as if the page has been completely loaded
+    /// </param>
+    /// <param name="logger">
+    ///     When set then this will give a logging for each conversion. Use the logger
+    ///     option in the constructor if you want one log for all conversions
+    /// </param>
+    /// <exception cref="ConversionTimedOutException">
+    ///     Raised when <paramref name="conversionTimeout" /> is set and the
+    ///     conversion fails to finish in this amount of time
+    /// </exception>
+    /// <remarks>
+    ///     When the property <see cref="CaptureSnapshot" /> has been set then the snapshot is saved to the
+    ///     property <see cref="SnapshotStream" />
+    /// </remarks>
+    public async Task ConvertToPdfAsync(
+        ConvertUri inputUri,
+        Stream outputStream,
+        PageSettings pageSettings,
+        string waitForWindowStatus = "",
+        int waitForWindowsStatusTimeout = 60000,
+        int? conversionTimeout = null,
+        int? mediaLoadTimeout = null,
+        ILogger logger = null,
+        CancellationToken cancellationToken = default)
+    {
+        await ConvertAsync(
+            OutputFormat.Pdf,
+            inputUri,
+            outputStream,
+            pageSettings,
+            waitForWindowStatus,
+            waitForWindowsStatusTimeout,
+            conversionTimeout,
+            mediaLoadTimeout,
+            logger, 
+            cancellationToken);
+    }
+
+    /// <summary>
+    ///     Converts the given <paramref name="inputUri" /> to PDF
+    /// </summary>
+    /// <param name="inputUri">The webpage to convert</param>
+    /// <param name="outputFile">The output file</param>
+    /// <param name="pageSettings">
+    ///     <see cref="PageSettings" />
+    /// </param>
+    /// <param name="waitForWindowStatus">
+    ///     Wait until the javascript window.status has this value before
+    ///     rendering the PDF
+    /// </param>
+    /// <param name="waitForWindowsStatusTimeout"></param>
+    /// <param name="conversionTimeout">
+    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
+    /// </param>
+    /// <param name="mediaLoadTimeout">
+    ///     When set a timeout will be started after the DomContentLoaded
+    ///     event has fired. After a timeout the NavigateTo method will exit as if the page has been completely loaded
+    /// </param>
+    /// <param name="logger">
+    ///     When set then this will give a logging for each conversion. Use the logger
+    ///     option in the constructor if you want one log for all conversions
+    /// </param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+    /// <exception cref="ConversionTimedOutException">
+    ///     Raised when <paramref name="conversionTimeout" /> is set and the
+    ///     conversion fails to finish in this amount of time
+    /// </exception>
+    /// <exception cref="DirectoryNotFoundException"></exception>
+    /// <remarks>
+    ///     When the property <see cref="CaptureSnapshot" /> has been set then the snapshot is saved to the
+    ///     property <see cref="SnapshotStream" /> and after that automatic saved to the <paramref name="outputFile" />
+    ///     (the extension will automatic be replaced with .mhtml)
+    /// </remarks>
+    public async Task ConvertToPdfAsync(
+        ConvertUri inputUri,
+        string outputFile,
+        PageSettings pageSettings,
+        string waitForWindowStatus = "",
+        int waitForWindowsStatusTimeout = 60000,
+        int? conversionTimeout = null,
+        int? mediaLoadTimeout = null,
+        ILogger logger = null,
+        CancellationToken cancellationToken = default)
+    {
+        CheckIfOutputFolderExists(outputFile);
+
+        if (CaptureSnapshot)
+            SnapshotStream = new MemoryStream();
+
+        using var memoryStream = new MemoryStream();
+        
+        await ConvertToPdfAsync(inputUri, memoryStream, pageSettings, waitForWindowStatus, waitForWindowsStatusTimeout,
+            conversionTimeout, mediaLoadTimeout, logger, cancellationToken);
+
+#if (NETSTANDARD2_0)
+        using var fileStream = File.Open(outputFile, FileMode.Create);
+        memoryStream.Position = 0;
+        await memoryStream.CopyToAsync(fileStream);
+#else
+        await using var fileStream = File.Open(outputFile, FileMode.Create);
+        memoryStream.Position = 0;
+        await memoryStream.CopyToAsync(fileStream, cancellationToken);
+#endif
+
+        WriteToLog($"PDF written to output file '{outputFile}'");
+
+        if (CaptureSnapshot)
+            WriteSnapShot(outputFile);
+    }
+
+    /// <summary>
+    ///     Converts the given <paramref name="html" /> to PDF
+    /// </summary>
+    /// <param name="html">The html</param>
+    /// <param name="outputStream">The output stream</param>
+    /// <param name="pageSettings">
+    ///     <see cref="PageSettings" />
+    /// </param>
+    /// <param name="waitForWindowStatus">
+    ///     Wait until the javascript window.status has this value before
+    ///     rendering the PDF
+    /// </param>
+    /// <param name="waitForWindowsStatusTimeout"></param>
+    /// <param name="conversionTimeout">
+    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
+    /// </param>
+    /// <param name="mediaLoadTimeout">
+    ///     When set a timeout will be started after the DomContentLoaded
+    ///     event has fired. After a timeout the NavigateTo method will exit as if the page has been completely loaded
+    /// </param>
+    /// <param name="logger">
+    ///     When set then this will give a logging for each conversion. Use the logger
+    ///     option in the constructor if you want one log for all conversions
+    /// </param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+    /// <exception cref="ConversionTimedOutException">
+    ///     Raised when <paramref name="conversionTimeout" /> is set and the
+    ///     conversion fails to finish in this amount of time
+    /// </exception>
+    /// <remarks>
+    ///     When the property <see cref="CaptureSnapshot" /> has been set then the snapshot is saved to the
+    ///     property <see cref="SnapshotStream" /><br />
+    ///     Warning: At the moment this method does not support the properties <see cref="ImageResize" />,
+    ///     <see cref="ImageRotate" /> and <see cref="SanitizeHtml" /><br />
+    ///     Warning: At the moment this method does not support <see cref="PageSettings.PaperFormat" /> ==
+    ///     <c>PaperFormat.FitPageToContent</c>
+    /// </remarks>
+    public async Task ConvertToPdfAsync(
+        string html,
+        Stream outputStream,
+        PageSettings pageSettings,
+        string waitForWindowStatus = "",
+        int waitForWindowsStatusTimeout = 60000,
+        int? conversionTimeout = null,
+        int? mediaLoadTimeout = null,
+        ILogger logger = null,
+        CancellationToken cancellationToken = default)
+    {
+        await ConvertAsync(
+            OutputFormat.Pdf,
+            html,
+            outputStream,
+            pageSettings,
+            waitForWindowStatus,
+            waitForWindowsStatusTimeout,
+            conversionTimeout,
+            mediaLoadTimeout,
+            logger,
+            cancellationToken);
+    }
+
+    /// <summary>
+    ///     Converts the given <paramref name="html" /> to PDF
+    /// </summary>
+    /// <param name="html">The html</param>
+    /// <param name="outputFile">The output file</param>
+    /// <param name="pageSettings">
+    ///     <see cref="PageSettings" />
+    /// </param>
+    /// <param name="waitForWindowStatus">
+    ///     Wait until the javascript window.status has this value before
+    ///     rendering the PDF
+    /// </param>
+    /// <param name="waitForWindowsStatusTimeout"></param>
+    /// <param name="conversionTimeout">
+    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
+    /// </param>
+    /// <param name="mediaLoadTimeout">
+    ///     When set a timeout will be started after the DomContentLoaded
+    ///     event has fired. After a timeout the NavigateTo method will exit as if the page has been completely loaded
+    /// </param>
+    /// <param name="logger">
+    ///     When set then this will give a logging for each conversion. Use the logger
+    ///     option in the constructor if you want one log for all conversions
+    /// </param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+    /// <exception cref="ConversionTimedOutException">
+    ///     Raised when <paramref name="conversionTimeout" /> is set and the
+    ///     conversion fails to finish in this amount of time
+    /// </exception>
+    /// <exception cref="DirectoryNotFoundException"></exception>
+    /// <remarks>
+    ///     When the property <see cref="CaptureSnapshot" /> has been set then the snapshot is saved to the
+    ///     property <see cref="SnapshotStream" /> and after that automatic saved to the <paramref name="outputFile" />
+    ///     (the extension will automatic be replaced with .mhtml)<br />
+    ///     Warning: At the moment this method does not support the properties <see cref="ImageResize" />,
+    ///     <see cref="ImageRotate" /> and <see cref="SanitizeHtml" /><br />
+    ///     Warning: At the moment this method does not support <see cref="PageSettings.PaperFormat" /> ==
+    ///     <c>PaperFormat.FitPageToContent</c>
+    /// </remarks>
+    public async Task ConvertToPdfAsync(
+        string html,
+        string outputFile,
+        PageSettings pageSettings,
+        string waitForWindowStatus = "",
+        int waitForWindowsStatusTimeout = 60000,
+        int? conversionTimeout = null,
+        int? mediaLoadTimeout = null,
+        ILogger logger = null,
+        CancellationToken cancellationToken = default)
+    {
         CheckIfOutputFolderExists(outputFile);
 
         if (CaptureSnapshot)
@@ -1668,14 +1920,18 @@ public class Converter : IDisposable
 
         using (var memoryStream = new MemoryStream())
         {
-            ConvertToPdf(html, memoryStream, pageSettings, waitForWindowStatus,
-                waitForWindowsStatusTimeout, conversionTimeout, mediaLoadTimeout, logger);
+            await ConvertToPdfAsync(html, memoryStream, pageSettings, waitForWindowStatus,
+                waitForWindowsStatusTimeout, conversionTimeout, mediaLoadTimeout, logger, cancellationToken);
 
-            using (var fileStream = File.Open(outputFile, FileMode.Create))
-            {
-                memoryStream.Position = 0;
-                memoryStream.CopyTo(fileStream);
-            }
+            memoryStream.Position = 0;
+
+#if (NETSTANDARD2_0)
+            using var fileStream = File.Open(outputFile, FileMode.Create);
+            await memoryStream.CopyToAsync(fileStream);
+#else
+            await using var fileStream = File.Open(outputFile, FileMode.Create);
+            await memoryStream.CopyToAsync(fileStream, cancellationToken);
+#endif
 
             WriteToLog($"PDF written to output file '{outputFile}'");
         }
@@ -1729,8 +1985,7 @@ public class Converter : IDisposable
         int? mediaLoadTimeout = null,
         ILogger logger = null)
     {
-        ConvertAsync(
-            OutputFormat.Image,
+        ConvertToImageAsync(
             inputUri,
             outputStream,
             pageSettings,
@@ -1738,7 +1993,7 @@ public class Converter : IDisposable
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger);
+            logger).GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -1788,8 +2043,7 @@ public class Converter : IDisposable
         int? mediaLoadTimeout = null,
         ILogger logger = null)
     {
-        ConvertAsync(
-            OutputFormat.Image,
+        ConvertToImageAsync(
             html,
             outputStream,
             pageSettings,
@@ -1797,7 +2051,7 @@ public class Converter : IDisposable
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger);
+            logger).GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -1846,27 +2100,15 @@ public class Converter : IDisposable
         int? mediaLoadTimeout = null,
         ILogger logger = null)
     {
-        CheckIfOutputFolderExists(outputFile);
-
-        if (CaptureSnapshot)
-            SnapshotStream = new MemoryStream();
-
-        using (var memoryStream = new MemoryStream())
-        {
-            ConvertToImage(inputUri, memoryStream, pageSettings, waitForWindowStatus,
-                waitForWindowsStatusTimeout, conversionTimeout, mediaLoadTimeout, logger);
-
-            using (var fileStream = File.Open(outputFile, FileMode.Create))
-            {
-                memoryStream.Position = 0;
-                memoryStream.CopyTo(fileStream);
-            }
-
-            WriteToLog($"Image written to output file '{outputFile}'");
-        }
-
-        if (CaptureSnapshot)
-            WriteSnapShot(outputFile);
+        ConvertToImageAsync(
+            inputUri,
+            outputFile,
+            pageSettings,
+            waitForWindowStatus,
+            waitForWindowsStatusTimeout,
+            conversionTimeout,
+            mediaLoadTimeout,
+            logger).GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -1919,24 +2161,284 @@ public class Converter : IDisposable
         int? mediaLoadTimeout = null,
         ILogger logger = null)
     {
+        ConvertToImageAsync(
+            html,
+            outputFile,
+            pageSettings,
+            waitForWindowStatus,
+            waitForWindowsStatusTimeout,
+            conversionTimeout,
+            mediaLoadTimeout,
+            logger).GetAwaiter().GetResult();
+    }
+    #endregion
+
+    #region ConvertToImageAsync
+    /// <summary>
+    ///     Converts the given <paramref name="inputUri" /> to an image (png)
+    /// </summary>
+    /// <param name="inputUri">The webpage to convert</param>
+    /// <param name="outputStream">The output stream</param>
+    /// <param name="pageSettings">
+    ///     <see cref="PageSettings" />
+    /// </param>
+    /// <param name="waitForWindowStatus">
+    ///     Wait until the javascript window.status has this value before
+    ///     rendering the PDF
+    /// </param>
+    /// <param name="waitForWindowsStatusTimeout"></param>
+    /// <param name="conversionTimeout">
+    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
+    /// </param>
+    /// <param name="mediaLoadTimeout">
+    ///     When set a timeout will be started after the DomContentLoaded
+    ///     event has fired. After a timeout the NavigateTo method will exit as if the page has been completely loaded
+    /// </param>
+    /// <param name="logger">
+    ///     When set then this will give a logging for each conversion. Use the logger
+    ///     option in the constructor if you want one log for all conversions
+    /// </param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+    /// <exception cref="ConversionTimedOutException">
+    ///     Raised when <paramref name="conversionTimeout" /> is set and the
+    ///     conversion fails to finish in this amount of time
+    /// </exception>
+    /// <remarks>
+    ///     When the property <see cref="CaptureSnapshot" /> has been set then the snapshot is saved to the
+    ///     property <see cref="SnapshotStream" />
+    /// </remarks>
+    public async Task ConvertToImageAsync(
+        ConvertUri inputUri,
+        Stream outputStream,
+        PageSettings pageSettings,
+        string waitForWindowStatus = "",
+        int waitForWindowsStatusTimeout = 60000,
+        int? conversionTimeout = null,
+        int? mediaLoadTimeout = null,
+        ILogger logger = null,
+        CancellationToken cancellationToken = default)
+    {
+        await ConvertAsync(
+            OutputFormat.Image,
+            inputUri,
+            outputStream,
+            pageSettings,
+            waitForWindowStatus,
+            waitForWindowsStatusTimeout,
+            conversionTimeout,
+            mediaLoadTimeout,
+            logger, 
+            cancellationToken);
+    }
+
+    /// <summary>
+    ///     Converts the given <paramref name="html" /> to an image (png)
+    /// </summary>
+    /// <param name="html">The html</param>
+    /// <param name="outputStream">The output stream</param>
+    /// <param name="pageSettings">
+    ///     <see cref="PageSettings" />
+    /// </param>
+    /// <param name="waitForWindowStatus">
+    ///     Wait until the javascript window.status has this value before
+    ///     rendering the PDF
+    /// </param>
+    /// <param name="waitForWindowsStatusTimeout"></param>
+    /// <param name="conversionTimeout">
+    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
+    /// </param>
+    /// <param name="mediaLoadTimeout">
+    ///     When set a timeout will be started after the DomContentLoaded
+    ///     event has fired. After a timeout the NavigateTo method will exit as if the page has been completely loaded
+    /// </param>
+    /// <param name="logger">
+    ///     When set then this will give a logging for each conversion. Use the logger
+    ///     option in the constructor if you want one log for all conversions
+    /// </param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+    /// <exception cref="ConversionTimedOutException">
+    ///     Raised when <paramref name="conversionTimeout" /> is set and the
+    ///     conversion fails to finish in this amount of time
+    /// </exception>
+    /// <remarks>
+    ///     When the property <see cref="CaptureSnapshot" /> has been set then the snapshot is saved to the
+    ///     property <see cref="SnapshotStream" /><br />
+    ///     Warning: At the moment this method does not support the properties <see cref="ImageResize" />,
+    ///     <see cref="ImageRotate" /> and <see cref="SanitizeHtml" /><br />
+    ///     Warning: At the moment this method does not support <see cref="PageSettings.PaperFormat" /> ==
+    ///     <c>PaperFormat.FitPageToContent</c>
+    /// </remarks>
+    public async Task ConvertToImageAsync(
+        string html,
+        Stream outputStream,
+        PageSettings pageSettings,
+        string waitForWindowStatus = "",
+        int waitForWindowsStatusTimeout = 60000,
+        int? conversionTimeout = null,
+        int? mediaLoadTimeout = null,
+        ILogger logger = null,
+        CancellationToken cancellationToken = default)
+    {
+        await ConvertAsync(
+            OutputFormat.Image,
+            html,
+            outputStream,
+            pageSettings,
+            waitForWindowStatus,
+            waitForWindowsStatusTimeout,
+            conversionTimeout,
+            mediaLoadTimeout,
+            logger, 
+            cancellationToken);
+    }
+
+    /// <summary>
+    ///     Converts the given <paramref name="inputUri" /> to an image (png)
+    /// </summary>
+    /// <param name="inputUri">The webpage to convert</param>
+    /// <param name="outputFile">The output file</param>
+    /// <param name="pageSettings">
+    ///     <see cref="PageSettings" />
+    /// </param>
+    /// <param name="waitForWindowStatus">
+    ///     Wait until the javascript window.status has this value before
+    ///     rendering the PDF
+    /// </param>
+    /// <param name="waitForWindowsStatusTimeout"></param>
+    /// <param name="conversionTimeout">
+    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
+    /// </param>
+    /// <param name="mediaLoadTimeout">
+    ///     When set a timeout will be started after the DomContentLoaded
+    ///     event has fired. After a timeout the NavigateTo method will exit as if the page has been completely loaded
+    /// </param>
+    /// <param name="logger">
+    ///     When set then this will give a logging for each conversion. Use the logger
+    ///     option in the constructor if you want one log for all conversions
+    /// </param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+    /// <exception cref="ConversionTimedOutException">
+    ///     Raised when<paramref name="conversionTimeout" /> is set and the
+    ///     conversion fails to finish in this amount of time
+    /// </exception>
+    /// <exception cref="DirectoryNotFoundException"></exception>
+    /// ///
+    /// <remarks>
+    ///     When the property <see cref="CaptureSnapshot" /> has been set then the snapshot is saved to the
+    ///     property <see cref="SnapshotStream" /> and after that automatic saved to the <paramref name="outputFile" />
+    ///     (the extension will automatic be replaced with .mhtml)
+    /// </remarks>
+    public async Task ConvertToImageAsync(
+        ConvertUri inputUri,
+        string outputFile,
+        PageSettings pageSettings,
+        string waitForWindowStatus = "",
+        int waitForWindowsStatusTimeout = 60000,
+        int? conversionTimeout = null,
+        int? mediaLoadTimeout = null,
+        ILogger logger = null,
+        CancellationToken cancellationToken = default)
+    {
         CheckIfOutputFolderExists(outputFile);
 
         if (CaptureSnapshot)
             SnapshotStream = new MemoryStream();
 
-        using (var memoryStream = new MemoryStream())
-        {
-            ConvertToImage(html, memoryStream, pageSettings, waitForWindowStatus,
-                waitForWindowsStatusTimeout, conversionTimeout, mediaLoadTimeout, logger);
+        using var memoryStream = new MemoryStream();
+        
+        await ConvertToImageAsync(inputUri, memoryStream, pageSettings, waitForWindowStatus,
+            waitForWindowsStatusTimeout, conversionTimeout, mediaLoadTimeout, logger, cancellationToken);
 
-            using (var fileStream = File.Open(outputFile, FileMode.Create))
-            {
-                memoryStream.Position = 0;
-                memoryStream.CopyTo(fileStream);
-            }
+        memoryStream.Position = 0;
 
-            WriteToLog($"Image written to output file '{outputFile}'");
-        }
+#if (NETSTANDARD2_0)
+        using var fileStream = File.Open(outputFile, FileMode.Create);
+        await memoryStream.CopyToAsync(fileStream);
+#else
+        await using var fileStream = File.Open(outputFile, FileMode.Create);
+        await memoryStream.CopyToAsync(fileStream, cancellationToken);
+#endif
+        WriteToLog($"Image written to output file '{outputFile}'");
+
+        if (CaptureSnapshot)
+            WriteSnapShot(outputFile);
+    }
+
+    /// <summary>
+    ///     Converts the given <paramref name="html" /> to an image (png)
+    /// </summary>
+    /// <param name="html">The html</param>
+    /// <param name="outputFile">The output file</param>
+    /// <param name="pageSettings">
+    ///     <see cref="PageSettings" />
+    /// </param>
+    /// <param name="waitForWindowStatus">
+    ///     Wait until the javascript window.status has this value before
+    ///     rendering the PDF
+    /// </param>
+    /// <param name="waitForWindowsStatusTimeout"></param>
+    /// <param name="conversionTimeout">
+    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
+    /// </param>
+    /// <param name="mediaLoadTimeout">
+    ///     When set a timeout will be started after the DomContentLoaded
+    ///     event has fired. After a timeout the NavigateTo method will exit as if the page has been completely loaded
+    /// </param>
+    /// <param name="logger">
+    ///     When set then this will give a logging for each conversion. Use the logger
+    ///     option in the constructor if you want one log for all conversions
+    /// </param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+    /// <exception cref="ConversionTimedOutException">
+    ///     Raised when <paramref name="conversionTimeout" /> is set and the
+    ///     conversion fails to finish in this amount of time
+    /// </exception>
+    /// <exception cref="DirectoryNotFoundException"></exception>
+    /// <remarks>
+    ///     When the property <see cref="CaptureSnapshot" /> has been set then the snapshot is saved to the
+    ///     property <see cref="SnapshotStream" /> and after that automatic saved to the <paramref name="outputFile" />
+    ///     (the extension will automatic be replaced with .mhtml)<br />
+    ///     Warning: At the moment this method does not support the properties <see cref="ImageResize" />,
+    ///     <see cref="ImageRotate" /> and <see cref="SanitizeHtml" /><br />
+    ///     Warning: At the moment this method does not support <see cref="PageSettings.PaperFormat" /> ==
+    ///     <c>PaperFormat.FitPageToContent</c>
+    /// </remarks>
+    public async Task ConvertToImageAsync(
+        string html,
+        string outputFile,
+        PageSettings pageSettings,
+        string waitForWindowStatus = "",
+        int waitForWindowsStatusTimeout = 60000,
+        int? conversionTimeout = null,
+        int? mediaLoadTimeout = null,
+        ILogger logger = null,
+        CancellationToken cancellationToken = default)
+    {
+        CheckIfOutputFolderExists(outputFile);
+
+        if (CaptureSnapshot)
+            SnapshotStream = new MemoryStream();
+
+        using var memoryStream = new MemoryStream();
+        
+        await ConvertToImageAsync(html, memoryStream, pageSettings, waitForWindowStatus,
+            waitForWindowsStatusTimeout, conversionTimeout, mediaLoadTimeout, logger, cancellationToken);
+
+        memoryStream.Position = 0;
+
+#if (NETSTANDARD2_0)
+        using var fileStream = File.Open(outputFile, FileMode.Create);
+        await memoryStream.CopyToAsync(fileStream);
+#else
+        await using var fileStream = File.Open(outputFile, FileMode.Create);
+        await memoryStream.CopyToAsync(fileStream, cancellationToken);
+#endif
+
+        WriteToLog($"Image written to output file '{outputFile}'");
 
         if (CaptureSnapshot)
             WriteSnapShot(outputFile);
@@ -2036,13 +2538,12 @@ public class Converter : IDisposable
             try
             {
                 WriteToLog($"Closing {BrowserName} browser gracefully");
-                _browser.Close();
+                _browser.CloseAsync(default).GetAwaiter().GetResult();
                 _browser.Dispose();
             }
             catch (Exception exception)
             {
-                WriteToLog(
-                    $"An error occurred while trying to close {BrowserName} gracefully, error '{ExceptionHelpers.GetInnerException(exception)}'");
+                WriteToLog($"An error occurred while trying to close {BrowserName} gracefully, error '{ExceptionHelpers.GetInnerException(exception)}'");
             }
 
         var counter = 0;
@@ -2063,8 +2564,7 @@ public class Converter : IDisposable
         if (IsChromiumRunning)
         {
             // Sometimes Chrome does not close all processes so kill them
-            WriteToLog(
-                $"{BrowserName} did not close gracefully, closing it by killing it's process on id '{_chromiumProcess.Id}'");
+            WriteToLog($"{BrowserName} did not close gracefully, closing it by killing it's process on id '{_chromiumProcess.Id}'");
             KillProcessAndChildren(_chromiumProcess.Id);
             WriteToLog($"{BrowserName} killed");
 

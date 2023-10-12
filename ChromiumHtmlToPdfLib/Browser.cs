@@ -117,7 +117,7 @@ internal class Browser : IDisposable
         var message = new Message { Method = "Target.createTarget" };
         message.Parameters.Add("url", "about:blank");
 
-        var result = _browserConnection.SendForResponseAsync(message).GetAwaiter().GetResult();
+        var result = _browserConnection.SendForResponseAsync(message, CancellationToken.None).GetAwaiter().GetResult();
         var page = Page.FromJson(result);
         var pageUrl = $"{browser.Scheme}://{browser.Host}:{browser.Port}/devtools/page/{page.Result.TargetId}";
 
@@ -176,6 +176,7 @@ internal class Browser : IDisposable
         var absoluteUri = uri?.AbsoluteUri.Substring(0, uri.AbsoluteUri.LastIndexOf('/') + 1);
 
         #region Message handler
+        // ReSharper disable once AsyncVoidLambda
         var messageHandler = new EventHandler<string>(async delegate(object _, string data)
         {
             //System.IO.File.AppendAllText("d:\\logs.txt", $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fff} - {data}{Environment.NewLine}");
@@ -368,7 +369,7 @@ internal class Browser : IDisposable
         await _pageConnection.SendForResponseAsync(lifecycleEventEnabledMessage, cancellationToken);
 
         _pageConnection.MessageReceived += messageHandler;
-        _pageConnection.Closed += (sender, args) => waitEvent?.Set();
+        _pageConnection.Closed += (_, _) => waitEvent?.Set();
 
         if (uri != null)
         {
@@ -453,13 +454,28 @@ internal class Browser : IDisposable
 
     #region WaitForWindowStatus
     /// <summary>
-    ///     Wait until the javascript window.status is returning the given <paramref name="status" />
+    ///     Waits until the javascript window.status is returning the given <paramref name="status" />
     /// </summary>
     /// <param name="status">The case insensitive status</param>
     /// <param name="timeout">Continue after reaching the set timeout in milliseconds</param>
     /// <returns><c>true</c> when window status matched, <c>false</c> when timing out</returns>
     /// <exception cref="ChromiumException">Raised when an error is returned by Chromium</exception>
     public bool WaitForWindowStatus(string status, int timeout = 60000)
+    {
+        return WaitForWindowStatusAsync(status, timeout).GetAwaiter().GetResult();
+    }
+    #endregion
+
+    #region WaitForWindowStatusAsync
+    /// <summary>
+    ///     Waits until the javascript window.status is returning the given <paramref name="status" />
+    /// </summary>
+    /// <param name="status">The case insensitive status</param>
+    /// <param name="timeout">Continue after reaching the set timeout in milliseconds</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+    /// <returns><c>true</c> when window status matched, <c>false</c> when timing out</returns>
+    /// <exception cref="ChromiumException">Raised when an error is returned by Chromium</exception>
+    public async Task<bool> WaitForWindowStatusAsync(string status, int timeout = 60000, CancellationToken cancellationToken = default)
     {
         var message = new Message { Method = "Runtime.evaluate" };
         message.AddParameter("expression", "window.status;");
@@ -476,7 +492,7 @@ internal class Browser : IDisposable
 
         while (!match)
         {
-            _pageConnection.SendAsync(message).GetAwaiter().GetResult();
+            await _pageConnection.SendAsync(message, cancellationToken);
             waitEvent.WaitOne(10);
             if (stopWatch.ElapsedMilliseconds >= timeout) break;
         }
@@ -504,13 +520,26 @@ internal class Browser : IDisposable
     /// <exception cref="ChromiumException">Raised when an error is returned by Chromium</exception>
     public void RunJavascript(string script)
     {
+        RunJavascriptAsync(script).GetAwaiter().GetResult();
+    }
+    #endregion
+
+    #region RunJavascriptAsync
+    /// <summary>
+    ///     Runs the given javascript after the page has been fully loaded
+    /// </summary>
+    /// <param name="script">The javascript to run</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+    /// <exception cref="ChromiumException">Raised when an error is returned by Chromium</exception>
+    public async Task RunJavascriptAsync(string script, CancellationToken cancellationToken = default)
+    {
         var message = new Message { Method = "Runtime.evaluate" };
         message.AddParameter("expression", script);
         message.AddParameter("silent", false);
         message.AddParameter("returnByValue", false);
 
         var errorDescription = string.Empty;
-        var result = _pageConnection.SendForResponseAsync(message).GetAwaiter().GetResult();
+        var result = await _pageConnection.SendForResponseAsync(message, cancellationToken);
         var evaluateError = EvaluateError.FromJson(result);
 
         if (evaluateError.Result?.ExceptionDetails != null)
@@ -521,7 +550,7 @@ internal class Browser : IDisposable
     }
     #endregion
 
-    #region CaptureSnapshot
+    #region CaptureSnapshotAsync
     /// <summary>
     ///     Instructs Chromium to capture a snapshot from the loaded page
     /// </summary>
@@ -534,19 +563,21 @@ internal class Browser : IDisposable
     ///     See https://chromedevtools.github.io/devtools-protocol/tot/Page#method-captureSnapshot
     /// </remarks>
     /// <returns></returns>
-    internal async Task<SnapshotResponse> CaptureSnapshot(CountdownTimer countdownTimer = null)
+    internal async Task<SnapshotResponse> CaptureSnapshotAsync(
+        CountdownTimer countdownTimer = null, 
+        CancellationToken cancellationToken = default)
     {
         var message = new Message { Method = "Page.captureSnapshot" };
 
         var result = countdownTimer == null
-            ? await _pageConnection.SendForResponseAsync(message)
-            : await _pageConnection.SendForResponseAsync(message).Timeout(countdownTimer.MillisecondsLeft);
+            ? await _pageConnection.SendForResponseAsync(message, cancellationToken)
+            : await _pageConnection.SendForResponseAsync(message, cancellationToken).Timeout(countdownTimer.MillisecondsLeft);
 
         return SnapshotResponse.FromJson(result);
     }
     #endregion
 
-    #region PrintToPdf
+    #region PrintToPdfAsync
     /// <summary>
     ///     Instructs Chromium to print the page
     /// </summary>
@@ -667,14 +698,16 @@ internal class Browser : IDisposable
     }
     #endregion
 
-    #region Close
+    #region CloseAsync
     /// <summary>
     ///     Instructs the browser to close
     /// </summary>
-    public void Close()
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+    /// <returns></returns>
+    internal async Task CloseAsync(CancellationToken cancellationToken)
     {
         var message = new Message { Method = "Browser.close" };
-        _browserConnection.SendForResponseAsync(message).GetAwaiter().GetResult();
+        await _browserConnection.SendForResponseAsync(message, cancellationToken);
     }
     #endregion
 

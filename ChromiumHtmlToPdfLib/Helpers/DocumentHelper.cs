@@ -46,6 +46,7 @@ using AngleSharp.Io.Network;
 using ChromiumHtmlToPdfLib.Settings;
 using Ganss.Xss;
 using Microsoft.Extensions.Logging;
+// ReSharper disable UseAwaitUsing
 
 // ReSharper disable ConvertToUsingDeclaration
 // ReSharper disable ConvertIfStatementToNullCoalescingAssignment
@@ -187,7 +188,7 @@ internal class DocumentHelper : IDisposable
     /// <returns></returns>
     public async Task<SanitizeHtmlResult> SanitizeHtmlAsync(ConvertUri inputUri, HtmlSanitizer sanitizer, List<string> safeUrls, CancellationToken cancellationToken)
     {
-        await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri);
+        using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri);
         var htmlChanged = false;
         var config = Configuration.Default.WithCss();
         var context = BrowsingContext.New(config);
@@ -302,15 +303,15 @@ internal class DocumentHelper : IDisposable
 
             WriteToLog($"Writing sanitized webpage to '{sanitizedOutputFile}'");
 
-            await using var fileStream = new FileStream(sanitizedOutputFile, FileMode.CreateNew, FileAccess.Write);
+            using var fileStream = new FileStream(sanitizedOutputFile, FileMode.CreateNew, FileAccess.Write);
             if (inputUri.Encoding != null)
             {
-                await using var textWriter = new StreamWriter(fileStream, inputUri.Encoding);
+                using var textWriter = new StreamWriter(fileStream, inputUri.Encoding);
                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
             }
             else
             {
-                await using var textWriter = new StreamWriter(fileStream);
+                using var textWriter = new StreamWriter(fileStream);
                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
             }
 
@@ -334,7 +335,7 @@ internal class DocumentHelper : IDisposable
     /// <returns><see cref="FitPageToContentResult"/></returns>
     public async Task<FitPageToContentResult> FitPageToContentAsync(ConvertUri inputUri, CancellationToken cancellationToken)
     {
-        await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri);
+        using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri);
 
         var config = Configuration.Default.WithCss();
         var context = BrowsingContext.New(config);
@@ -404,14 +405,17 @@ internal class DocumentHelper : IDisposable
         {
             WriteToLog($"Writing changed webpage to '{outputFile}'");
 
-            await using (var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write))
+            using var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write);
+            
+            if (inputUri.Encoding != null)
             {
-                if (inputUri.Encoding != null)
-                    await using (var textWriter = new StreamWriter(fileStream, inputUri.Encoding))
-                        document.ToHtml(textWriter, new HtmlMarkupFormatter());
-                else
-                    await using (var textWriter = new StreamWriter(fileStream))
-                        document.ToHtml(textWriter, new HtmlMarkupFormatter());
+                using var textWriter = new StreamWriter(fileStream, inputUri.Encoding);
+                document.ToHtml(textWriter, new HtmlMarkupFormatter());
+            }
+            else
+            {
+                using var textWriter = new StreamWriter(fileStream);
+                document.ToHtml(textWriter, new HtmlMarkupFormatter());
             }
 
             WriteToLog("Changed webpage written");
@@ -454,7 +458,7 @@ internal class DocumentHelper : IDisposable
         CancellationToken cancellationToken)
     {
         using var graphics = Graphics.FromHwnd(IntPtr.Zero);
-        await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri);
+        using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri);
         
         WriteToLog($"DPI settings for image, x: '{graphics.DpiX}' and y: '{graphics.DpiY}'");
         var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft - pageSettings.MarginRight) * graphics.DpiX;
@@ -679,16 +683,16 @@ internal class DocumentHelper : IDisposable
         {
             WriteToLog($"Writing changed webpage to '{outputFile}'");
 
-            await using var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write);
+            using var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write);
             
             if (inputUri.Encoding != null)
             {
-                await using var textWriter = new StreamWriter(fileStream, inputUri.Encoding);
+                using var textWriter = new StreamWriter(fileStream, inputUri.Encoding);
                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
             }
             else
             {
-                await using var textWriter = new StreamWriter(fileStream);
+                using var textWriter = new StreamWriter(fileStream);
                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
             }
 
@@ -760,7 +764,7 @@ internal class DocumentHelper : IDisposable
                 case "https":
                 case "http":
                 {
-                    await using var webStream = await OpenDownloadStream(imageUri, true);
+                    using var webStream = await OpenDownloadStream(imageUri, true);
                     return Image.FromStream(webStream, true, false);
                 }
 

@@ -155,7 +155,11 @@ internal class Connection : IDisposable
         finally
         {
             if (outputStream != null)
+#if (NETSTANDARD2_0)
+                outputStream.Dispose();
+#else
                 await outputStream.DisposeAsync();
+#endif
         }
     }
     #endregion
