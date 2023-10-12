@@ -429,6 +429,14 @@ public class Converter : IDisposable, IAsyncDisposable
         get => !_useCache;
         set => _useCache = !value;
     }
+
+    /// <summary>
+    ///     The timeout in milliseconds when waiting for a websocket to open
+    /// </summary>
+    /// <remarks>
+    ///     Default 30 seconds
+    /// </remarks>
+    public int WebsocketTimeout { get; set; } = 30000;
     #endregion
 
     #region Constructor & Destructor
@@ -704,7 +712,7 @@ public class Converter : IDisposable, IAsyncDisposable
     private void ConnectToDevProtocol(Uri uri)
     {
         WriteToLog($"Connecting to dev protocol on uri '{uri}'");
-        _browser = new Browser(uri, _logger);
+        _browser = new Browser(uri, _logger, WebsocketTimeout);
         WriteToLog("Connected to dev protocol");
     }
 

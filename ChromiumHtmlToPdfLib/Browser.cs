@@ -97,7 +97,7 @@ public class Browser : IDisposable, IAsyncDisposable
     }
     #endregion
 
-    #region Constructor & destructor
+    #region Constructor
     /// <summary>
     ///     Makes this object and sets the Chromium remote debugging url
     /// </summary>
@@ -106,12 +106,13 @@ public class Browser : IDisposable, IAsyncDisposable
     ///     When set then logging is written to this ILogger instance for all conversions at the Information
     ///     log level
     /// </param>
-    internal Browser(Uri browser, ILogger logger)
+    /// <param name="timeout">Websocket open timeout in milliseconds</param>
+    internal Browser(Uri browser, ILogger logger, int timeout)
     {
         _logger = logger;
 
         // Open a websocket to the browser
-        _browserConnection = new Connection(browser.ToString(), logger);
+        _browserConnection = new Connection(browser.ToString(), logger, timeout);
         _browserConnection.OnError += OnOnError;
 
         var message = new Message { Method = "Target.createTarget" };
@@ -122,7 +123,7 @@ public class Browser : IDisposable, IAsyncDisposable
         var pageUrl = $"{browser.Scheme}://{browser.Host}:{browser.Port}/devtools/page/{page.Result.TargetId}";
 
         // Open a websocket to the page
-        _pageConnection = new Connection(pageUrl, logger);
+        _pageConnection = new Connection(pageUrl, logger, timeout);
         _pageConnection.OnError += OnOnError;
     }
     #endregion

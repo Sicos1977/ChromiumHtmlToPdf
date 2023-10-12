@@ -87,6 +87,11 @@ public class Connection : IDisposable, IAsyncDisposable
     ///     The websocket
     /// </summary>
     private readonly ClientWebSocket _webSocket;
+
+    /// <summary>
+    ///     Websocket open timeout in milliseconds
+    /// </summary>
+    private readonly int _timeout;
     #endregion
 
     #region Properties
@@ -106,10 +111,12 @@ public class Connection : IDisposable, IAsyncDisposable
     ///     When set then logging is written to this ILogger instance for all conversions at the Information
     ///     log level
     /// </param>
-    internal Connection(string url, ILogger logger)
+    /// <param name="timeout">Websocket open timeout in milliseconds</param>
+    internal Connection(string url, ILogger logger, int timeout)
     {
         _url = url;
         _logger = logger;
+        _timeout = timeout;
         WriteToLog($"Creating new websocket connection to url '{url}'");
         _webSocket = new ClientWebSocket();
         _receiveLoopCts = new CancellationTokenSource();
@@ -173,7 +180,7 @@ public class Connection : IDisposable, IAsyncDisposable
     {
         if (_webSocket.State == WebSocketState.Open) return;
 
-        WriteToLog("Opening websocket connection with a timeout of 30 seconds");
+        WriteToLog($"Opening websocket connection with a timeout of {_timeout} milliseconds");
 
         try
         {
@@ -191,8 +198,8 @@ public class Connection : IDisposable, IAsyncDisposable
             Thread.Sleep(1);
             i++;
 
-            if (i != 30000) continue;
-            var message = $"Websocket connection timed out after 30 seconds with the state '{_webSocket.State}'";
+            if (i != _timeout) continue;
+            var message = $"Websocket connection timed out after {_timeout} milliseconds with the state '{_webSocket.State}'";
             WriteToLog(message);
             throw new ChromiumException(message);
         }
