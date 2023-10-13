@@ -186,12 +186,17 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <summary>
     ///     <see cref="SetDiskCache"/>
     /// </summary>
-    private DirectoryInfo _cacheDirectory;
+    private string _cacheDirectory;
 
     /// <summary>
     ///     <see cref="SetDiskCache"/>
     /// </summary>
     private long _cacheSize;
+
+    /// <summary>
+    ///     <see cref="GetDocumentHelper"/>
+    /// </summary>
+    private DocumentHelper _documentHelper;
     #endregion
 
     #region Properties
@@ -352,9 +357,14 @@ public class Converter : IDisposable, IAsyncDisposable
     public bool DoNotDeleteTempDirectory { get; set; }
 
     /// <summary>
-    ///     The directory used for temporary files
+    ///     The directory used for temporary files (<see cref="GetTempDirectory"/>)
     /// </summary>
-    public DirectoryInfo CurrentTempDirectory { get; set; }
+    public DirectoryInfo CurrentTempDirectory { get; internal set; }
+
+    /// <summary>
+    ///     The directory used for cached files (<see cref="GetCacheDirectory"/>)
+    /// </summary>
+    public DirectoryInfo CurrentCacheDirectory { get; internal set; }
 
     /// <summary>
     ///     Returns a <see cref="WebProxy" /> object
@@ -443,21 +453,35 @@ public class Converter : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
-    ///     Returns a reference to the temp directory
+    ///     Returns a reference to the cache directory
     /// </summary>
     private DirectoryInfo GetCacheDirectory
     {
         get
         {
-            // TODO: Make code work
-            CurrentTempDirectory = _tempDirectory == null
-                ? new DirectoryInfo(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()))
-                : new DirectoryInfo(Path.Combine(_tempDirectory, Guid.NewGuid().ToString()));
+            if (_cacheDirectory != null)
+                CurrentCacheDirectory = new DirectoryInfo(_cacheDirectory);
+            else
+                CurrentCacheDirectory = _tempDirectory == null
+                    ? new DirectoryInfo(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()))
+                    : new DirectoryInfo(Path.Combine(_tempDirectory, Guid.NewGuid().ToString()));
 
             if (!CurrentTempDirectory.Exists)
                 CurrentTempDirectory.Create();
 
             return CurrentTempDirectory;
+        }
+    }
+
+    private DocumentHelper GetDocumentHelper
+    {
+        get
+        {
+            if (_documentHelper != null)
+                return _documentHelper;
+
+            _documentHelper = new DocumentHelper(GetTempDirectory, _useCache, GetCacheDirectory, _cacheSize, WebProxy, ImageLoadTimeout, _logger) { InstanceId = InstanceId };
+            return _documentHelper;
         }
     }
 
@@ -1035,12 +1059,15 @@ public class Converter : IDisposable, IAsyncDisposable
     /// </remarks>
     public void SetDiskCache(string directory, long? size)
     {
-        _cacheDirectory = new DirectoryInfo(directory);
+        var temp = new DirectoryInfo(_cacheDirectory);
 
-        if (!_cacheDirectory.Exists)
+        if (!temp.Exists)
             throw new DirectoryNotFoundException($"The directory '{directory}' does not exists");
 
-        AddChromiumArgument("--disk-cache-dir", directory.TrimEnd('\\', '/'));
+        _cacheDirectory = temp.FullName;
+
+        // Chromium does not like a trailing slash
+        AddChromiumArgument("--disk-cache-dir", _cacheDirectory.TrimEnd('\\', '/'));
 
         if (size.HasValue)
         {
@@ -1048,7 +1075,6 @@ public class Converter : IDisposable, IAsyncDisposable
                 throw new ArgumentException("Has to be a value of 1 or greater", nameof(size));
 
             _cacheSize = size.Value * 1024 * 1024;
-
             AddChromiumArgument("--disk-cache-size", (size.Value * 1024 * 1024).ToString());
         }
 
@@ -1295,11 +1321,9 @@ public class Converter : IDisposable, IAsyncDisposable
 
                 if (ImageResize || ImageRotate || SanitizeHtml || pageSettings.PaperFormat == PaperFormat.FitPageToContent)
                 {
-                    using var documentHelper = new DocumentHelper(GetTempDirectory, WebProxy, _useCache, ImageLoadTimeout, _logger) { InstanceId = InstanceId };
-                    
                     if (SanitizeHtml)
                     {
-                        var result = await documentHelper.SanitizeHtmlAsync(inputUri, Sanitizer, safeUrls, cancellationToken);
+                        var result = await GetDocumentHelper.SanitizeHtmlAsync(inputUri, Sanitizer, safeUrls, cancellationToken);
                         if (result.Success)
                         {
                             inputUri = result.OutputUri;
@@ -1315,7 +1339,7 @@ public class Converter : IDisposable, IAsyncDisposable
                     if (pageSettings.PaperFormat == PaperFormat.FitPageToContent)
                     {
                         WriteToLog("The paper format 'FitPageToContent' is set, modifying html so that the PDF fits the HTML content");
-                        var result = await documentHelper.FitPageToContentAsync(inputUri, cancellationToken);
+                        var result = await GetDocumentHelper.FitPageToContentAsync(inputUri, cancellationToken);
                         if (result.Success)
                         {
                             inputUri = result.OutputUri;
@@ -1325,7 +1349,7 @@ public class Converter : IDisposable, IAsyncDisposable
 
                     if (ImageResize || ImageRotate)
                     {
-                        var result = await documentHelper.ValidateImagesAsync(
+                        var result = await GetDocumentHelper.ValidateImagesAsync(
                             inputUri,
                             ImageResize,
                             ImageRotate,
@@ -2577,6 +2601,8 @@ public class Converter : IDisposable, IAsyncDisposable
         if (_disposed)
             return;
 
+        _documentHelper?.Dispose();
+        _documentHelper = null;
         _chromiumWaitEvent.Dispose();
         _chromiumWaitEvent = null;
 

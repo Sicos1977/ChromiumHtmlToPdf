@@ -95,12 +95,12 @@ internal class DocumentHelper : IDisposable
     /// <summary>
     ///     The cache folder
     /// </summary>
-    readonly DirectoryInfo _cacheFolder;
+    readonly DirectoryInfo _cacheDirectory;
 
     /// <summary>
     ///     The cache size
     /// </summary>
-    private readonly long _cacheSize;
+    private readonly long? _cacheSize;
     #endregion
 
     #region Properties
@@ -140,30 +140,32 @@ internal class DocumentHelper : IDisposable
     ///     Makes this object and sets its needed properties
     /// </summary>
     /// <param name="tempDirectory">When set then this directory will be used for temporary files</param>
-    /// <param name="webProxy">The web proxy to use when downloading</param>
     /// <param name="useCache">When <c>true</c> then caching is enabled on the <see cref="WebClient" /></param>
-    /// <param name="imageLoadTimeout">
-    ///     When set then this timeout is used for loading images, <c>null</c> when no timeout is
-    ///     needed
-    /// </param>
-    /// <param name="logger">
-    ///     When set then logging is written to this ILogger instance for all conversions at the Information
-    ///     log level
-    /// </param>
+    /// <param name="cacheDirectory">The cache directory when <paramref name="useCache"/> is set to <c>true</c>, otherwise <c>null</c></param>
+    /// <param name="cacheSize">The cache size when <paramref name="useCache"/> is set to <c>true</c>, otherwise <c>null</c></param>
+    /// <param name="webProxy">The web proxy to use when downloading</param>
+    /// <param name="imageLoadTimeout">When set then this timeout is used for loading images, <c>null</c> when no timeout is needed</param>
+    /// <param name="logger">When set then logging is written to this ILogger instance for all conversions at the Information log level</param>
     public DocumentHelper(DirectoryInfo tempDirectory,
-        WebProxy webProxy,
         bool useCache,
+        DirectoryInfo cacheDirectory, 
+        long? cacheSize,
+        WebProxy webProxy,
         int? imageLoadTimeout,
-        ILogger logger,
-        DirectoryInfo cacheFolder, 
-        long cacheSize)
+        ILogger logger)
     {
         _tempDirectory = tempDirectory;
-        _webProxy = webProxy;
         _useCache = useCache;
+        
+        if (useCache)
+        {
+            _cacheDirectory = cacheDirectory;
+            WriteToLog($"Setting cache directory to '{_cacheDirectory.FullName}' with a size of {cacheSize}");
+            _cacheSize = cacheSize;
+        }
+
+        _webProxy = webProxy;
         _logger = logger;
-        _cacheFolder = cacheFolder;
-        _cacheSize = cacheSize;
 
         if (!imageLoadTimeout.HasValue) return;
         _imageLoadTimeout = imageLoadTimeout.Value;
@@ -919,7 +921,7 @@ internal class DocumentHelper : IDisposable
             if (_webProxy != null)
                 httpClientHandler.Proxy = _webProxy;
 
-            var handler = new FileCacheHandler(httpClientHandler);
+            var handler = new FileCacheHandler(httpClientHandler, _cacheDirectory, _cacheSize.Value);
             using var client = new HttpClient(handler);
             var timeLeft = TimeLeft;
 
