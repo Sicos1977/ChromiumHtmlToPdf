@@ -82,31 +82,11 @@ internal class DocumentHelper : IDisposable
     private readonly WebProxy _webProxy;
 
     /// <summary>
-    ///     When <c>true</c> then caching is enabled
-    /// </summary>
-    private readonly bool _useCache;
-
-    /// <summary>
     ///     Used when mediaTimeout is set
     /// </summary>
     private readonly Stopwatch _stopwatch;
 
     private readonly int _imageLoadTimeout;
-
-    /// <summary>
-    ///     The cache folder
-    /// </summary>
-    private DirectoryInfo _cacheDirectory;
-
-    /// <summary>
-    ///     The cache size
-    /// </summary>
-    private readonly long _cacheSize;
-
-    /// <summary>
-    ///     <see cref="FileCache"/>
-    /// </summary>
-    private FileCache _fileCache;
     #endregion
 
     #region Properties
@@ -139,35 +119,6 @@ internal class DocumentHelper : IDisposable
             return (int)result;
         }
     }
-
-    /// <summary>
-    ///     Returns a file cache
-    /// </summary>
-    private FileCache FileCache
-    {
-        get
-        {
-            if (_fileCache != null)
-                return _fileCache;
-
-            _cacheDirectory = new DirectoryInfo(Path.Combine("d:\\", "HttpClientHandler"));
-            //_cacheDirectory = new DirectoryInfo(Path.Combine(_cacheDirectory.FullName, "HttpClientHandler"));
-
-            if (!_cacheDirectory.Exists)
-                _cacheDirectory.Create();
-
-            FileCache.DefaultCacheManager = FileCacheManagers.Hashed;
-
-            _fileCache = new FileCache(_cacheDirectory.FullName)
-            {
-                MaxCacheSize = _cacheSize,
-                AccessTimeout = TimeSpan.FromSeconds(10),
-                DefaultPolicy = new CacheItemPolicy { SlidingExpiration = TimeSpan.FromDays(1) },
-            };
-            
-            return _fileCache;
-        }
-    }
     #endregion
 
     #region Constructor
@@ -190,17 +141,12 @@ internal class DocumentHelper : IDisposable
         ILogger logger)
     {
         _tempDirectory = tempDirectory;
-        _useCache = useCache;
-        
-        if (useCache)
-        {
-            _cacheDirectory = cacheDirectory;
-            WriteToLog($"Setting cache directory to '{_cacheDirectory.FullName}' with a size of {cacheSize}");
-            _cacheSize = cacheSize;
-        }
 
         _webProxy = webProxy;
         _logger = logger;
+
+        if (useCache)
+            WriteToLog($"Setting cache directory to '{cacheDirectory.FullName}' with a size of {cacheSize} bytes");
 
         if (!imageLoadTimeout.HasValue) return;
         _imageLoadTimeout = imageLoadTimeout.Value;
@@ -542,9 +488,7 @@ internal class DocumentHelper : IDisposable
                 .WithCss();
         }
         else
-        {
             config = Configuration.Default.WithCss();
-        }
 
         var context = BrowsingContext.New(config);
 
@@ -646,7 +590,7 @@ internal class DocumentHelper : IDisposable
                         }
                         catch (Exception exception)
                         {
-                            WriteToLog(                                $"Could not get computed style from html image, exception: '{exception.Message}'");
+                            WriteToLog($"Could not get computed style from html image, exception: '{exception.Message}'");
                         }
 
                         if (style != null)
@@ -742,8 +686,7 @@ internal class DocumentHelper : IDisposable
                 using var textWriter = new StreamWriter(fileStream);
                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
             }
-
-
+            
             WriteToLog("Changed webpage written");
 
             return new ValidateImagesResult(true, outputUri);
@@ -953,15 +896,13 @@ internal class DocumentHelper : IDisposable
         {
             if (_useCache)
             {
-                var item = FileCache.GetCacheItem(sourceUri.ToString());
-                if (item is { Value: not null })
-                {
-                    WriteToLog($"Returning stream for url '{sourceUri}' from the cache");
-                    return new MemoryStream((byte[])item.Value);
-                }
             }
 
             var request = WebRequest.CreateHttp(sourceUri);
+
+            if (_webProxy != null)
+                request.Proxy = _webProxy;
+
             var timeLeft = TimeLeft;
 
             if (_stopwatch != null && checkTimeout)
@@ -975,12 +916,10 @@ internal class DocumentHelper : IDisposable
                 request.Timeout = TimeLeft;
             }
 
+            
             WriteToLog($"Opening stream to url '{sourceUri}'{(_stopwatch != null ? $" with a timeout of {timeLeft} milliseconds" : string.Empty)}");
             
             var response = await request.GetResponseAsync();
-
-            if (!_useCache) 
-                return response.GetResponseStream();
 
             var stream = response.GetResponseStream();
 
