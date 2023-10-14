@@ -33,6 +33,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.Caching;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -95,12 +96,17 @@ internal class DocumentHelper : IDisposable
     /// <summary>
     ///     The cache folder
     /// </summary>
-    readonly DirectoryInfo _cacheDirectory;
+    private DirectoryInfo _cacheDirectory;
 
     /// <summary>
     ///     The cache size
     /// </summary>
-    private readonly long? _cacheSize;
+    private readonly long _cacheSize;
+
+    /// <summary>
+    ///     <see cref="FileCache"/>
+    /// </summary>
+    private FileCache _fileCache;
     #endregion
 
     #region Properties
@@ -133,6 +139,35 @@ internal class DocumentHelper : IDisposable
             return (int)result;
         }
     }
+
+    /// <summary>
+    ///     Returns a file cache
+    /// </summary>
+    private FileCache FileCache
+    {
+        get
+        {
+            if (_fileCache != null)
+                return _fileCache;
+
+            _cacheDirectory = new DirectoryInfo(Path.Combine("d:\\", "HttpClientHandler"));
+            //_cacheDirectory = new DirectoryInfo(Path.Combine(_cacheDirectory.FullName, "HttpClientHandler"));
+
+            if (!_cacheDirectory.Exists)
+                _cacheDirectory.Create();
+
+            FileCache.DefaultCacheManager = FileCacheManagers.Hashed;
+
+            _fileCache = new FileCache(_cacheDirectory.FullName)
+            {
+                MaxCacheSize = _cacheSize,
+                AccessTimeout = TimeSpan.FromSeconds(10),
+                DefaultPolicy = new CacheItemPolicy { SlidingExpiration = TimeSpan.FromDays(1) },
+            };
+            
+            return _fileCache;
+        }
+    }
     #endregion
 
     #region Constructor
@@ -149,7 +184,7 @@ internal class DocumentHelper : IDisposable
     public DocumentHelper(DirectoryInfo tempDirectory,
         bool useCache,
         DirectoryInfo cacheDirectory, 
-        long? cacheSize,
+        long cacheSize,
         WebProxy webProxy,
         int? imageLoadTimeout,
         ILogger logger)
@@ -916,33 +951,48 @@ internal class DocumentHelper : IDisposable
     {
         try
         {
-            var httpClientHandler = new HttpClientHandler();
+            if (_useCache)
+            {
+                var item = FileCache.GetCacheItem(sourceUri.ToString());
+                if (item is { Value: not null })
+                {
+                    WriteToLog($"Returning stream for url '{sourceUri}' from the cache");
+                    return new MemoryStream((byte[])item.Value);
+                }
+            }
 
-            if (_webProxy != null)
-                httpClientHandler.Proxy = _webProxy;
-
-            var handler = new FileCacheHandler(httpClientHandler, _cacheDirectory, _cacheSize.Value);
-            using var client = new HttpClient(handler);
+            var request = WebRequest.CreateHttp(sourceUri);
             var timeLeft = TimeLeft;
 
-            //if (_stopwatch != null && checkTimeout)
-            //{
-            //    if (timeLeft == 0)
-            //    {
-            //        WriteToLog($"Image load has timed out, skipping opening stream to url '{sourceUri}'");
-            //        return null;
-            //    }
+            if (_stopwatch != null && checkTimeout)
+            {
+                if (timeLeft == 0)
+                {
+                    WriteToLog($"Image load has timed out, skipping opening stream to url '{sourceUri}'");
+                    return null;
+                }
 
-            //    request.Timeout = TimeLeft;
-            //}
-
-
+                request.Timeout = TimeLeft;
+            }
 
             WriteToLog($"Opening stream to url '{sourceUri}'{(_stopwatch != null ? $" with a timeout of {timeLeft} milliseconds" : string.Empty)}");
-            var response = await client.GetAsync(sourceUri);
             
-            //WriteToLog($"Opened {(response.IsFromCache ? "cached " : string.Empty)}stream to url '{sourceUri}'");
-            return await response.Content.ReadAsStreamAsync();
+            var response = await request.GetResponseAsync();
+
+            if (!_useCache) 
+                return response.GetResponseStream();
+
+            var stream = response.GetResponseStream();
+
+            if (stream == null) 
+                return response.GetResponseStream();
+
+            var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream);
+            WriteToLog($"Adding item from url '{sourceUri}' to the cache");
+            FileCache.Add(sourceUri.ToString(), memoryStream.ToArray(), new CacheItemPolicy { SlidingExpiration = TimeSpan.FromDays(1) });
+            memoryStream.Position = 0;
+            return memoryStream;
         }
         catch (Exception exception)
         {

@@ -159,9 +159,9 @@ public class Connection : IDisposable, IAsyncDisposable
         {
             // Ignore
         }
-        catch (Exception e)
+        catch (Exception exception)
         {
-            WebSocketOnError(new ErrorEventArgs(e));
+            WebSocketOnError(new ErrorEventArgs(exception));
         }
         finally
         {
@@ -361,29 +361,25 @@ public class Connection : IDisposable, IAsyncDisposable
     {
         WriteToLog($"Disposing websocket connection to url '{_url}'");
 
-        try
-        {
-            WebSocketOnClosed(EventArgs.Empty);
-        }
-        catch (Exception exception)
-        {
-            WriteToLog($"Exception while disposing websocket connection to url '{_url}': {exception.Message}");
-        }
-
         if (_webSocket.State == WebSocketState.Open)
         {
             WriteToLog("Closing websocket");
+
             try
             {
                 await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Done", default);
-                WriteToLog("Websocket connection disposed gracefully");
             }
-            finally
+            catch 
             {
-                _receiveLoopCts.Cancel();
-                _webSocket.Dispose();
-                WriteToLog("Websocket connection disposed");
+                // Ignore
             }
+
+            WriteToLog("Websocket connection closed");
+
+            WebSocketOnClosed(EventArgs.Empty);
+            _receiveLoopCts.Cancel();
+            _webSocket.Dispose();
+            WriteToLog("Websocket connection disposed");
         }
     }
     #endregion

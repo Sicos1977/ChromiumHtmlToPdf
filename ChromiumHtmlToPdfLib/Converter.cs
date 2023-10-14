@@ -191,7 +191,10 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <summary>
     ///     <see cref="SetDiskCache"/>
     /// </summary>
-    private long _cacheSize;
+    /// <remarks>
+    ///     Default set to 1GB
+    /// </remarks>
+    private long _cacheSize = 1073741824;
 
     /// <summary>
     ///     <see cref="GetDocumentHelper"/>
@@ -647,9 +650,7 @@ public class Converter : IDisposable, IAsyncDisposable
                 processStartInfo.LoadUserProfile = true;
             }
             else
-            {
                 WriteToLog("Ignoring password and loading user profile because this is only supported on Windows");
-            }
         }
 
         if (!_userProfileSet)
@@ -687,8 +688,7 @@ public class Converter : IDisposable, IAsyncDisposable
 
             if (_conversionTimeout.HasValue)
                 if (!_chromiumWaitEvent.WaitOne(_conversionTimeout.Value))
-                    throw new ChromiumException(
-                        $"A timeout of '{_conversionTimeout.Value}' milliseconds exceeded, could not make a connection to the Chromium dev tools");
+                    throw new ChromiumException($"A timeout of '{_conversionTimeout.Value}' milliseconds exceeded, could not make a connection to the Chromium dev tools");
 
             _chromiumWaitEvent.WaitOne();
 
@@ -2610,7 +2610,6 @@ public class Converter : IDisposable, IAsyncDisposable
             try
             {
                 WriteToLog($"Closing {BrowserName} browser gracefully");
-                await _browser.CloseAsync(default);
 #if (NETSTANDARD2_0)
                 _browser.Dispose();
 #else

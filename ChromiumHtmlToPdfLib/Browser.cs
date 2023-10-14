@@ -743,11 +743,25 @@ public class Browser : IDisposable, IAsyncDisposable
     /// </summary>
     public void Dispose()
     {
-        _pageConnection.OnError -= OnOnError;
-        _pageConnection?.Dispose();
+        if (_pageConnection != null)
+            _pageConnection.OnError -= OnOnError;
 
-        _browserConnection.OnError -= OnOnError;
-        _browserConnection?.Dispose();
+        if (_browserConnection != null)
+            _browserConnection.OnError -= OnOnError;
+
+        CloseAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        if (_pageConnection != null)
+        {
+            _pageConnection.Dispose();
+            _pageConnection = null;
+        }
+
+        if (_browserConnection != null)
+        {
+            _browserConnection.Dispose();
+            _browserConnection = null;
+        }
     }
     #endregion
 
@@ -759,15 +773,21 @@ public class Browser : IDisposable, IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         if (_pageConnection != null)
-        {
             _pageConnection.OnError -= OnOnError;
+
+        if (_browserConnection != null)
+            _browserConnection.OnError -= OnOnError;
+
+        await CloseAsync(CancellationToken.None);
+
+        if (_pageConnection != null)
+        {
             await _pageConnection.DisposeAsync();
             _pageConnection = null;
         }
 
-        if (_pageConnection != null)
+        if (_browserConnection != null)
         {
-            _browserConnection.OnError -= OnOnError;
             await _browserConnection.DisposeAsync();
             _browserConnection = null;
         }
