@@ -231,7 +231,6 @@ public class Converter : IDisposable, IAsyncDisposable
             if (!IsChromiumRunning)
                 return null;
 
-            _chromiumProcess.Refresh();
             return _chromiumProcess.Id;
         }
     }
