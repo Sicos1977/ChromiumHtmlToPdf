@@ -203,6 +203,9 @@ public class Converter : IDisposable, IAsyncDisposable
     #endregion
 
     #region Properties
+    /// <summary>
+    ///     Returns the Chromium based browser name
+    /// </summary>
     private string BrowserName
     {
         get
