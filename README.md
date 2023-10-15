@@ -122,11 +122,12 @@ You can find pre compiled binaries for Windows, Linux and macOS over here
 
 Latest version
 ---------------
-https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/3.0.0/ChromiumHtmlToPdf_v3_0_0.zip
+https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/4.0.0/ChromiumHtmlToPdf_v4_0_0.zip
 
 Older versions
 --------------
-https://github.com/Sicos1977/ChromeHtmlToPdf/releases/download/2.6.5/ChromeHtmltoPdf_265.zip
+https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/3.0.0/ChromiumHtmlToPdf_v3_0_0.zip
+https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/2.6.5/ChromeHtmltoPdf_265.zip
 https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/2.6.4/ChromeHtmlToPDF_264.zip
 https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/2.6.0/ChromeHtmlToPDF_260.zip
 https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/2.5.33/ChromeHtmlToPdf_253.zip
