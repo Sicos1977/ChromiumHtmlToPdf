@@ -297,8 +297,12 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <summary>
     ///     The timeout in milliseconds before this application aborts the downloading
     ///     of images when the option <see cref="ImageResize" /> and/or <see cref="ImageRotate" />
-    ///     is being used
+    ///     option is being used
     /// </summary>
+    /// <remarks>
+    ///     <see cref="DocumentHelper.FitPageToContentAsync"/><br />
+    ///     <see cref="DocumentHelper.ValidateImagesAsync"/><br />
+    /// </remarks>
     public int? ImageLoadTimeout { get; set; }
 
     /// <summary>
@@ -483,18 +487,18 @@ public class Converter : IDisposable, IAsyncDisposable
             if (_documentHelper != null)
                 return _documentHelper;
 
-            _documentHelper = new DocumentHelper(GetTempDirectory, _useCache, GetCacheDirectory, _cacheSize, WebProxy, ImageLoadTimeout, _logger) { InstanceId = InstanceId };
+            _documentHelper = new DocumentHelper(GetTempDirectory, _useCache, GetCacheDirectory, _cacheSize, WebProxy, ImageLoadTimeout, InstanceId, _logger);
             return _documentHelper;
         }
     }
 
     /// <summary>
-    ///     The timeout in milliseconds when waiting for a websocket to open
+    ///     The timeout in milliseconds when waiting for a web socket to open
     /// </summary>
     /// <remarks>
     ///     Default 30 seconds
     /// </remarks>
-    public int WebsocketTimeout { get; set; } = 30000;
+    public int WebSocketTimeout { get; set; } = 30000;
 
     /// <summary>
     ///     By default the Chromium based browser is started with the <c>--headless=new</c> argument.
@@ -774,7 +778,7 @@ public class Converter : IDisposable, IAsyncDisposable
     private void ConnectToDevProtocol(Uri uri)
     {
         WriteToLog($"Connecting to dev protocol on uri '{uri}'");
-        _browser = new Browser(uri, _logger, WebsocketTimeout);
+        _browser = new Browser(uri, _logger, WebSocketTimeout);
         WriteToLog("Connected to dev protocol");
     }
 
@@ -1349,6 +1353,8 @@ public class Converter : IDisposable, IAsyncDisposable
 
                     if (ImageResize || ImageRotate)
                     {
+                        GetDocumentHelper.ResetTimeout();
+
                         var result = await GetDocumentHelper.ValidateImagesAsync(
                             inputUri,
                             ImageResize,

@@ -33,7 +33,6 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Runtime.Caching;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -62,6 +61,42 @@ internal class DocumentHelper : IDisposable
 {
     #region Fields
     /// <summary>
+    ///     The temp folder
+    /// </summary>
+    private readonly DirectoryInfo _tempDirectory;
+
+    /// <summary>
+    ///     When <c>true</c> then caching is enabled on the <see cref="WebClient" />
+    /// </summary>
+    private readonly bool _useCache;
+
+    /// <summary>
+    ///     The cache directory when <see cref="_useCache"/> is set to <c>true</c>, otherwise <c>null</c>
+    /// </summary>
+    private readonly FileSystemInfo _cacheDirectory;
+
+    /// <summary>
+    ///     The cache size when <see cref="_cacheSize"/> is set to <c>true</c>, otherwise <c>null</c>
+    /// </summary>
+    private readonly long _cacheSize;
+
+    /// <summary>
+    ///     The web proxy to use when downloading
+    /// </summary>
+    private readonly IWebProxy _webProxy;
+
+    /// <summary>
+    ///     When set then this timeout is used for loading images, <c>null</c> when no timeout is needed
+    /// </summary>
+    private readonly int _imageLoadTimeout;
+
+    /// <summary>
+    ///     An unique id that can be used to identify the logging of the converter when
+    ///     calling the code from multiple threads and writing all the logging to the same file
+    /// </summary>
+    private readonly string _instanceId;
+
+    /// <summary>
     ///     When set then logging is written to this ILogger instance
     /// </summary>
     private readonly ILogger _logger;
@@ -72,36 +107,47 @@ internal class DocumentHelper : IDisposable
     private readonly object _loggerLock = new();
 
     /// <summary>
-    ///     The temp folder
-    /// </summary>
-    private readonly DirectoryInfo _tempDirectory;
-
-    /// <summary>
-    ///     The web proxy to use
-    /// </summary>
-    private readonly WebProxy _webProxy;
-
-    /// <summary>
     ///     Used when mediaTimeout is set
     /// </summary>
-    private readonly Stopwatch _stopwatch;
-
-    private readonly int _imageLoadTimeout;
+    private Stopwatch _stopwatch;
     #endregion
 
     #region Properties
+    private FileCacheHandler FileCacheHandler
+    {
+        get
+        {
+            // ReSharper disable once InconsistentlySynchronizedField
+            var httpClientHandler = new FileCacheHandler(_useCache, _cacheDirectory, _cacheSize, _instanceId, _logger)
+            {
+                ServerCertificateCustomValidationCallback = (message, certificate, _, _) =>
+                {
+                    WriteToLog($"Accepting certificate '{certificate.Subject}', message '{message}'");
+                    return true;
+                }
+            };
+
+            if (_webProxy != null)
+                httpClientHandler.Proxy = _webProxy;
+
+            return httpClientHandler;
+        }
+    }
+
     /// <summary>
-    ///     An unique id that can be used to identify the logging of the converter when
-    ///     calling the code from multiple threads and writing all the logging to the same file
+    ///     Used by Angle Sharp to download the webpage
     /// </summary>
-    // ReSharper disable once UnusedAutoPropertyAccessor.Global
-    // ReSharper disable once MemberCanBePrivate.Global
-    public string InstanceId { get; set; }
+    private IConfiguration Config =>
+        Configuration.Default
+            .With(new HttpClientRequester(new HttpClient(FileCacheHandler)))
+            .WithTemporaryCookies()
+            .WithDefaultLoader()
+            .WithCss();
 
     /// <summary>
     ///     Returns the time left when <see cref="_imageLoadTimeout" /> has been set
     /// </summary>
-    internal int TimeLeft
+    private int TimeLeft
     {
         get
         {
@@ -131,18 +177,29 @@ internal class DocumentHelper : IDisposable
     /// <param name="cacheSize">The cache size when <paramref name="useCache"/> is set to <c>true</c>, otherwise <c>null</c></param>
     /// <param name="webProxy">The web proxy to use when downloading</param>
     /// <param name="imageLoadTimeout">When set then this timeout is used for loading images, <c>null</c> when no timeout is needed</param>
+    /// <param name="instanceId">An unique id that can be used to identify the logging of the converter when
+    ///     calling the code from multiple threads and writing all the logging to the same file</param>
     /// <param name="logger">When set then logging is written to this ILogger instance for all conversions at the Information log level</param>
-    public DocumentHelper(DirectoryInfo tempDirectory,
+    public DocumentHelper(
+        DirectoryInfo tempDirectory,
         bool useCache,
-        DirectoryInfo cacheDirectory, 
+        FileSystemInfo cacheDirectory, 
         long cacheSize,
-        WebProxy webProxy,
+        IWebProxy webProxy,
         int? imageLoadTimeout,
+        string instanceId,
         ILogger logger)
     {
         _tempDirectory = tempDirectory;
-
+        _useCache = useCache;
+#if (DEBUG)
+        _cacheDirectory = new DirectoryInfo("d:\\");
+#else
+        _cacheDirectory = cacheDirectory;
+#endif
+        _cacheSize = cacheSize;
         _webProxy = webProxy;
+        _instanceId = instanceId;
         _logger = logger;
 
         if (useCache)
@@ -151,7 +208,6 @@ internal class DocumentHelper : IDisposable
         if (!imageLoadTimeout.HasValue) return;
         _imageLoadTimeout = imageLoadTimeout.Value;
         WriteToLog($"Setting image load timeout to '{_imageLoadTimeout}' milliseconds");
-        _stopwatch = Stopwatch.StartNew();
     }
     #endregion
 
@@ -184,8 +240,7 @@ internal class DocumentHelper : IDisposable
     {
         using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri);
         var htmlChanged = false;
-        var config = Configuration.Default.WithCss();
-        var context = BrowsingContext.New(config);
+        var context = BrowsingContext.New(Config);
 
         IDocument document;
 
@@ -319,6 +374,16 @@ internal class DocumentHelper : IDisposable
     }
     #endregion
 
+    #region ResetTimeout
+    internal void ResetTimeout()
+    {
+        if (_imageLoadTimeout == 0)
+            return;
+
+        _stopwatch = Stopwatch.StartNew();
+    }
+    #endregion
+
     #region FitPageToContentAsync
     /// <summary>
     ///     Opens the webpage and adds code to make it fit the page
@@ -329,10 +394,7 @@ internal class DocumentHelper : IDisposable
     public async Task<FitPageToContentResult> FitPageToContentAsync(ConvertUri inputUri, CancellationToken cancellationToken)
     {
         using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri);
-
-        var config = Configuration.Default.WithCss();
-        var context = BrowsingContext.New(config);
-
+        using var context = BrowsingContext.New(Config);
         IDocument document;
 
         try
@@ -463,35 +525,7 @@ internal class DocumentHelper : IDisposable
             localDirectory = Path.GetDirectoryName(inputUri.OriginalString);
 
         var htmlChanged = false;
-
-        IConfiguration config;
-
-        if (_webProxy != null)
-        {
-            WriteToLog($"Using web proxy '{_webProxy.Address}' to download images");
-
-            var httpClientHandler = new HttpClientHandler
-            {
-                Proxy = _webProxy,
-                ServerCertificateCustomValidationCallback = (message, certificate, _, _) =>
-                {
-                    WriteToLog($"Accepting certificate '{certificate.Subject}', message '{message}'");
-                    return true;
-                }
-            };
-
-            var client = new HttpClient(httpClientHandler);
-            config = Configuration.Default
-                .With(new HttpClientRequester(client))
-                .WithTemporaryCookies()
-                .WithDefaultLoader()
-                .WithCss();
-        }
-        else
-            config = Configuration.Default.WithCss();
-
-        var context = BrowsingContext.New(config);
-
+        var context = BrowsingContext.New(Config);
         IDocument document;
 
         try
@@ -894,15 +928,7 @@ internal class DocumentHelper : IDisposable
     {
         try
         {
-            if (_useCache)
-            {
-            }
-
-            var request = WebRequest.CreateHttp(sourceUri);
-
-            if (_webProxy != null)
-                request.Proxy = _webProxy;
-
+            using var client = new HttpClient(FileCacheHandler);
             var timeLeft = TimeLeft;
 
             if (_stopwatch != null && checkTimeout)
@@ -913,25 +939,14 @@ internal class DocumentHelper : IDisposable
                     return null;
                 }
 
-                request.Timeout = TimeLeft;
+                client.Timeout = TimeSpan.FromMilliseconds(timeLeft);
             }
-
             
-            WriteToLog($"Opening stream to url '{sourceUri}'{(_stopwatch != null ? $" with a timeout of {timeLeft} milliseconds" : string.Empty)}");
+            WriteToLog($"Opening stream to url '{sourceUri}'{(_imageLoadTimeout != 0 ? $" with a timeout of {timeLeft} milliseconds" : string.Empty)}");
             
-            var response = await request.GetResponseAsync();
-
-            var stream = response.GetResponseStream();
-
-            if (stream == null) 
-                return response.GetResponseStream();
-
-            var memoryStream = new MemoryStream();
-            await stream.CopyToAsync(memoryStream);
-            WriteToLog($"Adding item from url '{sourceUri}' to the cache");
-            FileCache.Add(sourceUri.ToString(), memoryStream.ToArray(), new CacheItemPolicy { SlidingExpiration = TimeSpan.FromDays(1) });
-            memoryStream.Position = 0;
-            return memoryStream;
+            var response = await client.GetAsync(sourceUri);
+            
+            return await response.Content.ReadAsStreamAsync();
         }
         catch (Exception exception)
         {
@@ -966,10 +981,8 @@ internal class DocumentHelper : IDisposable
             try
             {
                 if (_logger == null) return;
-                using (_logger.BeginScope(InstanceId))
-                {
+                using (_logger.BeginScope(_instanceId))
                     _logger.LogInformation(message);
-                }
             }
             catch (ObjectDisposedException)
             {

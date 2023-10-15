@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -13,7 +14,23 @@ namespace ChromiumHtmlToPdfLib.Helpers;
 /// </summary>
 internal class FileCacheHandler : HttpClientHandler
 {
-    #region Properties
+    #region Fields
+    /// <summary>
+    ///     An unique id that can be used to identify the logging of the converter when
+    ///     calling the code from multiple threads and writing all the logging to the same file
+    /// </summary>
+    private readonly string _instanceId;
+    
+    /// <summary>
+    ///     When set then logging is written to this ILogger instance
+    /// </summary>
+    private readonly ILogger _logger;
+
+    /// <summary>
+    ///     Used to make the logging thread safe
+    /// </summary>
+    private readonly object _loggerLock = new();
+
     /// <summary>
     ///     When <c>true</c> then caching is enabled
     /// </summary>
@@ -22,7 +39,7 @@ internal class FileCacheHandler : HttpClientHandler
     /// <summary>
     ///     The cache folder
     /// </summary>
-    private DirectoryInfo _cacheDirectory;
+    private readonly DirectoryInfo _cacheDirectory;
 
     /// <summary>
     ///     The cache size
@@ -51,12 +68,6 @@ internal class FileCacheHandler : HttpClientHandler
             if (_fileCache != null)
                 return _fileCache;
 
-            //_cacheDirectory = new DirectoryInfo(Path.Combine("d:\\", "HttpClientHandler"));
-            _cacheDirectory = new DirectoryInfo(Path.Combine(_cacheDirectory.FullName, "HttpClientHandler"));
-
-            if (!_cacheDirectory.Exists)
-                _cacheDirectory.Create();
-
             FileCache.DefaultCacheManager = FileCacheManagers.Hashed;
 
             _fileCache = new FileCache(_cacheDirectory.FullName)
@@ -72,20 +83,54 @@ internal class FileCacheHandler : HttpClientHandler
     #endregion
 
     #region Constructor
-    internal FileCacheHandler(bool useCache, FileSystemInfo cacheDirectory, long cacheSize)
+    /// <summary>
+    ///     Makes this object and sets its needed properties
+    /// </summary>
+    /// <param name="useCache">When <c>true</c> then caching is enabled on the <see cref="WebClient" /></param>
+    /// <param name="cacheDirectory">The cache directory when <paramref name="useCache"/> is set to <c>true</c>, otherwise <c>null</c></param>
+    /// <param name="cacheSize">The cache size when <paramref name="useCache"/> is set to <c>true</c>, otherwise <c>null</c></param>
+    /// <param name="instanceId">An unique id that can be used to identify the logging of the converter when
+    ///     calling the code from multiple threads and writing all the logging to the same file</param>
+    /// <param name="logger">When set then logging is written to this ILogger instance for all conversions at the Information log level</param>
+    internal FileCacheHandler(
+        bool useCache, 
+        FileSystemInfo cacheDirectory, 
+        long cacheSize,
+        string instanceId,
+        ILogger logger)
     {
+        _instanceId = instanceId;
+        _logger = logger;
         _useCache = useCache;
+        
         if (!useCache) return;
-        _cacheDirectory = new DirectoryInfo(Path.Combine(cacheDirectory.FullName, "HttpClientHandler"));
+        
+        _cacheDirectory = new DirectoryInfo(Path.Combine(cacheDirectory.FullName, "DocumentHelper"));
+
+        if (!_cacheDirectory.Exists)
+        {
+            WriteToLog($"Creating cache directory '{_cacheDirectory.FullName}'");
+            _cacheDirectory.Create();
+        }
+
         _cacheSize = cacheSize;
     }
     #endregion
 
     #region SendAsync
+    /// <summary>
+    ///     <inheritdoc />
+    /// </summary>
+    /// <param name="request"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         if (!_useCache)
+        {
+            IsFromCache = false;
             return base.SendAsync(request, cancellationToken);
+        }
 
         var key = request.RequestUri.ToString();
         var item = FileCache.GetCacheItem(key);
@@ -98,17 +143,49 @@ internal class FileCacheHandler : HttpClientHandler
                 ReasonPhrase = "Loaded from cache"
             };
 
+            IsFromCache = true;
+
+            WriteToLog("Returned item from cache");
+
             return Task.FromResult(cachedResponse);
         }
 
+        IsFromCache = false;
+        
         var response = base.SendAsync(request, cancellationToken).Result;
         var memoryStream = new MemoryStream();
+        
         response.Content.ReadAsStreamAsync().GetAwaiter().GetResult().CopyTo(memoryStream);
-        //WriteToLog($"Adding item from url '{sourceUri}' to the cache");
+        
         FileCache.Add(key, memoryStream.ToArray(), new CacheItemPolicy { SlidingExpiration = TimeSpan.FromDays(1) });
+        WriteToLog("Added item to cache");
+
         response.Content = new StreamContent(new MemoryStream(memoryStream.ToArray()));
 
         return Task.FromResult(response);
+    }
+    #endregion
+
+    #region WriteToLog
+    /// <summary>
+    ///     Writes a line to the <see cref="_logger" />
+    /// </summary>
+    /// <param name="message">The message to write</param>
+    internal void WriteToLog(string message)
+    {
+        lock (_loggerLock)
+        {
+            try
+            {
+                if (_logger == null) return;
+                using (_logger.BeginScope(_instanceId))
+                    _logger.LogInformation(message);
+            }
+            catch (ObjectDisposedException)
+            {
+                // Ignore
+            }
+        }
     }
     #endregion
 }

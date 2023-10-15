@@ -47,7 +47,7 @@ static class Program
     #endregion
 
     #region Main
-    static void Main(string[] args)
+    public static void Main(string[] args)
     {
         Options options = null;
 
@@ -112,16 +112,10 @@ static class Program
 
                         WriteToLog("Started");
 
-                        // Waiting until all tasks are finished
-                        foreach (var task in _workerTasks)
-                        {
-                            task.Wait();
-                        }
+                        Task.WaitAll(_workerTasks.ToArray());
                     }
                     else
-                    {
-                        ConvertWithTask(options, null);
-                    }
+                        ConvertWithTask(options, null).GetAwaiter().GetResult();
 
                     // Write conversion information to output file
                     using var output = File.OpenWrite(options.Output);
@@ -321,6 +315,11 @@ static class Program
 
         if (options.NoMargins)
             converter.AddChromiumArgument("--no-margins");
+
+        if (options.WebSocketTimeout.HasValue)
+            converter.WebSocketTimeout = options.WebSocketTimeout.Value;
+
+        converter.UseOldHeadlessMode = options.UseOldHeadlessMode;
     }
     #endregion
 
@@ -392,7 +391,7 @@ static class Program
     /// </summary>
     /// <param name="options"></param>
     /// <param name="instanceId"></param>
-    private static void ConvertWithTask(Options options, string instanceId)
+    private static async Task ConvertWithTask(Options options, string instanceId)
     {
         var pageSettings = GetPageSettings(options);
 
@@ -402,7 +401,7 @@ static class Program
 
         using (logger)
         {
-            using var converter = new Converter(options.ChromiumLocation, options.ChromiumUserProfile, logger)
+            await using var converter = new Converter(options.ChromiumLocation, options.ChromiumUserProfile, logger)
             {
                 InstanceId = instanceId
             };
@@ -414,7 +413,7 @@ static class Program
                 if (!_itemsToConvert.TryDequeue(out var itemToConvert)) continue;
                 try
                 {
-                    converter.ConvertToPdf(itemToConvert.InputUri, itemToConvert.OutputFile, pageSettings,
+                    await converter.ConvertToPdfAsync(itemToConvert.InputUri, itemToConvert.OutputFile, pageSettings,
                         options.WaitForWindowStatus, options.WaitForWindowStatusTimeOut, options.Timeout,
                         options.MediaLoadTimeout);
 

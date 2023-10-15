@@ -369,5 +369,17 @@ public class Options
     /// </summary>
     [Option("disk-cache-size", Required = false, HelpText = "The size for the '--disk-cache-directory' in megabytes")]
     public long? DiskCacheSize { get; set; }
+
+    /// <summary>
+    ///     The timeout in milliseconds to wait for a websocket connection (default 30000 milliseconds)
+    /// </summary>
+    [Option("web-socket-timeout", Required = false, HelpText = "The web socket timeout in milliseconds")]
+    public int? WebSocketTimeout { get; set; }
+
+    /// <summary>
+    ///     When <c>true</c> then the old headless mode will be used
+    /// </summary>
+    [Option("use-old-headless-mode", Required = false, HelpText = "When true then the old headless mode will be used")]
+    public bool UseOldHeadlessMode { get; set; }
     #endregion
 }
