@@ -333,8 +333,12 @@ internal class DocumentHelper : IDisposable
         {
             if (document.BaseUrl.Scheme.StartsWith("file"))
             {
-                var images = document.DocumentElement.Descendants().OfType<IHtmlImageElement>()
-                    .Where(x => x.NodeType == NodeType.Element);
+                //var images = document.DocumentElement.Descendants().OfType<IHtmlImageElement>()
+                //    .Where(x => x.NodeType == NodeType.Element);
+
+                var images = document.DocumentElement.Descendents()
+                    .Where(x => x.NodeType == NodeType.Element)
+                    .OfType<IHtmlImageElement>();
 
                 foreach (var image in images)
                 {
