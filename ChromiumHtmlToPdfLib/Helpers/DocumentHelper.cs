@@ -384,6 +384,7 @@ internal class DocumentHelper : IDisposable
         if (_imageLoadTimeout == 0)
             return;
 
+        _stopwatch?.Stop();
         _stopwatch = Stopwatch.StartNew();
     }
     #endregion

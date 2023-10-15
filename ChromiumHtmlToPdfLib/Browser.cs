@@ -78,6 +78,11 @@ public class Browser : IDisposable, IAsyncDisposable
     private Connection _pageConnection;
 
     private string _instanceId;
+
+    /// <summary>
+    ///     Keeps track is we already disposed our resources
+    /// </summary>
+    private bool _disposed;
     #endregion
 
     #region Properties
@@ -560,6 +565,7 @@ public class Browser : IDisposable, IAsyncDisposable
     ///     the method will raise an <see cref="ConversionTimedOutException" /> in the
     ///     <see cref="CountdownTimer" /> reaches zero before finishing the printing to pdf
     /// </param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <remarks>
     ///     See https://chromedevtools.github.io/devtools-protocol/tot/Page#method-captureSnapshot
     /// </remarks>
@@ -743,6 +749,9 @@ public class Browser : IDisposable, IAsyncDisposable
     /// </summary>
     public void Dispose()
     {
+        if (_disposed)
+            return;
+
         if (_pageConnection != null)
             _pageConnection.OnError -= OnOnError;
 
@@ -762,6 +771,8 @@ public class Browser : IDisposable, IAsyncDisposable
             _browserConnection.Dispose();
             _browserConnection = null;
         }
+
+        _disposed = true;
     }
     #endregion
 
@@ -772,6 +783,9 @@ public class Browser : IDisposable, IAsyncDisposable
     /// </summary>
     public async ValueTask DisposeAsync()
     {
+        if (_disposed)
+            return;
+
         if (_pageConnection != null)
             _pageConnection.OnError -= OnOnError;
 
@@ -791,6 +805,8 @@ public class Browser : IDisposable, IAsyncDisposable
             await _browserConnection.DisposeAsync();
             _browserConnection = null;
         }
+
+        _disposed = true;
     }
 #endif
     #endregion

@@ -2607,10 +2607,8 @@ public class Converter : IDisposable, IAsyncDisposable
             return;
 
         _documentHelper?.Dispose();
-        _documentHelper = null;
-        _chromiumWaitEvent.Dispose();
-        _chromiumWaitEvent = null;
-
+        _chromiumWaitEvent?.Dispose();
+        
         if (_browser != null)
             try
             {
@@ -2618,8 +2616,9 @@ public class Converter : IDisposable, IAsyncDisposable
 #if (NETSTANDARD2_0)
                 _browser.Dispose();
 #else
-                await _browser.DisposeAsync();
+                await _browser.DisposeAsync().ConfigureAwait(false);
 #endif
+                _browser = null;
             }
             catch (Exception exception)
             {

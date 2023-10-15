@@ -67,7 +67,11 @@ public class Connection : IDisposable, IAsyncDisposable
 
     #region Fields
     private const int ReceiveBufferSize = 8192;
-    private readonly CancellationTokenSource _receiveLoopCts;
+
+    /// <summary>
+    ///     <see cref="ReceiveLoop"/>
+    /// </summary>
+    private CancellationTokenSource _receiveLoopCts;
 
     /// <summary>
     ///     Used to make the logging thread safe
@@ -86,12 +90,17 @@ public class Connection : IDisposable, IAsyncDisposable
     /// <summary>
     ///     The websocket
     /// </summary>
-    private readonly ClientWebSocket _webSocket;
+    private ClientWebSocket _webSocket;
 
     /// <summary>
     ///     Websocket open timeout in milliseconds
     /// </summary>
     private readonly int _timeout;
+
+    /// <summary>
+    ///     Keeps track is we already disposed our resources
+    /// </summary>
+    private bool _disposed;
     #endregion
 
     #region Properties
@@ -357,30 +366,41 @@ public class Connection : IDisposable, IAsyncDisposable
     #endregion
 
     #region InternalDisposeAsync
+    /// <summary>
+    ///     Closes the websocket connection
+    /// </summary>
+    /// <returns></returns>
     public async Task InternalDisposeAsync()
     {
+        if (_disposed)
+            return;
+
         WriteToLog($"Disposing websocket connection to url '{_url}'");
 
         if (_webSocket.State == WebSocketState.Open)
         {
-            WriteToLog("Closing websocket");
+            WriteToLog("Closing web socket");
 
             try
             {
-                await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Done", default);
+                await _webSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "Done", CancellationToken.None).ConfigureAwait(false);
             }
-            catch 
+            catch (Exception exception)
             {
-                // Ignore
+                WriteToLog($"An error occurred while closing the web socket, error: '{ExceptionHelpers.GetInnerException(exception)}'");
             }
 
             WriteToLog("Websocket connection closed");
 
             WebSocketOnClosed(EventArgs.Empty);
-            _receiveLoopCts.Cancel();
-            _webSocket.Dispose();
-            WriteToLog("Websocket connection disposed");
+            _receiveLoopCts?.Cancel();
+            _receiveLoopCts = null;
+            _webSocket?.Dispose();
+            _webSocket = null;
+            WriteToLog("Web socket connection disposed");
         }
+
+        _disposed = true;
     }
     #endregion
 
