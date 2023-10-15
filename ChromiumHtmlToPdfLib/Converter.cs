@@ -222,6 +222,21 @@ public class Converter : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
+    ///     Returns the Chromium based browser process id or <c>null</c> when the browser is not running
+    /// </summary>
+    public int? ChromiumProcessId
+    {
+        get
+        {
+            if (!IsChromiumRunning)
+                return null;
+
+            _chromiumProcess.Refresh();
+            return _chromiumProcess.Id;
+        }
+    }
+
+    /// <summary>
     ///     Returns <c>true</c> when the Chromium based browser is running
     /// </summary>
     /// <returns></returns>
