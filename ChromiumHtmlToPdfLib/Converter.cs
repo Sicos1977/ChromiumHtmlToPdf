@@ -1773,6 +1773,7 @@ public class Converter : IDisposable, IAsyncDisposable
     ///     When set then this will give a logging for each conversion. Use the logger
     ///     option in the constructor if you want one log for all conversions
     /// </param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <exception cref="ConversionTimedOutException">
     ///     Raised when <paramref name="conversionTimeout" /> is set and the
     ///     conversion fails to finish in this amount of time
@@ -2600,8 +2601,12 @@ public class Converter : IDisposable, IAsyncDisposable
     }
     #endregion
 
-    #region DisposeAsync
+    #region Dispose
+#if (NETSTANDARD2_0)
+    private void InternalDispose()
+#else
     private async Task InternalDisposeAsync()
+#endif
     {
         if (_disposed)
             return;
@@ -2656,11 +2661,15 @@ public class Converter : IDisposable, IAsyncDisposable
 
     #region Dispose
     /// <summary>
-    ///     Disposes the running <see cref="_chromiumProcess" />
+    ///     Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
     /// </summary>
     public void Dispose()
     {
+#if (NETSTANDARD2_0)
+        InternalDispose();
+#else
         InternalDisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+#endif
     }
     #endregion
 
