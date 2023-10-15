@@ -678,8 +678,7 @@ public class Converter : IDisposable, IAsyncDisposable
         }
         catch (Exception exception)
         {
-            WriteToLog($"Could not start the {BrowserName} process due to the following reason: " +
-                       ExceptionHelpers.GetInnerException(exception));
+            WriteToLog($"Could not start the {BrowserName} process due to the following reason: {ExceptionHelpers.GetInnerException(exception)}");
             throw;
         }
 
@@ -1063,7 +1062,7 @@ public class Converter : IDisposable, IAsyncDisposable
     /// </remarks>
     public void SetDiskCache(string directory, long? size)
     {
-        var temp = new DirectoryInfo(_cacheDirectory);
+        var temp = new DirectoryInfo(directory);
 
         if (!temp.Exists)
             throw new DirectoryNotFoundException($"The directory '{directory}' does not exists");
@@ -1572,7 +1571,7 @@ public class Converter : IDisposable, IAsyncDisposable
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger).GetAwaiter().GetResult();
+            logger).ConfigureAwait(false).GetAwaiter().GetResult();
     }
     
     /// <summary>
@@ -1628,7 +1627,7 @@ public class Converter : IDisposable, IAsyncDisposable
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger).GetAwaiter().GetResult();
+            logger).ConfigureAwait(false).GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -1686,7 +1685,7 @@ public class Converter : IDisposable, IAsyncDisposable
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger).GetAwaiter().GetResult();
+            logger).ConfigureAwait(false).GetAwaiter().GetResult();
     }
     
     /// <summary>
@@ -1744,7 +1743,7 @@ public class Converter : IDisposable, IAsyncDisposable
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger).GetAwaiter().GetResult();
+            logger).ConfigureAwait(false).GetAwaiter().GetResult();
     }
     #endregion
 
@@ -2072,7 +2071,7 @@ public class Converter : IDisposable, IAsyncDisposable
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger).GetAwaiter().GetResult();
+            logger).ConfigureAwait(false).GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -2130,7 +2129,7 @@ public class Converter : IDisposable, IAsyncDisposable
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger).GetAwaiter().GetResult();
+            logger).ConfigureAwait(false).GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -2187,7 +2186,7 @@ public class Converter : IDisposable, IAsyncDisposable
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger).GetAwaiter().GetResult();
+            logger).ConfigureAwait(false).GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -2248,7 +2247,7 @@ public class Converter : IDisposable, IAsyncDisposable
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger).GetAwaiter().GetResult();
+            logger).ConfigureAwait(false).GetAwaiter().GetResult();
     }
     #endregion
 
@@ -2662,7 +2661,7 @@ public class Converter : IDisposable, IAsyncDisposable
     /// </summary>
     public void Dispose()
     {
-        InternalDisposeAsync().GetAwaiter().GetResult();
+        InternalDisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
     }
     #endregion
 

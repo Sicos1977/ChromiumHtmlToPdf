@@ -120,7 +120,7 @@ public class Connection : IDisposable, IAsyncDisposable
         WriteToLog($"Creating new websocket connection to url '{url}'");
         _webSocket = new ClientWebSocket();
         _receiveLoopCts = new CancellationTokenSource();
-        OpenWebSocketAsync(default).GetAwaiter().GetResult();
+        OpenWebSocketAsync(default).ConfigureAwait(false).GetAwaiter().GetResult();
         Task.Factory.StartNew(ReceiveLoop, _receiveLoopCts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
     }
     #endregion
@@ -390,7 +390,7 @@ public class Connection : IDisposable, IAsyncDisposable
     /// </summary>
     public void Dispose()
     {
-        InternalDisposeAsync().GetAwaiter().GetResult();
+        InternalDisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
     }
     #endregion
 

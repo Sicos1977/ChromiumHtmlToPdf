@@ -118,7 +118,7 @@ public class Browser : IDisposable, IAsyncDisposable
         var message = new Message { Method = "Target.createTarget" };
         message.Parameters.Add("url", "about:blank");
 
-        var result = _browserConnection.SendForResponseAsync(message, CancellationToken.None).GetAwaiter().GetResult();
+        var result = _browserConnection.SendForResponseAsync(message, CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
         var page = Page.FromJson(result);
         var pageUrl = $"{browser.Scheme}://{browser.Host}:{browser.Port}/devtools/page/{page.Result.TargetId}";
 
@@ -463,7 +463,7 @@ public class Browser : IDisposable, IAsyncDisposable
     /// <exception cref="ChromiumException">Raised when an error is returned by Chromium</exception>
     public bool WaitForWindowStatus(string status, int timeout = 60000)
     {
-        return WaitForWindowStatusAsync(status, timeout).GetAwaiter().GetResult();
+        return WaitForWindowStatusAsync(status, timeout).ConfigureAwait(false).GetAwaiter().GetResult();
     }
     #endregion
 
@@ -521,7 +521,7 @@ public class Browser : IDisposable, IAsyncDisposable
     /// <exception cref="ChromiumException">Raised when an error is returned by Chromium</exception>
     public void RunJavascript(string script)
     {
-        RunJavascriptAsync(script).GetAwaiter().GetResult();
+        RunJavascriptAsync(script).ConfigureAwait(false).GetAwaiter().GetResult();
     }
     #endregion
 
@@ -749,7 +749,7 @@ public class Browser : IDisposable, IAsyncDisposable
         if (_browserConnection != null)
             _browserConnection.OnError -= OnOnError;
 
-        CloseAsync(CancellationToken.None).GetAwaiter().GetResult();
+        CloseAsync(CancellationToken.None).ConfigureAwait(false).GetAwaiter().GetResult();
 
         if (_pageConnection != null)
         {
