@@ -37,7 +37,7 @@ namespace ChromiumHtmlToPdfLib.Helpers;
 /// <summary>
 ///     This class searches for Microsoft Edge cross-platform.
 /// </summary>
-public static class EdgeFinder
+internal static class EdgeFinder
 {
     #region GetApplicationDirectories
     private static void GetApplicationDirectories(ICollection<string> directories)
@@ -84,7 +84,7 @@ public static class EdgeFinder
     ///     Tries to find Chrome
     /// </summary>
     /// <returns></returns>
-    public static string Find()
+    internal static string Find()
     {
         // For Windows we first check the registry. This is the safest
         // method and also considers non-default installation locations.
@@ -111,11 +111,13 @@ public static class EdgeFinder
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             exeNames.Add("msedge.exe");
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            throw new Exception(
-                "Finding Microsoft Edge on Linux is not yet supported, please contact the programma on GitHub");
+        {
+            exeNames.Add("microsoft-edge-stable");
+            exeNames.Add("microsoft-edge-beta");
+            exeNames.Add("microsoft-edge-dev");
+        }
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            throw new Exception(
-                "Finding Microsoft Edge on MaxOS is not yet supported, please contact the programma on GitHub");
+            exeNames.Add("Microsoft Edge.app/Contents/MacOS/Microsoft Edge");
 
         // Check the directory of this assembly/application
         var currentPath = GetAppPath();

@@ -37,7 +37,7 @@ namespace ChromiumHtmlToPdfLib.Helpers;
 /// <summary>
 ///     This class searches for the Chrome or Chromium executables cross-platform.
 /// </summary>
-public static class ChromeFinder
+internal static class ChromeFinder
 {
     #region GetApplicationDirectories
     private static void GetApplicationDirectories(ICollection<string> directories)
@@ -85,7 +85,7 @@ public static class ChromeFinder
     ///     Tries to find Chrome
     /// </summary>
     /// <returns></returns>
-    public static string Find()
+    internal static string Find()
     {
         // For Windows we first check the registry. This is the safest
         // method and also considers non-default installation locations.

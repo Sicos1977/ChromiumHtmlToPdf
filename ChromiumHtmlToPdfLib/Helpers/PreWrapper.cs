@@ -141,13 +141,13 @@ internal class PreWrapper
         WriteToLog($"Reading text file '{inputFile}'");
 
         if (encoding == null)
-            using (var fileStream = File.OpenRead(inputFile))
-            {
-                WriteToLog("Trying to detect encoding");
-                var result = CharsetDetector.DetectFromStream(fileStream);
-                encoding = result.Detected.Encoding;
-                WriteToLog(result.Detected.StatusLog);
-            }
+        {
+            using var fileStream = File.OpenRead(inputFile);
+            WriteToLog("Trying to detect encoding");
+            var result = CharsetDetector.DetectFromStream(fileStream);
+            encoding = result.Detected.Encoding;
+            WriteToLog(result.Detected.StatusLog);
+        }
 
         var streamReader = new StreamReader(inputFile, encoding);
 
