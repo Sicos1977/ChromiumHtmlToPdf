@@ -5,11 +5,11 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <StartupObject>ChromiumHtmlToPdfConsole.Program</StartupObject>
     <ApplicationIcon />
-    <AssemblyVersion>2.6.5.0</AssemblyVersion>
-    <Version>2.6.5</Version>
+    <AssemblyVersion>4.0.1.0</AssemblyVersion>
+    <Version>4.0.1</Version>
     <Company>Magic-Sessions</Company>
     <Authors>Kees van Spelde</Authors>
-    <Copyright>(C)2017-2022 Kees van Spelde</Copyright>
+    <Copyright>(C)2017-2023 Kees van Spelde</Copyright>
     <PackageProjectUrl>https://github.com/Sicos1977/ChromiumHtmlToPdf</PackageProjectUrl>
     <PackageIcon>Chrome-icon.png</PackageIcon>
     <PackageIconUrl />
@@ -22,7 +22,7 @@
     <PackageId />
     <AssemblyName>ChromiumHtmlToPdfConsole</AssemblyName>
     <RootNamespace>ChromiumHtmlToPdfConsole</RootNamespace>
-    <FileVersion>3.0.0.0</FileVersion>
+    <FileVersion>4.0.1.0</FileVersion>
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
