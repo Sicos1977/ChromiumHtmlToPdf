@@ -527,7 +527,19 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <remarks>
     ///     https://developer.chrome.com/articles/new-headless/
     /// </remarks>
-    public bool UseOldHeadlessMode { get; set; }
+    public bool UseOldHeadlessMode
+    {
+        get => !_defaultChromiumArgument.Contains("--headless=new");
+        set
+        {
+            for (var i = 0; i < _defaultChromiumArgument.Count; i++)
+            {
+                if (!_defaultChromiumArgument[i].StartsWith("--headless")) continue;
+                _defaultChromiumArgument[i] = value ? "--headless" : "--headless=new";
+                return;
+            }
+        }
+    }
     #endregion
 
     #region Constructor
@@ -854,11 +866,7 @@ public class Converter : IDisposable, IAsyncDisposable
 
         _defaultChromiumArgument = new List<string>();
         
-        if (UseOldHeadlessMode)
-            AddChromiumArgument("--headless");
-        else
-            AddChromiumArgument("--headless", "new");
-
+        AddChromiumArgument("--headless=new");
         AddChromiumArgument("--disable-gpu");
         AddChromiumArgument("--hide-scrollbars");
         AddChromiumArgument("--mute-audio");
@@ -896,11 +904,11 @@ public class Converter : IDisposable, IAsyncDisposable
         if (string.IsNullOrWhiteSpace(argument))
             throw new ArgumentException("Argument is null, empty or white space");
 
+        if (argument.StartsWith("--headless"))
+            throw new ArgumentException("Can't remove '--headless' argument, this argument is always needed");
+        
         switch (argument)
         {
-            case "--headless":
-                throw new ArgumentException("Can't remove '--headless' argument, this argument is always needed");
-
             case "--no-first-run":
                 throw new ArgumentException("Can't remove '--no-first-run' argument, this argument is always needed");
 
@@ -909,11 +917,9 @@ public class Converter : IDisposable, IAsyncDisposable
                     "Can't remove '---remote-debugging-port=\"0\"' argument, this argument is always needed");
         }
 
-        if (_defaultChromiumArgument.Contains(argument))
-        {
-            _defaultChromiumArgument.Remove(argument);
-            WriteToLog($"Removed Chromium argument '{argument}'");
-        }
+        if (!_defaultChromiumArgument.Contains(argument)) return;
+        _defaultChromiumArgument.Remove(argument);
+        WriteToLog($"Removed Chromium argument '{argument}'");
     }
     #endregion
 
@@ -942,9 +948,7 @@ public class Converter : IDisposable, IAsyncDisposable
             _defaultChromiumArgument.Add(argument);
         }
         else
-        {
             WriteToLog($"The Chromium argument '{argument}' has already been set, ignoring it");
-        }
     }
 
     /// <summary>
@@ -967,7 +971,7 @@ public class Converter : IDisposable, IAsyncDisposable
         if (string.IsNullOrWhiteSpace(argument))
             throw new ArgumentException("Argument is null, empty or white space");
 
-        for (var i = 0; i < DefaultChromiumArguments.Count; i++)
+        for (var i = 0; i < _defaultChromiumArgument.Count; i++)
         {
             if (!_defaultChromiumArgument[i].StartsWith(argument + "=")) continue;
 
