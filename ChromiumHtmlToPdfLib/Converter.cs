@@ -859,7 +859,6 @@ public class Converter : IDisposable, IAsyncDisposable
         else
             AddChromiumArgument("--headless", "new");
 
-        AddChromiumArgument("--headless", "new");
         AddChromiumArgument("--disable-gpu");
         AddChromiumArgument("--hide-scrollbars");
         AddChromiumArgument("--mute-audio");
