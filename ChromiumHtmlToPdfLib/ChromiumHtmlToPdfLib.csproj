@@ -19,7 +19,7 @@
     <Authors>Kees van Spelde</Authors>
     <Product>ChromiumHtmlToPdf</Product>
     <Company>Magic-Sessions</Company>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>False</SignAssembly>
     <AssemblyOriginatorKeyFile>ChromiumHtmlToPdf.snk</AssemblyOriginatorKeyFile>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <FileVersion>4.0.1.0</FileVersion>
