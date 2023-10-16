@@ -225,7 +225,7 @@ public class Converter : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
-    ///     Returns the Chromium based browser process id or <c>null</c> when the browser is not running
+    ///     Returns the Chromium based browser process id or <c>null</c> when the browser is not running (anymore)
     /// </summary>
     public int? ChromiumProcessId
     {
@@ -242,7 +242,7 @@ public class Converter : IDisposable, IAsyncDisposable
     ///     Returns <c>true</c> when the Chromium based browser is running
     /// </summary>
     /// <returns></returns>
-    private bool IsChromiumRunning
+    public bool IsChromiumRunning
     {
         get
         {
@@ -493,10 +493,13 @@ public class Converter : IDisposable, IAsyncDisposable
             if (!CurrentTempDirectory.Exists)
                 CurrentTempDirectory.Create();
 
-            return CurrentTempDirectory;
+            return CurrentCacheDirectory;
         }
     }
 
+    /// <summary>
+    ///     <see cref="DocumentHelper"/>
+    /// </summary>
     private DocumentHelper GetDocumentHelper
     {
         get

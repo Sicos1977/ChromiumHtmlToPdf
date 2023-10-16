@@ -192,11 +192,7 @@ internal class DocumentHelper : IDisposable
     {
         _tempDirectory = tempDirectory;
         _useCache = useCache;
-#if (DEBUG)
-        _cacheDirectory = new DirectoryInfo("d:\\");
-#else
         _cacheDirectory = cacheDirectory;
-#endif
         _cacheSize = cacheSize;
         _webProxy = webProxy;
         _instanceId = instanceId;
