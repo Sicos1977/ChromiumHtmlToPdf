@@ -784,7 +784,7 @@ internal class DocumentHelper : IDisposable
                 if (File.Exists(fileName))
                 {
                     var fileStream = OpenFileStream(fileName);
-                    return Image.FromStream(fileStream, true, false);
+                    return fileStream == null ? null : Image.FromStream(fileStream, true, false);
                 }
             }
 
