@@ -351,6 +351,7 @@ public class Converter : IDisposable, IAsyncDisposable
                 throw new DirectoryNotFoundException($"The directory '{value}' does not exists");
 
             _tempDirectory = value;
+            CurrentCacheDirectory = null;
         }
     }
 
@@ -483,6 +484,9 @@ public class Converter : IDisposable, IAsyncDisposable
     {
         get
         {
+            if (CurrentCacheDirectory != null)
+                return CurrentCacheDirectory;
+
             if (_cacheDirectory != null)
                 CurrentCacheDirectory = new DirectoryInfo(_cacheDirectory);
             else
@@ -494,21 +498,6 @@ public class Converter : IDisposable, IAsyncDisposable
                 CurrentTempDirectory.Create();
 
             return CurrentCacheDirectory;
-        }
-    }
-
-    /// <summary>
-    ///     <see cref="DocumentHelper"/>
-    /// </summary>
-    private DocumentHelper GetDocumentHelper
-    {
-        get
-        {
-            if (_documentHelper != null)
-                return _documentHelper;
-
-            _documentHelper = new DocumentHelper(GetTempDirectory, _useCache, GetCacheDirectory, _cacheSize, WebProxy, ImageLoadTimeout, InstanceId, _logger);
-            return _documentHelper;
         }
     }
 
@@ -1347,9 +1336,11 @@ public class Converter : IDisposable, IAsyncDisposable
 
                 if (ImageResize || ImageRotate || SanitizeHtml || pageSettings.PaperFormat == PaperFormat.FitPageToContent)
                 {
+                    var documentHelper = new DocumentHelper(GetTempDirectory, _useCache, GetCacheDirectory, _cacheSize, WebProxy, ImageLoadTimeout, InstanceId, _logger);
+
                     if (SanitizeHtml)
                     {
-                        var result = await GetDocumentHelper.SanitizeHtmlAsync(inputUri, Sanitizer, safeUrls, cancellationToken);
+                        var result = await documentHelper.SanitizeHtmlAsync(inputUri, Sanitizer, safeUrls, cancellationToken);
                         if (result.Success)
                         {
                             inputUri = result.OutputUri;
@@ -1365,7 +1356,7 @@ public class Converter : IDisposable, IAsyncDisposable
                     if (pageSettings.PaperFormat == PaperFormat.FitPageToContent)
                     {
                         WriteToLog("The paper format 'FitPageToContent' is set, modifying html so that the PDF fits the HTML content");
-                        var result = await GetDocumentHelper.FitPageToContentAsync(inputUri, cancellationToken);
+                        var result = await documentHelper.FitPageToContentAsync(inputUri, cancellationToken);
                         if (result.Success)
                         {
                             inputUri = result.OutputUri;
@@ -1375,9 +1366,9 @@ public class Converter : IDisposable, IAsyncDisposable
 
                     if (ImageResize || ImageRotate)
                     {
-                        GetDocumentHelper.ResetTimeout();
+                        documentHelper.ResetTimeout();
 
-                        var result = await GetDocumentHelper.ValidateImagesAsync(
+                        var result = await documentHelper.ValidateImagesAsync(
                             inputUri,
                             ImageResize,
                             ImageRotate,
