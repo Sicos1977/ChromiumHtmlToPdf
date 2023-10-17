@@ -2617,7 +2617,7 @@ public class Converter : IDisposable, IAsyncDisposable
 
     #region Dispose
 #if (NETSTANDARD2_0)
-    private void InternalDisposeAsync()
+    private void InternalDispose()
 #else
     private async Task InternalDisposeAsync()
 #endif
