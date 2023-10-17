@@ -57,7 +57,7 @@ namespace ChromiumHtmlToPdfLib.Helpers;
 /// <summary>
 ///     This class contains helper methods
 /// </summary>
-internal class DocumentHelper : IDisposable
+internal class DocumentHelper
 {
     #region Fields
     /// <summary>
@@ -204,6 +204,12 @@ internal class DocumentHelper : IDisposable
         if (!imageLoadTimeout.HasValue) return;
         _imageLoadTimeout = imageLoadTimeout.Value;
         WriteToLog($"Setting image load timeout to '{_imageLoadTimeout}' milliseconds");
+    }
+
+    ~DocumentHelper()
+    {
+        // Just in case
+        _stopwatch?.Stop();
     }
     #endregion
 
@@ -990,13 +996,6 @@ internal class DocumentHelper : IDisposable
                 // Ignore
             }
         }
-    }
-    #endregion
-
-    #region Dispose
-    public void Dispose()
-    {
-        _stopwatch?.Stop();
     }
     #endregion
 }

@@ -2620,7 +2620,6 @@ public class Converter : IDisposable, IAsyncDisposable
         if (_disposed)
             return;
 
-        _documentHelper?.Dispose();
         _chromiumWaitEvent?.Dispose();
 
         if (_browser != null)
