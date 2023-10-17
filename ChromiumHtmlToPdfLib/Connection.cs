@@ -147,6 +147,7 @@ public class Connection : IDisposable, IAsyncDisposable
             {
                 outputStream = new MemoryStream(ReceiveBufferSize);
                 WebSocketReceiveResult receiveResult;
+
                 do
                 {
                     receiveResult = await _webSocket.ReceiveAsync(buffer, _receiveLoopCts.Token);
@@ -375,6 +376,9 @@ public class Connection : IDisposable, IAsyncDisposable
         if (_disposed)
             return;
 
+        _receiveLoopCts?.Cancel();
+        _receiveLoopCts = null;
+
         WriteToLog($"Disposing websocket connection to url '{_url}'");
 
         if (_webSocket.State == WebSocketState.Open)
@@ -383,7 +387,8 @@ public class Connection : IDisposable, IAsyncDisposable
 
             try
             {
-                await _webSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "Done", CancellationToken.None).ConfigureAwait(false);
+                var timeoutToken = new CancellationTokenSource(5000).Token;
+                await _webSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "Done", timeoutToken).ConfigureAwait(false);
             }
             catch (Exception exception)
             {
@@ -393,8 +398,6 @@ public class Connection : IDisposable, IAsyncDisposable
             WriteToLog("Websocket connection closed");
 
             WebSocketOnClosed(EventArgs.Empty);
-            _receiveLoopCts?.Cancel();
-            _receiveLoopCts = null;
             _webSocket?.Dispose();
             _webSocket = null;
             WriteToLog("Web socket connection disposed");

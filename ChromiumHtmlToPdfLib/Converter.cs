@@ -2628,12 +2628,6 @@ public class Converter : IDisposable, IAsyncDisposable
         _documentHelper?.Dispose();
         _chromiumWaitEvent?.Dispose();
 
-        if (!IsChromiumRunning)
-        {
-            WriteToLog($"The {BrowserName} browser was not running anymore on process id {_chromiumProcess.Id} ... so there is nothing to dispose");
-            return;
-        }
-
         if (_browser != null)
             try
             {
