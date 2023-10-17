@@ -195,11 +195,6 @@ public class Converter : IDisposable, IAsyncDisposable
     ///     Default set to 1GB
     /// </remarks>
     private long _cacheSize = 1073741824;
-
-    /// <summary>
-    ///     <see cref="GetDocumentHelper"/>
-    /// </summary>
-    private DocumentHelper _documentHelper;
     #endregion
 
     #region Properties
