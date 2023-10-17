@@ -612,7 +612,7 @@ public class Converter : IDisposable, IAsyncDisposable
     {
         if (IsChromiumRunning)
         {
-            WriteToLog($"{BrowserName} is already running on PID {_chromiumProcess.Id}... skipped");
+            WriteToLog($"{BrowserName} is already running on process id {_chromiumProcess.Id} ... skipped");
             return;
         }
 
@@ -2617,7 +2617,7 @@ public class Converter : IDisposable, IAsyncDisposable
 
     #region Dispose
 #if (NETSTANDARD2_0)
-    private void InternalDispose()
+    private void InternalDisposeAsync()
 #else
     private async Task InternalDisposeAsync()
 #endif
@@ -2627,7 +2627,13 @@ public class Converter : IDisposable, IAsyncDisposable
 
         _documentHelper?.Dispose();
         _chromiumWaitEvent?.Dispose();
-        
+
+        if (!IsChromiumRunning)
+        {
+            WriteToLog($"The {BrowserName} browser was not running anymore on process id {_chromiumProcess.Id} ... so there is nothing to dispose");
+            return;
+        }
+
         if (_browser != null)
             try
             {
