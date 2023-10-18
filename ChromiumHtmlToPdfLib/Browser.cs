@@ -123,7 +123,7 @@ public class Browser : IDisposable, IAsyncDisposable
         var message = new Message { Method = "Target.createTarget" };
         message.Parameters.Add("url", "about:blank");
 
-        var result = _browserConnection.SendForResponseAsync(message, CancellationToken.None).GetAwaiter().GetResult();
+        var result = _browserConnection.SendForResponseAsync(message).GetAwaiter().GetResult();
         var page = Page.FromJson(result);
         var pageUrl = $"{browser.Scheme}://{browser.Host}:{browser.Port}/devtools/page/{page.Result.TargetId}";
 
@@ -182,8 +182,7 @@ public class Browser : IDisposable, IAsyncDisposable
         var absoluteUri = uri?.AbsoluteUri.Substring(0, uri.AbsoluteUri.LastIndexOf('/') + 1);
 
         #region Message handler
-        // ReSharper disable once AsyncVoidLambda
-        var messageHandler = new EventHandler<string>(async delegate(object _, string data)
+        var messageHandler = new EventHandler<string>(delegate(object _, string data)
         {
             //System.IO.File.AppendAllText("d:\\logs.txt", $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fff} - {data}{Environment.NewLine}");
             var message = Base.FromJson(data);
@@ -208,12 +207,11 @@ public class Browser : IDisposable, IAsyncDisposable
                     var responseReceived = ResponseReceived.FromJson(data);
                     var response = responseReceived.Params.Response;
 
-                    var logMessage =
-                        $"{(response.FromDiskCache ? "Cached response" : "Response")} received for request id '{responseReceived.Params.RequestId}' and url '{response.Url}'";
+                    var logMessage = $"{(response.FromDiskCache ? "Cached response" : "Response")} received for request id '{responseReceived.Params.RequestId}' and url '{response.Url}'";
 
                     if (!string.IsNullOrWhiteSpace(response.RemoteIpAddress))
-                        logMessage +=
-                            $" from ip '{response.RemoteIpAddress}' on port '{response.RemotePort}' with status '{response.Status}{(!string.IsNullOrWhiteSpace(response.StatusText) ? $" ({response.StatusText})" : string.Empty)}'";
+                        logMessage += $" from ip '{response.RemoteIpAddress}' on port '{response.RemotePort}' with status '{response.Status}{(!string.IsNullOrWhiteSpace(response.StatusText) ? $" ({response.StatusText})" : string.Empty)}'";
+
                     WriteToLog(logMessage);
                     break;
 
@@ -257,7 +255,9 @@ public class Browser : IDisposable, IAsyncDisposable
 
                         var fetchContinue = new Message { Method = "Fetch.continueRequest" };
                         fetchContinue.Parameters.Add("requestId", requestId);
-                        await _pageConnection.SendAsync(fetchContinue, cancellationToken).ConfigureAwait(false);
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                        _pageConnection.SendAsync(fetchContinue);
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                     }
                     else
                     {
@@ -270,7 +270,9 @@ public class Browser : IDisposable, IAsyncDisposable
                         // ConnectionAborted, ConnectionFailed, NameNotResolved, InternetDisconnected, AddressUnreachable,
                         // BlockedByClient, BlockedByResponse
                         fetchFail.Parameters.Add("errorReason", "BlockedByClient");
-                        await _pageConnection.SendAsync(fetchFail, cancellationToken).ConfigureAwait(false);
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                        _pageConnection.SendAsync(fetchFail);
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                     }
 
                     break;
@@ -287,17 +289,16 @@ public class Browser : IDisposable, IAsyncDisposable
                         // detect a fully-loaded page).
                         case "Page.lifecycleEvent" when page.Params?.Name == "DOMContentLoaded":
 
-                            WriteToLog(
-                                "The 'Page.lifecycleEvent' with param name 'DomContentLoaded' has been fired, the dom content is now loaded and parsed, waiting for stylesheets, images and sub frames to finish loading");
+                            WriteToLog("The 'Page.lifecycleEvent' with param name 'DomContentLoaded' has been fired, the dom content is now loaded and parsed, waiting for stylesheets, images and sub frames to finish loading");
 
                             if (mediaLoadTimeout.HasValue && !mediaTimeoutTaskSet)
                                 try
                                 {
                                     WriteToLog($"Media load timeout has a value of {mediaLoadTimeout.Value} milliseconds, setting media load timeout task");
 
-                                    await Task.Run(async delegate
+                                    Task.Run(delegate
                                     {
-                                        await Task.Delay(mediaLoadTimeout.Value, mediaLoadTimeoutCancellationTokenSource.Token).ConfigureAwait(false);
+                                        Task.Delay(mediaLoadTimeout.Value, mediaLoadTimeoutCancellationTokenSource.Token).ConfigureAwait(false);
                                         WriteToLog($"Media load timeout task timed out after {mediaLoadTimeout.Value} milliseconds");
                                         waitEvent?.Set();
                                     }, mediaLoadTimeoutCancellationTokenSource.Token).ConfigureAwait(false);
@@ -344,35 +345,35 @@ public class Browser : IDisposable, IAsyncDisposable
             WriteToLog("Setting request headers");
             var networkMessage = new Message { Method = "Network.setExtraHTTPHeaders" };
             networkMessage.AddParameter("headers", uri.RequestHeaders);
-            await _pageConnection.SendForResponseAsync(networkMessage, cancellationToken).ConfigureAwait(false);
+            await _pageConnection.SendAsync(networkMessage).ConfigureAwait(false);
         }
 
         if (logNetworkTraffic)
         {
             WriteToLog("Enabling network traffic logging");
             var networkMessage = new Message { Method = "Network.enable" };
-            await _pageConnection.SendForResponseAsync(networkMessage, cancellationToken).ConfigureAwait(false);
+            await _pageConnection.SendAsync(networkMessage).ConfigureAwait(false);
         }
 
         WriteToLog(useCache ? "Enabling caching" : "Disabling caching");
 
         var cacheMessage = new Message { Method = "Network.setCacheDisabled" };
         cacheMessage.Parameters.Add("cacheDisabled", !useCache);
-        await _pageConnection.SendForResponseAsync(cacheMessage, cancellationToken).ConfigureAwait(false);
+        await _pageConnection.SendAsync(cacheMessage).ConfigureAwait(false);
 
         // Enables issuing of requestPaused events. A request will be paused until client calls one of failRequest, fulfillRequest or continueRequest/continueWithAuth
         if (urlBlacklist?.Count > 0)
         {
             WriteToLog("Enabling Fetch to block url's that are in the url blacklist'");
-            await _pageConnection.SendForResponseAsync(new Message { Method = "Fetch.enable" }, cancellationToken).ConfigureAwait(false);
+            await _pageConnection.SendAsync(new Message { Method = "Fetch.enable" }).ConfigureAwait(false);
         }
 
         // Enables page domain notifications
-        await _pageConnection.SendForResponseAsync(new Message { Method = "Page.enable" }, cancellationToken).ConfigureAwait(false);
+        await _pageConnection.SendAsync(new Message { Method = "Page.enable" }).ConfigureAwait(false);
 
         var lifecycleEventEnabledMessage = new Message { Method = "Page.setLifecycleEventsEnabled" };
         lifecycleEventEnabledMessage.AddParameter("enabled", true);
-        await _pageConnection.SendForResponseAsync(lifecycleEventEnabledMessage, cancellationToken).ConfigureAwait(false);
+        await _pageConnection.SendAsync(lifecycleEventEnabledMessage).ConfigureAwait(false);
 
         _pageConnection.MessageReceived += messageHandler;
         _pageConnection.Closed += (_, _) => waitEvent?.Set();
@@ -382,13 +383,13 @@ public class Browser : IDisposable, IAsyncDisposable
             // Navigates current page to the given URL
             var pageNavigateMessage = new Message { Method = "Page.navigate" };
             pageNavigateMessage.AddParameter("url", uri.ToString());
-            await _pageConnection.SendAsync(pageNavigateMessage, cancellationToken).ConfigureAwait(false);
+            await _pageConnection.SendAsync(pageNavigateMessage).ConfigureAwait(false);
         }
         else if (!string.IsNullOrWhiteSpace(html))
         {
             WriteToLog("Getting page frame tree");
             var pageGetFrameTree = new Message { Method = "Page.getFrameTree" };
-            var frameTree = await _pageConnection.SendForResponseAsync(pageGetFrameTree, cancellationToken).ConfigureAwait(false);
+            var frameTree = await _pageConnection.SendForResponseAsync(pageGetFrameTree).ConfigureAwait(false);
             var frameResult = FrameTree.FromJson(frameTree);
 
             WriteToLog("Setting document content");
@@ -396,7 +397,7 @@ public class Browser : IDisposable, IAsyncDisposable
             var pageSetDocumentContent = new Message { Method = "Page.setDocumentContent" };
             pageSetDocumentContent.AddParameter("frameId", frameResult.Result.FrameTree.Frame.Id);
             pageSetDocumentContent.AddParameter("html", html);
-            await _pageConnection.SendForResponseAsync(pageSetDocumentContent, cancellationToken).ConfigureAwait(false);
+            await _pageConnection.SendForResponseAsync(pageSetDocumentContent).ConfigureAwait(false);
             // When using setDocumentContent a Page.frameNavigated event is never fired so we have to set the waitForNetworkIdle to true our self
             waitForNetworkIdle = true;
 
@@ -411,7 +412,12 @@ public class Browser : IDisposable, IAsyncDisposable
         {
             waitEvent.WaitOne(countdownTimer.MillisecondsLeft);
             if (countdownTimer.MillisecondsLeft == 0)
+            {
+                _pageConnection.MessageReceived -= messageHandler;
+                waitEvent.Dispose();
+                waitEvent = null;
                 throw new ConversionTimedOutException($"The {nameof(NavigateToAsync)} method timed out");
+            }
         }
         else
         {
@@ -428,21 +434,21 @@ public class Browser : IDisposable, IAsyncDisposable
         lifecycleEventDisabledMessage.AddParameter("enabled", false);
 
         // Disables page domain notifications
-        await _pageConnection.SendForResponseAsync(lifecycleEventDisabledMessage, cancellationToken).ConfigureAwait(false);
-        await _pageConnection.SendForResponseAsync(new Message { Method = "Page.disable" }, cancellationToken).ConfigureAwait(false);
+        await _pageConnection.SendForResponseAsync(lifecycleEventDisabledMessage).ConfigureAwait(false);
+        await _pageConnection.SendForResponseAsync(new Message { Method = "Page.disable" }).ConfigureAwait(false);
 
         // Disables the fetch domain
         if (urlBlacklist?.Count > 0)
         {
             WriteToLog("Disabling Fetch");
-            await _pageConnection.SendForResponseAsync(new Message { Method = "Fetch.disable" }, cancellationToken).ConfigureAwait(false);
+            await _pageConnection.SendForResponseAsync(new Message { Method = "Fetch.disable" }).ConfigureAwait(false);
         }
 
         if (logNetworkTraffic)
         {
             WriteToLog("Disabling network traffic logging");
             var networkMessage = new Message { Method = "Network.disable" };
-            await _pageConnection.SendForResponseAsync(networkMessage, cancellationToken).ConfigureAwait(false);
+            await _pageConnection.SendForResponseAsync(networkMessage).ConfigureAwait(false);
         }
 
         _pageConnection.MessageReceived -= messageHandler;
@@ -498,7 +504,7 @@ public class Browser : IDisposable, IAsyncDisposable
 
         while (!match)
         {
-            await _pageConnection.SendAsync(message, cancellationToken).ConfigureAwait(false);
+            await _pageConnection.SendAsync(message).ConfigureAwait(false);
             waitEvent.WaitOne(10);
             if (stopWatch.ElapsedMilliseconds >= timeout) break;
         }
@@ -545,7 +551,7 @@ public class Browser : IDisposable, IAsyncDisposable
         message.AddParameter("returnByValue", false);
 
         var errorDescription = string.Empty;
-        var result = await _pageConnection.SendForResponseAsync(message, cancellationToken).ConfigureAwait(false);
+        var result = await _pageConnection.SendForResponseAsync(message).ConfigureAwait(false);
         var evaluateError = EvaluateError.FromJson(result);
 
         if (evaluateError.Result?.ExceptionDetails != null)
@@ -577,8 +583,8 @@ public class Browser : IDisposable, IAsyncDisposable
         var message = new Message { Method = "Page.captureSnapshot" };
 
         var result = countdownTimer == null
-            ? await _pageConnection.SendForResponseAsync(message, cancellationToken).ConfigureAwait(false)
-            : await _pageConnection.SendForResponseAsync(message, cancellationToken).Timeout(countdownTimer.MillisecondsLeft).ConfigureAwait(false);
+            ? await _pageConnection.SendForResponseAsync(message).ConfigureAwait(false)
+            : await _pageConnection.SendForResponseAsync(message).Timeout(countdownTimer.MillisecondsLeft).ConfigureAwait(false);
 
         return SnapshotResponse.FromJson(result);
     }
@@ -629,8 +635,8 @@ public class Browser : IDisposable, IAsyncDisposable
         message.AddParameter("transferMode", "ReturnAsStream");
 
         var result = countdownTimer == null
-            ? await _pageConnection.SendForResponseAsync(message, cancellationToken).ConfigureAwait(false)
-            : await _pageConnection.SendForResponseAsync(message, cancellationToken).Timeout(countdownTimer.MillisecondsLeft).ConfigureAwait(false);
+            ? await _pageConnection.SendForResponseAsync(message).ConfigureAwait(false)
+            : await _pageConnection.SendForResponseAsync(message).Timeout(countdownTimer.MillisecondsLeft).ConfigureAwait(false);
 
         var printToPdfResponse = PrintToPdfResponse.FromJson(result);
 
@@ -651,8 +657,8 @@ public class Browser : IDisposable, IAsyncDisposable
         while (true)
         {
             result = countdownTimer == null
-                ? await _pageConnection.SendForResponseAsync(message, cancellationToken).ConfigureAwait(false)
-                : await _pageConnection.SendForResponseAsync(message, cancellationToken).Timeout(countdownTimer.MillisecondsLeft).ConfigureAwait(false);
+                ? await _pageConnection.SendForResponseAsync(message).ConfigureAwait(false)
+                : await _pageConnection.SendForResponseAsync(message).Timeout(countdownTimer.MillisecondsLeft).ConfigureAwait(false);
 
             var ioReadResponse = IoReadResponse.FromJson(result);
 
@@ -671,7 +677,7 @@ public class Browser : IDisposable, IAsyncDisposable
             WriteToLog($"Closing stream with id {printToPdfResponse.Result.Stream}");
             message = new Message { Method = "IO.close" };
             message.AddParameter("handle", printToPdfResponse.Result.Stream);
-            await _pageConnection.SendForResponseAsync(message, cancellationToken).ConfigureAwait(false);
+            await _pageConnection.SendForResponseAsync(message).ConfigureAwait(false);
             WriteToLog("Stream closed");
             break;
         }
@@ -693,8 +699,8 @@ public class Browser : IDisposable, IAsyncDisposable
     {
         var message = new Message { Method = "Page.captureScreenshot" };
         var result = countdownTimer == null
-            ? await _pageConnection.SendForResponseAsync(message, cancellationToken).ConfigureAwait(false)
-            : await _pageConnection.SendForResponseAsync(message, cancellationToken).Timeout(countdownTimer.MillisecondsLeft).ConfigureAwait(false);
+            ? await _pageConnection.SendForResponseAsync(message).ConfigureAwait(false)
+            : await _pageConnection.SendForResponseAsync(message).Timeout(countdownTimer.MillisecondsLeft).ConfigureAwait(false);
 
         var captureScreenshotResponse = CaptureScreenshotResponse.FromJson(result);
 
@@ -714,7 +720,7 @@ public class Browser : IDisposable, IAsyncDisposable
     internal async Task CloseAsync(CancellationToken cancellationToken)
     {
         var message = new Message { Method = "Browser.close" };
-        await _browserConnection.SendForResponseAsync(message, cancellationToken).ConfigureAwait(false);
+        await _browserConnection.SendForResponseAsync(message).ConfigureAwait(false);
     }
     #endregion
 

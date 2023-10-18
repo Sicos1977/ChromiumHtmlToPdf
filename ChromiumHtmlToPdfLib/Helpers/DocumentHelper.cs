@@ -45,12 +45,7 @@ using AngleSharp.Io.Network;
 using ChromiumHtmlToPdfLib.Settings;
 using Ganss.Xss;
 using Microsoft.Extensions.Logging;
-// ReSharper disable UseAwaitUsing
-
-// ReSharper disable ConvertToUsingDeclaration
-// ReSharper disable ConvertIfStatementToNullCoalescingAssignment
-// ReSharper disable AssignNullToNotNullAttribute
-// ReSharper disable PossibleNullReferenceException
+// ReSharper disable AccessToDisposedClosure
 
 namespace ChromiumHtmlToPdfLib.Helpers;
 
@@ -240,7 +235,11 @@ internal class DocumentHelper
     /// <returns></returns>
     public async Task<SanitizeHtmlResult> SanitizeHtmlAsync(ConvertUri inputUri, HtmlSanitizer sanitizer, List<string> safeUrls, CancellationToken cancellationToken)
     {
+#if (NETSTANDARD2_0)
         using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri).ConfigureAwait(false);
+#else
+        await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri).ConfigureAwait(false);
+#endif
         var htmlChanged = false;
         var context = BrowsingContext.New(Config);
 
@@ -248,18 +247,16 @@ internal class DocumentHelper
 
         try
         {
-            // ReSharper disable AccessToDisposedClosure
             document = inputUri.Encoding != null
                 ? await context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString()), cancel: cancellationToken).ConfigureAwait(false)
                 : await context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString()), cancel: cancellationToken).ConfigureAwait(false);
-            // ReSharper restore AccessToDisposedClosure
         }
         catch (Exception exception)
         {
             WriteToLog($"Exception occurred in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
             return new SanitizeHtmlResult(false, inputUri, safeUrls);
         }
-
+        
         WriteToLog("Sanitizing HTML");
 
         sanitizer ??= new HtmlSanitizer();
@@ -309,7 +306,10 @@ internal class DocumentHelper
                 htmlChanged = true;
             };
 
-            sanitizer.SanitizeDom(document as IHtmlDocument);
+            if (document is not IHtmlDocument htmlDocument)
+                throw new InvalidCastException("Could not cast document to IHtmlDocument");
+
+            sanitizer.SanitizeDom(htmlDocument);
 
             if (!htmlChanged)
             {
@@ -333,7 +333,7 @@ internal class DocumentHelper
 
         try
         {
-            if (document.BaseUrl.Scheme.StartsWith("file"))
+            if (document.BaseUrl != null && document.BaseUrl.Scheme.StartsWith("file"))
             {
                 //var images = document.DocumentElement.Descendants().OfType<IHtmlImageElement>()
                 //    .Where(x => x.NodeType == NodeType.Element);
@@ -346,6 +346,8 @@ internal class DocumentHelper
                 {
                     var src = image.Source;
 
+                    if (src == null) continue;
+
                     if (src.StartsWith("http://", StringComparison.InvariantCultureIgnoreCase) ||
                         src.StartsWith("https://", StringComparison.InvariantCultureIgnoreCase)) continue;
 
@@ -357,15 +359,27 @@ internal class DocumentHelper
 
             WriteToLog($"Writing sanitized webpage to '{sanitizedOutputFile}'");
 
+#if (NETSTANDARD2_0)
             using var fileStream = new FileStream(sanitizedOutputFile, FileMode.CreateNew, FileAccess.Write);
+#else
+            await using var fileStream = new FileStream(sanitizedOutputFile, FileMode.CreateNew, FileAccess.Write);
+#endif
             if (inputUri.Encoding != null)
             {
+#if (NETSTANDARD2_0)
                 using var textWriter = new StreamWriter(fileStream, inputUri.Encoding);
+#else
+                await using var textWriter = new StreamWriter(fileStream, inputUri.Encoding);
+#endif
                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
             }
             else
             {
+#if (NETSTANDARD2_0)
                 using var textWriter = new StreamWriter(fileStream);
+#else
+                await using var textWriter = new StreamWriter(fileStream);
+#endif
                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
             }
 
@@ -400,7 +414,12 @@ internal class DocumentHelper
     /// <returns><see cref="FitPageToContentResult"/></returns>
     public async Task<FitPageToContentResult> FitPageToContentAsync(ConvertUri inputUri, CancellationToken cancellationToken)
     {
+#if (NETSTANDARD2_0)
         using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri).ConfigureAwait(false);
+#else
+        await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri).ConfigureAwait(false);
+#endif
+
         using var context = BrowsingContext.New(Config);
         IDocument document;
 
@@ -412,7 +431,10 @@ internal class DocumentHelper
                 : await context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString()), cancel: cancellationToken).ConfigureAwait(false);
             // ReSharper restore AccessToDisposedClosure
 
-            var styleElement = new HtmlElement(document as Document, "style")
+            if (document is not Document htmlElementDocument)
+                throw new InvalidCastException("Could not cast document to Document");
+            
+            var styleElement = new HtmlElement(htmlElementDocument, "style")
             {
                 InnerHtml = "html, body " + Environment.NewLine +
                             "{" + Environment.NewLine +
@@ -423,21 +445,25 @@ internal class DocumentHelper
                             "}" + Environment.NewLine
             };
 
-            document.Head.AppendElement(styleElement);
 
-            var pageStyleElement = new HtmlElement(document as Document, "style")
+            if (document.Head != null)
             {
-                Id = "pagestyle",
-                InnerHtml = "@page " + Environment.NewLine +
-                            "{ " + Environment.NewLine +
-                            "   size: 595px 842px ; " + Environment.NewLine +
-                            "   margin: 0px " + Environment.NewLine +
-                            "}" + Environment.NewLine
-            };
+                document.Head.AppendElement(styleElement);
 
-            document.Head.AppendElement(pageStyleElement);
+                var pageStyleElement = new HtmlElement(htmlElementDocument, "style")
+                {
+                    Id = "pagestyle",
+                    InnerHtml = "@page " + Environment.NewLine +
+                                "{ " + Environment.NewLine +
+                                "   size: 595px 842px ; " + Environment.NewLine +
+                                "   margin: 0px " + Environment.NewLine +
+                                "}" + Environment.NewLine
+                };
 
-            var pageElement = new HtmlElement(document as Document, "script")
+                document.Head.AppendElement(pageStyleElement);
+            }
+
+            var pageElement = new HtmlElement(htmlElementDocument, "script")
             {
                 InnerHtml = "window.onload = function () {" + Environment.NewLine +
                             "" + Environment.NewLine +
@@ -452,7 +478,7 @@ internal class DocumentHelper
                             "}" + Environment.NewLine
             };
 
-            document.Body.AppendElement(pageElement);
+            document.Body?.AppendElement(pageElement);
         }
         catch (Exception exception)
         {
@@ -467,16 +493,27 @@ internal class DocumentHelper
         {
             WriteToLog($"Writing changed webpage to '{outputFile}'");
 
+#if (NETSTANDARD2_0)
             using var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write);
-            
+#else
+            await using var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write);
+#endif            
             if (inputUri.Encoding != null)
             {
+#if (NETSTANDARD2_0)
                 using var textWriter = new StreamWriter(fileStream, inputUri.Encoding);
+#else
+                await using var textWriter = new StreamWriter(fileStream, inputUri.Encoding);
+#endif
                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
             }
             else
             {
+#if (NETSTANDARD2_0)
                 using var textWriter = new StreamWriter(fileStream);
+#else
+                await using var textWriter = new StreamWriter(fileStream);
+#endif
                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
             }
 
@@ -795,7 +832,11 @@ internal class DocumentHelper
                 case "https":
                 case "http":
                 {
+#if (NETSTANDARD2_0)
                     using var webStream = await OpenDownloadStream(imageUri, true).ConfigureAwait(false);
+#else
+                    await using var webStream = await OpenDownloadStream(imageUri, true).ConfigureAwait(false);
+#endif
                     return Image.FromStream(webStream, true, false);
                 }
 
