@@ -346,6 +346,8 @@ static class Program
         using var converter = new Converter(options.ChromiumLocation, options.ChromiumUserProfile, _logger);
         SetConverterSettings(converter, options);
 
+        options.UseOldHeadlessMode = false;
+
         converter.ConvertToPdf(CheckInput(options),
             options.Output,
             pageSettings,
@@ -353,6 +355,27 @@ static class Program
             options.WaitForWindowStatusTimeOut,
             options.Timeout,
             options.MediaLoadTimeout);
+
+        options.Input = "d:\\test2.html";
+
+        converter.ConvertToPdf(CheckInput(options),
+            options.Output,
+            pageSettings,
+            options.WaitForWindowStatus,
+            options.WaitForWindowStatusTimeOut,
+            options.Timeout,
+            options.MediaLoadTimeout);
+
+        options.Input = "d:\\test3.html";
+
+        converter.ConvertToPdf(CheckInput(options),
+            options.Output,
+            pageSettings,
+            options.WaitForWindowStatus,
+            options.WaitForWindowStatusTimeOut,
+            options.Timeout,
+            options.MediaLoadTimeout);
+
 
         stopWatch.Stop();
         WriteToLog($"Conversion took {stopWatch.ElapsedMilliseconds} ms");

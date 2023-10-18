@@ -557,7 +557,11 @@ internal class DocumentHelper
         CancellationToken cancellationToken)
     {
         using var graphics = Graphics.FromHwnd(IntPtr.Zero);
+#if (NETSTANDARD2_0)
         using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri).ConfigureAwait(false);
+#else
+        await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri).ConfigureAwait(false);
+#endif
         
         WriteToLog($"DPI settings for image, x: '{graphics.DpiX}' and y: '{graphics.DpiY}'");
         var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft - pageSettings.MarginRight) * graphics.DpiX;
@@ -693,7 +697,6 @@ internal class DocumentHelper
 
                         image ??= await GetImageAsync(htmlImage.Source, localDirectory).ConfigureAwait(false);
                         if (image == null) continue;
-
                         ScaleImage(image, (int)maxWidth, out var newWidth, out var newHeight);
                         WriteToLog($"Image rescaled to width {newWidth} and height {newHeight}");
                         htmlImage.DisplayWidth = newWidth;
@@ -752,16 +755,28 @@ internal class DocumentHelper
         {
             WriteToLog($"Writing changed webpage to '{outputFile}'");
 
+#if (NETSTANDARD2_0)
             using var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write);
+#else
+            await using var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write);
+#endif      
             
             if (inputUri.Encoding != null)
             {
+#if (NETSTANDARD2_0)
                 using var textWriter = new StreamWriter(fileStream, inputUri.Encoding);
+#else
+                await using var textWriter = new StreamWriter(fileStream, inputUri.Encoding);
+#endif
                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
             }
             else
             {
+#if (NETSTANDARD2_0)
                 using var textWriter = new StreamWriter(fileStream);
+#else
+                await using var textWriter = new StreamWriter(fileStream);
+#endif
                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
             }
             

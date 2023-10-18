@@ -557,7 +557,7 @@ public class Converter : IDisposable, IAsyncDisposable
         string userProfile = null,
         ILogger logger = null,
         bool useCache = true,
-        Enums.Browser browser = Enums.Browser.Chrome)
+        Enums.Browser browser = Enums.Browser.Edge)
     {
         _preWrapExtensions = new List<string>();
         _logger = logger;
@@ -852,6 +852,7 @@ public class Converter : IDisposable, IAsyncDisposable
         
         AddChromiumArgument("--headless=new");
         AddChromiumArgument("--disable-gpu");
+        AddChromiumArgument("--allow-running-insecure-content");
         AddChromiumArgument("--hide-scrollbars");
         AddChromiumArgument("--mute-audio");
         AddChromiumArgument("--disable-background-networking");
@@ -873,7 +874,7 @@ public class Converter : IDisposable, IAsyncDisposable
             AddChromiumArgument("--no-sandbox");
         }
 
-        SetWindowSize(WindowSize.HD_1366_768);
+        //SetWindowSize(WindowSize.HD_1366_768);
     }
     #endregion
 

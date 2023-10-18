@@ -57,11 +57,6 @@ public class Connection : IDisposable, IAsyncDisposable
     ///     Triggered when a new message is received on the <see cref="_webSocket" />
     /// </summary>
     public event EventHandler<string> MessageReceived;
-
-    /// <summary>
-    ///     Triggered when a <see cref="_webSocket" /> error occurs
-    /// </summary>
-    public event EventHandler<string> OnError;
     #endregion
 
     #region Fields
@@ -161,6 +156,9 @@ public class Connection : IDisposable, IAsyncDisposable
                 using var reader = new StreamReader(outputStream);
                 var response = await reader.ReadToEndAsync().ConfigureAwait(false);
 
+                //File.AppendAllText($@"e:\logs\converter_{InstanceId}.txt", "RECEIVED: " + response + Environment.NewLine);
+
+
                 WebSocketOnMessageReceived(new MessageReceivedEventArgs(response));
             }
         }
@@ -211,7 +209,7 @@ public class Connection : IDisposable, IAsyncDisposable
 
         var error = CheckForError(response);
         if (!string.IsNullOrEmpty(error))
-            OnError?.Invoke(this, error);
+            WriteToLog(error);
 
         var messageBase = MessageBase.FromJson(response);
 
@@ -226,7 +224,7 @@ public class Connection : IDisposable, IAsyncDisposable
         if (_response?.Task.Status != TaskStatus.RanToCompletion)
             _response?.SetResult(string.Empty);
 
-        OnError?.Invoke(this, ExceptionHelpers.GetInnerException(e.Exception));
+        WriteToLog(ExceptionHelpers.GetInnerException(e.Exception));
     }
 
     private void WebSocketOnClosed(EventArgs e)
@@ -243,8 +241,9 @@ public class Connection : IDisposable, IAsyncDisposable
     ///     Sends a message asynchronously to the <see cref="_webSocket" /> and returns response
     /// </summary>
     /// <param name="message">The message to send</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns>Response given by <see cref="_webSocket" /></returns>
-    internal async Task<string> SendForResponseAsync(Message message)
+    internal async Task<string> SendForResponseAsync(Message message, CancellationToken cancellationToken = default)
     {
         _messageId += 1;
         message.Id = _messageId;
@@ -263,11 +262,17 @@ public class Connection : IDisposable, IAsyncDisposable
 
         try
         {
-            await _webSocket.SendAsync(MessageToBytes(message), WebSocketMessageType.Text, true, new CancellationTokenSource(_timeout).Token).ConfigureAwait(false);
+            if (cancellationToken == default)
+                cancellationToken = new CancellationTokenSource(_timeout).Token;
+
+            //File.AppendAllText($@"e:\logs\converter_{InstanceId}.txt", $"SENT: {message.ToJson()}" + Environment.NewLine);
+
+
+            await _webSocket.SendAsync(MessageToBytes(message), WebSocketMessageType.Text, true, cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception e)
+        catch (Exception exception)
         {
-            WebSocketOnError(new ErrorEventArgs(e));
+            WebSocketOnError(new ErrorEventArgs(exception));
         }
 
         var response = tcs.Task.Result;
@@ -344,7 +349,7 @@ public class Connection : IDisposable, IAsyncDisposable
     #endregion
 
     #region MessageToBytes
-    private static ArraySegment<byte> MessageToBytes(MessageBase message)
+    private ArraySegment<byte> MessageToBytes(MessageBase message)
     {
         return new ArraySegment<byte>(Encoding.UTF8.GetBytes(message.ToJson()));
     }
