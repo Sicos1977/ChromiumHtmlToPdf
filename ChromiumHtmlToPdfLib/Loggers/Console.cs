@@ -1,4 +1,5 @@
-﻿namespace ChromiumHtmlToPdfLib.Loggers;
+﻿// ReSharper disable UnusedMember.Global
+namespace ChromiumHtmlToPdfLib.Loggers;
 
 /// <summary>
 ///     Writes log information to the console
