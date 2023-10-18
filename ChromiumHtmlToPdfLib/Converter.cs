@@ -154,16 +154,6 @@ public class Converter : IDisposable, IAsyncDisposable
     private List<string> _preWrapExtensions;
 
     /// <summary>
-    ///     Flag to wait in code when starting the Chromium based browser
-    /// </summary>
-    private SemaphoreSlim _chromiumWaitSignal;
-
-    /// <summary>
-    ///     Exceptions thrown from a Chromium startup event
-    /// </summary>
-    private Exception _chromiumEventException;
-
-    /// <summary>
     ///     A list with URL's to blacklist
     /// </summary>
     private List<string> _urlBlacklist;
@@ -557,7 +547,7 @@ public class Converter : IDisposable, IAsyncDisposable
         string userProfile = null,
         ILogger logger = null,
         bool useCache = true,
-        Enums.Browser browser = Enums.Browser.Edge)
+        Enums.Browser browser = Enums.Browser.Chrome)
     {
         _preWrapExtensions = new List<string>();
         _logger = logger;
@@ -595,7 +585,7 @@ public class Converter : IDisposable, IAsyncDisposable
     }
     #endregion
 
-    #region StartChromiumHeadless
+    #region StartChromiumHeadlessAsync
     /// <summary>
     ///     Start Google Chrome or Microsoft Edge headless
     /// </summary>
@@ -603,7 +593,7 @@ public class Converter : IDisposable, IAsyncDisposable
     ///     If Chrome or Edge is already running then this step is skipped
     /// </remarks>
     /// <exception cref="ChromiumException"></exception>
-    private async Task StartChromiumHeadless()
+    private async Task StartChromiumHeadlessAsync()
     {
         if (IsChromiumRunning)
         {
@@ -611,7 +601,6 @@ public class Converter : IDisposable, IAsyncDisposable
             return;
         }
 
-        _chromiumEventException = null;
         var workingDirectory = Path.GetDirectoryName(_chromiumExeFileName);
 
         WriteToLog($"Starting {BrowserName} from location '{_chromiumExeFileName}' with working directory '{workingDirectory}'");
@@ -673,20 +662,50 @@ public class Converter : IDisposable, IAsyncDisposable
                 WriteToLog("Ignoring password and loading user profile because this is only supported on Windows");
         }
 
+        using var chromiumWaitSignal = new SemaphoreSlim(0, 1);
+
         if (!_userProfileSet)
         {
-            _chromiumProcess.ErrorDataReceived += ChromiumProcess_ErrorDataReceived;
+            _chromiumProcess.ErrorDataReceived += (_, args) =>
+            {
+                if (args.Data == null || string.IsNullOrEmpty(args.Data) || args.Data.StartsWith("[")) return;
+
+                WriteToLog($"Received Chromium error data: '{args.Data}'");
+
+                if (!args.Data.StartsWith("DevTools listening on")) return;
+                // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
+                var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
+                ConnectToDevProtocol(uri);
+                // ReSharper disable once AccessToDisposedClosure
+                chromiumWaitSignal.Release();
+            };
+
             _chromiumProcess.EnableRaisingEvents = true;
             processStartInfo.UseShellExecute = false;
             processStartInfo.RedirectStandardError = true;
         }
         else if (File.Exists(_devToolsActivePortFile))
-        {
             File.Delete(_devToolsActivePortFile);
-        }
 
+        string chromeException = null;
         _chromiumProcess.StartInfo = processStartInfo;
-        _chromiumProcess.Exited += ChromiumProcess_Exited;
+        _chromiumProcess.Exited += (o, args) =>
+        {
+            try
+            {
+                if (_chromiumProcess == null) return;
+                WriteToLog($"{BrowserName} exited unexpectedly, arguments used: {string.Join(" ", DefaultChromiumArguments)}");
+                WriteToLog($"Process id: {_chromiumProcess.Id}");
+                WriteToLog($"Process exit time: {_chromiumProcess.ExitTime:yyyy-MM-ddTHH:mm:ss.fff}");
+                var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromiumProcess.ExitCode));
+                chromeException = $"{BrowserName} exited unexpectedly{(!string.IsNullOrWhiteSpace(exception) ? ", {exception}" : string.Empty)}";
+            }
+            finally
+            {
+                // ReSharper disable once AccessToDisposedClosure
+                chromiumWaitSignal.Release();
+            }
+        };
 
         try
         {
@@ -702,67 +721,34 @@ public class Converter : IDisposable, IAsyncDisposable
 
         if (!_userProfileSet)
         {
-            _chromiumWaitSignal = new SemaphoreSlim(1);
-
             _chromiumProcess.BeginErrorReadLine();
 
             if (_conversionTimeout.HasValue)
             {
-                var result = await _chromiumWaitSignal.WaitAsync(_conversionTimeout.Value).ConfigureAwait(false);
+                var result = await chromiumWaitSignal.WaitAsync(_conversionTimeout.Value).ConfigureAwait(false);
                 if (result)
                     throw new ChromiumException($"A timeout of '{_conversionTimeout.Value}' milliseconds exceeded, could not make a connection to the Chromium dev tools");
-            }
-
-            await _chromiumWaitSignal.WaitAsync().ConfigureAwait(false);
-
-            _chromiumProcess.ErrorDataReceived -= ChromiumProcess_ErrorDataReceived;
-
-            if (_chromiumEventException != null)
-            {
-                WriteToLog("Exception: " + ExceptionHelpers.GetInnerException(_chromiumEventException));
-                throw _chromiumEventException;
             }
         }
         else
         {
-            var lines = ReadDevToolsActiveFile();
+            var lines = await ReadDevToolsActiveFileAsync().ConfigureAwait(false);
             var uri = new Uri($"ws://127.0.0.1:{lines[0]}{lines[1]}");
             ConnectToDevProtocol(uri);
         }
 
-        _chromiumProcess.Exited -= ChromiumProcess_Exited;
-        WriteToLog($"{BrowserName} started");
-    }
+        await chromiumWaitSignal.WaitAsync().ConfigureAwait(false);
+        if (!string.IsNullOrEmpty(chromeException))
+            throw new ChromiumException(chromeException);
 
-    /// <summary>
-    ///     Raised when the Chromium process exits
-    /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="e"></param>
-    private void ChromiumProcess_Exited(object sender, EventArgs e)
-    {
-        try
-        {
-            if (_chromiumProcess == null) return;
-            WriteToLog($"{BrowserName} exited unexpectedly, arguments used: {string.Join(" ", DefaultChromiumArguments)}");
-            WriteToLog($"Process id: {_chromiumProcess.Id}");
-            WriteToLog($"Process exit time: {_chromiumProcess.ExitTime:yyyy-MM-ddTHH:mm:ss.fff}");
-            var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromiumProcess.ExitCode));
-            WriteToLog($"Exception: {exception}");
-            throw new ChromiumException($"{BrowserName} exited unexpectedly, {exception}");
-        }
-        catch (Exception exception)
-        {
-            _chromiumEventException = exception;
-            _chromiumWaitSignal.Release();
-        }
+        WriteToLog($"{BrowserName} started");
     }
 
     /// <summary>
     ///     Tries to read the content of the DevToolsActiveFile
     /// </summary>
     /// <returns></returns>
-    private string[] ReadDevToolsActiveFile()
+    private async Task<string[]> ReadDevToolsActiveFileAsync()
     {
         var tempTimeout = _conversionTimeout ?? 10000;
         var timeout = tempTimeout;
@@ -771,24 +757,26 @@ public class Converter : IDisposable, IAsyncDisposable
             if (!File.Exists(_devToolsActivePortFile))
             {
                 timeout -= 5;
-                Thread.Sleep(5);
+                await Task.Delay(5).ConfigureAwait(false);
                 if (timeout <= 0)
-                    throw new ChromiumException(
-                        $"A timeout of '{tempTimeout}' milliseconds exceeded, the file '{_devToolsActivePortFile}' did not exist");
+                    throw new ChromiumException($"A timeout of '{tempTimeout}' milliseconds exceeded, the file '{_devToolsActivePortFile}' did not exist");
             }
             else
             {
                 try
                 {
+#if (NETSTANDARD2_0)
                     return File.ReadAllLines(_devToolsActivePortFile);
+#else
+                    return await File.ReadAllLinesAsync(_devToolsActivePortFile).ConfigureAwait(false);
+#endif
                 }
                 catch (Exception exception)
                 {
                     timeout -= 5;
                     Thread.Sleep(5);
                     if (timeout <= 0)
-                        throw new ChromiumException(
-                            $"A timeout of '{tempTimeout}' milliseconds exceeded, could not read the file '{_devToolsActivePortFile}'",
+                        throw new ChromiumException($"A timeout of '{tempTimeout}' milliseconds exceeded, could not read the file '{_devToolsActivePortFile}'",
                             exception);
                 }
             }
@@ -799,33 +787,6 @@ public class Converter : IDisposable, IAsyncDisposable
         WriteToLog($"Connecting to dev protocol on uri '{uri}'");
         _browser = new Browser(uri, _logger, WebSocketTimeout);
         WriteToLog("Connected to dev protocol");
-    }
-
-    /// <summary>
-    ///     Raised when Chromium sends data to the error output
-    /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="args"></param>
-    private void ChromiumProcess_ErrorDataReceived(object sender, DataReceivedEventArgs args)
-    {
-        try
-        {
-            if (args.Data == null || string.IsNullOrEmpty(args.Data) || args.Data.StartsWith("[")) return;
-
-            WriteToLog($"Received Chromium error data: '{args.Data}'");
-
-            if (!args.Data.StartsWith("DevTools listening on")) return;
-            // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
-            var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
-            ConnectToDevProtocol(uri);
-            _chromiumProcess.ErrorDataReceived -= ChromiumProcess_ErrorDataReceived;
-            _chromiumWaitSignal.Release();
-        }
-        catch (Exception exception)
-        {
-            _chromiumEventException = exception;
-            _chromiumWaitSignal.Release();
-        }
     }
     #endregion
 
@@ -878,7 +839,7 @@ public class Converter : IDisposable, IAsyncDisposable
             AddChromiumArgument("--no-sandbox");
         }
 
-        //SetWindowSize(WindowSize.HD_1366_768);
+        SetWindowSize(WindowSize.HD_1366_768);
     }
     #endregion
 
@@ -1386,7 +1347,7 @@ public class Converter : IDisposable, IAsyncDisposable
                 }
             }
 
-            StartChromiumHeadless();
+            await StartChromiumHeadlessAsync().ConfigureAwait(false);
 
             CountdownTimer countdownTimer = null;
 
@@ -2624,8 +2585,6 @@ public class Converter : IDisposable, IAsyncDisposable
     {
         if (_disposed)
             return;
-
-        _chromiumWaitSignal?.Dispose();
 
         if (_browser != null)
             try
