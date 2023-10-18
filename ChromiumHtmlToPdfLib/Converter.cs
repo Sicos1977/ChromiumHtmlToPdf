@@ -156,7 +156,7 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <summary>
     ///     Flag to wait in code when starting the Chromium based browser
     /// </summary>
-    private ManualResetEvent _chromiumWaitEvent;
+    private SemaphoreSlim _chromiumWaitSignal;
 
     /// <summary>
     ///     Exceptions thrown from a Chromium startup event
@@ -603,7 +603,7 @@ public class Converter : IDisposable, IAsyncDisposable
     ///     If Chrome or Edge is already running then this step is skipped
     /// </remarks>
     /// <exception cref="ChromiumException"></exception>
-    private void StartChromiumHeadless()
+    private async Task StartChromiumHeadless()
     {
         if (IsChromiumRunning)
         {
@@ -702,14 +702,18 @@ public class Converter : IDisposable, IAsyncDisposable
 
         if (!_userProfileSet)
         {
-            _chromiumWaitEvent = new ManualResetEvent(false);
+            _chromiumWaitSignal = new SemaphoreSlim(1);
+
             _chromiumProcess.BeginErrorReadLine();
 
             if (_conversionTimeout.HasValue)
-                if (!_chromiumWaitEvent.WaitOne(_conversionTimeout.Value))
+            {
+                var result = await _chromiumWaitSignal.WaitAsync(_conversionTimeout.Value).ConfigureAwait(false);
+                if (result)
                     throw new ChromiumException($"A timeout of '{_conversionTimeout.Value}' milliseconds exceeded, could not make a connection to the Chromium dev tools");
+            }
 
-            _chromiumWaitEvent.WaitOne();
+            await _chromiumWaitSignal.WaitAsync().ConfigureAwait(false);
 
             _chromiumProcess.ErrorDataReceived -= ChromiumProcess_ErrorDataReceived;
 
@@ -750,7 +754,7 @@ public class Converter : IDisposable, IAsyncDisposable
         catch (Exception exception)
         {
             _chromiumEventException = exception;
-            _chromiumWaitEvent.Set();
+            _chromiumWaitSignal.Release();
         }
     }
 
@@ -815,12 +819,12 @@ public class Converter : IDisposable, IAsyncDisposable
             var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
             ConnectToDevProtocol(uri);
             _chromiumProcess.ErrorDataReceived -= ChromiumProcess_ErrorDataReceived;
-            _chromiumWaitEvent.Set();
+            _chromiumWaitSignal.Release();
         }
         catch (Exception exception)
         {
             _chromiumEventException = exception;
-            _chromiumWaitEvent.Set();
+            _chromiumWaitSignal.Release();
         }
     }
     #endregion
@@ -2621,7 +2625,7 @@ public class Converter : IDisposable, IAsyncDisposable
         if (_disposed)
             return;
 
-        _chromiumWaitEvent?.Dispose();
+        _chromiumWaitSignal?.Dispose();
 
         if (_browser != null)
             try
