@@ -128,10 +128,10 @@ internal static class Extensions
     {
         using (var timeoutCancellationTokenSource = new CancellationTokenSource())
         {
-            var completedTask = await Task.WhenAny(task, Task.Delay(timeout, timeoutCancellationTokenSource.Token));
+            var completedTask = await Task.WhenAny(task, Task.Delay(timeout, timeoutCancellationTokenSource.Token)).ConfigureAwait(false);
             if (completedTask != task) throw new TaskTimedOutException("The task timed out");
             timeoutCancellationTokenSource.Cancel();
-            return await task;
+            return await task.ConfigureAwait(false);
         }
     }
     #endregion

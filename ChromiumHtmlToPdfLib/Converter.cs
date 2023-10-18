@@ -1335,7 +1335,7 @@ public class Converter : IDisposable, IAsyncDisposable
 
                     if (SanitizeHtml)
                     {
-                        var result = await documentHelper.SanitizeHtmlAsync(inputUri, Sanitizer, safeUrls, cancellationToken);
+                        var result = await documentHelper.SanitizeHtmlAsync(inputUri, Sanitizer, safeUrls, cancellationToken).ConfigureAwait(false);
                         if (result.Success)
                         {
                             inputUri = result.OutputUri;
@@ -1351,7 +1351,7 @@ public class Converter : IDisposable, IAsyncDisposable
                     if (pageSettings.PaperFormat == PaperFormat.FitPageToContent)
                     {
                         WriteToLog("The paper format 'FitPageToContent' is set, modifying html so that the PDF fits the HTML content");
-                        var result = await documentHelper.FitPageToContentAsync(inputUri, cancellationToken);
+                        var result = await documentHelper.FitPageToContentAsync(inputUri, cancellationToken).ConfigureAwait(false);
                         if (result.Success)
                         {
                             inputUri = result.OutputUri;
@@ -1370,7 +1370,7 @@ public class Converter : IDisposable, IAsyncDisposable
                             pageSettings,
                             safeUrls,
                             _urlBlacklist,
-                            cancellationToken);
+                            cancellationToken).ConfigureAwait(false);
 
                         if (result.Success)
                         {
@@ -1399,7 +1399,7 @@ public class Converter : IDisposable, IAsyncDisposable
             if (inputUri != null)
                 WriteToLog($"Loading {(inputUri.IsFile ? $"file {inputUri.OriginalString}" : $"url {inputUri}")}");
 
-            await _browser.NavigateToAsync(safeUrls, _useCache, inputUri, html, countdownTimer, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic, cancellationToken);
+            await _browser.NavigateToAsync(safeUrls, _useCache, inputUri, html, countdownTimer, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic, cancellationToken).ConfigureAwait(false);
 
             if (!string.IsNullOrWhiteSpace(waitForWindowStatus))
             {
@@ -1410,7 +1410,7 @@ public class Converter : IDisposable, IAsyncDisposable
                 }
 
                 WriteToLog($"Waiting for window.status '{waitForWindowStatus}' or a timeout of {waitForWindowsStatusTimeout} milliseconds");
-                var match = await _browser.WaitForWindowStatusAsync(waitForWindowStatus, waitForWindowsStatusTimeout, cancellationToken);
+                var match = await _browser.WaitForWindowStatusAsync(waitForWindowStatus, waitForWindowsStatusTimeout, cancellationToken).ConfigureAwait(false);
                 WriteToLog(!match ? "Waiting timed out" : $"Window status equaled {waitForWindowStatus}");
 
                 if (conversionTimeout.HasValue)
@@ -1427,7 +1427,7 @@ public class Converter : IDisposable, IAsyncDisposable
             {
                 WriteToLog("Start running javascript");
                 WriteToLog(RunJavascript);
-                await _browser.RunJavascriptAsync(RunJavascript, cancellationToken);
+                await _browser.RunJavascriptAsync(RunJavascript, cancellationToken).ConfigureAwait(false);
                 WriteToLog("Done running javascript");
             }
 
@@ -1438,14 +1438,14 @@ public class Converter : IDisposable, IAsyncDisposable
 
                 WriteToLog("Taking snapshot of the page");
 
-                var snapshot = await _browser.CaptureSnapshotAsync(countdownTimer, cancellationToken);
+                var snapshot = await _browser.CaptureSnapshotAsync(countdownTimer, cancellationToken).ConfigureAwait(false);
                 using var memoryStream = new MemoryStream(snapshot.Bytes);
                 memoryStream.Position = 0;
 
 #if (NETSTANDARD2_0)
-                await memoryStream.CopyToAsync(SnapshotStream);
+                await memoryStream.CopyToAsync(SnapshotStream).ConfigureAwait(false);
 #else
-                await memoryStream.CopyToAsync(SnapshotStream, cancellationToken);
+                await memoryStream.CopyToAsync(SnapshotStream, cancellationToken).ConfigureAwait(false);
 #endif
 
                 WriteToLog("Taken");
@@ -1455,7 +1455,7 @@ public class Converter : IDisposable, IAsyncDisposable
             {
                 case OutputFormat.Pdf:
                     WriteToLog("Converting to PDF");
-                    await _browser.PrintToPdfAsync(outputStream, pageSettings, countdownTimer, cancellationToken);
+                    await _browser.PrintToPdfAsync(outputStream, pageSettings, countdownTimer, cancellationToken).ConfigureAwait(false);
 
                     break;
 
@@ -1463,14 +1463,14 @@ public class Converter : IDisposable, IAsyncDisposable
                 {
                     WriteToLog("Converting to image");
 
-                    var snapshot = await _browser.CaptureScreenshotAsync(countdownTimer, cancellationToken);
+                    var snapshot = await _browser.CaptureScreenshotAsync(countdownTimer, cancellationToken).ConfigureAwait(false);
                     using var memoryStream = new MemoryStream(snapshot.Bytes);
                     memoryStream.Position = 0;
 
 #if (NETSTANDARD2_0)
-                    await memoryStream.CopyToAsync(outputStream);
+                    await memoryStream.CopyToAsync(outputStream).ConfigureAwait(false);
 #else
-                    await memoryStream.CopyToAsync(outputStream, cancellationToken);
+                    await memoryStream.CopyToAsync(outputStream, cancellationToken).ConfigureAwait(false);
 #endif
 
                     break;
@@ -1580,7 +1580,7 @@ public class Converter : IDisposable, IAsyncDisposable
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger).ConfigureAwait(false).GetAwaiter().GetResult();
+            logger).GetAwaiter().GetResult();
     }
     
     /// <summary>
@@ -1636,7 +1636,7 @@ public class Converter : IDisposable, IAsyncDisposable
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger).ConfigureAwait(false).GetAwaiter().GetResult();
+            logger).GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -1694,7 +1694,7 @@ public class Converter : IDisposable, IAsyncDisposable
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger).ConfigureAwait(false).GetAwaiter().GetResult();
+            logger).GetAwaiter().GetResult();
     }
     
     /// <summary>
@@ -1752,7 +1752,7 @@ public class Converter : IDisposable, IAsyncDisposable
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger).ConfigureAwait(false).GetAwaiter().GetResult();
+            logger).GetAwaiter().GetResult();
     }
     #endregion
 
@@ -1812,7 +1812,7 @@ public class Converter : IDisposable, IAsyncDisposable
             conversionTimeout,
             mediaLoadTimeout,
             logger, 
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -1870,16 +1870,16 @@ public class Converter : IDisposable, IAsyncDisposable
         using var memoryStream = new MemoryStream();
         
         await ConvertToPdfAsync(inputUri, memoryStream, pageSettings, waitForWindowStatus, waitForWindowsStatusTimeout,
-            conversionTimeout, mediaLoadTimeout, logger, cancellationToken);
+            conversionTimeout, mediaLoadTimeout, logger, cancellationToken).ConfigureAwait(false);
 
 #if (NETSTANDARD2_0)
         using var fileStream = File.Open(outputFile, FileMode.Create);
         memoryStream.Position = 0;
-        await memoryStream.CopyToAsync(fileStream);
+        await memoryStream.CopyToAsync(fileStream).ConfigureAwait(false);
 #else
         await using var fileStream = File.Open(outputFile, FileMode.Create);
         memoryStream.Position = 0;
-        await memoryStream.CopyToAsync(fileStream, cancellationToken);
+        await memoryStream.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
 #endif
 
         WriteToLog($"PDF written to output file '{outputFile}'");
@@ -1947,7 +1947,7 @@ public class Converter : IDisposable, IAsyncDisposable
             conversionTimeout,
             mediaLoadTimeout,
             logger,
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -2009,16 +2009,16 @@ public class Converter : IDisposable, IAsyncDisposable
         using (var memoryStream = new MemoryStream())
         {
             await ConvertToPdfAsync(html, memoryStream, pageSettings, waitForWindowStatus,
-                waitForWindowsStatusTimeout, conversionTimeout, mediaLoadTimeout, logger, cancellationToken);
+                waitForWindowsStatusTimeout, conversionTimeout, mediaLoadTimeout, logger, cancellationToken).ConfigureAwait(false);
 
             memoryStream.Position = 0;
 
 #if (NETSTANDARD2_0)
             using var fileStream = File.Open(outputFile, FileMode.Create);
-            await memoryStream.CopyToAsync(fileStream);
+            await memoryStream.CopyToAsync(fileStream).ConfigureAwait(false);
 #else
             await using var fileStream = File.Open(outputFile, FileMode.Create);
-            await memoryStream.CopyToAsync(fileStream, cancellationToken);
+            await memoryStream.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
 #endif
 
             WriteToLog($"PDF written to output file '{outputFile}'");
@@ -2081,7 +2081,7 @@ public class Converter : IDisposable, IAsyncDisposable
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger).ConfigureAwait(false).GetAwaiter().GetResult();
+            logger).GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -2139,7 +2139,7 @@ public class Converter : IDisposable, IAsyncDisposable
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger).ConfigureAwait(false).GetAwaiter().GetResult();
+            logger).GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -2196,7 +2196,7 @@ public class Converter : IDisposable, IAsyncDisposable
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger).ConfigureAwait(false).GetAwaiter().GetResult();
+            logger).GetAwaiter().GetResult();
     }
 
     /// <summary>
@@ -2257,7 +2257,7 @@ public class Converter : IDisposable, IAsyncDisposable
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger).ConfigureAwait(false).GetAwaiter().GetResult();
+            logger).GetAwaiter().GetResult();
     }
     #endregion
 
@@ -2317,7 +2317,7 @@ public class Converter : IDisposable, IAsyncDisposable
             conversionTimeout,
             mediaLoadTimeout,
             logger, 
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -2379,7 +2379,7 @@ public class Converter : IDisposable, IAsyncDisposable
             conversionTimeout,
             mediaLoadTimeout,
             logger, 
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -2438,16 +2438,16 @@ public class Converter : IDisposable, IAsyncDisposable
         using var memoryStream = new MemoryStream();
         
         await ConvertToImageAsync(inputUri, memoryStream, pageSettings, waitForWindowStatus,
-            waitForWindowsStatusTimeout, conversionTimeout, mediaLoadTimeout, logger, cancellationToken);
+            waitForWindowsStatusTimeout, conversionTimeout, mediaLoadTimeout, logger, cancellationToken).ConfigureAwait(false);
 
         memoryStream.Position = 0;
 
 #if (NETSTANDARD2_0)
         using var fileStream = File.Open(outputFile, FileMode.Create);
-        await memoryStream.CopyToAsync(fileStream);
+        await memoryStream.CopyToAsync(fileStream).ConfigureAwait(false);
 #else
         await using var fileStream = File.Open(outputFile, FileMode.Create);
-        await memoryStream.CopyToAsync(fileStream, cancellationToken);
+        await memoryStream.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
 #endif
         WriteToLog($"Image written to output file '{outputFile}'");
 
@@ -2514,16 +2514,16 @@ public class Converter : IDisposable, IAsyncDisposable
         using var memoryStream = new MemoryStream();
         
         await ConvertToImageAsync(html, memoryStream, pageSettings, waitForWindowStatus,
-            waitForWindowsStatusTimeout, conversionTimeout, mediaLoadTimeout, logger, cancellationToken);
+            waitForWindowsStatusTimeout, conversionTimeout, mediaLoadTimeout, logger, cancellationToken).ConfigureAwait(false);
 
         memoryStream.Position = 0;
 
 #if (NETSTANDARD2_0)
         using var fileStream = File.Open(outputFile, FileMode.Create);
-        await memoryStream.CopyToAsync(fileStream);
+        await memoryStream.CopyToAsync(fileStream).ConfigureAwait(false);
 #else
         await using var fileStream = File.Open(outputFile, FileMode.Create);
-        await memoryStream.CopyToAsync(fileStream, cancellationToken);
+        await memoryStream.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
 #endif
 
         WriteToLog($"Image written to output file '{outputFile}'");
@@ -2676,7 +2676,7 @@ public class Converter : IDisposable, IAsyncDisposable
 #if (NETSTANDARD2_0)
         InternalDispose();
 #else
-        InternalDisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+        InternalDisposeAsync().GetAwaiter().GetResult();
 #endif
     }
     #endregion
@@ -2688,7 +2688,7 @@ public class Converter : IDisposable, IAsyncDisposable
     /// </summary>
     public async ValueTask DisposeAsync()
     {
-        await InternalDisposeAsync();
+        await InternalDisposeAsync().ConfigureAwait(false);
     }
     #endregion
 #endif

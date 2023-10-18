@@ -129,7 +129,7 @@ public class Connection : IDisposable, IAsyncDisposable
         WriteToLog($"Creating new websocket connection to url '{url}'");
         _webSocket = new ClientWebSocket();
         _receiveLoopCts = new CancellationTokenSource();
-        OpenWebSocketAsync(default).ConfigureAwait(false).GetAwaiter().GetResult();
+        OpenWebSocketAsync(default).GetAwaiter().GetResult();
         Task.Factory.StartNew(ReceiveLoop, _receiveLoopCts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
     }
     #endregion
@@ -150,7 +150,7 @@ public class Connection : IDisposable, IAsyncDisposable
 
                 do
                 {
-                    receiveResult = await _webSocket.ReceiveAsync(buffer, _receiveLoopCts.Token);
+                    receiveResult = await _webSocket.ReceiveAsync(buffer, _receiveLoopCts.Token).ConfigureAwait(false);
                     if (receiveResult.MessageType == WebSocketMessageType.Close) continue;
                     if (buffer.Array != null)
                         outputStream.Write(buffer.Array, 0, receiveResult.Count);
@@ -160,7 +160,7 @@ public class Connection : IDisposable, IAsyncDisposable
 
                 outputStream.Position = 0;
                 using var reader = new StreamReader(outputStream);
-                var response = await reader.ReadToEndAsync();
+                var response = await reader.ReadToEndAsync().ConfigureAwait(false);
 
                 WebSocketOnMessageReceived(new MessageReceivedEventArgs(response));
             }
@@ -179,7 +179,7 @@ public class Connection : IDisposable, IAsyncDisposable
 #if (NETSTANDARD2_0)
                 outputStream.Dispose();
 #else
-                await outputStream.DisposeAsync();
+                await outputStream.DisposeAsync().ConfigureAwait(false);
 #endif
         }
     }
@@ -194,7 +194,7 @@ public class Connection : IDisposable, IAsyncDisposable
 
         try
         {
-            await _webSocket.ConnectAsync(new Uri(_url), cancellationToken);
+            await _webSocket.ConnectAsync(new Uri(_url), cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception)
         {
@@ -264,7 +264,7 @@ public class Connection : IDisposable, IAsyncDisposable
         _messageId += 1;
         message.Id = _messageId;
 
-        await OpenWebSocketAsync(cancellationToken);
+        await OpenWebSocketAsync(cancellationToken).ConfigureAwait(false);
 
         var tcs = new TaskCompletionSource<string>();
 
@@ -278,7 +278,7 @@ public class Connection : IDisposable, IAsyncDisposable
 
         try
         {
-            await _webSocket.SendAsync(MessageToBytes(message), WebSocketMessageType.Text, true, default);
+            await _webSocket.SendAsync(MessageToBytes(message), WebSocketMessageType.Text, true, default).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -305,11 +305,11 @@ public class Connection : IDisposable, IAsyncDisposable
         _messageId += 1;
         message.Id = _messageId;
         _response = null;
-        await OpenWebSocketAsync(cancellationToken);
+        await OpenWebSocketAsync(cancellationToken).ConfigureAwait(false);
 
         try
         {
-            await _webSocket.SendAsync(MessageToBytes(message), WebSocketMessageType.Text, true, cancellationToken);
+            await _webSocket.SendAsync(MessageToBytes(message), WebSocketMessageType.Text, true, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception)
         {
@@ -413,7 +413,7 @@ public class Connection : IDisposable, IAsyncDisposable
     /// </summary>
     public void Dispose()
     {
-        InternalDisposeAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+        InternalDisposeAsync().GetAwaiter().GetResult();
     }
     #endregion
 
@@ -424,7 +424,7 @@ public class Connection : IDisposable, IAsyncDisposable
     /// </summary>
     public async ValueTask DisposeAsync()
     {
-        await InternalDisposeAsync();
+        await InternalDisposeAsync().ConfigureAwait(false);
         GC.SuppressFinalize(this);
     }
 #endif

@@ -240,7 +240,7 @@ internal class DocumentHelper
     /// <returns></returns>
     public async Task<SanitizeHtmlResult> SanitizeHtmlAsync(ConvertUri inputUri, HtmlSanitizer sanitizer, List<string> safeUrls, CancellationToken cancellationToken)
     {
-        using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri);
+        using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri).ConfigureAwait(false);
         var htmlChanged = false;
         var context = BrowsingContext.New(Config);
 
@@ -250,8 +250,8 @@ internal class DocumentHelper
         {
             // ReSharper disable AccessToDisposedClosure
             document = inputUri.Encoding != null
-                ? await context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString()), cancel: cancellationToken)
-                : await context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString()), cancel: cancellationToken);
+                ? await context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString()), cancel: cancellationToken).ConfigureAwait(false)
+                : await context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString()), cancel: cancellationToken).ConfigureAwait(false);
             // ReSharper restore AccessToDisposedClosure
         }
         catch (Exception exception)
@@ -400,7 +400,7 @@ internal class DocumentHelper
     /// <returns><see cref="FitPageToContentResult"/></returns>
     public async Task<FitPageToContentResult> FitPageToContentAsync(ConvertUri inputUri, CancellationToken cancellationToken)
     {
-        using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri);
+        using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri).ConfigureAwait(false);
         using var context = BrowsingContext.New(Config);
         IDocument document;
 
@@ -408,8 +408,8 @@ internal class DocumentHelper
         {
             // ReSharper disable AccessToDisposedClosure
             document = inputUri.Encoding != null
-                ? await context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString()), cancel: cancellationToken)
-                : await context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString()), cancel: cancellationToken);
+                ? await context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString()), cancel: cancellationToken).ConfigureAwait(false)
+                : await context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString()), cancel: cancellationToken).ConfigureAwait(false);
             // ReSharper restore AccessToDisposedClosure
 
             var styleElement = new HtmlElement(document as Document, "style")
@@ -520,7 +520,7 @@ internal class DocumentHelper
         CancellationToken cancellationToken)
     {
         using var graphics = Graphics.FromHwnd(IntPtr.Zero);
-        using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri);
+        using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri).ConfigureAwait(false);
         
         WriteToLog($"DPI settings for image, x: '{graphics.DpiX}' and y: '{graphics.DpiY}'");
         var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft - pageSettings.MarginRight) * graphics.DpiX;
@@ -538,8 +538,8 @@ internal class DocumentHelper
         try
         {
             document = inputUri.Encoding != null
-                ? await context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString()), cancel: cancellationToken)
-                : await context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString()), cancel: cancellationToken);
+                ? await context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString()), cancel: cancellationToken).ConfigureAwait(false)
+                : await context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString()), cancel: cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception)
         {
@@ -594,7 +594,7 @@ internal class DocumentHelper
 
                 if (rotate)
                 {
-                    image = await GetImageAsync(htmlImage.Source, localDirectory);
+                    image = await GetImageAsync(htmlImage.Source, localDirectory).ConfigureAwait(false);
 
                     if (image == null) continue;
 
@@ -644,7 +644,7 @@ internal class DocumentHelper
                     // If we don't know the image size then get if from the image itself
                     if (width <= 0 || height <= 0)
                     {
-                        image ??= await GetImageAsync(htmlImage.Source, localDirectory);
+                        image ??= await GetImageAsync(htmlImage.Source, localDirectory).ConfigureAwait(false);
                         if (image == null) continue;
                         width = image.Width;
                         height = image.Height;
@@ -654,7 +654,7 @@ internal class DocumentHelper
                     {
                         // If we did not load the image already then load it
 
-                        image ??= await GetImageAsync(htmlImage.Source, localDirectory);
+                        image ??= await GetImageAsync(htmlImage.Source, localDirectory).ConfigureAwait(false);
                         if (image == null) continue;
 
                         ScaleImage(image, (int)maxWidth, out var newWidth, out var newHeight);
@@ -680,7 +680,7 @@ internal class DocumentHelper
 
         foreach (var unchangedImage in unchangedImages)
         {
-            using var image = await GetImageAsync(unchangedImage.Source, localDirectory);
+            using var image = await GetImageAsync(unchangedImage.Source, localDirectory).ConfigureAwait(false);
             
             if (image == null)
             {
@@ -795,7 +795,7 @@ internal class DocumentHelper
                 case "https":
                 case "http":
                 {
-                    using var webStream = await OpenDownloadStream(imageUri, true);
+                    using var webStream = await OpenDownloadStream(imageUri, true).ConfigureAwait(false);
                     return Image.FromStream(webStream, true, false);
                 }
 
@@ -951,9 +951,9 @@ internal class DocumentHelper
             
             WriteToLog($"Opening stream to url '{sourceUri}'{(_imageLoadTimeout != 0 ? $" with a timeout of {timeLeft} milliseconds" : string.Empty)}");
             
-            var response = await client.GetAsync(sourceUri);
+            var response = await client.GetAsync(sourceUri).ConfigureAwait(false);
             
-            return await response.Content.ReadAsStreamAsync();
+            return await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
         }
         catch (Exception exception)
         {
