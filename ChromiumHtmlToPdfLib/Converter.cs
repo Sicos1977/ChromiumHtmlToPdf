@@ -664,21 +664,25 @@ public class Converter : IDisposable, IAsyncDisposable
 
         using var chromiumWaitSignal = new SemaphoreSlim(0, 1);
 
+        #region OnChromiumProcessOnErrorDataReceived
+        void OnChromiumProcessOnErrorDataReceived(object _, DataReceivedEventArgs args)
+        {
+            if (args.Data == null || string.IsNullOrEmpty(args.Data) || args.Data.StartsWith("[")) return;
+
+            WriteToLog($"Received Chromium error data: '{args.Data}'");
+
+            if (!args.Data.StartsWith("DevTools listening on")) return;
+            // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
+            var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
+            ConnectToDevProtocol(uri);
+            // ReSharper disable once AccessToDisposedClosure
+            chromiumWaitSignal.Release();
+        }
+        #endregion
+
         if (!_userProfileSet)
         {
-            _chromiumProcess.ErrorDataReceived += (_, args) =>
-            {
-                if (args.Data == null || string.IsNullOrEmpty(args.Data) || args.Data.StartsWith("[")) return;
-
-                WriteToLog($"Received Chromium error data: '{args.Data}'");
-
-                if (!args.Data.StartsWith("DevTools listening on")) return;
-                // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
-                var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
-                ConnectToDevProtocol(uri);
-                // ReSharper disable once AccessToDisposedClosure
-                chromiumWaitSignal.Release();
-            };
+            _chromiumProcess.ErrorDataReceived += OnChromiumProcessOnErrorDataReceived;
 
             _chromiumProcess.EnableRaisingEvents = true;
             processStartInfo.UseShellExecute = false;
@@ -689,7 +693,9 @@ public class Converter : IDisposable, IAsyncDisposable
 
         string chromeException = null;
         _chromiumProcess.StartInfo = processStartInfo;
-        _chromiumProcess.Exited += (o, args) =>
+
+        #region OnChromiumProcessOnExited
+        void OnChromiumProcessOnExited(object o, EventArgs eventArgs)
         {
             try
             {
@@ -705,7 +711,10 @@ public class Converter : IDisposable, IAsyncDisposable
                 // ReSharper disable once AccessToDisposedClosure
                 chromiumWaitSignal.Release();
             }
-        };
+        }
+        #endregion
+
+        _chromiumProcess.Exited += OnChromiumProcessOnExited;
 
         try
         {
@@ -738,6 +747,11 @@ public class Converter : IDisposable, IAsyncDisposable
         }
 
         await chromiumWaitSignal.WaitAsync().ConfigureAwait(false);
+
+        // Remove events because we don't need them anymore
+        _chromiumProcess.ErrorDataReceived -= OnChromiumProcessOnErrorDataReceived;
+        _chromiumProcess.Exited -= OnChromiumProcessOnExited;
+
         if (!string.IsNullOrEmpty(chromeException))
             throw new ChromiumException(chromeException);
 
@@ -2576,7 +2590,7 @@ public class Converter : IDisposable, IAsyncDisposable
     }
     #endregion
 
-    #region Dispose
+    #region InternalDispose
 #if (NETSTANDARD2_0)
     private void InternalDispose()
 #else
@@ -2644,6 +2658,8 @@ public class Converter : IDisposable, IAsyncDisposable
 #endif
     }
     #endregion
+
+    // TODO: Remove lambdas
 
 #if (!NETSTANDARD2_0)    
     #region DisposeAsync
