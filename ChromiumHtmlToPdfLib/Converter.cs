@@ -2659,8 +2659,6 @@ public class Converter : IDisposable, IAsyncDisposable
     }
     #endregion
 
-    // TODO: Remove lambdas
-
 #if (!NETSTANDARD2_0)    
     #region DisposeAsync
     /// <summary>

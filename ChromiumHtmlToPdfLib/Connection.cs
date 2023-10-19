@@ -156,9 +156,6 @@ public class Connection : IDisposable, IAsyncDisposable
                 using var reader = new StreamReader(outputStream);
                 var response = await reader.ReadToEndAsync().ConfigureAwait(false);
 
-                //File.AppendAllText($@"e:\logs\converter_{InstanceId}.txt", "RECEIVED: " + response + Environment.NewLine);
-
-
                 WebSocketOnMessageReceived(new MessageReceivedEventArgs(response));
             }
         }

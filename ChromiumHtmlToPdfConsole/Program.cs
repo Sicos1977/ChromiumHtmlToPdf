@@ -356,27 +356,6 @@ static class Program
             options.Timeout,
             options.MediaLoadTimeout);
 
-        options.Input = "d:\\test2.html";
-
-        converter.ConvertToPdf(CheckInput(options),
-            options.Output,
-            pageSettings,
-            options.WaitForWindowStatus,
-            options.WaitForWindowStatusTimeOut,
-            options.Timeout,
-            options.MediaLoadTimeout);
-
-        options.Input = "d:\\test3.html";
-
-        converter.ConvertToPdf(CheckInput(options),
-            options.Output,
-            pageSettings,
-            options.WaitForWindowStatus,
-            options.WaitForWindowStatusTimeOut,
-            options.Timeout,
-            options.MediaLoadTimeout);
-
-
         stopWatch.Stop();
         WriteToLog($"Conversion took {stopWatch.ElapsedMilliseconds} ms");
     }
