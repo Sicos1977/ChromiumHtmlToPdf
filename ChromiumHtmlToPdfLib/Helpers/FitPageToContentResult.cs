@@ -17,7 +17,7 @@ internal class FitPageToContentResult
     internal ConvertUri OutputUri { get;  }
     #endregion
 
-    #region SanitizeHtmlResult
+    #region Constructor
     /// <summary>
     ///    Makes this object and sets it's needed properties
     /// </summary>

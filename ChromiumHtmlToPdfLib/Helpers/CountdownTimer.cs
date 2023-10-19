@@ -25,6 +25,7 @@
 //
 
 using System.Diagnostics;
+// ReSharper disable UnusedMember.Global
 
 namespace ChromiumHtmlToPdfLib.Helpers;
 

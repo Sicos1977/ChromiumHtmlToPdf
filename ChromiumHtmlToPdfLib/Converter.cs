@@ -85,12 +85,12 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <summary>
     ///     Used to make the logging thread safe
     /// </summary>
-    private readonly object _loggerLock = new();
+    private static readonly object LoggerLock = new();
 
     /// <summary>
     ///     When set then logging is written to this ILogger instance
     /// </summary>
-    private ILogger _logger;
+    private static ILogger _logger;
 
     /// <summary>
     ///     Chrome or Edge with it's full path
@@ -248,7 +248,7 @@ public class Converter : IDisposable, IAsyncDisposable
     ///     An unique id that can be used to identify the logging of the converter when
     ///     calling the code from multiple threads and writing all the logging to the same file
     /// </summary>
-    public string InstanceId { get; set; }
+    public static string InstanceId { get; set; }
 
     /// <summary>
     ///     Used to add the extension of text based files that needed to be wrapped in an HTML PRE
@@ -815,7 +815,7 @@ public class Converter : IDisposable, IAsyncDisposable
     private void ConnectToDevProtocol(Uri uri, string readUriFrom)
     {
         WriteToLog($"Connecting to dev protocol on uri '{uri}', got uri from {readUriFrom}");
-        _browser = new Browser(uri, _logger, WebSocketTimeout);
+        _browser = new Browser(uri, WebSocketTimeout);
         WriteToLog("Connected to dev protocol");
     }
     #endregion
@@ -1269,8 +1269,11 @@ public class Converter : IDisposable, IAsyncDisposable
         ILogger logger = null,
         CancellationToken cancellationToken = default)
     {
-        if (logger != null)
-            _logger = logger;
+        lock (LoggerLock)
+        {
+            if (logger != null)
+                _logger = logger;
+        }
 
         _conversionTimeout = conversionTimeout;
 
@@ -1327,7 +1330,7 @@ public class Converter : IDisposable, IAsyncDisposable
 
                 if (ImageResize || ImageRotate || SanitizeHtml || pageSettings.PaperFormat == PaperFormat.FitPageToContent)
                 {
-                    var documentHelper = new DocumentHelper(GetTempDirectory, _useCache, GetCacheDirectory, _cacheSize, WebProxy, ImageLoadTimeout, InstanceId, _logger);
+                    var documentHelper = new DocumentHelper(GetTempDirectory, _useCache, GetCacheDirectory, _cacheSize, WebProxy, ImageLoadTimeout);
 
                     if (SanitizeHtml)
                     {
@@ -2549,7 +2552,7 @@ public class Converter : IDisposable, IAsyncDisposable
         if (!PreWrapExtensions.Contains(ext, StringComparison.InvariantCultureIgnoreCase))
             return false;
 
-        var preWrapper = new PreWrapper(GetTempDirectory, _logger) { InstanceId = InstanceId };
+        var preWrapper = new PreWrapper(GetTempDirectory) { InstanceId = InstanceId };
         outputFile = preWrapper.WrapFile(inputFile.OriginalString, inputFile.Encoding);
         return true;
     }
@@ -2586,9 +2589,9 @@ public class Converter : IDisposable, IAsyncDisposable
     ///     Writes a line to the <see cref="_logger" />
     /// </summary>
     /// <param name="message">The message to write</param>
-    internal void WriteToLog(string message)
+    internal static void WriteToLog(string message)
     {
-        lock (_loggerLock)
+        lock (LoggerLock)
         {
             try
             {

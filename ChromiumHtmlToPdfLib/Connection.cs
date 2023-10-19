@@ -33,7 +33,6 @@ using System.Threading.Tasks;
 using ChromiumHtmlToPdfLib.Event;
 using ChromiumHtmlToPdfLib.Helpers;
 using ChromiumHtmlToPdfLib.Protocol;
-using Microsoft.Extensions.Logging;
 using ErrorEventArgs = ChromiumHtmlToPdfLib.Event.ErrorEventArgs;
 
 namespace ChromiumHtmlToPdfLib;
@@ -68,17 +67,18 @@ public class Connection : IDisposable, IAsyncDisposable
     private CancellationTokenSource _receiveLoopCts;
 
     /// <summary>
-    ///     Used to make the logging thread safe
+    ///     The url of the websocket
     /// </summary>
-    private readonly object _lock = new();
+    private readonly string _url;
 
     /// <summary>
-    ///     When set then logging is written to this ILogger instance
+    ///     The current message id
     /// </summary>
-    private readonly ILogger _logger;
-
-    private readonly string _url;
     private int _messageId;
+
+    /// <summary>
+    ///    The response
+    /// </summary>
     private TaskCompletionSource<string> _response;
 
     /// <summary>
@@ -110,17 +110,12 @@ public class Connection : IDisposable, IAsyncDisposable
     ///     Makes this object and sets all it's needed properties
     /// </summary>
     /// <param name="url">The url</param>
-    /// <param name="logger">
-    ///     When set then logging is written to this ILogger instance for all conversions at the Information
-    ///     log level
-    /// </param>
     /// <param name="timeout">Websocket open timeout in milliseconds</param>
-    internal Connection(string url, ILogger logger, int timeout)
+    internal Connection(string url, int timeout)
     {
         _url = url;
-        _logger = logger;
         _timeout = timeout;
-        WriteToLog($"Creating new websocket connection to url '{url}'");
+        Converter.WriteToLog($"Creating new websocket connection to url '{url}'");
         _webSocket = new ClientWebSocket();
         _receiveLoopCts = new CancellationTokenSource();
         OpenWebSocketAsync().GetAwaiter().GetResult();
@@ -184,12 +179,12 @@ public class Connection : IDisposable, IAsyncDisposable
     {
         if (_webSocket.State is WebSocketState.Open or WebSocketState.Connecting) return;
 
-        WriteToLog($"Opening websocket connection with a timeout of {_timeout} milliseconds");
+        Converter.WriteToLog($"Opening websocket connection with a timeout of {_timeout} milliseconds");
 
         try
         {
             await _webSocket.ConnectAsync(new Uri(_url), new CancellationTokenSource(_timeout).Token).ConfigureAwait(false);
-            WriteToLog("Websocket opened");
+            Converter.WriteToLog("Websocket opened");
         }
         catch (Exception exception)
         {
@@ -206,7 +201,7 @@ public class Connection : IDisposable, IAsyncDisposable
         var error = CheckForError(response);
         
         if (!string.IsNullOrEmpty(error))
-            WriteToLog(error);
+            Converter.WriteToLog(error);
 
         var messageBase = MessageBase.FromJson(response);
 
@@ -221,7 +216,7 @@ public class Connection : IDisposable, IAsyncDisposable
         if (_response?.Task.Status != TaskStatus.RanToCompletion)
             _response?.SetResult(string.Empty);
 
-        WriteToLog(ExceptionHelpers.GetInnerException(e.Exception));
+        Converter.WriteToLog(ExceptionHelpers.GetInnerException(e.Exception));
     }
 
     private void WebSocketOnClosed(EventArgs e)
@@ -324,29 +319,6 @@ public class Connection : IDisposable, IAsyncDisposable
     }
     #endregion
 
-    #region WriteToLog
-    /// <summary>
-    ///     Writes a line to the <see cref="_logger" />
-    /// </summary>
-    /// <param name="message">The message to write</param>
-    internal void WriteToLog(string message)
-    {
-        lock (_lock)
-        {
-            try
-            {
-                if (_logger == null) return;
-                using (_logger.BeginScope(InstanceId))
-                    _logger.LogInformation(message);
-            }
-            catch (ObjectDisposedException)
-            {
-                // Ignore
-            }
-        }
-    }
-    #endregion
-
     #region MessageToBytes
     private ArraySegment<byte> MessageToBytes(MessageBase message)
     {
@@ -367,11 +339,11 @@ public class Connection : IDisposable, IAsyncDisposable
         _receiveLoopCts?.Cancel();
         _receiveLoopCts = null;
 
-        WriteToLog($"Disposing websocket connection to url '{_url}'");
+        Converter.WriteToLog($"Disposing websocket connection to url '{_url}'");
 
         if (_webSocket.State == WebSocketState.Open)
         {
-            WriteToLog("Closing web socket");
+            Converter.WriteToLog("Closing web socket");
 
             try
             {
@@ -380,15 +352,15 @@ public class Connection : IDisposable, IAsyncDisposable
             }
             catch (Exception exception)
             {
-                WriteToLog($"An error occurred while closing the web socket, error: '{ExceptionHelpers.GetInnerException(exception)}'");
+                Converter.WriteToLog($"An error occurred while closing the web socket, error: '{ExceptionHelpers.GetInnerException(exception)}'");
             }
 
-            WriteToLog("Websocket connection closed");
+            Converter.WriteToLog("Websocket connection closed");
 
             WebSocketOnClosed(EventArgs.Empty);
             _webSocket?.Dispose();
             _webSocket = null;
-            WriteToLog("Web socket connection disposed");
+            Converter.WriteToLog("Web socket connection disposed");
         }
 
         _disposed = true;

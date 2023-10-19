@@ -29,7 +29,6 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Web;
-using Microsoft.Extensions.Logging;
 using UtfUnknown;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Global
@@ -44,16 +43,6 @@ namespace ChromiumHtmlToPdfLib.Helpers;
 internal class PreWrapper
 {
     #region Fields
-    /// <summary>
-    ///     When set then logging is written to this ILogger instance
-    /// </summary>
-    private readonly ILogger _logger;
-
-    /// <summary>
-    ///     Used to make the logging thread safe
-    /// </summary>
-    private readonly object _loggerLock = new();
-
     /// <summary>
     ///     The temp folder
     /// </summary>
@@ -114,14 +103,9 @@ internal class PreWrapper
     ///     Makes this object and sets its needed properties
     /// </summary>
     /// <param name="tempDirectory">When set then this directory will be used for temporary files</param>
-    /// <param name="logger">
-    ///     When set then logging is written to this ILogger instance for all conversions at the Information
-    ///     log level
-    /// </param>
-    public PreWrapper(DirectoryInfo tempDirectory, ILogger logger)
+    public PreWrapper(DirectoryInfo tempDirectory)
     {
         _tempDirectory = tempDirectory;
-        _logger = logger;
     }
     #endregion
 
@@ -138,20 +122,20 @@ internal class PreWrapper
         var title = WebUtility.HtmlEncode(temp);
         var tempFile = GetTempFile;
 
-        WriteToLog($"Reading text file '{inputFile}'");
+        Converter.WriteToLog($"Reading text file '{inputFile}'");
 
         if (encoding == null)
         {
             using var fileStream = File.OpenRead(inputFile);
-            WriteToLog("Trying to detect encoding");
+            Converter.WriteToLog("Trying to detect encoding");
             var result = CharsetDetector.DetectFromStream(fileStream);
             encoding = result.Detected.Encoding;
-            WriteToLog(result.Detected.StatusLog);
+            Converter.WriteToLog(result.Detected.StatusLog);
         }
 
         var streamReader = new StreamReader(inputFile, encoding);
 
-        WriteToLog($"File is '{streamReader.CurrentEncoding.WebName}' encoded");
+        Converter.WriteToLog($"File is '{streamReader.CurrentEncoding.WebName}' encoded");
 
         var writeEncoding = new UnicodeEncoding(!BitConverter.IsLittleEndian, true);
 
@@ -189,34 +173,9 @@ internal class PreWrapper
             writer.WriteLine("</html>");
         }
 
-        WriteToLog($"File pre wrapped and written to temporary file '{tempFile}'");
+        Converter.WriteToLog($"File pre wrapped and written to temporary file '{tempFile}'");
 
         return tempFile;
-    }
-    #endregion
-
-    #region WriteToLog
-    /// <summary>
-    ///     Writes a line to the <see cref="_logger" />
-    /// </summary>
-    /// <param name="message">The message to write</param>
-    internal void WriteToLog(string message)
-    {
-        lock (_loggerLock)
-        {
-            try
-            {
-                if (_logger == null) return;
-                using (_logger.BeginScope(InstanceId))
-                {
-                    _logger.LogInformation(message);
-                }
-            }
-            catch (ObjectDisposedException)
-            {
-                // Ignore
-            }
-        }
     }
     #endregion
 }
