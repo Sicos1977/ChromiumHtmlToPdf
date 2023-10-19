@@ -246,7 +246,7 @@ public class Browser : IDisposable, IAsyncDisposable
 
                         var fetchContinue = new Message { Method = "Fetch.continueRequest" };
                         fetchContinue.Parameters.Add("requestId", requestId);
-                        _pageConnection.SendAsync(fetchContinue).ConfigureAwait(false);
+                        _pageConnection.SendForResponseAsync(fetchContinue, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
@@ -259,7 +259,7 @@ public class Browser : IDisposable, IAsyncDisposable
                         // ConnectionAborted, ConnectionFailed, NameNotResolved, InternetDisconnected, AddressUnreachable,
                         // BlockedByClient, BlockedByResponse
                         fetchFail.Parameters.Add("errorReason", "BlockedByClient");
-                        _pageConnection.SendAsync(fetchFail).ConfigureAwait(false);
+                        _pageConnection.SendForResponseAsync(fetchFail, cancellationToken).ConfigureAwait(false);
                     }
 
                     break;
@@ -285,10 +285,11 @@ public class Browser : IDisposable, IAsyncDisposable
 
                                     Task.Run(delegate
                                     {
-                                        Task.Delay(mediaLoadTimeout.Value, cancellationToken).ConfigureAwait(false);
+                                        Task.Delay(1, cancellationToken).ConfigureAwait(false);
+                                        //Task.Delay(mediaLoadTimeout.Value, cancellationToken).ConfigureAwait(false);
                                         WriteToLog($"Media load timeout task timed out after {mediaLoadTimeout.Value} milliseconds");
                                         pageLoadedSignal.Release();
-                                    }, cancellationToken).ConfigureAwait(false);
+                                    }, mediaLoadTimeoutCancellationTokenSource.Token).ConfigureAwait(false);
 
                                     mediaTimeoutTaskSet = true;
                                 }

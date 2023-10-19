@@ -182,20 +182,19 @@ public class Connection : IDisposable, IAsyncDisposable
     #region OpenWebSocket
     private async Task OpenWebSocketAsync()
     {
-        if (_webSocket.State == WebSocketState.Open) return;
+        if (_webSocket.State is WebSocketState.Open or WebSocketState.Connecting) return;
 
         WriteToLog($"Opening websocket connection with a timeout of {_timeout} milliseconds");
 
         try
         {
             await _webSocket.ConnectAsync(new Uri(_url), new CancellationTokenSource(_timeout).Token).ConfigureAwait(false);
+            WriteToLog("Websocket opened");
         }
         catch (Exception exception)
         {
             WebSocketOnError(new ErrorEventArgs(exception));
         }
-
-        WriteToLog("Websocket opened");
     }
     #endregion
 
@@ -205,6 +204,7 @@ public class Connection : IDisposable, IAsyncDisposable
         var response = e.Message;
 
         var error = CheckForError(response);
+        
         if (!string.IsNullOrEmpty(error))
             WriteToLog(error);
 
@@ -252,7 +252,8 @@ public class Connection : IDisposable, IAsyncDisposable
         var receivedHandler = new EventHandler<string>((_, data) =>
         {
             var messageBase = MessageBase.FromJson(data);
-            if (messageBase.Id == message.Id) tcs.SetResult(data);
+            if (messageBase.Id == message.Id) 
+                tcs.SetResult(data);
         });
 
         MessageReceived += receivedHandler;
@@ -262,21 +263,21 @@ public class Connection : IDisposable, IAsyncDisposable
             if (cancellationToken == default)
                 cancellationToken = new CancellationTokenSource(_timeout).Token;
 
-            //File.AppendAllText($@"e:\logs\converter_{InstanceId}.txt", $"SENT: {message.ToJson()}" + Environment.NewLine);
-
-
             await _webSocket.SendAsync(MessageToBytes(message), WebSocketMessageType.Text, true, cancellationToken).ConfigureAwait(false);
+
+            var response = tcs.Task.Result;
+            return response;
         }
         catch (Exception exception)
         {
             WebSocketOnError(new ErrorEventArgs(exception));
         }
+        finally
+        {
+            MessageReceived -= receivedHandler;
+        }
 
-        var response = tcs.Task.Result;
-
-        MessageReceived -= receivedHandler;
-
-        return response;
+        return string.Empty;
     }
     #endregion
 
@@ -291,6 +292,7 @@ public class Connection : IDisposable, IAsyncDisposable
         _messageId += 1;
         message.Id = _messageId;
         _response = null;
+
         await OpenWebSocketAsync().ConfigureAwait(false);
 
         try

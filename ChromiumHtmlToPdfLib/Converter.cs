@@ -592,8 +592,9 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <remarks>
     ///     If Chrome or Edge is already running then this step is skipped
     /// </remarks>
+    /// <returns><see cref="CancellationToken"/></returns>
     /// <exception cref="ChromiumException"></exception>
-    private async Task StartChromiumHeadlessAsync()
+    private async Task StartChromiumHeadlessAsync(CancellationToken cancellationToken)
     {
         if (IsChromiumRunning)
         {
@@ -664,22 +665,6 @@ public class Converter : IDisposable, IAsyncDisposable
 
         using var chromiumWaitSignal = new SemaphoreSlim(0, 1);
 
-        #region OnChromiumProcessOnErrorDataReceived
-        void OnChromiumProcessOnErrorDataReceived(object _, DataReceivedEventArgs args)
-        {
-            if (args.Data == null || string.IsNullOrEmpty(args.Data) || args.Data.StartsWith("[")) return;
-
-            WriteToLog($"Received Chromium error data: '{args.Data}'");
-
-            if (!args.Data.StartsWith("DevTools listening on")) return;
-            // DevTools listening on ws://127.0.0.1:50160/devtools/browser/53add595-f351-4622-ab0a-5a4a100b3eae
-            var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
-            ConnectToDevProtocol(uri);
-            // ReSharper disable once AccessToDisposedClosure
-            chromiumWaitSignal.Release();
-        }
-        #endregion
-
         if (!_userProfileSet)
         {
             _chromiumProcess.ErrorDataReceived += OnChromiumProcessOnErrorDataReceived;
@@ -693,8 +678,55 @@ public class Converter : IDisposable, IAsyncDisposable
 
         string chromeException = null;
         _chromiumProcess.StartInfo = processStartInfo;
+        _chromiumProcess.Exited += OnChromiumProcessOnExited;
 
-        #region OnChromiumProcessOnExited
+        try
+        {
+            _chromiumProcess.Start();
+        }
+        catch (Exception exception)
+        {
+            WriteToLog($"Could not start the {BrowserName} process due to the following reason: {ExceptionHelpers.GetInnerException(exception)}");
+            throw;
+        }
+
+        WriteToLog($"{BrowserName} process started");
+
+        if (!_userProfileSet)
+            _chromiumProcess.BeginErrorReadLine();
+        else
+        {
+            var lines = await ReadDevToolsActiveFileAsync(cancellationToken).ConfigureAwait(false);
+            var uri = new Uri($"ws://127.0.0.1:{lines[0]}{lines[1]}");
+            // DevToolsActivePort
+            ConnectToDevProtocol(uri, "dev tools active port file");
+            chromiumWaitSignal.Release();
+        }
+        
+        if (_conversionTimeout.HasValue)
+        {
+            var result = await chromiumWaitSignal.WaitAsync(_conversionTimeout.Value, cancellationToken).ConfigureAwait(false);
+            if (!result)
+                throw new ChromiumException($"A timeout of '{_conversionTimeout.Value}' milliseconds exceeded, could not make a connection to the Chromium dev tools");
+        }
+        else
+        {
+            var result = await chromiumWaitSignal.WaitAsync(30000, cancellationToken).ConfigureAwait(false);
+            if (!result)
+                throw new ChromiumException("A timeout of 30 seconds exceeded, could not make a connection to the Chromium dev tools");
+        }
+
+        // Remove events because we don't need them anymore
+        _chromiumProcess.ErrorDataReceived -= OnChromiumProcessOnErrorDataReceived;
+        _chromiumProcess.Exited -= OnChromiumProcessOnExited;
+
+        if (!string.IsNullOrEmpty(chromeException))
+            throw new ChromiumException(chromeException);
+
+        WriteToLog($"{BrowserName} started");
+        return;
+
+        #region Method internal events
         void OnChromiumProcessOnExited(object o, EventArgs eventArgs)
         {
             try
@@ -712,66 +744,43 @@ public class Converter : IDisposable, IAsyncDisposable
                 chromiumWaitSignal.Release();
             }
         }
+
+        void OnChromiumProcessOnErrorDataReceived(object _, DataReceivedEventArgs args)
+        {
+            if (args.Data == null || string.IsNullOrEmpty(args.Data) || args.Data.StartsWith("[")) return;
+
+            WriteToLog($"Received Chromium error data: '{args.Data}'");
+
+            if (!args.Data.StartsWith("DevTools listening on")) return;
+            var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
+            ConnectToDevProtocol(uri, "data received from error stream");
+            // ReSharper disable once AccessToDisposedClosure
+            chromiumWaitSignal.Release();
+        }
         #endregion
-
-        _chromiumProcess.Exited += OnChromiumProcessOnExited;
-
-        try
-        {
-            _chromiumProcess.Start();
-        }
-        catch (Exception exception)
-        {
-            WriteToLog($"Could not start the {BrowserName} process due to the following reason: {ExceptionHelpers.GetInnerException(exception)}");
-            throw;
-        }
-
-        WriteToLog($"{BrowserName} process started");
-
-        if (!_userProfileSet)
-        {
-            _chromiumProcess.BeginErrorReadLine();
-
-            if (_conversionTimeout.HasValue)
-            {
-                var result = await chromiumWaitSignal.WaitAsync(_conversionTimeout.Value).ConfigureAwait(false);
-                if (result)
-                    throw new ChromiumException($"A timeout of '{_conversionTimeout.Value}' milliseconds exceeded, could not make a connection to the Chromium dev tools");
-            }
-        }
-        else
-        {
-            var lines = await ReadDevToolsActiveFileAsync().ConfigureAwait(false);
-            var uri = new Uri($"ws://127.0.0.1:{lines[0]}{lines[1]}");
-            ConnectToDevProtocol(uri);
-        }
-
-        await chromiumWaitSignal.WaitAsync().ConfigureAwait(false);
-
-        // Remove events because we don't need them anymore
-        _chromiumProcess.ErrorDataReceived -= OnChromiumProcessOnErrorDataReceived;
-        _chromiumProcess.Exited -= OnChromiumProcessOnExited;
-
-        if (!string.IsNullOrEmpty(chromeException))
-            throw new ChromiumException(chromeException);
-
-        WriteToLog($"{BrowserName} started");
     }
+    #endregion
 
+    #region ReadDevToolsActiveFileAsync
     /// <summary>
     ///     Tries to read the content of the DevToolsActiveFile
     /// </summary>
-    /// <returns></returns>
-    private async Task<string[]> ReadDevToolsActiveFileAsync()
+    /// <param name="cancellationToken"></param>
+    /// <returns><see cref="CancellationToken"/></returns>
+    /// <exception cref="ChromiumException"></exception>
+    private async Task<string[]> ReadDevToolsActiveFileAsync(CancellationToken cancellationToken)
     {
         var tempTimeout = _conversionTimeout ?? 10000;
         var timeout = tempTimeout;
 
+        WriteToLog($"Waiting until file '{_devToolsActivePortFile}' exists with a timeout of {tempTimeout} milliseconds");
+
         while (true)
+        {
             if (!File.Exists(_devToolsActivePortFile))
             {
                 timeout -= 5;
-                await Task.Delay(5).ConfigureAwait(false);
+                await Task.Delay(5, cancellationToken).ConfigureAwait(false);
                 if (timeout <= 0)
                     throw new ChromiumException($"A timeout of '{tempTimeout}' milliseconds exceeded, the file '{_devToolsActivePortFile}' did not exist");
             }
@@ -782,23 +791,30 @@ public class Converter : IDisposable, IAsyncDisposable
 #if (NETSTANDARD2_0)
                     return File.ReadAllLines(_devToolsActivePortFile);
 #else
-                    return await File.ReadAllLinesAsync(_devToolsActivePortFile).ConfigureAwait(false);
+                    return await File.ReadAllLinesAsync(_devToolsActivePortFile, cancellationToken).ConfigureAwait(false);
 #endif
                 }
                 catch (Exception exception)
                 {
                     timeout -= 5;
-                    Thread.Sleep(5);
+                    await Task.Delay(5, cancellationToken).ConfigureAwait(false);
                     if (timeout <= 0)
-                        throw new ChromiumException($"A timeout of '{tempTimeout}' milliseconds exceeded, could not read the file '{_devToolsActivePortFile}'",
-                            exception);
+                        throw new ChromiumException($"A timeout of '{tempTimeout}' milliseconds exceeded, could not read the file '{_devToolsActivePortFile}'", exception);
                 }
             }
+        }
     }
+    #endregion
 
-    private void ConnectToDevProtocol(Uri uri)
+    #region ConnectToDevProtocol
+    /// <summary>
+    ///     Connects to the Chromium dev protocol
+    /// </summary>
+    /// <param name="uri">The uri to connect to</param>
+    /// <param name="readUriFrom">From where we did get the uri</param>
+    private void ConnectToDevProtocol(Uri uri, string readUriFrom)
     {
-        WriteToLog($"Connecting to dev protocol on uri '{uri}'");
+        WriteToLog($"Connecting to dev protocol on uri '{uri}', got uri from {readUriFrom}");
         _browser = new Browser(uri, _logger, WebSocketTimeout);
         WriteToLog("Connected to dev protocol");
     }
@@ -1361,7 +1377,7 @@ public class Converter : IDisposable, IAsyncDisposable
                 }
             }
 
-            await StartChromiumHeadlessAsync().ConfigureAwait(false);
+            await StartChromiumHeadlessAsync(cancellationToken).ConfigureAwait(false);
 
             CountdownTimer countdownTimer = null;
 
