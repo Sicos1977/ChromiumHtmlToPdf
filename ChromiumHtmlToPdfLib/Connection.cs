@@ -32,6 +32,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using ChromiumHtmlToPdfLib.Event;
 using ChromiumHtmlToPdfLib.Helpers;
+using ChromiumHtmlToPdfLib.Loggers;
 using ChromiumHtmlToPdfLib.Protocol;
 using ErrorEventArgs = ChromiumHtmlToPdfLib.Event.ErrorEventArgs;
 
@@ -59,6 +60,11 @@ public class Connection : IDisposable, IAsyncDisposable
     #endregion
 
     #region Fields
+    /// <summary>
+    ///     <see cref="Logger"/>
+    /// </summary>
+    private readonly Logger _logger;
+
     private const int ReceiveBufferSize = 8192;
 
     /// <summary>
@@ -97,25 +103,19 @@ public class Connection : IDisposable, IAsyncDisposable
     private bool _disposed;
     #endregion
 
-    #region Properties
-    /// <summary>
-    ///     An unique id that can be used to identify the logging of the converter when
-    ///     calling the code from multiple threads and writing all the logging to the same file
-    /// </summary>
-    public string InstanceId { get; set; }
-    #endregion
-
     #region Constructor
     /// <summary>
     ///     Makes this object and sets all it's needed properties
     /// </summary>
     /// <param name="url">The url</param>
     /// <param name="timeout">Websocket open timeout in milliseconds</param>
-    internal Connection(string url, int timeout)
+    /// <param name="logger"><see cref="Logger"/></param>
+    internal Connection(string url, int timeout, Logger logger)
     {
         _url = url;
         _timeout = timeout;
-        Converter.WriteToLog($"Creating new websocket connection to url '{url}'");
+        _logger = logger;
+        _logger?.WriteToLog($"Creating new websocket connection to url '{url}'");
         _webSocket = new ClientWebSocket();
         _receiveLoopCts = new CancellationTokenSource();
         OpenWebSocketAsync().GetAwaiter().GetResult();
@@ -179,12 +179,12 @@ public class Connection : IDisposable, IAsyncDisposable
     {
         if (_webSocket.State is WebSocketState.Open or WebSocketState.Connecting) return;
 
-        Converter.WriteToLog($"Opening websocket connection with a timeout of {_timeout} milliseconds");
+        _logger?.WriteToLog($"Opening websocket connection with a timeout of {_timeout} milliseconds");
 
         try
         {
             await _webSocket.ConnectAsync(new Uri(_url), new CancellationTokenSource(_timeout).Token).ConfigureAwait(false);
-            Converter.WriteToLog("Websocket opened");
+            _logger?.WriteToLog("Websocket opened");
         }
         catch (Exception exception)
         {
@@ -201,7 +201,7 @@ public class Connection : IDisposable, IAsyncDisposable
         var error = CheckForError(response);
         
         if (!string.IsNullOrEmpty(error))
-            Converter.WriteToLog(error);
+            _logger?.WriteToLog(error);
 
         var messageBase = MessageBase.FromJson(response);
 
@@ -216,7 +216,7 @@ public class Connection : IDisposable, IAsyncDisposable
         if (_response?.Task.Status != TaskStatus.RanToCompletion)
             _response?.SetResult(string.Empty);
 
-        Converter.WriteToLog(ExceptionHelpers.GetInnerException(e.Exception));
+        _logger?.WriteToLog(ExceptionHelpers.GetInnerException(e.Exception));
     }
 
     private void WebSocketOnClosed(EventArgs e)
@@ -339,11 +339,11 @@ public class Connection : IDisposable, IAsyncDisposable
         _receiveLoopCts?.Cancel();
         _receiveLoopCts = null;
 
-        Converter.WriteToLog($"Disposing websocket connection to url '{_url}'");
+        _logger?.WriteToLog($"Disposing websocket connection to url '{_url}'");
 
         if (_webSocket.State == WebSocketState.Open)
         {
-            Converter.WriteToLog("Closing web socket");
+            _logger?.WriteToLog("Closing web socket");
 
             try
             {
@@ -352,15 +352,15 @@ public class Connection : IDisposable, IAsyncDisposable
             }
             catch (Exception exception)
             {
-                Converter.WriteToLog($"An error occurred while closing the web socket, error: '{ExceptionHelpers.GetInnerException(exception)}'");
+                _logger?.WriteToLog($"An error occurred while closing the web socket, error: '{ExceptionHelpers.GetInnerException(exception)}'");
             }
 
-            Converter.WriteToLog("Websocket connection closed");
+            _logger?.WriteToLog("Websocket connection closed");
 
             WebSocketOnClosed(EventArgs.Empty);
             _webSocket?.Dispose();
             _webSocket = null;
-            Converter.WriteToLog("Web socket connection disposed");
+            _logger?.WriteToLog("Web socket connection disposed");
         }
 
         _disposed = true;

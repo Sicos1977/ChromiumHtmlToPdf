@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Runtime.Caching;
 using System.Threading;
 using System.Threading.Tasks;
+using ChromiumHtmlToPdfLib.Loggers;
 
 namespace ChromiumHtmlToPdfLib.Helpers;
 
@@ -28,6 +29,11 @@ internal class FileCacheHandler : HttpClientHandler
     ///     The cache size
     /// </summary>
     private readonly long _cacheSize;
+
+    /// <summary>
+    ///     <see cref="Logger"/>
+    /// </summary>
+    private readonly Logger _logger;
 
     /// <summary>
     ///     <see cref="FileCache"/>
@@ -75,17 +81,19 @@ internal class FileCacheHandler : HttpClientHandler
     internal FileCacheHandler(
         bool useCache, 
         FileSystemInfo cacheDirectory, 
-        long cacheSize)
+        long cacheSize,
+        Logger logger)
     {
         _useCache = useCache;
         
         if (!useCache) return;
         
         _cacheDirectory = new DirectoryInfo(Path.Combine(cacheDirectory.FullName, "DocumentHelper"));
+        _logger = logger;
 
         if (!_cacheDirectory.Exists)
         {
-            Converter.WriteToLog($"Creating cache directory '{_cacheDirectory.FullName}'");
+            _logger?.WriteToLog($"Creating cache directory '{_cacheDirectory.FullName}'");
             _cacheDirectory.Create();
         }
 
@@ -121,7 +129,7 @@ internal class FileCacheHandler : HttpClientHandler
 
             IsFromCache = true;
 
-            Converter.WriteToLog("Returned item from cache");
+            _logger?.WriteToLog("Returned item from cache");
 
             return Task.FromResult(cachedResponse);
         }
@@ -134,7 +142,7 @@ internal class FileCacheHandler : HttpClientHandler
         response.Content.ReadAsStreamAsync().GetAwaiter().GetResult().CopyTo(memoryStream);
         
         FileCache.Add(key, memoryStream.ToArray(), new CacheItemPolicy { SlidingExpiration = TimeSpan.FromDays(1) });
-        Converter.WriteToLog("Added item to cache");
+        _logger?.WriteToLog("Added item to cache");
 
         response.Content = new StreamContent(new MemoryStream(memoryStream.ToArray()));
 

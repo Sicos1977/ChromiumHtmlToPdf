@@ -37,9 +37,13 @@ using System.Threading.Tasks;
 using ChromiumHtmlToPdfLib.Enums;
 using ChromiumHtmlToPdfLib.Exceptions;
 using ChromiumHtmlToPdfLib.Helpers;
+using ChromiumHtmlToPdfLib.Loggers;
 using ChromiumHtmlToPdfLib.Settings;
 using Ganss.Xss;
 using Microsoft.Extensions.Logging;
+using File = System.IO.File;
+using Stream = System.IO.Stream;
+
 // ReSharper disable UnusedMember.Global
 
 namespace ChromiumHtmlToPdfLib;
@@ -83,14 +87,9 @@ public class Converter : IDisposable, IAsyncDisposable
     private List<string> _defaultChromiumArgument;
 
     /// <summary>
-    ///     Used to make the logging thread safe
+    ///     A helper class to share logging between the different classes
     /// </summary>
-    private static readonly object LoggerLock = new();
-
-    /// <summary>
-    ///     When set then logging is written to this ILogger instance
-    /// </summary>
-    private static ILogger _logger;
+    private Logger _logger;
 
     /// <summary>
     ///     Chrome or Edge with it's full path
@@ -185,6 +184,8 @@ public class Converter : IDisposable, IAsyncDisposable
     ///     Default set to 1GB
     /// </remarks>
     private long _cacheSize = 1073741824;
+
+    private string _instanceId;
     #endregion
 
     #region Properties
@@ -248,7 +249,16 @@ public class Converter : IDisposable, IAsyncDisposable
     ///     An unique id that can be used to identify the logging of the converter when
     ///     calling the code from multiple threads and writing all the logging to the same file
     /// </summary>
-    public static string InstanceId { get; set; }
+    public string InstanceId
+    {
+        get => _instanceId;
+        set
+        {
+            _instanceId = value;
+            if (_logger != null)
+                _logger.InstanceId = value;
+        } 
+    }
 
     /// <summary>
     ///     Used to add the extension of text based files that needed to be wrapped in an HTML PRE
@@ -271,7 +281,7 @@ public class Converter : IDisposable, IAsyncDisposable
         set
         {
             _preWrapExtensions = value;
-            WriteToLog($"Setting pre wrap extension to '{string.Join(", ", value)}'");
+            _logger?.WriteToLog($"Setting pre wrap extension to '{string.Join(", ", value)}'");
         }
     }
 
@@ -416,14 +426,14 @@ public class Converter : IDisposable, IAsyncDisposable
 
                 if (networkCredential != null)
                 {
-                    WriteToLog(
+                    _logger?.WriteToLog(
                         $"Setting up web proxy with server '{_proxyServer}' and user '{_userName}'{(!string.IsNullOrEmpty(networkCredential.Domain) ? $" on domain '{networkCredential.Domain}'" : string.Empty)}");
                     _webProxy = new WebProxy(_proxyServer, true, bypassList, networkCredential);
                 }
                 else
                 {
                     _webProxy = new WebProxy(_proxyServer, true, bypassList) { UseDefaultCredentials = true };
-                    WriteToLog($"Setting up web proxy with server '{_proxyServer}' with default credentials");
+                    _logger?.WriteToLog($"Setting up web proxy with server '{_proxyServer}' with default credentials");
                 }
 
                 return _webProxy;
@@ -443,7 +453,7 @@ public class Converter : IDisposable, IAsyncDisposable
     public bool CaptureSnapshot { get; set; }
 
     /// <summary>
-    ///     The <see cref="Stream" /> where to write the page snapshot when <see cref="CaptureSnapshot" />
+    ///     The <see cref="System.IO.Stream" /> where to write the page snapshot when <see cref="CaptureSnapshot" />
     ///     is set to <c>true</c>
     /// </summary>
     public Stream SnapshotStream { get; set; }
@@ -550,7 +560,7 @@ public class Converter : IDisposable, IAsyncDisposable
         Enums.Browser browser = Enums.Browser.Chrome)
     {
         _preWrapExtensions = new List<string>();
-        _logger = logger;
+        _logger = new Logger(logger, null);
         _useCache = useCache;
         _browserUsed = browser;
 
@@ -598,14 +608,14 @@ public class Converter : IDisposable, IAsyncDisposable
     {
         if (IsChromiumRunning)
         {
-            WriteToLog($"{BrowserName} is already running on process id {_chromiumProcess.Id} ... skipped");
+            _logger?.WriteToLog($"{BrowserName} is already running on process id {_chromiumProcess.Id} ... skipped");
             return;
         }
 
         var workingDirectory = Path.GetDirectoryName(_chromiumExeFileName);
 
-        WriteToLog($"Starting {BrowserName} from location '{_chromiumExeFileName}' with working directory '{workingDirectory}'");
-        WriteToLog($"\"{_chromiumExeFileName}\" {string.Join(" ", DefaultChromiumArguments)}");
+        _logger?.WriteToLog($"Starting {BrowserName} from location '{_chromiumExeFileName}' with working directory '{workingDirectory}'");
+        _logger?.WriteToLog($"\"{_chromiumExeFileName}\" {string.Join(" ", DefaultChromiumArguments)}");
 
         _chromiumProcess = new Process();
         var processStartInfo = new ProcessStartInfo
@@ -632,15 +642,15 @@ public class Converter : IDisposable, IAsyncDisposable
 
             if (!string.IsNullOrWhiteSpace(domain) && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                WriteToLog($"Starting {BrowserName} with username '{userName}' on domain '{domain}'");
+                _logger?.WriteToLog($"Starting {BrowserName} with username '{userName}' on domain '{domain}'");
                 processStartInfo.Domain = domain;
             }
             else
             {
                 if (!string.IsNullOrWhiteSpace(domain) && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    WriteToLog($"Ignoring domain '{domain}' because this is only supported on Windows");
+                    _logger?.WriteToLog($"Ignoring domain '{domain}' because this is only supported on Windows");
 
-                WriteToLog($"Starting {BrowserName} with username '{userName}'");
+                _logger?.WriteToLog($"Starting {BrowserName} with username '{userName}'");
             }
 
             processStartInfo.UseShellExecute = false;
@@ -660,7 +670,7 @@ public class Converter : IDisposable, IAsyncDisposable
                 processStartInfo.LoadUserProfile = true;
             }
             else
-                WriteToLog("Ignoring password and loading user profile because this is only supported on Windows");
+                _logger?.WriteToLog("Ignoring password and loading user profile because this is only supported on Windows");
         }
 
         using var chromiumWaitSignal = new SemaphoreSlim(0, 1);
@@ -686,11 +696,11 @@ public class Converter : IDisposable, IAsyncDisposable
         }
         catch (Exception exception)
         {
-            WriteToLog($"Could not start the {BrowserName} process due to the following reason: {ExceptionHelpers.GetInnerException(exception)}");
+            _logger?.WriteToLog($"Could not start the {BrowserName} process due to the following reason: {ExceptionHelpers.GetInnerException(exception)}");
             throw;
         }
 
-        WriteToLog($"{BrowserName} process started");
+        _logger?.WriteToLog($"{BrowserName} process started");
 
         if (!_userProfileSet)
             _chromiumProcess.BeginErrorReadLine();
@@ -723,7 +733,7 @@ public class Converter : IDisposable, IAsyncDisposable
         if (!string.IsNullOrEmpty(chromeException))
             throw new ChromiumException(chromeException);
 
-        WriteToLog($"{BrowserName} started");
+        _logger?.WriteToLog($"{BrowserName} started");
         return;
 
         #region Method internal events
@@ -732,9 +742,9 @@ public class Converter : IDisposable, IAsyncDisposable
             try
             {
                 if (_chromiumProcess == null) return;
-                WriteToLog($"{BrowserName} exited unexpectedly, arguments used: {string.Join(" ", DefaultChromiumArguments)}");
-                WriteToLog($"Process id: {_chromiumProcess.Id}");
-                WriteToLog($"Process exit time: {_chromiumProcess.ExitTime:yyyy-MM-ddTHH:mm:ss.fff}");
+                _logger?.WriteToLog($"{BrowserName} exited unexpectedly, arguments used: {string.Join(" ", DefaultChromiumArguments)}");
+                _logger?.WriteToLog($"Process id: {_chromiumProcess.Id}");
+                _logger?.WriteToLog($"Process exit time: {_chromiumProcess.ExitTime:yyyy-MM-ddTHH:mm:ss.fff}");
                 var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromiumProcess.ExitCode));
                 chromeException = $"{BrowserName} exited unexpectedly{(!string.IsNullOrWhiteSpace(exception) ? ", {exception}" : string.Empty)}";
             }
@@ -749,7 +759,7 @@ public class Converter : IDisposable, IAsyncDisposable
         {
             if (args.Data == null || string.IsNullOrEmpty(args.Data) || args.Data.StartsWith("[")) return;
 
-            WriteToLog($"Received Chromium error data: '{args.Data}'");
+            _logger?.WriteToLog($"Received Chromium error data: '{args.Data}'");
 
             if (!args.Data.StartsWith("DevTools listening on")) return;
             var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
@@ -773,7 +783,7 @@ public class Converter : IDisposable, IAsyncDisposable
         var tempTimeout = _conversionTimeout ?? 10000;
         var timeout = tempTimeout;
 
-        WriteToLog($"Waiting until file '{_devToolsActivePortFile}' exists with a timeout of {tempTimeout} milliseconds");
+        _logger?.WriteToLog($"Waiting until file '{_devToolsActivePortFile}' exists with a timeout of {tempTimeout} milliseconds");
 
         while (true)
         {
@@ -814,9 +824,9 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <param name="readUriFrom">From where we did get the uri</param>
     private void ConnectToDevProtocol(Uri uri, string readUriFrom)
     {
-        WriteToLog($"Connecting to dev protocol on uri '{uri}', got uri from {readUriFrom}");
-        _browser = new Browser(uri, WebSocketTimeout);
-        WriteToLog("Connected to dev protocol");
+        _logger?.WriteToLog($"Connecting to dev protocol on uri '{uri}', got uri from {readUriFrom}");
+        _browser = new Browser(uri, WebSocketTimeout, _logger);
+        _logger?.WriteToLog("Connected to dev protocol");
     }
     #endregion
 
@@ -841,7 +851,7 @@ public class Converter : IDisposable, IAsyncDisposable
     /// </summary>
     public void ResetChromiumArguments()
     {
-        WriteToLog("Resetting Chromium arguments to default");
+        _logger?.WriteToLog("Resetting Chromium arguments to default");
 
         _defaultChromiumArgument = new List<string>();
         
@@ -865,7 +875,7 @@ public class Converter : IDisposable, IAsyncDisposable
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
-            WriteToLog("Detected Linux operating system, adding the parameter '--no-sandbox'");
+            _logger?.WriteToLog("Detected Linux operating system, adding the parameter '--no-sandbox'");
             AddChromiumArgument("--no-sandbox");
         }
 
@@ -899,7 +909,7 @@ public class Converter : IDisposable, IAsyncDisposable
 
         if (!_defaultChromiumArgument.Contains(argument)) return;
         _defaultChromiumArgument.Remove(argument);
-        WriteToLog($"Removed Chromium argument '{argument}'");
+        _logger?.WriteToLog($"Removed Chromium argument '{argument}'");
     }
     #endregion
 
@@ -924,11 +934,11 @@ public class Converter : IDisposable, IAsyncDisposable
 
         if (!_defaultChromiumArgument.Contains(argument, StringComparison.CurrentCultureIgnoreCase))
         {
-            WriteToLog($"Adding Chromium argument '{argument}'");
+            _logger?.WriteToLog($"Adding Chromium argument '{argument}'");
             _defaultChromiumArgument.Add(argument);
         }
         else
-            WriteToLog($"The Chromium argument '{argument}' has already been set, ignoring it");
+            _logger?.WriteToLog($"The Chromium argument '{argument}' has already been set, ignoring it");
     }
 
     /// <summary>
@@ -955,12 +965,12 @@ public class Converter : IDisposable, IAsyncDisposable
         {
             if (!_defaultChromiumArgument[i].StartsWith(argument + "=")) continue;
 
-            WriteToLog($"Updating Chromium argument '{_defaultChromiumArgument[i]}' with value '{value}'");
+            _logger?.WriteToLog($"Updating Chromium argument '{_defaultChromiumArgument[i]}' with value '{value}'");
             _defaultChromiumArgument[i] = $"{argument}=\"{value}\"";
             return;
         }
 
-        WriteToLog($"Adding Chromium argument '{argument}=\"{value}\"'");
+        _logger?.WriteToLog($"Adding Chromium argument '{argument}=\"{value}\"'");
         _defaultChromiumArgument.Add($"{argument}=\"{value}\"");
     }
     #endregion
@@ -1269,10 +1279,12 @@ public class Converter : IDisposable, IAsyncDisposable
         ILogger logger = null,
         CancellationToken cancellationToken = default)
     {
-        lock (LoggerLock)
+        if (_logger == null)
+            _logger = new Logger(logger, InstanceId);
+        else if (logger != null)
         {
-            if (logger != null)
-                _logger = logger;
+            _logger.InstanceId = InstanceId;
+            _logger.InternalLogger = logger;
         }
 
         _conversionTimeout = conversionTimeout;
@@ -1302,7 +1314,7 @@ public class Converter : IDisposable, IAsyncDisposable
                 case ".url":
                     if (GetUrlFromFile(inputUri.AbsolutePath, out var url))
                     {
-                        WriteToLog($"Read url '{url}' from URL file '{inputUri.AbsolutePath}'");
+                        _logger?.WriteToLog($"Read url '{url}' from URL file '{inputUri.AbsolutePath}'");
                         inputUri = new ConvertUri(url);
                     }
 
@@ -1324,13 +1336,13 @@ public class Converter : IDisposable, IAsyncDisposable
                 if (inputUri.IsFile && CheckForPreWrap(inputUri, out var preWrapFile))
                 {
                     inputUri = new ConvertUri(preWrapFile);
-                    WriteToLog($"Adding url '{inputUri}' to the safe url list");
+                    _logger?.WriteToLog($"Adding url '{inputUri}' to the safe url list");
                     safeUrls.Add(inputUri.ToString());
                 }
 
                 if (ImageResize || ImageRotate || SanitizeHtml || pageSettings.PaperFormat == PaperFormat.FitPageToContent)
                 {
-                    var documentHelper = new DocumentHelper(GetTempDirectory, _useCache, GetCacheDirectory, _cacheSize, WebProxy, ImageLoadTimeout);
+                    var documentHelper = new DocumentHelper(GetTempDirectory, _useCache, GetCacheDirectory, _cacheSize, WebProxy, ImageLoadTimeout, _logger);
 
                     if (SanitizeHtml)
                     {
@@ -1342,14 +1354,14 @@ public class Converter : IDisposable, IAsyncDisposable
                         }
                         else
                         {
-                            WriteToLog($"Adding url '{inputUri}' to the safe url list");
+                            _logger?.WriteToLog($"Adding url '{inputUri}' to the safe url list");
                             safeUrls.Add(inputUri.ToString());
                         }
                     }
 
                     if (pageSettings.PaperFormat == PaperFormat.FitPageToContent)
                     {
-                        WriteToLog("The paper format 'FitPageToContent' is set, modifying html so that the PDF fits the HTML content");
+                        _logger?.WriteToLog("The paper format 'FitPageToContent' is set, modifying html so that the PDF fits the HTML content");
                         var result = await documentHelper.FitPageToContentAsync(inputUri, cancellationToken).ConfigureAwait(false);
                         if (result.Success)
                         {
@@ -1389,14 +1401,14 @@ public class Converter : IDisposable, IAsyncDisposable
                 if (conversionTimeout <= 1)
                     throw new ArgumentOutOfRangeException($"The value for {nameof(countdownTimer)} has to be a value equal to 1 or greater");
 
-                WriteToLog($"Conversion timeout set to {conversionTimeout.Value} milliseconds");
+                _logger?.WriteToLog($"Conversion timeout set to {conversionTimeout.Value} milliseconds");
 
                 countdownTimer = new CountdownTimer(conversionTimeout.Value);
                 countdownTimer.Start();
             }
 
             if (inputUri != null)
-                WriteToLog($"Loading {(inputUri.IsFile ? $"file {inputUri.OriginalString}" : $"url {inputUri}")}");
+                _logger?.WriteToLog($"Loading {(inputUri.IsFile ? $"file {inputUri.OriginalString}" : $"url {inputUri}")}");
 
             await _browser.NavigateToAsync(safeUrls, _useCache, inputUri, html, countdownTimer, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic, cancellationToken).ConfigureAwait(false);
 
@@ -1404,30 +1416,30 @@ public class Converter : IDisposable, IAsyncDisposable
             {
                 if (conversionTimeout.HasValue)
                 {
-                    WriteToLog("Conversion timeout paused because we are waiting for a window.status");
+                    _logger?.WriteToLog("Conversion timeout paused because we are waiting for a window.status");
                     countdownTimer.Stop();
                 }
 
-                WriteToLog($"Waiting for window.status '{waitForWindowStatus}' or a timeout of {waitForWindowsStatusTimeout} milliseconds");
+                _logger?.WriteToLog($"Waiting for window.status '{waitForWindowStatus}' or a timeout of {waitForWindowsStatusTimeout} milliseconds");
                 var match = await _browser.WaitForWindowStatusAsync(waitForWindowStatus, waitForWindowsStatusTimeout, cancellationToken).ConfigureAwait(false);
-                WriteToLog(!match ? "Waiting timed out" : $"Window status equaled {waitForWindowStatus}");
+                _logger?.WriteToLog(!match ? "Waiting timed out" : $"Window status equaled {waitForWindowStatus}");
 
                 if (conversionTimeout.HasValue)
                 {
-                    WriteToLog("Conversion timeout started again because we are done waiting for a window.status");
+                    _logger?.WriteToLog("Conversion timeout started again because we are done waiting for a window.status");
                     countdownTimer.Start();
                 }
             }
 
             if (inputUri != null)
-                WriteToLog($"{(inputUri.IsFile ? "File" : "Url")} loaded");
+                _logger?.WriteToLog($"{(inputUri.IsFile ? "File" : "Url")} loaded");
 
             if (!string.IsNullOrWhiteSpace(RunJavascript))
             {
-                WriteToLog("Start running javascript");
-                WriteToLog(RunJavascript);
+                _logger?.WriteToLog("Start running javascript");
+                _logger?.WriteToLog(RunJavascript);
                 await _browser.RunJavascriptAsync(RunJavascript, cancellationToken).ConfigureAwait(false);
-                WriteToLog("Done running javascript");
+                _logger?.WriteToLog("Done running javascript");
             }
 
             if (CaptureSnapshot)
@@ -1435,7 +1447,7 @@ public class Converter : IDisposable, IAsyncDisposable
                 if (SnapshotStream == null)
                     throw new ConversionException("The property CaptureSnapshot has been set to true but there is no stream assigned to the SnapshotStream");
 
-                WriteToLog("Taking snapshot of the page");
+                _logger?.WriteToLog("Taking snapshot of the page");
 
                 var snapshot = await _browser.CaptureSnapshotAsync(countdownTimer, cancellationToken).ConfigureAwait(false);
                 using var memoryStream = new MemoryStream(snapshot.Bytes);
@@ -1447,20 +1459,20 @@ public class Converter : IDisposable, IAsyncDisposable
                 await memoryStream.CopyToAsync(SnapshotStream, cancellationToken).ConfigureAwait(false);
 #endif
 
-                WriteToLog("Taken");
+                _logger?.WriteToLog("Taken");
             }
 
             switch (outputFormat)
             {
                 case OutputFormat.Pdf:
-                    WriteToLog("Converting to PDF");
+                    _logger?.WriteToLog("Converting to PDF");
                     await _browser.PrintToPdfAsync(outputStream, pageSettings, countdownTimer, cancellationToken).ConfigureAwait(false);
 
                     break;
 
                 case OutputFormat.Image:
                 {
-                    WriteToLog("Converting to image");
+                    _logger?.WriteToLog("Converting to image");
 
                     var snapshot = await _browser.CaptureScreenshotAsync(countdownTimer, cancellationToken).ConfigureAwait(false);
                     using var memoryStream = new MemoryStream(snapshot.Bytes);
@@ -1476,11 +1488,11 @@ public class Converter : IDisposable, IAsyncDisposable
                 }
             }
 
-            WriteToLog("Converted");
+            _logger?.WriteToLog("Converted");
         }
         catch (Exception exception)
         {
-            WriteToLog($"Error: {ExceptionHelpers.GetInnerException(exception)}'");
+            _logger?.WriteToLog($"Error: {ExceptionHelpers.GetInnerException(exception)}'");
 
             if (exception.Message != "Input string was not in a correct format.")
                 throw;
@@ -1492,14 +1504,14 @@ public class Converter : IDisposable, IAsyncDisposable
                 CurrentTempDirectory.Refresh();
                 if (CurrentTempDirectory.Exists && !DoNotDeleteTempDirectory)
                 {
-                    WriteToLog($"Deleting temporary folder '{CurrentTempDirectory.FullName}'");
+                    _logger?.WriteToLog($"Deleting temporary folder '{CurrentTempDirectory.FullName}'");
                     try
                     {
                         CurrentTempDirectory.Delete(true);
                     }
                     catch (Exception e)
                     {
-                        WriteToLog($"Error '{ExceptionHelpers.GetInnerException(e)}'");
+                        _logger?.WriteToLog($"Error '{ExceptionHelpers.GetInnerException(e)}'");
                     }
                 }
             }
@@ -1523,7 +1535,7 @@ public class Converter : IDisposable, IAsyncDisposable
             SnapshotStream.CopyTo(fileStream);
         }
 
-        WriteToLog($"Page snapshot written to output file '{snapShotOutputFile}'");
+        _logger?.WriteToLog($"Page snapshot written to output file '{snapShotOutputFile}'");
     }
     #endregion
 
@@ -1881,7 +1893,7 @@ public class Converter : IDisposable, IAsyncDisposable
         await memoryStream.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
 #endif
 
-        WriteToLog($"PDF written to output file '{outputFile}'");
+        _logger?.WriteToLog($"PDF written to output file '{outputFile}'");
 
         if (CaptureSnapshot)
             WriteSnapShot(outputFile);
@@ -2020,7 +2032,7 @@ public class Converter : IDisposable, IAsyncDisposable
             await memoryStream.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
 #endif
 
-            WriteToLog($"PDF written to output file '{outputFile}'");
+            _logger?.WriteToLog($"PDF written to output file '{outputFile}'");
         }
 
         if (CaptureSnapshot)
@@ -2448,7 +2460,7 @@ public class Converter : IDisposable, IAsyncDisposable
         await using var fileStream = File.Open(outputFile, FileMode.Create);
         await memoryStream.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
 #endif
-        WriteToLog($"Image written to output file '{outputFile}'");
+        _logger?.WriteToLog($"Image written to output file '{outputFile}'");
 
         if (CaptureSnapshot)
             WriteSnapShot(outputFile);
@@ -2525,7 +2537,7 @@ public class Converter : IDisposable, IAsyncDisposable
         await memoryStream.CopyToAsync(fileStream, cancellationToken).ConfigureAwait(false);
 #endif
 
-        WriteToLog($"Image written to output file '{outputFile}'");
+        _logger?.WriteToLog($"Image written to output file '{outputFile}'");
 
         if (CaptureSnapshot)
             WriteSnapShot(outputFile);
@@ -2552,7 +2564,7 @@ public class Converter : IDisposable, IAsyncDisposable
         if (!PreWrapExtensions.Contains(ext, StringComparison.InvariantCultureIgnoreCase))
             return false;
 
-        var preWrapper = new PreWrapper(GetTempDirectory) { InstanceId = InstanceId };
+        var preWrapper = new PreWrapper(GetTempDirectory, _logger) { InstanceId = InstanceId };
         outputFile = preWrapper.WrapFile(inputFile.OriginalString, inputFile.Encoding);
         return true;
     }
@@ -2579,32 +2591,7 @@ public class Converter : IDisposable, IAsyncDisposable
         catch (Exception exception)
         {
             if (!exception.Message.Contains("is not running"))
-                WriteToLog(exception.Message);
-        }
-    }
-    #endregion
-
-    #region WriteToLog
-    /// <summary>
-    ///     Writes a line to the <see cref="_logger" />
-    /// </summary>
-    /// <param name="message">The message to write</param>
-    internal static void WriteToLog(string message)
-    {
-        lock (LoggerLock)
-        {
-            try
-            {
-                if (_logger == null) return;
-                using (_logger.BeginScope(InstanceId))
-                {
-                    _logger.LogInformation(message);
-                }
-            }
-            catch (ObjectDisposedException)
-            {
-                // Ignore
-            }
+                _logger?.WriteToLog(exception.Message);
         }
     }
     #endregion
@@ -2622,7 +2609,7 @@ public class Converter : IDisposable, IAsyncDisposable
         if (_browser != null)
             try
             {
-                WriteToLog($"Closing {BrowserName} browser gracefully");
+                _logger?.WriteToLog($"Closing {BrowserName} browser gracefully");
 #if (NETSTANDARD2_0)
                 _browser.Dispose();
 #else
@@ -2632,7 +2619,7 @@ public class Converter : IDisposable, IAsyncDisposable
             }
             catch (Exception exception)
             {
-                WriteToLog($"An error occurred while trying to close {BrowserName} gracefully, error '{ExceptionHelpers.GetInnerException(exception)}'");
+                _logger?.WriteToLog($"An error occurred while trying to close {BrowserName} gracefully, error '{ExceptionHelpers.GetInnerException(exception)}'");
             }
 
         var counter = 0;
@@ -2642,7 +2629,7 @@ public class Converter : IDisposable, IAsyncDisposable
         {
             if (!IsChromiumRunning)
             {
-                WriteToLog($"{BrowserName} closed gracefully");
+                _logger?.WriteToLog($"{BrowserName} closed gracefully");
                 break;
             }
 
@@ -2653,9 +2640,9 @@ public class Converter : IDisposable, IAsyncDisposable
         if (IsChromiumRunning)
         {
             // Sometimes Chrome does not close all processes so kill them
-            WriteToLog($"{BrowserName} did not close gracefully, closing it by killing it's process on id '{_chromiumProcess.Id}'");
+            _logger?.WriteToLog($"{BrowserName} did not close gracefully, closing it by killing it's process on id '{_chromiumProcess.Id}'");
             KillProcessAndChildren(_chromiumProcess.Id);
-            WriteToLog($"{BrowserName} killed");
+            _logger?.WriteToLog($"{BrowserName} killed");
 
             _chromiumProcess = null;
         }

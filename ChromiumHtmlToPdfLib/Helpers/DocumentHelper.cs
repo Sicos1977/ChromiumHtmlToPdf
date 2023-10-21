@@ -42,8 +42,12 @@ using AngleSharp.Dom;
 using AngleSharp.Html;
 using AngleSharp.Html.Dom;
 using AngleSharp.Io.Network;
+using ChromiumHtmlToPdfLib.Loggers;
 using ChromiumHtmlToPdfLib.Settings;
 using Ganss.Xss;
+using File = System.IO.File;
+using Stream = System.IO.Stream;
+
 // ReSharper disable AccessToDisposedClosure
 
 namespace ChromiumHtmlToPdfLib.Helpers;
@@ -54,6 +58,11 @@ namespace ChromiumHtmlToPdfLib.Helpers;
 internal class DocumentHelper
 {
     #region Fields
+    /// <summary>
+    ///     <see cref="Loggers.Logger"/>
+    /// </summary>
+    private readonly Logger _logger;
+
     /// <summary>
     ///     The temp folder
     /// </summary>
@@ -96,11 +105,11 @@ internal class DocumentHelper
         get
         {
             // ReSharper disable once InconsistentlySynchronizedField
-            var httpClientHandler = new FileCacheHandler(_useCache, _cacheDirectory, _cacheSize)
+            var httpClientHandler = new FileCacheHandler(_useCache, _cacheDirectory, _cacheSize, _logger)
             {
-                ServerCertificateCustomValidationCallback = (message, certificate, _, _) =>
+                ServerCertificateCustomValidationCallback = (_, certificate, _, _) =>
                 {
-                    Converter.WriteToLog($"Accepting certificate '{certificate.Subject}', message '{message}'");
+                    _logger?.WriteToLog($"Accepting certificate '{certificate.Subject}");
                     return true;
                 }
             };
@@ -161,20 +170,22 @@ internal class DocumentHelper
         FileSystemInfo cacheDirectory, 
         long cacheSize,
         IWebProxy webProxy,
-        int? imageLoadTimeout)
+        int? imageLoadTimeout,
+        Logger logger)
     {
         _tempDirectory = tempDirectory;
         _useCache = useCache;
         _cacheDirectory = cacheDirectory;
         _cacheSize = cacheSize;
         _webProxy = webProxy;
+        _logger = logger;
 
         if (useCache)
-            Converter.WriteToLog($"Setting cache directory to '{cacheDirectory.FullName}' with a size of {cacheSize} bytes");
+            _logger?.WriteToLog($"Setting cache directory to '{cacheDirectory.FullName}' with a size of {cacheSize} bytes");
 
         if (!imageLoadTimeout.HasValue) return;
         _imageLoadTimeout = imageLoadTimeout.Value;
-        Converter.WriteToLog($"Setting image load timeout to '{_imageLoadTimeout}' milliseconds");
+        _logger?.WriteToLog($"Setting image load timeout to '{_imageLoadTimeout}' milliseconds");
     }
 
     ~DocumentHelper()
@@ -229,11 +240,11 @@ internal class DocumentHelper
         }
         catch (Exception exception)
         {
-            Converter.WriteToLog($"Exception occurred in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
+            _logger?.WriteToLog($"Exception occurred in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
             return new SanitizeHtmlResult(false, inputUri, safeUrls);
         }
         
-        Converter.WriteToLog("Sanitizing HTML");
+        _logger?.WriteToLog("Sanitizing HTML");
 
         sanitizer ??= new HtmlSanitizer();
 
@@ -242,43 +253,43 @@ internal class DocumentHelper
             sanitizer.FilterUrl += delegate(object _, FilterUrlEventArgs args)
             {
                 if (args.OriginalUrl == args.SanitizedUrl) return;
-                Converter.WriteToLog($"URL sanitized from '{args.OriginalUrl}' to '{args.SanitizedUrl}'");
+                _logger?.WriteToLog($"URL sanitized from '{args.OriginalUrl}' to '{args.SanitizedUrl}'");
                 htmlChanged = true;
             };
 
             sanitizer.RemovingAtRule += delegate(object _, RemovingAtRuleEventArgs args)
             {
-                Converter.WriteToLog($"Removing CSS at-rule '{args.Rule.CssText}' from tag '{args.Tag.TagName}'");
+                _logger?.WriteToLog($"Removing CSS at-rule '{args.Rule.CssText}' from tag '{args.Tag.TagName}'");
                 htmlChanged = true;
             };
 
             sanitizer.RemovingAttribute += delegate(object _, RemovingAttributeEventArgs args)
             {
-                Converter.WriteToLog($"Removing attribute '{args.Attribute.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                _logger?.WriteToLog($"Removing attribute '{args.Attribute.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
                 htmlChanged = true;
             };
 
             sanitizer.RemovingComment += delegate(object _, RemovingCommentEventArgs args)
             {
-                Converter.WriteToLog($"Removing comment '{args.Comment.TextContent}'");
+                _logger?.WriteToLog($"Removing comment '{args.Comment.TextContent}'");
                 htmlChanged = true;
             };
 
             sanitizer.RemovingCssClass += delegate(object _, RemovingCssClassEventArgs args)
             {
-                Converter.WriteToLog($"Removing CSS class '{args.CssClass}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                _logger?.WriteToLog($"Removing CSS class '{args.CssClass}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
                 htmlChanged = true;
             };
 
             sanitizer.RemovingStyle += delegate(object _, RemovingStyleEventArgs args)
             {
-                Converter. WriteToLog($"Removing style '{args.Style.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                _logger?.WriteToLog($"Removing style '{args.Style.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
                 htmlChanged = true;
             };
 
             sanitizer.RemovingTag += delegate(object _, RemovingTagEventArgs args)
             {
-                Converter.WriteToLog($"Removing tag '{args.Tag.TagName}', reason '{args.Reason}'");
+                _logger?.WriteToLog($"Removing tag '{args.Tag.TagName}', reason '{args.Reason}'");
                 htmlChanged = true;
             };
 
@@ -289,22 +300,22 @@ internal class DocumentHelper
 
             if (!htmlChanged)
             {
-                Converter.WriteToLog("HTML did not need any sanitization");
+                _logger?.WriteToLog("HTML did not need any sanitization");
                 return new SanitizeHtmlResult(false, inputUri, safeUrls);
             }
         }
         catch (Exception exception)
         {
-            Converter.WriteToLog($"Exception occurred in HtmlSanitizer: {ExceptionHelpers.GetInnerException(exception)}");
+            _logger?.WriteToLog($"Exception occurred in HtmlSanitizer: {ExceptionHelpers.GetInnerException(exception)}");
             return new SanitizeHtmlResult(false, inputUri, safeUrls);
         }
 
-        Converter.WriteToLog("HTML sanitized");
+        _logger?.WriteToLog("HTML sanitized");
 
         var sanitizedOutputFile = GetTempFile(".htm");
         var outputUri = new ConvertUri(sanitizedOutputFile, inputUri.Encoding);
         var url = outputUri.ToString();
-        Converter.WriteToLog($"Adding url '{url}' to the safe url list");
+        _logger?.WriteToLog($"Adding url '{url}' to the safe url list");
         safeUrls.Add(url);
 
         try
@@ -327,13 +338,13 @@ internal class DocumentHelper
                     if (src.StartsWith("http://", StringComparison.InvariantCultureIgnoreCase) ||
                         src.StartsWith("https://", StringComparison.InvariantCultureIgnoreCase)) continue;
 
-                    Converter.WriteToLog($"Updating image source to '{src}' and adding it to the safe url list");
+                    _logger?.WriteToLog($"Updating image source to '{src}' and adding it to the safe url list");
                     safeUrls.Add(src);
                     image.Source = src;
                 }
             }
 
-            Converter.WriteToLog($"Writing sanitized webpage to '{sanitizedOutputFile}'");
+            _logger?.WriteToLog($"Writing sanitized webpage to '{sanitizedOutputFile}'");
 
 #if (NETSTANDARD2_0)
             using var fileStream = new FileStream(sanitizedOutputFile, FileMode.CreateNew, FileAccess.Write);
@@ -359,12 +370,12 @@ internal class DocumentHelper
                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
             }
 
-            Converter.WriteToLog("Sanitized webpage written");
+            _logger?.WriteToLog("Sanitized webpage written");
             return new SanitizeHtmlResult(true, outputUri, safeUrls);
         }
         catch (Exception exception)
         {
-            Converter.WriteToLog($"Could not write new html file '{sanitizedOutputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
+            _logger?.WriteToLog($"Could not write new html file '{sanitizedOutputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
             return new SanitizeHtmlResult(false, inputUri, safeUrls);
         }
     }
@@ -458,7 +469,7 @@ internal class DocumentHelper
         }
         catch (Exception exception)
         {
-            Converter.WriteToLog($"Exception occurred in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
+            _logger?.WriteToLog($"Exception occurred in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
             return new FitPageToContentResult(false, inputUri);
         }
 
@@ -467,7 +478,7 @@ internal class DocumentHelper
 
         try
         {
-            Converter.WriteToLog($"Writing changed webpage to '{outputFile}'");
+            _logger?.WriteToLog($"Writing changed webpage to '{outputFile}'");
 
 #if (NETSTANDARD2_0)
             using var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write);
@@ -493,12 +504,12 @@ internal class DocumentHelper
                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
             }
 
-            Converter.WriteToLog("Changed webpage written");
+            _logger?.WriteToLog("Changed webpage written");
             return new FitPageToContentResult(true, outputUri);
         }
         catch (Exception exception)
         {
-            Converter.WriteToLog($"Could not write new html file '{outputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
+            _logger?.WriteToLog($"Could not write new html file '{outputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
             return new FitPageToContentResult(false, inputUri);
         }
     }
@@ -539,7 +550,7 @@ internal class DocumentHelper
         await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri).ConfigureAwait(false);
 #endif
         
-        Converter.WriteToLog($"DPI settings for image, x: '{graphics.DpiX}' and y: '{graphics.DpiY}'");
+        _logger?.WriteToLog($"DPI settings for image, x: '{graphics.DpiX}' and y: '{graphics.DpiY}'");
         var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft - pageSettings.MarginRight) * graphics.DpiX;
         var maxHeight = (pageSettings.PaperHeight - pageSettings.MarginTop - pageSettings.MarginBottom) * graphics.DpiY;
 
@@ -560,11 +571,11 @@ internal class DocumentHelper
         }
         catch (Exception exception)
         {
-            Converter.WriteToLog($"Exception occurred in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
+            _logger?.WriteToLog($"Exception occurred in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
             return new ValidateImagesResult(false, inputUri);
         }
 
-        Converter.WriteToLog("Validating all images if they need to be rotated and if they fit the page");
+        _logger?.WriteToLog("Validating all images if they need to be rotated and if they fit the page");
         var unchangedImages = new List<IHtmlImageElement>();
         var absoluteUri = inputUri.AbsoluteUri.Substring(0, inputUri.AbsoluteUri.LastIndexOf('/') + 1);
 
@@ -575,7 +586,7 @@ internal class DocumentHelper
 
             if (string.IsNullOrWhiteSpace(htmlImage.Source))
             {
-                Converter.WriteToLog($"HTML image tag '{htmlImage.TagName}' has no image source '{htmlImage.Source}'");
+                _logger?.WriteToLog($"HTML image tag '{htmlImage.TagName}' has no image source '{htmlImage.Source}'");
                 continue;
             }
 
@@ -588,15 +599,15 @@ internal class DocumentHelper
             if (!RegularExpression.IsRegExMatch(urlBlacklist, source, out var matchedPattern) || isAbsoluteUri || isSafeUrl)
             {
                 if (isAbsoluteUri)
-                    Converter.WriteToLog($"The url '{source}' has been allowed because it start with the absolute uri '{absoluteUri}'");
+                    _logger?.WriteToLog($"The url '{source}' has been allowed because it start with the absolute uri '{absoluteUri}'");
                 else if (isSafeUrl)
-                    Converter.WriteToLog($"The url '{source}' has been allowed because it is on the safe url list");
+                    _logger?.WriteToLog($"The url '{source}' has been allowed because it is on the safe url list");
                 else
-                    Converter.WriteToLog($"The url '{source}' has been allowed because it did not match anything on the url blacklist");
+                    _logger?.WriteToLog($"The url '{source}' has been allowed because it did not match anything on the url blacklist");
             }
             else
             {
-                Converter.WriteToLog($"The url '{source}' has been blocked by url blacklist pattern '{matchedPattern}'");
+                _logger?.WriteToLog($"The url '{source}' has been blocked by url blacklist pattern '{matchedPattern}'");
                 continue;
             }
 
@@ -619,13 +630,13 @@ internal class DocumentHelper
                     {
                         htmlImage.DisplayWidth = image.Width;
                         htmlImage.DisplayHeight = image.Height;
-                        Converter.WriteToLog($"Image rotated and saved to location '{fileName}'");
+                        _logger?.WriteToLog($"Image rotated and saved to location '{fileName}'");
                         image.Save(fileName);
                         htmlImage.DisplayWidth = image.Width;
                         htmlImage.DisplayHeight = image.Height;
                         htmlImage.SetStyle(string.Empty);
                         var newSrc = new Uri(fileName).ToString();
-                        Converter.WriteToLog($"Adding url '{newSrc}' to the safe url list");
+                        _logger?.WriteToLog($"Adding url '{newSrc}' to the safe url list");
                         safeUrls.Add(newSrc);
                         htmlImage.Source = newSrc;
                         htmlChanged = true;
@@ -648,7 +659,7 @@ internal class DocumentHelper
                         }
                         catch (Exception exception)
                         {
-                            Converter.WriteToLog($"Could not get computed style from html image, exception: '{exception.Message}'");
+                            _logger?.WriteToLog($"Could not get computed style from html image, exception: '{exception.Message}'");
                         }
 
                         if (style != null)
@@ -674,7 +685,7 @@ internal class DocumentHelper
                         image ??= await GetImageAsync(htmlImage.Source, localDirectory).ConfigureAwait(false);
                         if (image == null) continue;
                         ScaleImage(image, (int)maxWidth, out var newWidth, out var newHeight);
-                        Converter.WriteToLog($"Image rescaled to width {newWidth} and height {newHeight}");
+                        _logger?.WriteToLog($"Image rescaled to width {newWidth} and height {newHeight}");
                         htmlImage.DisplayWidth = newWidth;
                         htmlImage.DisplayHeight = newHeight;
                         htmlImage.SetStyle(string.Empty);
@@ -700,7 +711,7 @@ internal class DocumentHelper
             
             if (image == null)
             {
-                Converter.WriteToLog($"Could not load unchanged image from location '{unchangedImage.Source}'");
+                _logger?.WriteToLog($"Could not load unchanged image from location '{unchangedImage.Source}'");
                 continue;
             }
 
@@ -715,11 +726,11 @@ internal class DocumentHelper
                 var newSrc = new Uri(fileName).ToString();
                 safeUrls.Add(newSrc);
                 unchangedImage.Source = newSrc;
-                Converter.WriteToLog($"Unchanged image saved to location '{fileName}'");
+                _logger?.WriteToLog($"Unchanged image saved to location '{fileName}'");
             }
             catch (Exception exception)
             {
-                Converter.WriteToLog($"Could not write unchanged image because of an exception: {ExceptionHelpers.GetInnerException(exception)}");
+                _logger?.WriteToLog($"Could not write unchanged image because of an exception: {ExceptionHelpers.GetInnerException(exception)}");
             }
         }
 
@@ -729,7 +740,7 @@ internal class DocumentHelper
 
         try
         {
-            Converter.WriteToLog($"Writing changed webpage to '{outputFile}'");
+            _logger?.WriteToLog($"Writing changed webpage to '{outputFile}'");
 
 #if (NETSTANDARD2_0)
             using var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write);
@@ -756,13 +767,13 @@ internal class DocumentHelper
                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
             }
             
-            Converter.WriteToLog("Changed webpage written");
+            _logger?.WriteToLog("Changed webpage written");
 
             return new ValidateImagesResult(true, outputUri);
         }
         catch (Exception exception)
         {
-            Converter.WriteToLog($"Could not write new html file '{outputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
+            _logger?.WriteToLog($"Could not write new html file '{outputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
             return new ValidateImagesResult(false, inputUri);
         }
     }
@@ -779,7 +790,7 @@ internal class DocumentHelper
     {
         if (imageSource.StartsWith("data:", StringComparison.InvariantCultureIgnoreCase))
         {
-            Converter.WriteToLog("Decoding image from base64 string");
+            _logger?.WriteToLog("Decoding image from base64 string");
 
             try
             {
@@ -788,19 +799,19 @@ internal class DocumentHelper
 
                 using var stream = new MemoryStream(binaryData);
                 var image = Image.FromStream(stream);
-                Converter.WriteToLog("Image decoded");
+                _logger?.WriteToLog("Image decoded");
                 return image;
             }
             catch (Exception exception)
             {
-                Converter.WriteToLog($"Error decoding image: {ExceptionHelpers.GetInnerException(exception)}");
+                _logger?.WriteToLog($"Error decoding image: {ExceptionHelpers.GetInnerException(exception)}");
                 return null;
             }
         }
 
         try
         {
-            Converter.WriteToLog($"Getting image from url '{imageSource}'");
+            _logger?.WriteToLog($"Getting image from url '{imageSource}'");
 
             var imageUri = new Uri(imageSource);
 
@@ -832,17 +843,17 @@ internal class DocumentHelper
                 }
 
                 case "file":
-                    Converter.WriteToLog("Ignoring local file");
+                    _logger?.WriteToLog("Ignoring local file");
                     break;
 
                 default:
-                    Converter.WriteToLog($"Unsupported scheme {imageUri.Scheme} to get image");
+                    _logger?.WriteToLog($"Unsupported scheme {imageUri.Scheme} to get image");
                     return null;
             }
         }
         catch (Exception exception)
         {
-            Converter.WriteToLog($"Getting image failed with exception: {ExceptionHelpers.GetInnerException(exception)}");
+            _logger?.WriteToLog($"Getting image failed with exception: {ExceptionHelpers.GetInnerException(exception)}");
         }
 
         return null;
@@ -887,12 +898,12 @@ internal class DocumentHelper
 
         if (item?.Value == null)
         {
-            Converter.WriteToLog("Could not get orientation information from exif");
+            _logger?.WriteToLog("Could not get orientation information from exif");
             return false;
         }
 
         RotateFlipType rotateFlipType;
-        Converter.WriteToLog("Checking image rotation");
+        _logger?.WriteToLog("Checking image rotation");
 
         switch (item.Value[0])
         {
@@ -926,7 +937,7 @@ internal class DocumentHelper
             return false;
 
         image.RotateFlip(rotateFlipType);
-        Converter.WriteToLog($"Image rotated with {rotateFlipType}");
+        _logger?.WriteToLog($"Image rotated with {rotateFlipType}");
 
         // Remove Exif orientation tag (if requested)
         if (updateExifData) image.RemovePropertyItem(orientationId);
@@ -944,13 +955,13 @@ internal class DocumentHelper
     {
         try
         {
-            Converter.WriteToLog($"Opening stream to file '{fileName}'");
+            _logger?.WriteToLog($"Opening stream to file '{fileName}'");
             var result = File.OpenRead(fileName);
             return result;
         }
         catch (Exception exception)
         {
-            Converter.WriteToLog($"Opening stream failed with exception: {ExceptionHelpers.GetInnerException(exception)}");
+            _logger?.WriteToLog($"Opening stream failed with exception: {ExceptionHelpers.GetInnerException(exception)}");
             return null;
         }
     }
@@ -974,14 +985,14 @@ internal class DocumentHelper
             {
                 if (timeLeft == 0)
                 {
-                    Converter.WriteToLog($"Image load has timed out, skipping opening stream to url '{sourceUri}'");
+                    _logger?.WriteToLog($"Image load has timed out, skipping opening stream to url '{sourceUri}'");
                     return null;
                 }
 
                 client.Timeout = TimeSpan.FromMilliseconds(timeLeft);
             }
             
-            Converter.WriteToLog($"Opening stream to url '{sourceUri}'{(_imageLoadTimeout != 0 ? $" with a timeout of {timeLeft} milliseconds" : string.Empty)}");
+            _logger?.WriteToLog($"Opening stream to url '{sourceUri}'{(_imageLoadTimeout != 0 ? $" with a timeout of {timeLeft} milliseconds" : string.Empty)}");
             
             var response = await client.GetAsync(sourceUri).ConfigureAwait(false);
             
@@ -989,7 +1000,7 @@ internal class DocumentHelper
         }
         catch (Exception exception)
         {
-            Converter.WriteToLog($"Opening stream failed with exception: {ExceptionHelpers.GetInnerException(exception)}");
+            _logger?.WriteToLog($"Opening stream failed with exception: {ExceptionHelpers.GetInnerException(exception)}");
             return null;
         }
     }
