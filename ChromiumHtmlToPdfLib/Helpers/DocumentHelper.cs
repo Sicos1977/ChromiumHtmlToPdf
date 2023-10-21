@@ -107,11 +107,7 @@ internal class DocumentHelper
             // ReSharper disable once InconsistentlySynchronizedField
             var httpClientHandler = new FileCacheHandler(_useCache, _cacheDirectory, _cacheSize, _logger)
             {
-                ServerCertificateCustomValidationCallback = (_, certificate, _, _) =>
-                {
-                    _logger?.WriteToLog($"Accepting certificate '{certificate.Subject}");
-                    return true;
-                }
+                ServerCertificateCustomValidationCallback = (_, _, _, _) => true
             };
 
             if (_webProxy != null)
@@ -164,6 +160,7 @@ internal class DocumentHelper
     /// <param name="cacheSize">The cache size when <paramref name="useCache"/> is set to <c>true</c>, otherwise <c>null</c></param>
     /// <param name="webProxy">The web proxy to use when downloading</param>
     /// <param name="imageLoadTimeout">When set then this timeout is used for loading images, <c>null</c> when no timeout is needed</param>
+    /// <param name="logger"><see cref="Logger"/></param>
     public DocumentHelper(
         DirectoryInfo tempDirectory,
         bool useCache,
@@ -566,8 +563,10 @@ internal class DocumentHelper
         try
         {
             document = inputUri.Encoding != null
+                // ReSharper disable AccessToDisposedClosure
                 ? await context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString()), cancel: cancellationToken).ConfigureAwait(false)
                 : await context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString()), cancel: cancellationToken).ConfigureAwait(false);
+                // ReSharper restore AccessToDisposedClosure
         }
         catch (Exception exception)
         {

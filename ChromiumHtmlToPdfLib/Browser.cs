@@ -106,7 +106,10 @@ internal class Browser : IDisposable, IAsyncDisposable
     #endregion
 
     #region NavigateToAsync
-
+    #region Enum PageLoadingState
+    /// <summary>
+    ///     An enum to keep track of the page loading state
+    /// </summary>
     private enum PageLoadingState
     {
         /// <summary>
@@ -139,6 +142,7 @@ internal class Browser : IDisposable, IAsyncDisposable
         /// </summary>
         Done
     }
+    #endregion
 
     /// <summary>
     ///     Instructs Chromium to navigate to the given <paramref name="uri" />
@@ -213,11 +217,13 @@ internal class Browser : IDisposable, IAsyncDisposable
         _logger?.WriteToLog("Enabling page lifecycle events");
         await _pageConnection.SendForResponseAsync(lifecycleEventEnabledMessage, cancellationToken).ConfigureAwait(false);
 
+        var waitForMessage = new SemaphoreSlim(1);
         var messagePump = new ConcurrentQueue<string>();
         var messageReceived = new EventHandler<string>(delegate(object _, string data)
         {
-            if (!string.IsNullOrWhiteSpace(data)) 
-                messagePump.Enqueue(data);
+            if (string.IsNullOrWhiteSpace(data)) return;
+            messagePump.Enqueue(data);
+            waitForMessage.Release();
         });
 
         _pageConnection.MessageReceived += messageReceived;
@@ -265,7 +271,7 @@ internal class Browser : IDisposable, IAsyncDisposable
             {
                 if (!messagePump.TryDequeue(out var data))
                 {
-                    await Task.Delay(1, cancellationToken).ConfigureAwait(false);
+                    await waitForMessage.WaitAsync(100, cancellationToken).ConfigureAwait(false);
                     continue;
                 }
 
@@ -418,9 +424,11 @@ internal class Browser : IDisposable, IAsyncDisposable
                         throw new ConversionTimedOutException($"The {nameof(NavigateToAsync)} method timed out");
             }
 
-
             if (pageLoadingState == PageLoadingState.MediaLoadTimeout)
+            {
+                _logger?.WriteToLog("Stopping loading the rest of the page with injecting javascript 'window.stop()'");
                 await RunJavascriptAsync("window.stop();", cancellationToken).ConfigureAwait(false);
+            }
 
             // Do some cleanup
 

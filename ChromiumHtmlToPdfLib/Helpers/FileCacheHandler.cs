@@ -78,6 +78,7 @@ internal class FileCacheHandler : HttpClientHandler
     /// <param name="useCache">When <c>true</c> then caching is enabled on the <see cref="WebClient" /></param>
     /// <param name="cacheDirectory">The cache directory when <paramref name="useCache"/> is set to <c>true</c>, otherwise <c>null</c></param>
     /// <param name="cacheSize">The cache size when <paramref name="useCache"/> is set to <c>true</c>, otherwise <c>null</c></param>
+    /// <param name="logger"><see cref="Logger"/></param>
     internal FileCacheHandler(
         bool useCache, 
         FileSystemInfo cacheDirectory, 
