@@ -185,7 +185,12 @@ public class Converter : IDisposable, IAsyncDisposable
     /// </remarks>
     private long _cacheSize = 1073741824;
 
+    /// <summary>
+    ///     The instance id
+    /// </summary>
     private string _instanceId;
+
+    private CancellationTokenSource _cancellationTokenSource;
     #endregion
 
     #region Properties
@@ -747,6 +752,7 @@ public class Converter : IDisposable, IAsyncDisposable
                 _logger?.WriteToLog($"Process exit time: {_chromiumProcess.ExitTime:yyyy-MM-ddTHH:mm:ss.fff}");
                 var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromiumProcess.ExitCode));
                 chromeException = $"{BrowserName} exited unexpectedly{(!string.IsNullOrWhiteSpace(exception) ? ", {exception}" : string.Empty)}";
+                _cancellationTokenSource?.Cancel();
             }
             finally
             {
@@ -1279,6 +1285,9 @@ public class Converter : IDisposable, IAsyncDisposable
         ILogger logger = null,
         CancellationToken cancellationToken = default)
     {
+        if (cancellationToken == default)
+            _cancellationTokenSource = new CancellationTokenSource();
+
         if (_logger == null)
             _logger = new Logger(logger, InstanceId);
         else if (logger != null)

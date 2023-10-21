@@ -200,19 +200,26 @@ internal class Browser : IDisposable, IAsyncDisposable
         // Enables issuing of requestPaused events. A request will be paused until client calls one of failRequest, fulfillRequest or continueRequest/continueWithAuth
         if (urlBlacklist?.Count > 0)
         {
-            _logger?.WriteToLog("Enabling Fetch to block url's that are in the url blacklist'");
+            _logger?.WriteToLog("Enabling Fetch to block url's that are in the url blacklist");
             await _pageConnection.SendForResponseAsync(new Message { Method = "Fetch.enable" }, cancellationToken).ConfigureAwait(false);
         }
 
         // Enables page domain notifications
-        await _pageConnection.SendAsync(new Message { Method = "Page.enable" }).ConfigureAwait(false);
+        _logger?.WriteToLog("Enabling page domain notifications");
+        await _pageConnection.SendForResponseAsync(new Message { Method = "Page.enable" }, cancellationToken).ConfigureAwait(false);
 
         var lifecycleEventEnabledMessage = new Message { Method = "Page.setLifecycleEventsEnabled" };
         lifecycleEventEnabledMessage.AddParameter("enabled", true);
+        _logger?.WriteToLog("Enabling page lifecycle events");
         await _pageConnection.SendForResponseAsync(lifecycleEventEnabledMessage, cancellationToken).ConfigureAwait(false);
 
         var messagePump = new ConcurrentQueue<string>();
-        var messageReceived = new EventHandler<string>(delegate(object _, string data) { messagePump.Enqueue(data); });
+        var messageReceived = new EventHandler<string>(delegate(object _, string data)
+        {
+            if (!string.IsNullOrWhiteSpace(data)) 
+                messagePump.Enqueue(data);
+        });
+
         _pageConnection.MessageReceived += messageReceived;
         _pageConnection.Closed += PageConnectionClosed;
         var pageLoadingState = PageLoadingState.Loading;
@@ -224,7 +231,8 @@ internal class Browser : IDisposable, IAsyncDisposable
                 // Navigates current page to the given URL
                 var pageNavigateMessage = new Message { Method = "Page.navigate" };
                 pageNavigateMessage.AddParameter("url", uri.ToString());
-                await _pageConnection.SendForResponseAsync(pageNavigateMessage, cancellationToken).ConfigureAwait(false);
+                _logger?.WriteToLog($"Navigating to url '{uri}'");
+                await _pageConnection.SendAsync(pageNavigateMessage).ConfigureAwait(false);
             }
             else if (!string.IsNullOrWhiteSpace(html))
             {
@@ -238,7 +246,7 @@ internal class Browser : IDisposable, IAsyncDisposable
                 var pageSetDocumentContent = new Message { Method = "Page.setDocumentContent" };
                 pageSetDocumentContent.AddParameter("frameId", frameResult.Result.FrameTree.Frame.Id);
                 pageSetDocumentContent.AddParameter("html", html);
-                await _pageConnection.SendForResponseAsync(pageSetDocumentContent, cancellationToken).ConfigureAwait(false);
+                await _pageConnection.SendAsync(pageSetDocumentContent).ConfigureAwait(false);
                 // When using setDocumentContent a Page.frameNavigated event is never fired so we have to set the waitForNetworkIdle to true our self
                 pageLoadingState = PageLoadingState.WaitForNetworkIdle;
                 _logger?.WriteToLog("Document content set");
@@ -252,12 +260,16 @@ internal class Browser : IDisposable, IAsyncDisposable
                    pageLoadingState != PageLoadingState.BlockedByClient &&
                    // ReSharper disable once ConditionIsAlwaysTrueOrFalse
                    pageLoadingState != PageLoadingState.Closed &&
-                   pageLoadingState != PageLoadingState.Done)
+                   pageLoadingState != PageLoadingState.Done &&
+                   !cancellationToken.IsCancellationRequested)
             {
                 if (!messagePump.TryDequeue(out var data))
-                    await Task.Delay(5, cancellationToken).ConfigureAwait(false);
+                {
+                    await Task.Delay(1, cancellationToken).ConfigureAwait(false);
+                    continue;
+                }
 
-                //System.IO.File.AppendAllText("d:\\logs.txt", $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fff} - {data}{Environment.NewLine}");
+                // System.IO.File.AppendAllText("d:\\logs.txt", $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fff} - {data}{Environment.NewLine}");
                 var message = Base.FromJson(data);
 
                 switch (message.Method)

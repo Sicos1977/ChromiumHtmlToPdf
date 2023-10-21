@@ -24,6 +24,7 @@
 // THE SOFTWARE.
 //
 
+using System;
 using Newtonsoft.Json;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Network;
@@ -49,7 +50,14 @@ internal class Base
     /// <returns></returns>
     public static Base FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<Base>(json);
+        try
+        {
+            return JsonConvert.DeserializeObject<Base>(json);
+        }
+        catch (Exception exception)
+        {
+            throw new Exception($"Could not deserialize json message '{json}'", exception);
+        }
     }
     #endregion
 }
