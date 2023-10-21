@@ -2,13 +2,13 @@
 
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.1;netstandard2.0</TargetFrameworks>
-    <Version>4.0.4</Version>
+    <Version>4.1.0</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>ChromiumHtmlToPdf is a 100% managed C# library that can be used to convert HTML to PDF or PNG format with the use of Google Chrome or Microsoft Edge</Description>
     <Copyright>(C)2017-2023 Kees van Spelde</Copyright>
-    <PackageReleaseNotes>- Made code async from top to bottom (so make sure you test this)
-- Implemented new file cache for document helper class
-- Updated nuget packages</PackageReleaseNotes>
+    <PackageReleaseNotes>- Fixed deadlock issues in NavigateToAsync methods
+- Added more logging
+- Fixed some minor things here and there</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/Sicos1977/ChromiumHtmlToPdf</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Sicos1977/ChromiumHtmlToPdf</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -21,8 +21,8 @@
     <Company>Magic-Sessions</Company>
     <SignAssembly>False</SignAssembly>
     <AssemblyOriginatorKeyFile>ChromiumHtmlToPdf.snk</AssemblyOriginatorKeyFile>
-    <AssemblyVersion>4.0.4.0</AssemblyVersion>
-    <FileVersion>4.0.4.0</FileVersion>
+    <AssemblyVersion>4.1.0.0</AssemblyVersion>
+    <FileVersion>4.1.0.0</FileVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
