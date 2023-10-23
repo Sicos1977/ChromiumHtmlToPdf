@@ -29,6 +29,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -178,7 +179,7 @@ internal class DocumentHelper
         _logger = logger;
 
         if (useCache)
-            _logger?.WriteToLog($"Setting cache directory to '{cacheDirectory.FullName}' with a size of {cacheSize} bytes");
+            _logger?.WriteToLog($"Setting cache directory to '{cacheDirectory.FullName}' with a size of {FileManager.GetFileSizeString(cacheSize, CultureInfo.CurrentCulture)}");
 
         if (!imageLoadTimeout.HasValue) return;
         _imageLoadTimeout = imageLoadTimeout.Value;

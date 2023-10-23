@@ -19,4 +19,28 @@ internal static class FileManager
                 (current, c) => current.Replace(c.ToString(CultureInfo.InvariantCulture), string.Empty));
     }
     #endregion
+
+    #region GetFileSizeString
+    /// <summary>
+    ///     Geeft de size van een bestand in Windows formaat (GB, MB, KB, Bytes)
+    /// </summary>
+    /// <param name="bytes">Aantal bytes</param>
+    /// <param name="cultureInfo"></param>
+    /// <returns></returns>
+    internal static string GetFileSizeString(double? bytes, CultureInfo cultureInfo)
+    {
+        bytes ??= 0;
+
+        var size = bytes switch
+        {
+            >= 1073741824.0 => string.Format(cultureInfo, "{0:##.##}", bytes / 1073741824.0) + " GB",
+            >= 1048576.0 => string.Format(cultureInfo, "{0:##.##}", bytes / 1048576.0) + " MB",
+            >= 1024.0 => string.Format(cultureInfo, "{0:##.##}", bytes / 1024.0) + " KB",
+            > 0 and < 1024.0 => bytes + " Bytes",
+            _ => "0 Bytes"
+        };
+
+        return size;
+    }
+    #endregion
 }
