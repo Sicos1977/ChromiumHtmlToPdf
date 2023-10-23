@@ -862,22 +862,24 @@ public class Converter : IDisposable, IAsyncDisposable
         _defaultChromiumArgument = new List<string>();
         
         AddChromiumArgument("--headless=new");
-        AddChromiumArgument("--disable-gpu");
+        AddChromiumArgument("--block-new-web-contents");
         AddChromiumArgument("--allow-running-insecure-content");
-        AddChromiumArgument("--hide-scrollbars");
-        AddChromiumArgument("--mute-audio");
-        AddChromiumArgument("--disable-background-networking");
-        AddChromiumArgument("--disable-background-timer-throttling");
-        AddChromiumArgument("--disable-default-apps");
-        AddChromiumArgument("--disable-extensions");
-        AddChromiumArgument("--disable-hang-monitor");
-        AddChromiumArgument("--disable-prompt-on-repost");
-        AddChromiumArgument("--disable-sync");
-        AddChromiumArgument("--disable-translate");
-        AddChromiumArgument("--metrics-recording-only");
-        AddChromiumArgument("--no-first-run");
-        AddChromiumArgument("--disable-crash-reporter");
-        AddChromiumArgument("--remote-debugging-port", "0");
+        AddChromiumArgument("--hide-scrollbars"); // Hide scrollbars from screenshots
+        AddChromiumArgument("--disable-domain-reliability"); // Disables Domain Reliability Monitoring, which tracks whether the browser has difficulty contacting Google-owned sites and uploads reports to Google.
+        AddChromiumArgument("--disable-sync"); // Disable syncing to a Google account
+        AddChromiumArgument("--mute-audio"); // Mute any audio
+        AddChromiumArgument("--disable-background-networking"); // Disable various background network services, including extension updating,safe browsing service, upgrade detector, translate, UMA
+        AddChromiumArgument("--disable-background-timer-throttling"); // Disable timers being throttled in background pages/tabs
+        AddChromiumArgument("--disable-default-apps"); // Disable installation of default apps
+        AddChromiumArgument("--disable-extensions"); // Disable all chrome extensions
+        AddChromiumArgument("--disable-hang-monitor"); // Suppresses hang monitor dialogs in renderer processes. This flag may allow slow unload handlers on a page to prevent the tab from closing.
+        AddChromiumArgument("--disable-prompt-on-repost"); // Reloading a page that came from a POST normally prompts the user.
+        AddChromiumArgument("--metrics-recording-only"); // Disable reporting to UMA, but allows for collection
+        AddChromiumArgument("--no-first-run"); // Skip first run wizards
+        AddChromiumArgument("--no-default-browser-check"); // Disable the default browser check, do not prompt to set it as such
+        AddChromiumArgument("--enable-automation");
+        AddChromiumArgument("--no-pings"); // Disable sending hyperlink auditing pings
+        AddChromiumArgument("--remote-debugging-port", "0"); // With a value of 0, Chrome will automatically select a useable port and will set navigator.webdriver to true.
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {

@@ -979,10 +979,12 @@ internal class DocumentHelper
         try
         {
             using var client = new HttpClient(FileCacheHandler);
-            var timeLeft = TimeLeft;
 
             if (_stopwatch != null && checkTimeout)
             {
+                var timeLeft = TimeLeft;
+                _logger?.WriteToLog($"Opening stream to url '{sourceUri}'{(_imageLoadTimeout != 0 ? $" with a timeout of {timeLeft} milliseconds" : string.Empty)}");
+
                 if (timeLeft == 0)
                 {
                     _logger?.WriteToLog($"Image load has timed out, skipping opening stream to url '{sourceUri}'");
@@ -991,8 +993,8 @@ internal class DocumentHelper
 
                 client.Timeout = TimeSpan.FromMilliseconds(timeLeft);
             }
-            
-            _logger?.WriteToLog($"Opening stream to url '{sourceUri}'{(_imageLoadTimeout != 0 ? $" with a timeout of {timeLeft} milliseconds" : string.Empty)}");
+            else            
+                _logger?.WriteToLog($"Opening stream to url '{sourceUri}'");
             
             var response = await client.GetAsync(sourceUri).ConfigureAwait(false);
             

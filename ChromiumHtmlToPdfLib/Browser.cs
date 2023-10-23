@@ -275,7 +275,7 @@ internal class Browser : IDisposable, IAsyncDisposable
                     continue;
                 }
 
-                // System.IO.File.AppendAllText("d:\\logs.txt", $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fff} - {data}{Environment.NewLine}");
+                //System.IO.File.AppendAllText("d:\\logs.txt", $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fff} - {data}{Environment.NewLine}");
                 var message = Base.FromJson(data);
 
                 switch (message.Method)
@@ -364,6 +364,13 @@ internal class Browser : IDisposable, IAsyncDisposable
 
                         break;
                     }
+
+                    // {"method":"Page.loadEventFired","params":{"timestamp":299590.897558}}
+
+                    case "Page.loadEventFired":
+                        _logger?.WriteToLog("The 'Page.loadEventFired' event has been fired, the page is now fully loaded");
+                        //pageLoadingState = PageLoadingState.Done;
+                        break;
 
                     default:
                     {
