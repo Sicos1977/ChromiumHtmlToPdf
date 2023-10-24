@@ -163,6 +163,7 @@ internal class Browser : IDisposable, IAsyncDisposable
     /// </param>
     /// <param name="urlBlacklist">A list with URL's that need to be blocked (use * as a wildcard)</param>
     /// <param name="logNetworkTraffic">When enabled network traffic is also logged</param>
+    /// <param name="waitForNetworkIdle">When enabled the method will wait for the network to be idle</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <exception cref="ChromiumException">Raised when an error is returned by Chromium</exception>
     /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer" /> reaches zero</exception>
@@ -175,6 +176,7 @@ internal class Browser : IDisposable, IAsyncDisposable
         int? mediaLoadTimeout = null,
         List<string> urlBlacklist = null,
         bool logNetworkTraffic = false,
+        bool waitForNetworkIdle = false,
         CancellationToken cancellationToken = default)
     {
         var navigationError = string.Empty;
@@ -365,11 +367,13 @@ internal class Browser : IDisposable, IAsyncDisposable
                         break;
                     }
 
-                    // {"method":"Page.loadEventFired","params":{"timestamp":299590.897558}}
-
                     case "Page.loadEventFired":
-                        _logger?.WriteToLog("The 'Page.loadEventFired' event has been fired, the page is now fully loaded");
-                        //pageLoadingState = PageLoadingState.Done;
+                        if (!waitForNetworkIdle)
+                        {
+                            _logger?.WriteToLog("The 'Page.loadEventFired' event has been fired, the page is now fully loaded");
+                            pageLoadingState = PageLoadingState.Done;
+                        }
+
                         break;
 
                     default:
@@ -399,7 +403,7 @@ internal class Browser : IDisposable, IAsyncDisposable
                                 break;
 
                             case "Page.lifecycleEvent" when page.Params?.Name == "networkIdle" && pageLoadingState == PageLoadingState.WaitForNetworkIdle:
-                                _logger?.WriteToLog("The 'Page.lifecycleEvent' event with name 'networkIdle' has been fired, the page is now fully loaded");
+                                _logger?.WriteToLog("The 'Page.lifecycleEvent' event with name 'networkIdle' has been fired, the page is now fully loaded and the network is idle");
                                 pageLoadingState = PageLoadingState.Done;
                                 break;
 

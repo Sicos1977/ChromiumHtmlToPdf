@@ -510,6 +510,14 @@ public class Converter : IDisposable, IAsyncDisposable
     public int WebSocketTimeout { get; set; } = 30000;
 
     /// <summary>
+    ///     Bij default we wait for the Page.loadEventFired to determine that the page is loaded.
+    ///     In most cases this works fine but when you have a page that is loading a lot of interactive
+    ///     resources this can sometimes result in a blank page. To prevent this you can set this to <c>true</c>
+    ///     but your page will load slower
+    /// </summary>
+    public bool WaitForNetworkIdle { get; set; }
+
+    /// <summary>
     ///     By default the Chromium based browser is started with the <c>--headless=new</c> argument.
     ///     If you don't want this then set this property to <c>true</c>
     /// </summary>
@@ -861,25 +869,26 @@ public class Converter : IDisposable, IAsyncDisposable
 
         _defaultChromiumArgument = new List<string>();
         
-        AddChromiumArgument("--headless=new");
-        AddChromiumArgument("--block-new-web-contents");
-        AddChromiumArgument("--allow-running-insecure-content");
-        AddChromiumArgument("--hide-scrollbars"); // Hide scrollbars from screenshots
-        AddChromiumArgument("--disable-domain-reliability"); // Disables Domain Reliability Monitoring, which tracks whether the browser has difficulty contacting Google-owned sites and uploads reports to Google.
-        AddChromiumArgument("--disable-sync"); // Disable syncing to a Google account
-        AddChromiumArgument("--mute-audio"); // Mute any audio
-        AddChromiumArgument("--disable-background-networking"); // Disable various background network services, including extension updating,safe browsing service, upgrade detector, translate, UMA
-        AddChromiumArgument("--disable-background-timer-throttling"); // Disable timers being throttled in background pages/tabs
-        AddChromiumArgument("--disable-default-apps"); // Disable installation of default apps
-        AddChromiumArgument("--disable-extensions"); // Disable all chrome extensions
-        AddChromiumArgument("--disable-hang-monitor"); // Suppresses hang monitor dialogs in renderer processes. This flag may allow slow unload handlers on a page to prevent the tab from closing.
-        AddChromiumArgument("--disable-prompt-on-repost"); // Reloading a page that came from a POST normally prompts the user.
-        AddChromiumArgument("--metrics-recording-only"); // Disable reporting to UMA, but allows for collection
-        AddChromiumArgument("--no-first-run"); // Skip first run wizards
-        AddChromiumArgument("--no-default-browser-check"); // Disable the default browser check, do not prompt to set it as such
+        AddChromiumArgument("--headless=new");                          // Use the new headless mode
+        AddChromiumArgument("--block-new-web-contents");                // All pop-ups and calls to window.open will fail.
+        AddChromiumArgument("--hide-scrollbars");                       // Hide scrollbars from screenshots
+        AddChromiumArgument("--disable-domain-reliability");            // Disables Domain Reliability Monitoring, which tracks whether the browser has difficulty contacting Google-owned sites and uploads reports to Google.
+        AddChromiumArgument("--disable-sync");                          // Disable syncing to a Google account
+        AddChromiumArgument("--mute-audio");                            // Mute any audio
+        AddChromiumArgument("--disable-background-networking");         // Disable various background network services, including extension updating,safe browsing service, upgrade detector, translate, UMA
+        AddChromiumArgument("--disable-background-timer-throttling");   // Disable timers being throttled in background pages/tabs
+        AddChromiumArgument("--disable-default-apps");                  // Disable installation of default apps
+        AddChromiumArgument("--disable-extensions");                    // Disable all chrome extensions
+        AddChromiumArgument("--disable-hang-monitor");                  // Suppresses hang monitor dialogs in renderer processes. This flag may allow slow unload handlers on a page to prevent the tab from closing.
+        AddChromiumArgument("--disable-prompt-on-repost");              // Reloading a page that came from a POST normally prompts the user.
+        AddChromiumArgument("--metrics-recording-only");                // Disable reporting to UMA, but allows for collection
+        AddChromiumArgument("--no-first-run");                          // Skip first run wizards
+        AddChromiumArgument("--no-default-browser-check");              // Disable the default browser check, do not prompt to set it as such
         AddChromiumArgument("--enable-automation");
-        AddChromiumArgument("--no-pings"); // Disable sending hyperlink auditing pings
-        AddChromiumArgument("--remote-debugging-port", "0"); // With a value of 0, Chrome will automatically select a useable port and will set navigator.webdriver to true.
+        AddChromiumArgument("--no-pings");                              // Disable sending hyperlink auditing pings
+        AddChromiumArgument("--noerrdialogs");                          // Suppresses all error dialogs when present.
+        AddChromiumArgument("--run-all-compositor-stages-before-draw"); 
+        AddChromiumArgument("--remote-debugging-port", "0");            // With a value of 0, Chrome will automatically select a useable port and will set navigator.webdriver to true.
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
@@ -1421,7 +1430,7 @@ public class Converter : IDisposable, IAsyncDisposable
             if (inputUri != null)
                 _logger?.WriteToLog($"Loading {(inputUri.IsFile ? $"file {inputUri.OriginalString}" : $"url {inputUri}")}");
 
-            await _browser.NavigateToAsync(safeUrls, _useCache, inputUri, html, countdownTimer, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic, cancellationToken).ConfigureAwait(false);
+            await _browser.NavigateToAsync(safeUrls, _useCache, inputUri, html, countdownTimer, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic, WaitForNetworkIdle, cancellationToken).ConfigureAwait(false);
 
             if (!string.IsNullOrWhiteSpace(waitForWindowStatus))
             {
