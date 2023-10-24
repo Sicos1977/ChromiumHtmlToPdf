@@ -46,6 +46,7 @@ using AngleSharp.Io.Network;
 using ChromiumHtmlToPdfLib.Loggers;
 using ChromiumHtmlToPdfLib.Settings;
 using Ganss.Xss;
+using Svg;
 using File = System.IO.File;
 using Stream = System.IO.Stream;
 
@@ -179,7 +180,7 @@ internal class DocumentHelper
         _logger = logger;
 
         if (useCache)
-            _logger?.WriteToLog($"Setting cache directory to '{cacheDirectory.FullName}' with a size of {FileManager.GetFileSizeString(cacheSize, CultureInfo.CurrentCulture)}");
+            _logger?.WriteToLog($"Setting cache directory to '{cacheDirectory.FullName}' with a size of {FileManager.GetFileSizeString(cacheSize, CultureInfo.InvariantCulture)}");
 
         if (!imageLoadTimeout.HasValue) return;
         _imageLoadTimeout = imageLoadTimeout.Value;
@@ -839,7 +840,12 @@ internal class DocumentHelper
 #else
                     await using var webStream = await OpenDownloadStream(imageUri, true).ConfigureAwait(false);
 #endif
-                    return Image.FromStream(webStream, true, false);
+                    var extension = Path.GetExtension(imageUri.AbsolutePath);
+                    if (extension.ToLowerInvariant() != ".svg") 
+                        return Image.FromStream(webStream, true, false);
+                    
+                    var svgDocument = SvgDocument.Open<SvgDocument>(webStream);
+                    return svgDocument.Draw();
                 }
 
                 case "file":

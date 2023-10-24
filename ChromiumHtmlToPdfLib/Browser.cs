@@ -28,6 +28,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using ChromiumHtmlToPdfLib.Exceptions;
@@ -284,46 +285,42 @@ internal class Browser : IDisposable, IAsyncDisposable
                 {
                     case "Network.requestWillBeSent":
                         var requestWillBeSent = RequestWillBeSent.FromJson(data);
-                        _logger?.WriteToLog($"Request sent with request id '{requestWillBeSent.Params.RequestId}' " +
-                                            $"for url '{requestWillBeSent.Params.Request.Url}' " +
-                                            $"with method '{requestWillBeSent.Params.Request.Method}' " +
-                                            $"and type '{requestWillBeSent.Params.Type}'");
+                        _logger?.WriteToLog($"Request sent with request id {requestWillBeSent.Params.RequestId} for url '{requestWillBeSent.Params.Request.Url}' with method {requestWillBeSent.Params.Request.Method} and type {requestWillBeSent.Params.Type}");
                         break;
 
                     case "Network.dataReceived":
                         var dataReceived = DataReceived.FromJson(data);
-                        _logger?.WriteToLog($"Data received for request id '{dataReceived.Params.RequestId}' " +
-                                            $"with length '{dataReceived.Params.DataLength}'");
+                        _logger?.WriteToLog($"Data received for request id {dataReceived.Params.RequestId} with a length of {FileManager.GetFileSizeString(dataReceived.Params.DataLength, CultureInfo.InvariantCulture)}");
                         break;
 
                     case "Network.responseReceived":
                         var responseReceived = ResponseReceived.FromJson(data);
                         var response = responseReceived.Params.Response;
 
-                        var logMessage = $"{(response.FromDiskCache ? "Cached response" : "Response")} received for request id '{responseReceived.Params.RequestId}' and url '{response.Url}'";
+                        var logMessage = $"{(response.FromDiskCache ? "Cached response" : "Response")} received for request id {responseReceived.Params.RequestId} and url '{response.Url}'";
 
                         if (!string.IsNullOrWhiteSpace(response.RemoteIpAddress))
-                            logMessage += $" from ip '{response.RemoteIpAddress}' on port '{response.RemotePort}' with status '{response.Status}{(!string.IsNullOrWhiteSpace(response.StatusText) ? $" ({response.StatusText})" : string.Empty)}'";
+                            logMessage += $" from ip {response.RemoteIpAddress} on port {response.RemotePort} with status {response.Status}{(!string.IsNullOrWhiteSpace(response.StatusText) ? $" and response text '{response.StatusText}'" : string.Empty)}";
 
                         _logger?.WriteToLog(logMessage);
                         break;
 
                     case "Network.loadingFinished":
                         var loadingFinished = LoadingFinished.FromJson(data);
-                        _logger?.WriteToLog($"Loading finished for request id '{loadingFinished.Params.RequestId}' " +
-                                             $"{(loadingFinished.Params.EncodedDataLength > 0 ? $"with encoded data length '{loadingFinished.Params.EncodedDataLength}'" : string.Empty)}");
+                        _logger?.WriteToLog($"Loading finished for request id {loadingFinished.Params.RequestId} " +
+                                             $"{(loadingFinished.Params.EncodedDataLength > 0 ? $"with an encoded data length of {FileManager.GetFileSizeString(loadingFinished.Params.EncodedDataLength, CultureInfo.InvariantCulture)}" : string.Empty)}");
                         break;
 
                     case "Network.loadingFailed":
                         var loadingFailed = LoadingFailed.FromJson(data);
-                        _logger?.WriteToLog($"Loading failed for request id '{loadingFailed.Params.RequestId}' " +
-                                             $"and type '{loadingFailed.Params.Type}' " +
+                        _logger?.WriteToLog($"Loading failed for request id {loadingFailed.Params.RequestId} " +
+                                             $"and type {loadingFailed.Params.Type} " +
                                              $"with error '{loadingFailed.Params.ErrorText}'");
                         break;
 
                     case "Network.requestServedFromCache":
                         var requestServedFromCache = RequestServedFromCache.FromJson(data);
-                        _logger?.WriteToLog($"The request with id '{requestServedFromCache.Params.RequestId}' is served from cache");
+                        _logger?.WriteToLog($"The request with id {requestServedFromCache.Params.RequestId} is served from cache");
                         break;
 
                     case "Fetch.requestPaused":
