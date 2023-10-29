@@ -320,6 +320,7 @@ static class Program
             converter.WebSocketTimeout = options.WebSocketTimeout.Value;
 
         converter.UseOldHeadlessMode = options.UseOldHeadlessMode;
+        converter.WaitForNetworkIdle = options.WaitForNetworkIdle;
     }
     #endregion
 
@@ -345,8 +346,6 @@ static class Program
 
         using var converter = new Converter(options.ChromiumLocation, options.ChromiumUserProfile, _logger);
         SetConverterSettings(converter, options);
-
-        options.UseOldHeadlessMode = false;
 
         converter.ConvertToPdf(CheckInput(options),
             options.Output,
