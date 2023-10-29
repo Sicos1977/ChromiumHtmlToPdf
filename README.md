@@ -5,6 +5,8 @@
 
 ChromiumHtmlToPdf is a 100% managed C# .NETStandard 2.0 library and .NET Core 3.1 console application (that also works on Linux and macOS) that can be used to convert HTML to PDF format with the use of Google Chromemium (Google Chrome and Microsoft Edge browser)
 
+From version 4.0 and up the library is now fully async but you can still use it without this if you want.
+
 ## Why did I make this?
 
 I needed a replacement for wkHtmlToPdf, a great tool but the project is archived on GitHub and no new features are added anymore also it's not 100% compatible with HTML5.
