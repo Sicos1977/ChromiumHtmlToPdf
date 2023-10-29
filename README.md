@@ -44,9 +44,10 @@ In Visual Studio's Package Manager Console, simply enter the following command:
 ### Converting a file or url from code
 
 ```csharp
+var pageSettings = new PageSettings()
 using (var converter = new Converter())
 {
-    converter.ConvertToPdf(new Uri("http://www.google.nl"), @"c:\google.pdf");
+    converter.ConvertToPdf(new Uri("http://www.google.nl"), @"c:\google.pdf", pageSettings);
 }
 
 // Show the PDF
