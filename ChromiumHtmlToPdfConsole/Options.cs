@@ -25,7 +25,9 @@ public class Options
     [Option("input-is-list", Required = false,
         HelpText =
             "Tells this app that --input is a list of input urls and/or files. Use the --output parameter to " +
-            "give a location where to write information about the converted files, e.g. c:\\myconvertedfiles")]
+            "give a location where to write information about the converted files, e.g. c:\\myconvertedfiles." +
+            "Use a | sign to supply an output file, e.g. inputfile.html|myoutputfile.pdf. When no outputfile" +
+            "is given then the input file is used as the outputfile where the extension is replaced with .pdf")]
     public bool InputIsList { get; set; }
 
     /// <summary>

@@ -85,9 +85,19 @@ static class Program
                         var inputUri = new ConvertUri(line);
                         var outputPath = Path.GetFullPath(options.Output);
 
-                        var outputFile = inputUri.IsFile
-                            ? Path.GetFileName(inputUri.AbsolutePath)
-                            : FileManager.RemoveInvalidFileNameChars(inputUri.ToString());
+                        string outputFile;
+
+                        if (line.Contains("|"))
+                        {
+                            var parts = line.Split('|');
+                            outputFile = Path.GetFileName(parts[1]);
+                        }
+                        else
+                        {
+                            outputFile = inputUri.IsFile
+                                ? Path.GetFileName(inputUri.AbsolutePath)
+                                : FileManager.RemoveInvalidFileNameChars(inputUri.ToString());
+                        }
 
                         outputFile = Path.ChangeExtension(outputFile, ".pdf");
 
