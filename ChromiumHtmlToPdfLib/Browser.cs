@@ -681,7 +681,7 @@ internal class Browser : IDisposable, IAsyncDisposable
 
             if (length > 0)
             {
-                _logger?.WriteToLog($"PDF chunk received with id {ioReadResponse.Id} and length {length}, writing it to output stream");
+                _logger?.WriteToLog($"PDF chunk received with id {ioReadResponse.Id} and length {FileManager.GetFileSizeString(length, CultureInfo.InvariantCulture)}, writing it to output stream");
                 await outputStream.WriteAsync(bytes, 0, length, cancellationToken).ConfigureAwait(false);
             }
 
