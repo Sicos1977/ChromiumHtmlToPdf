@@ -78,6 +78,7 @@ public class ConvertUri : Uri
     /// </summary>
     /// <param name="uriString">The uri, e.g. file://c:\test.txt</param>
     /// <param name="encoding">The encoding used for this file, e.g UTF-8</param>
+    /// <param name="requestHeaders">The request headers to sent</param>
     public ConvertUri(string uriString, string encoding, Dictionary<string, string> requestHeaders = null) : base(uriString)
     {
         Encoding = !string.IsNullOrWhiteSpace(encoding)

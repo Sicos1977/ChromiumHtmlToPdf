@@ -25,7 +25,9 @@ public class Options
     [Option("input-is-list", Required = false,
         HelpText =
             "Tells this app that --input is a list of input urls and/or files. Use the --output parameter to " +
-            "give a location where to write information about the converted files, e.g. c:\\myconvertedfiles")]
+            "give a location where to write information about the converted files, e.g. c:\\myconvertedfiles." +
+            "Use a | sign to supply an output file, e.g. inputfile.html|myoutputfile.pdf. When no outputfile" +
+            "is given then the input file is used as the outputfile where the extension is replaced with .pdf")]
     public bool InputIsList { get; set; }
 
     /// <summary>
@@ -381,5 +383,14 @@ public class Options
     /// </summary>
     [Option("use-old-headless-mode", Required = false, HelpText = "When true then the old headless mode will be used")]
     public bool UseOldHeadlessMode { get; set; }
+
+    /// <summary>
+    ///     Bij default we wait for the Page.loadEventFired to determine that the page is loaded.
+    ///     In most cases this works fine but when you have a page that is loading a lot of interactive
+    ///     resources this can sometimes result in a blank page. To prevent this you can set this to <c>true</c>
+    ///     but your page will load slower
+    /// </summary>
+    [Option("wait-for-network-idle", Required = false, HelpText = "Wait until the network is idle")]
+    public bool WaitForNetworkIdle { get; set; }
     #endregion
 }

@@ -5,6 +5,8 @@
 
 ChromiumHtmlToPdf is a 100% managed C# .NETStandard 2.0 library and .NET Core 3.1 console application (that also works on Linux and macOS) that can be used to convert HTML to PDF format with the use of Google Chromemium (Google Chrome and Microsoft Edge browser)
 
+From version 4.0 and up the library is now fully async but you can still use it without this if you want.
+
 ## Why did I make this?
 
 I needed a replacement for wkHtmlToPdf, a great tool but the project is archived on GitHub and no new features are added anymore also it's not 100% compatible with HTML5.
@@ -44,9 +46,10 @@ In Visual Studio's Package Manager Console, simply enter the following command:
 ### Converting a file or url from code
 
 ```csharp
+var pageSettings = new PageSettings()
 using (var converter = new Converter())
 {
-    converter.ConvertToPdf(new Uri("http://www.google.nl"), @"c:\google.pdf");
+    converter.ConvertToPdf(new Uri("http://www.google.nl"), @"c:\google.pdf", pageSettings);
 }
 
 // Show the PDF
@@ -122,10 +125,11 @@ You can find pre compiled binaries for Windows, Linux and macOS over here
 
 Latest version
 ---------------
-https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/4.0.1/ChromiumHtmlToPdf_v4_0_1.zip
+https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/4.1.2/ChromiumHtmlToPdf_v4_0_2.zip
 
 Older versions
 --------------
+https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/4.0.1/ChromiumHtmlToPdf_v4_0_1.zip
 https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/3.0.0/ChromiumHtmlToPdf_v3_0_0.zip
 https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/2.6.5/ChromeHtmltoPdf_265.zip
 https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/2.6.4/ChromeHtmlToPDF_264.zip

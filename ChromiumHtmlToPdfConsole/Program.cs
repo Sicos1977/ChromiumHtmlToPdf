@@ -85,9 +85,19 @@ static class Program
                         var inputUri = new ConvertUri(line);
                         var outputPath = Path.GetFullPath(options.Output);
 
-                        var outputFile = inputUri.IsFile
-                            ? Path.GetFileName(inputUri.AbsolutePath)
-                            : FileManager.RemoveInvalidFileNameChars(inputUri.ToString());
+                        string outputFile;
+
+                        if (line.Contains("|"))
+                        {
+                            var parts = line.Split('|');
+                            outputFile = Path.GetFileName(parts[1]);
+                        }
+                        else
+                        {
+                            outputFile = inputUri.IsFile
+                                ? Path.GetFileName(inputUri.AbsolutePath)
+                                : FileManager.RemoveInvalidFileNameChars(inputUri.ToString());
+                        }
 
                         outputFile = Path.ChangeExtension(outputFile, ".pdf");
 
@@ -320,6 +330,7 @@ static class Program
             converter.WebSocketTimeout = options.WebSocketTimeout.Value;
 
         converter.UseOldHeadlessMode = options.UseOldHeadlessMode;
+        converter.WaitForNetworkIdle = options.WaitForNetworkIdle;
     }
     #endregion
 
@@ -345,8 +356,6 @@ static class Program
 
         using var converter = new Converter(options.ChromiumLocation, options.ChromiumUserProfile, _logger);
         SetConverterSettings(converter, options);
-
-        options.UseOldHeadlessMode = false;
 
         converter.ConvertToPdf(CheckInput(options),
             options.Output,
