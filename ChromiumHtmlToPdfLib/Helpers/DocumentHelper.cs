@@ -247,50 +247,58 @@ internal class DocumentHelper
 
         sanitizer ??= new HtmlSanitizer();
 
+        void OnSanitizerOnFilterUrl(object _, FilterUrlEventArgs args)
+        {
+            if (args.OriginalUrl == args.SanitizedUrl) return;
+            _logger?.WriteToLog($"URL sanitized from '{args.OriginalUrl}' to '{args.SanitizedUrl}'");
+            htmlChanged = true;
+        }
+
+        void OnSanitizerOnRemovingAtRule(object _, RemovingAtRuleEventArgs args)
+        {
+            _logger?.WriteToLog($"Removing CSS at-rule '{args.Rule.CssText}' from tag '{args.Tag.TagName}'");
+            htmlChanged = true;
+        }
+
+        void OnSanitizerOnRemovingAttribute(object _, RemovingAttributeEventArgs args)
+        {
+            _logger?.WriteToLog($"Removing attribute '{args.Attribute.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+            htmlChanged = true;
+        }
+
+        void OnSanitizerOnRemovingComment(object _, RemovingCommentEventArgs args)
+        {
+            _logger?.WriteToLog($"Removing comment '{args.Comment.TextContent}'");
+            htmlChanged = true;
+        }
+
+        void OnSanitizerOnRemovingCssClass(object _, RemovingCssClassEventArgs args)
+        {
+            _logger?.WriteToLog($"Removing CSS class '{args.CssClass}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+            htmlChanged = true;
+        }
+
+        void OnSanitizerOnRemovingStyle(object _, RemovingStyleEventArgs args)
+        {
+            _logger?.WriteToLog($"Removing style '{args.Style.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+            htmlChanged = true;
+        }
+
+        void OnSanitizerOnRemovingTag(object _, RemovingTagEventArgs args)
+        {
+            _logger?.WriteToLog($"Removing tag '{args.Tag.TagName}', reason '{args.Reason}'");
+            htmlChanged = true;
+        }
+
         try
         {
-            sanitizer.FilterUrl += delegate(object _, FilterUrlEventArgs args)
-            {
-                if (args.OriginalUrl == args.SanitizedUrl) return;
-                _logger?.WriteToLog($"URL sanitized from '{args.OriginalUrl}' to '{args.SanitizedUrl}'");
-                htmlChanged = true;
-            };
-
-            sanitizer.RemovingAtRule += delegate(object _, RemovingAtRuleEventArgs args)
-            {
-                _logger?.WriteToLog($"Removing CSS at-rule '{args.Rule.CssText}' from tag '{args.Tag.TagName}'");
-                htmlChanged = true;
-            };
-
-            sanitizer.RemovingAttribute += delegate(object _, RemovingAttributeEventArgs args)
-            {
-                _logger?.WriteToLog($"Removing attribute '{args.Attribute.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
-                htmlChanged = true;
-            };
-
-            sanitizer.RemovingComment += delegate(object _, RemovingCommentEventArgs args)
-            {
-                _logger?.WriteToLog($"Removing comment '{args.Comment.TextContent}'");
-                htmlChanged = true;
-            };
-
-            sanitizer.RemovingCssClass += delegate(object _, RemovingCssClassEventArgs args)
-            {
-                _logger?.WriteToLog($"Removing CSS class '{args.CssClass}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
-                htmlChanged = true;
-            };
-
-            sanitizer.RemovingStyle += delegate(object _, RemovingStyleEventArgs args)
-            {
-                _logger?.WriteToLog($"Removing style '{args.Style.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
-                htmlChanged = true;
-            };
-
-            sanitizer.RemovingTag += delegate(object _, RemovingTagEventArgs args)
-            {
-                _logger?.WriteToLog($"Removing tag '{args.Tag.TagName}', reason '{args.Reason}'");
-                htmlChanged = true;
-            };
+            sanitizer.FilterUrl += OnSanitizerOnFilterUrl;
+            sanitizer.RemovingAtRule += OnSanitizerOnRemovingAtRule;
+            sanitizer.RemovingAttribute += OnSanitizerOnRemovingAttribute;
+            sanitizer.RemovingComment += OnSanitizerOnRemovingComment;
+            sanitizer.RemovingCssClass += OnSanitizerOnRemovingCssClass;
+            sanitizer.RemovingStyle += OnSanitizerOnRemovingStyle;
+            sanitizer.RemovingTag += OnSanitizerOnRemovingTag;
 
             if (document is not IHtmlDocument htmlDocument)
                 throw new InvalidCastException("Could not cast document to IHtmlDocument");
@@ -307,6 +315,16 @@ internal class DocumentHelper
         {
             _logger?.WriteToLog($"Exception occurred in HtmlSanitizer: {ExceptionHelpers.GetInnerException(exception)}");
             return new SanitizeHtmlResult(false, inputUri, safeUrls);
+        }
+        finally
+        {
+            sanitizer.FilterUrl -= OnSanitizerOnFilterUrl;
+            sanitizer.RemovingAtRule -= OnSanitizerOnRemovingAtRule;
+            sanitizer.RemovingAttribute -= OnSanitizerOnRemovingAttribute;
+            sanitizer.RemovingComment -= OnSanitizerOnRemovingComment;
+            sanitizer.RemovingCssClass -= OnSanitizerOnRemovingCssClass;
+            sanitizer.RemovingStyle -= OnSanitizerOnRemovingStyle;
+            sanitizer.RemovingTag -= OnSanitizerOnRemovingTag;
         }
 
         _logger?.WriteToLog("HTML sanitized");
