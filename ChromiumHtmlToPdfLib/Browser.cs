@@ -662,10 +662,11 @@ internal class Browser : IDisposable, IAsyncDisposable
             throw new ConversionException("The output stream is not writable, please provide a writable stream");
 
         _logger?.WriteToLog("Resetting output stream to position 0");
+        
         message = new Message { Method = "IO.read" };
         message.AddParameter("handle", printToPdfResponse.Result.Stream);
         message.AddParameter("size", 1048576); // Get the pdf in chunks of 1MB
-
+        
         _logger?.WriteToLog($"Reading generated PDF from IO stream with handle id {printToPdfResponse.Result.Stream}");
         outputStream.Position = 0;
 
