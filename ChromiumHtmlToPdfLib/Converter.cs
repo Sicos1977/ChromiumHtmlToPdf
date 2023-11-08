@@ -1369,6 +1369,7 @@ public class Converter : IDisposable, IAsyncDisposable
                         var result = await documentHelper.SanitizeHtmlAsync(inputUri, Sanitizer, safeUrls, cancellationToken).ConfigureAwait(false);
                         if (result.Success)
                         {
+                            _logger?.WriteToLog($"Sanitization was successful changing input uri '{inputUri}' to '{result.OutputUri}'");
                             inputUri = result.OutputUri;
                             safeUrls = result.SafeUrls;
                         }
@@ -1385,6 +1386,7 @@ public class Converter : IDisposable, IAsyncDisposable
                         var result = await documentHelper.FitPageToContentAsync(inputUri, cancellationToken).ConfigureAwait(false);
                         if (result.Success)
                         {
+                            _logger?.WriteToLog($"Fitting the page to the content was successful changing input uri '{inputUri}' to '{result.OutputUri}'");
                             inputUri = result.OutputUri;
                             safeUrls.Add(input.ToString());
                         }
@@ -1405,6 +1407,7 @@ public class Converter : IDisposable, IAsyncDisposable
 
                         if (result.Success)
                         {
+                            _logger?.WriteToLog($"Image validation was successful changing input uri '{inputUri}' to '{result.OutputUri}'");
                             inputUri = result.OutputUri;
                             safeUrls.Add(inputUri.ToString());
                         }

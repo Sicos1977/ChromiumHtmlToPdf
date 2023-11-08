@@ -703,8 +703,17 @@ internal class DocumentHelper
 
                         image ??= await GetImageAsync(htmlImage.Source, localDirectory).ConfigureAwait(false);
                         if (image == null) continue;
-                        ScaleImage(image, (int)maxWidth, out var newWidth, out var newHeight);
-                        _logger?.WriteToLog($"Image rescaled to width {newWidth} and height {newHeight}");
+                        
+                        var ratio = maxWidth / image.Width;
+
+                        _logger?.WriteToLog($"Rescaling image with current width {image.Width}, height {image.Height} and ratio {ratio}");
+
+                        var newWidth = (int)(image.Width * ratio);
+                        if (newWidth == 0) newWidth = 1;
+                        var newHeight = (int)(image.Height * ratio);
+                        if (newHeight == 0) newHeight = 1;
+
+                        _logger?.WriteToLog($"Image rescaled to new width {newWidth} and height {newHeight}");
                         htmlImage.DisplayWidth = newWidth;
                         htmlImage.DisplayHeight = newHeight;
                         htmlImage.SetStyle(string.Empty);
@@ -881,25 +890,6 @@ internal class DocumentHelper
         }
 
         return null;
-    }
-    #endregion
-
-    #region ScaleImage
-    /// <summary>
-    ///     Scales the image to the preferred max width
-    /// </summary>
-    /// <param name="image"></param>
-    /// <param name="maxWidth">The maximum width</param>
-    /// <param name="newWidth">Returns the new width</param>
-    /// <param name="newHeight">Return the new height</param>
-    /// <returns></returns>
-    private void ScaleImage(Image image, double maxWidth, out int newWidth, out int newHeight)
-    {
-        var ratio = maxWidth / image.Width;
-        newWidth = (int)(image.Width * ratio);
-        if (newWidth == 0) newWidth = 1;
-        newHeight = (int)(image.Height * ratio);
-        if (newHeight == 0) newHeight = 1;
     }
     #endregion
 
