@@ -6,8 +6,8 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>ChromiumHtmlToPdf is a 100% managed C# library that can be used to convert HTML to PDF or PNG format with the use of Google Chrome or Microsoft Edge</Description>
     <Copyright>(C)2017-2023 Kees van Spelde</Copyright>
-    <PackageReleaseNotes>- Made some logging more human readable
-- The Page.loadEventFired is now used to determine that the page has been fully loaded. Use the property WaitForNetworkIdle = true to switch to the old (slower) behaviour</PackageReleaseNotes>
+    <PackageReleaseNotes>- Added option to evaluate javascript result
+- Added extra logging</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/Sicos1977/ChromiumHtmlToPdf</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Sicos1977/ChromiumHtmlToPdf</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
