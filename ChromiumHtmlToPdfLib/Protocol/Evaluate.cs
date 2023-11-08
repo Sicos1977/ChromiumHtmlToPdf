@@ -24,6 +24,7 @@
 // THE SOFTWARE.
 //
 
+using System.Text;
 using Newtonsoft.Json;
 
 namespace ChromiumHtmlToPdfLib.Protocol;
@@ -65,7 +66,8 @@ internal class Evaluate : MessageBase
 internal class EvaluateResult
 {
     #region Propreties
-    [JsonProperty("result")] public EvaluateInnerResult Result { get; set; }
+    [JsonProperty("result")] 
+    public EvaluateInnerResult Result { get; set; }
     #endregion
 }
 
@@ -75,8 +77,65 @@ internal class EvaluateResult
 internal class EvaluateInnerResult
 {
     #region Properties
-    [JsonProperty("type")] public string Type { get; set; }
+    [JsonProperty("type")] 
+    public string Type { get; set; }
 
-    [JsonProperty("value")] public string Value { get; set; }
+    [JsonProperty("subtype")] 
+    public string SubType { get; set; }
+
+    [JsonProperty("className")] 
+    public string ClassName { get; set; }
+
+    [JsonProperty("value")] 
+    public string Value { get; set; }
+    
+    [JsonProperty("unserializableValue")] 
+    public string UnserializableValue { get; set; }
+    
+    [JsonProperty("deepSerializedValue")] 
+    public string DeepSerializedValue { get; set; }
+    
+    [JsonProperty("preview")] 
+    public string Preview { get; set; }
+    
+    [JsonProperty("customPreview")] 
+    public string CustomPreview { get; set; }
+    #endregion
+    
+    #region ToString
+    /// <summary>
+    ///     Returns a string representation of this object
+    /// </summary>
+    /// <returns></returns>
+    public override string ToString()
+    {
+        var stringBuilder = new StringBuilder();
+
+        if (!string.IsNullOrEmpty(Type))
+            stringBuilder.AppendLine($"Type: {Type}");
+
+        if (!string.IsNullOrEmpty(SubType))
+            stringBuilder.AppendLine($"SubType: {SubType}");
+
+        if (!string.IsNullOrEmpty(ClassName))
+            stringBuilder.AppendLine($"ClassName: {ClassName}");
+
+        if (!string.IsNullOrEmpty(Value))
+            stringBuilder.AppendLine($"Value: {Value}");
+
+        if (!string.IsNullOrEmpty(UnserializableValue))
+            stringBuilder.AppendLine($"UnserializableValue: {UnserializableValue}");
+
+        if (!string.IsNullOrEmpty(DeepSerializedValue))
+            stringBuilder.AppendLine($"DeepSerializedValue: {DeepSerializedValue}");
+
+        if (!string.IsNullOrEmpty(Preview))
+            stringBuilder.AppendLine($"Preview: {Preview}");
+
+        if (!string.IsNullOrEmpty(CustomPreview))
+            stringBuilder.AppendLine($"CustomPreview: {CustomPreview}");
+
+        return stringBuilder.ToString();
+    }
     #endregion
 }

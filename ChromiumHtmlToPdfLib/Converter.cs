@@ -1457,7 +1457,7 @@ public class Converter : IDisposable, IAsyncDisposable
             if (!string.IsNullOrWhiteSpace(RunJavascript))
             {
                 _logger?.WriteToLog("Start running javascript");
-                _logger?.WriteToLog(RunJavascript);
+                _logger?.WriteToLog($"Javascript code:{Environment.NewLine}{RunJavascript}");
                 await _browser.RunJavascriptAsync(RunJavascript, cancellationToken).ConfigureAwait(false);
                 _logger?.WriteToLog("Done running javascript");
             }

@@ -574,6 +574,13 @@ internal class Browser : IDisposable, IAsyncDisposable
 
         if (!string.IsNullOrEmpty(errorDescription))
             throw new ChromiumException(errorDescription);
+
+        var evaluate = Evaluate.FromJson(result);
+        var internalResult = evaluate.Result?.Result?.ToString();
+
+        _logger?.WriteToLog(!string.IsNullOrEmpty(internalResult)
+            ? $"Javascript result:{Environment.NewLine}{internalResult}"
+            : "Javascript did not return any result");
     }
     #endregion
 
