@@ -56,6 +56,18 @@ using (var converter = new Converter())
 System.Diagnostics.Process.Start(@"c:\google.pdf");
 ```
 
+or if you want to do it the async way
+
+```csharp
+var pageSettings = new PageSettings()
+using var converter = new Converter();
+await converter.ConvertToPdfAsync(new Uri("http://www.google.nl"), @"c:\google.pdf", pageSettings);
+
+// Show the PDF
+System.Diagnostics.Process.Start(@"c:\google.pdf");
+```
+
+
 ### Converting from Internet Information Services (IIS)
 
 - Download Google Chrome or Microsoft Edge portable and extract it
