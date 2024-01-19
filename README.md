@@ -9,7 +9,7 @@ From version 4.0 and up the library is now fully async but you can still use it 
 
 ## Why did I make this?
 
-I needed a replacement for wkHtmlToPdf, a great tool but the project is archived on GitHub and no new features are added anymore also it's not 100% compatible with HTML5.
+I needed a replacement for wkHtmlToPdf, a great tool but the project is archived on GitHub and no new features are added anymore, also it's not 100% compatible with HTML5.
 
 ## License Information
 
