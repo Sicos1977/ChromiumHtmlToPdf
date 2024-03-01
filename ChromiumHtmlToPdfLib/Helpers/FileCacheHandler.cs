@@ -6,6 +6,7 @@ using System.Runtime.Caching;
 using System.Threading;
 using System.Threading.Tasks;
 using ChromiumHtmlToPdfLib.Loggers;
+using FileCacheManagers = ChromiumHtmlToPdfLib.FileCache.FileCacheManagers;
 
 namespace ChromiumHtmlToPdfLib.Helpers;
 
@@ -38,7 +39,7 @@ internal class FileCacheHandler : HttpClientHandler
     /// <summary>
     ///     <see cref="FileCache"/>
     /// </summary>
-    private FileCache _fileCache;
+    private FileCache.FileCache _fileCache;
     #endregion
 
     #region Properties
@@ -50,16 +51,16 @@ internal class FileCacheHandler : HttpClientHandler
     /// <summary>
     ///     Returns a file cache
     /// </summary>
-    private FileCache FileCache
+    private FileCache.FileCache FileCache
     {
         get
         {
             if (_fileCache != null)
                 return _fileCache;
 
-            FileCache.DefaultCacheManager = FileCacheManagers.Hashed;
+            ChromiumHtmlToPdfLib.FileCache.FileCache.DefaultCacheManager = FileCacheManagers.Hashed;
 
-            _fileCache = new FileCache(_cacheDirectory.FullName)
+            _fileCache = new FileCache.FileCache(_cacheDirectory.FullName)
             {
                 MaxCacheSize = _cacheSize,
                 AccessTimeout = TimeSpan.FromSeconds(10),
