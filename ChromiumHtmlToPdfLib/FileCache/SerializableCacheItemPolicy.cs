@@ -20,15 +20,23 @@ namespace ChromiumHtmlToPdfLib.FileCache;
 public class SerializableCacheItemPolicy
 {
     #region Fields
-    // Magic version for new policies: 3.3.0 packed into a long.
+    /// <summary>
+    ///     Magic version for new policies: 3.3.0 packed into a long
+    /// </summary>
     protected const ulong CacheVersion = 3 << (16 + 3) << (8 + 0) << 0;
 
     private TimeSpan _slidingExpiration;
     #endregion
 
     #region Properties
+    /// <summary>
+    ///     Returns or sets the absolute expiration date and time for the cache entry
+    /// </summary>
     public DateTimeOffset AbsoluteExpiration { get; set; }
 
+    /// <summary>
+    ///     Returns or sets the sliding expiration time for the cache entry
+    /// </summary>
     public TimeSpan SlidingExpiration
     {
         get => _slidingExpiration;

@@ -9,16 +9,37 @@ using System.Threading;
 
 namespace ChromiumHtmlToPdfLib.FileCache;
 
-internal abstract class FileCacheManager
+/// <summary>
+///     An abstract class that provides the basic functionality for a file cache manager
+/// </summary>
+public abstract class FileCacheManager
 {
     #region Consts
+    /// <summary>
+    ///     Represents the current version of the cache file format.
+    /// </summary>
     protected const ulong CacheVersion = 3 << (16 + 3) << (8 + 0) << 0;
     #endregion
 
     #region Properties
+    /// <summary>
+    ///     Returns or sets the directory where the cache will be stored
+    /// </summary>
     public string CacheDir { get; set; }
+
+    /// <summary>
+    ///     Returns or sets the subfolder where the cache will be stored
+    /// </summary>
     public string CacheSubFolder { get; set; }
+
+    /// <summary>
+    ///     Returns or sets the subfolder where the cache policies will be stored
+    /// </summary>
     public string PolicySubFolder { get; set; }
+
+    /// <summary>
+    ///     Returns or sets the serialization binder
+    /// </summary>
     public SerializationBinder Binder { get; set; }
 
     /// <summary>
@@ -63,6 +84,12 @@ internal abstract class FileCacheManager
     #endregion
 
     #region DeserializePayloadData
+    /// <summary>
+    ///     Deserializes the payload data from the specified file
+    /// </summary>
+    /// <param name="fileName"></param>
+    /// <param name="objectBinder"></param>
+    /// <returns></returns>
     protected virtual object DeserializePayloadData(string fileName, SerializationBinder objectBinder = null)
     {
         object data;
@@ -90,6 +117,11 @@ internal abstract class FileCacheManager
     #endregion
 
     #region SerializableCacheItemPolicy
+    /// <summary>
+    ///     Describes the policy for a cache item
+    /// </summary>
+    /// <param name="policyPath"></param>
+    /// <returns></returns>
     protected SerializableCacheItemPolicy DeserializePolicyData(string policyPath)
     {
         SerializableCacheItemPolicy policy;
@@ -170,6 +202,12 @@ internal abstract class FileCacheManager
     #endregion
 
     #region Deserialize
+    /// <summary>
+    ///     Deserializes the payload data from the specified file
+    /// </summary>
+    /// <param name="fileName"></param>
+    /// <param name="objectBinder"></param>
+    /// <returns></returns>
     protected virtual object Deserialize(string fileName, SerializationBinder objectBinder = null)
     {
         object data;
@@ -542,8 +580,17 @@ internal abstract class FileCacheManager
     #endregion
 
     #region Class LocalCacheBinder
+    /// <summary>
+    ///     A custom serialization binder that will be used to deserialize custom objects
+    /// </summary>
     protected class LocalCacheBinder : SerializationBinder
     {
+        /// <summary>
+        ///     Bind the type to a name
+        /// </summary>
+        /// <param name="assemblyName"></param>
+        /// <param name="typeName"></param>
+        /// <returns></returns>
         public override Type BindToType(string assemblyName, string typeName)
         {
             var currentAssembly = Assembly.GetAssembly(typeof(LocalCacheBinder))!.FullName;

@@ -12,8 +12,20 @@ using System;
 
 namespace ChromiumHtmlToPdfLib.FileCache;
 
-internal class FileCacheEventArgs(long currentSize, long maxSize) : EventArgs
+/// <summary>
+///     Used to pass information
+/// </summary>
+/// <param name="currentSize"></param>
+/// <param name="maxSize"></param>
+public class FileCacheEventArgs(long currentSize, long maxSize) : EventArgs
 {
+    /// <summary>
+    ///     Returns the current cache size
+    /// </summary>
     public long CurrentCacheSize { get; private set; } = currentSize;
+
+    /// <summary>
+    ///     Returns the maximum cache size
+    /// </summary>
     public long MaxCacheSize { get; private set; } = maxSize;
 }

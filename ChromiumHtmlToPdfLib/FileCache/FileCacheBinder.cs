@@ -14,7 +14,7 @@ using System.Runtime.Serialization;
 namespace ChromiumHtmlToPdfLib.FileCache;
 
 /// <summary>
-///     You should be able to copy & paste this code into your local project to enable caching custom objects.
+///     You should be able to copy and paste this code into your local project to enable caching custom objects.
 /// </summary>
 internal sealed class FileCacheBinder : SerializationBinder
 {

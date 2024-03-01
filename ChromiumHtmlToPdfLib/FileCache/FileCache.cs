@@ -1032,8 +1032,7 @@ public class FileCache : ObjectCache
     }
 
     /// <summary>
-    ///     Will return an enumerator with all cache items listed in the root file path ONLY.  Use the other
-    ///     <see cref="GetEnumerator" /> if you want to specify a region
+    ///     Will return an enumerator with all cache items listed in the root file path ONLY
     /// </summary>
     /// <returns></returns>
     protected override IEnumerator<KeyValuePair<string, object>> GetEnumerator()

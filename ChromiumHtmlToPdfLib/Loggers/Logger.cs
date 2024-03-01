@@ -31,6 +31,7 @@ internal class Logger
     ///     Makes this object and sets all its needed properties
     /// </summary>
     /// <param name="logger"></param>
+    /// <param name="instanceId"></param>
     internal Logger(ILogger logger, string instanceId)
     {
         InternalLogger = logger;
