@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.HashFunction;
-using System.Data.HashFunction.xxHash;
 using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace ChromiumHtmlToPdfLib.FileCache;
 
@@ -13,7 +13,7 @@ namespace ChromiumHtmlToPdfLib.FileCache;
 internal class HashedFileCacheManager : FileCacheManager
 {
     #region Fields
-    private static readonly IxxHash Hasher = xxHashFactory.Instance.Create();
+    private static readonly MD5 md5Hash = MD5.Create();
     #endregion
 
     #region ComputeHash
@@ -24,8 +24,9 @@ internal class HashedFileCacheManager : FileCacheManager
     /// <returns></returns>
     public static string ComputeHash(string key)
     {
-        var hash = Hasher.ComputeHash(key, 64);
-        return hash.AsHexString();
+        var hash = md5Hash.ComputeHash(Encoding.UTF8.GetBytes(key));
+
+        return BitConverter.ToString(hash).Replace("-", string.Empty).Substring(0,16); // Grab 64-bit value
     }
     #endregion
 
@@ -46,6 +47,7 @@ internal class HashedFileCacheManager : FileCacheManager
         //the policy.  It also means that deleting a policy file makes the related .dat "invisible" to FC.
         var directory = Path.Combine(CacheDir, PolicySubFolder, regionName);
 
+        
         var hash = ComputeHash(key);
         var hashCounter = 0;
         var fileName = Path.Combine(directory, $"{hash}_{hashCounter}.policy");
