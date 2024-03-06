@@ -135,12 +135,19 @@ Pre compiled binaries
 
 You can find pre compiled binaries for Windows, Linux and macOS over here 
 
-Latest version
+Latest version (.net 6)
 ---------------
-https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/4.1.2/ChromiumHtmlToPdf_v4_0_2.zip
+https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/4.2.1/ChromiumHtmlToPdf_4_2_1.zip
 
-Older versions
+.NET 6.0 for the console app
+---------------------------------
+The console app needs .NET 6 to run, you can download this framework from here 
+
+https://dotnet.microsoft.com/en-us/download/dotnet/6.0
+
+Older versions (.net core 3.1)
 --------------
+https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/4.1.2/ChromiumHtmlToPdf_v4_0_2.zip
 https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/4.0.1/ChromiumHtmlToPdf_v4_0_1.zip
 https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/3.0.0/ChromiumHtmlToPdf_v3_0_0.zip
 https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/2.6.5/ChromeHtmltoPdf_265.zip
