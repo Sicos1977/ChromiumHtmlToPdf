@@ -216,7 +216,7 @@ public class FileCache : ObjectCache
 
         public int CompareTo(CacheItemReference other)
         {
-            var i = LastAccessTime.CompareTo(other.LastAccessTime);
+            var i = LastAccessTime.CompareTo(other!.LastAccessTime);
 
             // It's possible, although rare, that two different items will have
             // the same LastAccessTime. So in that case, we need to check to see

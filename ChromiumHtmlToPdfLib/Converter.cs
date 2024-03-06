@@ -2605,11 +2605,7 @@ public class Converter : IDisposable, IAsyncDisposable
         try
         {
             var process = Process.GetProcessById(processId);
-#if (NETSTANDARD2_0)
             process.Kill();
-#else
-                process.Kill(true);
-#endif
         }
         catch (Exception exception)
         {

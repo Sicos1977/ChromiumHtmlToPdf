@@ -1,8 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <StartupObject>ChromiumHtmlToPdfConsole.Program</StartupObject>
     <ApplicationIcon />
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
@@ -17,7 +16,8 @@
     <RepositoryType>NuGet</RepositoryType>
     <PackageTags>convert html pdf chrome edge</PackageTags>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <PackageReleaseNotes></PackageReleaseNotes>
+    <PackageReleaseNotes>
+    </PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageId />
     <AssemblyName>ChromiumHtmlToPdfConsole</AssemblyName>
@@ -26,29 +26,23 @@
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
-
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="AngleSharp" Version="0.17.1" />
     <PackageReference Include="AngleSharp.Io" Version="0.17.0" />
     <PackageReference Include="AngleSharp.Xml" Version="0.17.0" />
     <PackageReference Include="CommandLineParser" Version="2.9.1" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
-    <PackageReference Include="System.Drawing.Common" Version="8.0.2" />
   </ItemGroup>
-
   <ItemGroup>
     <None Include="Chrome-icon.png">
       <Pack>True</Pack>
-      <PackagePath></PackagePath>
+      <PackagePath>
+      </PackagePath>
     </None>
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\ChromiumHtmlToPdfLib\ChromiumHtmlToPdfLib.csproj" />
   </ItemGroup>
-
 </Project>

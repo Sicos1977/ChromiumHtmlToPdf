@@ -7,13 +7,13 @@ using System.Text;
 namespace ChromiumHtmlToPdfLib.FileCache;
 
 /// <summary>
-///     File-based caching using xxHash. Collisions are handled by appending
+///     File-based caching using Md5Hash. Collisions are handled by appending
 ///     numerically ascending identifiers to each hash key (e.g. _1, _2, etc.).
 /// </summary>
 internal class HashedFileCacheManager : FileCacheManager
 {
     #region Fields
-    private static readonly MD5 md5Hash = MD5.Create();
+    private static readonly MD5 Md5Hash = MD5.Create();
     #endregion
 
     #region ComputeHash
@@ -24,9 +24,9 @@ internal class HashedFileCacheManager : FileCacheManager
     /// <returns></returns>
     public static string ComputeHash(string key)
     {
-        var hash = md5Hash.ComputeHash(Encoding.UTF8.GetBytes(key));
+        var hash = Md5Hash.ComputeHash(Encoding.UTF8.GetBytes(key));
 
-        return BitConverter.ToString(hash).Replace("-", string.Empty).Substring(0,16); // Grab 64-bit value
+        return BitConverter.ToString(hash).Replace("-", string.Empty).Substring(0, 16); // Grab 64-bit value
     }
     #endregion
 
