@@ -145,7 +145,7 @@ The console app needs .NET 6 to run, you can download this framework from here
 
 https://dotnet.microsoft.com/en-us/download/dotnet/6.0
 
-Older versions (.net core 3.1)
+Older versions (.net core 3.1 - end of life)
 --------------
 https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/4.1.2/ChromiumHtmlToPdf_v4_0_2.zip
 https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/4.0.1/ChromiumHtmlToPdf_v4_0_1.zip
@@ -159,7 +159,7 @@ https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/2.2/ChromeHtmlT
 https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/2.1.6/ChromeHtmlToPdf_216.zip
 https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/2.0.11/ChromeHtmlToPdf_211.zip
 
-.NET Core 3.1 for the console app
+.NET Core 3.1 for the console app (end of life)
 ---------------------------------
 The console app needs .NET Core 3.1 to run, you can download this framework from here 
 
