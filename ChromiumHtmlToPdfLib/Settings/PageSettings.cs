@@ -122,6 +122,17 @@ public class PageSettings : ICloneable
     ///     The paper format
     /// </summary>
     public PaperFormat PaperFormat { get; private set; }
+
+    /// <summary>
+    ///     Generate tagged PDF. Defaults to true.
+    /// </summary>
+    public bool TaggedPDF { get; set; } = true;
+
+    /// <summary>
+    ///     Generate outline bookmarks from header tags (H1-H6). Defaults to false.
+    ///     Requires both <see cref="Converter.UseOldHeadlessMode"/> and <see cref="TaggedPDF"/> set to <c>true</c>.
+    /// </summary>
+    public bool GenerateOutline { get; set; }
     #endregion
 
     #region PageSettings
@@ -167,6 +178,8 @@ public class PageSettings : ICloneable
         MarginLeft = 0.4;
         MarginRight = 0.4;
         PageRanges = string.Empty;
+        TaggedPDF = true;
+        GenerateOutline = false;
     }
     #endregion
 
@@ -271,7 +284,9 @@ public class PageSettings : ICloneable
             MarginRight = MarginRight,
             PageRanges = PageRanges,
             IgnoreInvalidPageRanges = IgnoreInvalidPageRanges,
-            PreferCSSPageSize = PreferCSSPageSize
+            PreferCSSPageSize = PreferCSSPageSize,
+            TaggedPDF = TaggedPDF,
+            GenerateOutline = GenerateOutline
         };
     }
     #endregion

@@ -655,6 +655,8 @@ internal class Browser : IDisposable, IAsyncDisposable
             message.AddParameter("footerTemplate", pageSettings.FooterTemplate);
         message.AddParameter("preferCSSPageSize", pageSettings.PreferCSSPageSize);
         message.AddParameter("transferMode", "ReturnAsStream");
+        message.AddParameter("generateTaggedPDF", pageSettings.TaggedPDF);
+        message.AddParameter("generateDocumentOutline", pageSettings.GenerateOutline);
 
         var result = countdownTimer == null
             ? await _pageConnection.SendForResponseAsync(message, cancellationToken).ConfigureAwait(false)
