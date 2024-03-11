@@ -285,6 +285,13 @@ To make the library work the flag --no-sandbox will be set by default (on Window
 converter.AddChromiumArgument("--no-sandbox")
 ```
 
+When Chrome crashes for unknown reasons in a docker container
+=============================================================
+
+On most desktop Linux distributions, the default /dev/shm partition is large enough. However, on many cloud providers using Docker containers (such as the Google App Engine Flexible Environment) or Heroku, the default /dev/shm size is appreciably smaller (64MB and 5MB, respectively). On these platforms it's impossible to change the size of /dev/shm, which makes using Chrome difficult or impossible. This is particularly an issue for those who want to take advantage of its new headless mode.
+
+If it is not possible to change the partition size than add the flag `--disable-dev-shm-usage` to tell Chrome not to use this parition
+
 Core Team
 =========
     Sicos1977 (Kees van Spelde)
