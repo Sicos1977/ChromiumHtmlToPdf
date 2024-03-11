@@ -18,21 +18,14 @@ namespace ChromiumHtmlToPdfLib.FileCache;
 /// </summary>
 internal sealed class FileCacheBinder : SerializationBinder
 {
-    /// <summary>
-    ///     Binds the type to a name
-    /// </summary>
-    /// <param name="assemblyName"></param>
-    /// <param name="typeName"></param>
-    /// <returns></returns>
-    public override Type BindToType(string assemblyName, string typeName)
+    /// <inheritdoc />
+    public override Type? BindToType(string assemblyName, string typeName)
     {
+        // In this case we are always using the current assembly
         var currentAssembly = Assembly.GetExecutingAssembly().FullName;
 
-        // In this case we are always using the current assembly
-        assemblyName = currentAssembly;
-
         // Get the type using the typeName and assemblyName
-        var typeToDeserialize = Type.GetType($"{typeName}, {assemblyName}");
+        var typeToDeserialize = Type.GetType($"{typeName}, {currentAssembly}");
 
         return typeToDeserialize;
     }

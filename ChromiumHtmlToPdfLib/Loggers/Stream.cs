@@ -10,8 +10,8 @@ namespace ChromiumHtmlToPdfLib.Loggers;
 public class Stream : ILogger, IDisposable
 {
     #region Fields
-    private System.IO.Stream _stream;
-    private string _instanceId;
+    private System.IO.Stream? _stream;
+    private string? _instanceId;
     #endregion
 
     #region Constructors
@@ -32,7 +32,8 @@ public class Stream : ILogger, IDisposable
     /// <typeparam name="TState"></typeparam>
     /// <param name="state"></param>
     /// <returns></returns>
-    public IDisposable BeginScope<TState>(TState state)
+    public IDisposable? BeginScope<TState>(TState state)
+         where TState : notnull
     {
         _instanceId = state?.ToString();
         return null;
@@ -61,8 +62,8 @@ public class Stream : ILogger, IDisposable
     /// <param name="state"></param>
     /// <param name="exception"></param>
     /// <param name="formatter"></param>
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception,
-        Func<TState, Exception, string> formatter)
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+        Func<TState, Exception?, string> formatter)
     {
         var message = $"{formatter(state, exception)}";
 

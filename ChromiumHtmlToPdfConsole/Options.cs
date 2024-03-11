@@ -17,7 +17,7 @@ public class Options
     ///     The input url or file
     /// </summary>
     [Option("input", Required = true, HelpText = "The input content, url or file")]
-    public string Input { get; set; }
+    public string Input { get; set; } = null!;
 
     /// <summary>
     ///     A file with input urls and/or files
@@ -34,7 +34,7 @@ public class Options
     ///     The output file
     /// </summary>
     [Option("output", Required = true, HelpText = "The output file")]
-    public string Output { get; set; }
+    public string Output { get; set; } = null!;
 
     /// <summary>
     ///     Paper orientation. Defaults to false.
@@ -111,7 +111,7 @@ public class Options
     /// </summary>
     [Option("user-agent", Required = false,
         HelpText = "Let Chromium know that we want to use the given user-agent string instead of the default one")]
-    public string UserAgent { get; set; }
+    public string? UserAgent { get; set; }
 
     /// <summary>
     ///     Top margin in inches. Defaults to 1cm (~0.4 inches).
@@ -141,7 +141,7 @@ public class Options
     ///     Paper ranges to print, e.g., '1-5, 8, 11-13'. Defaults to the empty string, which means print all pages.
     /// </summary>
     [Option("pageranges", Required = false, HelpText = "Paper ranges to print, e.g., '1-5, 8, 11-13'")]
-    public string PageRanges { get; set; }
+    public string? PageRanges { get; set; }
 
     /// <summary>
     ///     Whether to silently ignore invalid but successfully parsed page ranges, such as '3-2'. Defaults to false.
@@ -158,7 +158,7 @@ public class Options
             "The location for Chrome or Edge, when not set then this tool first looks inside the folder where " +
             "it is executed from if it can find Chromium (portable) otherwise the registry is accessed " +
             "to get the needed information")]
-    public string ChromiumLocation { get; set; }
+    public string? ChromiumLocation { get; set; }
 
     /// <summary>
     ///     The location for Chrome or Edge, when not set then the registry is accessed to get the needed information
@@ -166,13 +166,13 @@ public class Options
     [Option("chromium-userprofile", Required = false,
         HelpText =
             "The location where Chromium can store it's user profile")]
-    public string ChromiumUserProfile { get; set; }
+    public string? ChromiumUserProfile { get; set; }
 
     /// <summary>
     ///     This tells Chromium to use a custom proxy configuration
     /// </summary>
     [Option("proxy-server", Required = false, HelpText = "This tells Chromium to use a custom proxy configuration")]
-    public string ProxyServer { get; set; }
+    public string? ProxyServer { get; set; }
 
     /// <summary>
     ///     This tells Chromium to bypass any specified proxy for the given semi-colon-separated list of hosts. This flag must be
@@ -185,7 +185,7 @@ public class Options
             "This flag must be used (or rather, only has an effect) in tandem with --proxy-server. " +
             "For example \"*.google.com;*foo.com;127.0.0.1:8080\""
     )]
-    public string ProxyByPassList { get; set; }
+    public string? ProxyByPassList { get; set; }
 
     /// <summary>
     ///     This tells Chromium to use the PAC file at the specified URL. For example "http://wpad/windows.pac"
@@ -193,26 +193,26 @@ public class Options
     [Option("proxy-pac-url", Required = false,
         HelpText =
             "This tells Chromium to use the PAC file at the specified URL. For example \"http://wpad/windows.pac\"")]
-    public string ProxyPacUrl { get; set; }
+    public string? ProxyPacUrl { get; set; }
 
     /// <summary>
     ///     Run Chrome or Edge under this user. This option is used in combination with --password"
     /// </summary>
     [Option("user", Required = false,
         HelpText = "Run Chrome or Edge under this user. This option is used in combination with --password")]
-    public string User { get; set; }
+    public string? User { get; set; }
 
     /// <summary>
     ///     The password needed for --user
     /// </summary>
     [Option("password", Required = false, HelpText = "The password needed for --user")]
-    public string Password { get; set; }
+    public string? Password { get; set; }
 
     /// <summary>
     ///     The password needed for --user
     /// </summary>
     [Option("tempfolder", Required = false, HelpText = "A folder where this tool can put temporary files")]
-    public string TempFolder { get; set; }
+    public string? TempFolder { get; set; }
 
     /// <summary>
     ///     Use multi threading when converting. Only useful if the parameter --input-is-list is used
@@ -235,9 +235,9 @@ public class Options
     /// <summary>
     ///     Wait for the javascript window.status to equal the given string before starting PDF conversion
     /// </summary>
-    [Option("wait-for-window-status", Required = false, Default = "",
+    [Option("wait-for-window-status", Required = false,
         HelpText = "Wait for the javascript window.status to equal the given string before starting PDF conversion")]
-    public string WaitForWindowStatus { get; set; }
+    public string? WaitForWindowStatus { get; set; }
     
     /// <summary>
     ///     The timeout when waiting for the parameter <see cref="WaitForWindowStatus"/>
@@ -267,14 +267,14 @@ public class Options
     /// </summary> 
     [Option("pre-wrap-file-extensions", Required = false,
         HelpText = "The files to wrap in a HTML file with a <PRE> tag")]
-    public IEnumerable<string> PreWrapFileExtensions { get; set; }
+    public IEnumerable<string>? PreWrapFileExtensions { get; set; }
 
     /// <summary>
     ///     The encoding that is used for the <see cref="Input"/> file
     /// </summary>
-    [Option("encoding", Required = false, Default = "",
+    [Option("encoding", Required = false,
         HelpText = "The encoding that is used for the --input file")]
-    public string Encoding { get; set; }
+    public string? Encoding { get; set; }
 
     /// <summary>
     ///     Resize images so that they fit the width of the page
@@ -311,17 +311,17 @@ public class Options
     /// <summary>
     ///     When set then the logging gets written to this file instead of the console
     /// </summary>
-    [Option("logfile", Required = false, Default = "",
+    [Option("logfile", Required = false,
         HelpText = "When set then the logging gets written to this file instead of the console " +
                    "(Wildcards {PID}, {DATE}, {TIME})")]
-    public string LogFile { get; set; }
+    public string? LogFile { get; set; }
 
     /// <summary>
     ///     Runs the given javascript after the webpage has been loaded
     /// </summary>
-    [Option("run-javascript", Required = false, Default = "",
+    [Option("run-javascript", Required = false,
         HelpText = "Runs the given javascript after the webpage has been loaded and before it is converted to PDF")]
-    public string RunJavascript { get; set; }
+    public string? RunJavascript { get; set; }
 
     /// <summary>
     ///     This tells chrome to bypass any specified proxy for the given semi-colon-separated list of hosts. This flag must be
@@ -333,7 +333,7 @@ public class Options
             "This tells Chromium to blacklist certain urls by blocking them. " +
             "For example \"*.google.com;*foo.com;\""
     )]
-    public string UrlBlacklist { get; set; }
+    public string? UrlBlacklist { get; set; }
 
     /// <summary>
     ///     This will capture a snapshot of the webpage (before it is converted to PDF) and save this to disk with
@@ -364,7 +364,7 @@ public class Options
     ///     When set then Chrome or Edge uses this directory for caching
     /// </summary>
     [Option("disk-cache-directory", Required = false, HelpText = "When set then Chrome or Edge uses this directory for caching")]
-    public string DiskCacheDirectory { get; set; }
+    public string? DiskCacheDirectory { get; set; }
 
     /// <summary>
     ///     When set then Chrome or Edge uses this directory for caching

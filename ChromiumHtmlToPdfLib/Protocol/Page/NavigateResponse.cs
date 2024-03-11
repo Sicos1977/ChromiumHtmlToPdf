@@ -34,7 +34,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Page;
 internal class NavigateResponse : MessageBase
 {
     #region Properties
-    [JsonProperty("result")] public NavigateResponseResult Result { get; set; }
+    [JsonProperty("result")] public NavigateResponseResult? Result { get; set; }
     #endregion
 
     #region FromJson
@@ -45,7 +45,7 @@ internal class NavigateResponse : MessageBase
     /// <returns></returns>
     public new static NavigateResponse FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<NavigateResponse>(json);
+        return JsonConvert.DeserializeObject<NavigateResponse>(json)!;
     }
     #endregion
 }
@@ -56,10 +56,10 @@ internal class NavigateResponse : MessageBase
 internal class NavigateResponseResult
 {
     #region Properties
-    [JsonProperty("frameId")] public string FrameId { get; set; }
+    [JsonProperty("frameId")] public string? FrameId { get; set; }
 
-    [JsonProperty("loaderId")] public string LoaderId { get; set; }
+    [JsonProperty("loaderId")] public string? LoaderId { get; set; }
 
-    [JsonProperty("errorText")] public string ErrorText { get; set; }
+    [JsonProperty("errorText")] public string? ErrorText { get; set; }
     #endregion
 }

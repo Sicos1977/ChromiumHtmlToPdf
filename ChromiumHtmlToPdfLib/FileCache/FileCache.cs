@@ -9,6 +9,7 @@ Consult "LICENSE.txt" included in this package for the Apache License 2.0.
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -95,7 +96,7 @@ public class FileCache : ObjectCache
     /// <summary>
     ///     The cache's root file path
     /// </summary>
-    public string CacheDir { get; protected set; }
+    public string CacheDir { get; private set; }
 
     /// <summary>
     ///     Allows for the setting of the default cache manager so that it doesn't have to be
@@ -112,7 +113,7 @@ public class FileCache : ObjectCache
     /// <summary>
     ///     Used to store the default region when accessing the cache via [] calls
     /// </summary>
-    public string DefaultRegion { get; set; }
+    public string? DefaultRegion { get; set; }
 
     /// <summary>
     ///     Used to set the default policy when setting cache values via [] calls
@@ -174,7 +175,7 @@ public class FileCache : ObjectCache
     #endregion
 
     #region WriteHelper
-    private void WriteHelper(PayloadMode mode, string key, FileCachePayload data, string regionName = null,
+    private void WriteHelper(PayloadMode mode, string key, FileCachePayload data, string? regionName = null,
         bool policyUpdateOnly = false)
     {
         CurrentCacheSize += CacheManager.WriteFile(mode, key, data, regionName, policyUpdateOnly);
@@ -188,14 +189,14 @@ public class FileCache : ObjectCache
     #region Private class LocalCacheBinder
     private class LocalCacheBinder : SerializationBinder
     {
-        public override Type BindToType(string assemblyName, string typeName)
+        /// <inheritdoc />
+        public override Type? BindToType(string assemblyName, string typeName)
         {
             var currentAssembly = Assembly.GetAssembly(typeof(LocalCacheBinder))?.FullName;
-            assemblyName = currentAssembly;
 
             // Get the type using the typeName and assemblyName
             var typeToDeserialize = Type.GetType(string.Format("{0}, {1}",
-                typeName, assemblyName));
+                typeName, currentAssembly));
 
             return typeToDeserialize;
         }
@@ -212,11 +213,13 @@ public class FileCache : ObjectCache
         // ReSharper disable once MemberCanBePrivate.Local
         public readonly DateTime LastAccessTime;
         public readonly long Length;
-        public readonly string Region;
+        public readonly string? Region;
 
-        public int CompareTo(CacheItemReference other)
+        public int CompareTo(CacheItemReference? other)
         {
-            var i = LastAccessTime.CompareTo(other!.LastAccessTime);
+            if (other == null) return 1;
+
+            var i = LastAccessTime.CompareTo(other.LastAccessTime);
 
             // It's possible, although rare, that two different items will have
             // the same LastAccessTime. So in that case, we need to check to see
@@ -232,7 +235,7 @@ public class FileCache : ObjectCache
             return i;
         }
 
-        public CacheItemReference(string key, string region, string cachePath, string policyPath)
+        public CacheItemReference(string key, string? region, string cachePath, string policyPath)
         {
             Key = key;
             Region = region;
@@ -300,7 +303,7 @@ public class FileCache : ObjectCache
         TimeSpan cleanInterval = new())
     {
         CacheDir = cacheRoot;
-        Init(DefaultCacheManager, calculateCacheSize, cleanInterval, false);
+        Init(DefaultCacheManager, calculateCacheSize, cleanInterval);
     }
 
     /// <summary>
@@ -323,7 +326,7 @@ public class FileCache : ObjectCache
     )
     {
         _binder = binder;
-        Init(DefaultCacheManager, calculateCacheSize, cleanInterval, true, false);
+        Init(DefaultCacheManager, calculateCacheSize, cleanInterval);
     }
 
     /// <summary>
@@ -349,7 +352,7 @@ public class FileCache : ObjectCache
     {
         _binder = binder;
         CacheDir = cacheRoot;
-        Init(DefaultCacheManager, calculateCacheSize, cleanInterval, false, false);
+        Init(DefaultCacheManager, calculateCacheSize, cleanInterval);
     }
 
     /// <summary>
@@ -377,18 +380,16 @@ public class FileCache : ObjectCache
     {
         _binder = binder;
         CacheDir = cacheRoot;
-        Init(manager, calculateCacheSize, cleanInterval, false, false);
+        Init(manager, calculateCacheSize, cleanInterval);
     }
     #endregion
 
     #region Init
+    [MemberNotNull(nameof(_binder), nameof(CacheDir), nameof(DefaultPolicy), nameof(CacheManager))]
     private void Init(
         FileCacheManagers manager,
         bool calculateCacheSize = false,
-        TimeSpan cleanInterval = new(),
-        bool setCacheDirToDefault = true,
-        bool setBinderToDefault = true
-    )
+        TimeSpan cleanInterval = new())
     {
         _name = $"FileCache_{_nameCounter}";
         _nameCounter++;
@@ -398,20 +399,17 @@ public class FileCache : ObjectCache
         MaxCacheSize = long.MaxValue;
 
         // set default values if not already set
-        if (setCacheDirToDefault) CacheDir = DefaultCachePath;
-        if (setBinderToDefault) _binder = new FileCacheBinder();
+        CacheDir ??= DefaultCachePath;
+        _binder ??= new FileCacheBinder();
 
         // if it doesn't exist, we need to make it
-        if (!Directory.Exists(CacheDir)) Directory.CreateDirectory(CacheDir);
+        if (!Directory.Exists(CacheDir)) Directory.CreateDirectory(CacheDir!);
 
         // only set the clean interval if the user supplied it
         if (cleanInterval > new TimeSpan()) _cleanInterval = cleanInterval;
 
         //set up cache manager
-        CacheManager = FileCacheManagerFactory.Create(manager);
-        CacheManager.CacheDir = CacheDir;
-        CacheManager.CacheSubFolder = CacheSubFolder;
-        CacheManager.PolicySubFolder = PolicySubFolder;
+        CacheManager = FileCacheManagerFactory.Create(manager, CacheDir, CacheSubFolder, PolicySubFolder);
         CacheManager.Binder = _binder;
         CacheManager.AccessTimeout = new TimeSpan();
 
@@ -428,7 +426,7 @@ public class FileCache : ObjectCache
     #endregion
 
     #region FileCacheMaxCacheSizeReached
-    private void FileCacheMaxCacheSizeReached(object sender, FileCacheEventArgs e)
+    private void FileCacheMaxCacheSizeReached(object? sender, FileCacheEventArgs e)
     {
         Task.Factory.StartNew(() =>
         {
@@ -445,7 +443,7 @@ public class FileCache : ObjectCache
     ///     Returns the clean lock file if it can be opened, otherwise it is being used by another process so return null
     /// </summary>
     /// <returns></returns>
-    private FileStream GetCleaningLock()
+    private FileStream? GetCleaningLock()
     {
         try
         {
@@ -491,7 +489,7 @@ public class FileCache : ObjectCache
     ///     rather expensive operation, so use with discretion.
     /// </summary>
     /// <returns>The new size of the cache</returns>
-    public long ShrinkCacheToSize(long newSize, string regionName = null)
+    public long ShrinkCacheToSize(long newSize, string? regionName = null)
     {
         long originalSize;
         long removed;
@@ -549,7 +547,7 @@ public class FileCache : ObjectCache
     ///     Loop through the cache and delete all expired files
     /// </summary>
     /// <returns>The amount removed (in bytes)</returns>
-    public long CleanCache(string regionName = null)
+    public long CleanCache(string? regionName = null)
     {
         long removed = 0;
 
@@ -560,7 +558,7 @@ public class FileCache : ObjectCache
 
         var regions =
             !string.IsNullOrEmpty(regionName)
-                ? new List<string>(1) { regionName }
+                ? new List<string>(1) { regionName! }
                 : CacheManager.GetRegions();
 
         foreach (var region in regions)
@@ -598,7 +596,7 @@ public class FileCache : ObjectCache
     ///     specified amount (in bytes).
     /// </summary>
     /// <returns>The amount of data that was actually removed</returns>
-    private long DeleteOldestFiles(long amount, string regionName = null)
+    private long DeleteOldestFiles(long amount, string? regionName = null)
     {
         // Verify that we actually need to shrink
         if (amount <= 0) return 0;
@@ -608,7 +606,7 @@ public class FileCache : ObjectCache
 
         var regions =
             !string.IsNullOrEmpty(regionName)
-                ? new List<string>(1) { regionName }
+                ? new List<string>(1) { regionName! }
                 : CacheManager.GetRegions();
 
         foreach (var region in regions)
@@ -658,15 +656,15 @@ public class FileCache : ObjectCache
     /// </summary>
     /// <param name="regionName">The region to calculate.  If NULL, will return total size.</param>
     /// <returns></returns>
-    public long GetCacheSize(string regionName = null)
+    public long GetCacheSize(string? regionName = null)
     {
         long size = 0;
 
         //AC note: First parameter is unused, so just pass in garbage ("DummyValue")
-        var policyPath = Path.GetDirectoryName(CacheManager.GetPolicyPath("DummyValue", regionName));
-        var cachePath = Path.GetDirectoryName(CacheManager.GetCachePath("DummyValue", regionName));
-        size += CacheSizeHelper(new DirectoryInfo(policyPath!));
-        size += CacheSizeHelper(new DirectoryInfo(cachePath!));
+        var policyPath = Path.GetDirectoryName(CacheManager.GetPolicyPath("DummyValue", regionName))!;
+        var cachePath = Path.GetDirectoryName(CacheManager.GetCachePath("DummyValue", regionName))!;
+        size += CacheSizeHelper(new DirectoryInfo(policyPath));
+        size += CacheSizeHelper(new DirectoryInfo(cachePath));
         return size;
     }
     #endregion
@@ -703,7 +701,7 @@ public class FileCache : ObjectCache
         //release it (can't delete a file that is open!), which somewhat muddies our condition of needing
         //exclusive access to the FileCache.  However, the time between closing and making the call to
         //delete is so small that we probably won't run into an exception most of the time.
-        FileStream cacheLock = null;
+        FileStream? cacheLock = null;
         var totalTime = new TimeSpan(0);
         var interval = new TimeSpan(0, 0, 0, 0, 50);
         var timeToWait = AccessTimeout;
@@ -731,7 +729,7 @@ public class FileCache : ObjectCache
     ///     Flushes the file cache using DateTime.Now as the minimum date
     /// </summary>
     /// <param name="regionName"></param>
-    public void Flush(string regionName = null)
+    public void Flush(string? regionName = null)
     {
         Flush(DateTime.Now, regionName);
     }
@@ -743,7 +741,7 @@ public class FileCache : ObjectCache
     /// </summary>
     /// <param name="minDate"></param>
     /// <param name="regionName"></param>
-    public void Flush(DateTime minDate, string regionName = null)
+    public void Flush(DateTime minDate, string? regionName = null)
     {
         // prevent other threads from altering stuff while we delete junk
         using var cLock = GetCleaningLock();
@@ -751,7 +749,7 @@ public class FileCache : ObjectCache
 
         var regions =
             !string.IsNullOrEmpty(regionName)
-                ? new List<string>(1) { regionName }
+                ? new List<string>(1) { regionName! }
                 : CacheManager.GetRegions();
 
         foreach (var region in regions)
@@ -783,11 +781,10 @@ public class FileCache : ObjectCache
     /// <param name="key">The key of the item</param>
     /// <param name="regionName">The region in which the key exists</param>
     /// <returns></returns>
-    public CacheItemPolicy GetPolicy(string key, string regionName = null)
+    public CacheItemPolicy GetPolicy(string key, string? regionName = null)
     {
         var policy = new CacheItemPolicy();
         var payload = CacheManager.ReadFile(PayloadMode.Filename, key, regionName);
-        if (payload == null) return policy;
         try
         {
             policy.SlidingExpiration = payload.Policy.SlidingExpiration;
@@ -808,7 +805,7 @@ public class FileCache : ObjectCache
     /// </summary>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    public IEnumerable<string> GetKeys(string regionName = null)
+    public IEnumerable<string> GetKeys(string? regionName = null)
     {
         return CacheManager.GetKeys(regionName);
     }
@@ -823,10 +820,10 @@ public class FileCache : ObjectCache
     /// <param name="policy"></param>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    public override object AddOrGetExisting(string key, object value, CacheItemPolicy policy, string regionName = null)
+    public override object? AddOrGetExisting(string key, object value, CacheItemPolicy policy, string? regionName = null)
     {
         var path = CacheManager.GetCachePath(key, regionName);
-        object oldData = null;
+        object? oldData = null;
 
         //pull old value if it exists
         if (File.Exists(path))
@@ -854,10 +851,10 @@ public class FileCache : ObjectCache
     /// <param name="value"></param>
     /// <param name="policy"></param>
     /// <returns></returns>
-    public override CacheItem AddOrGetExisting(CacheItem value, CacheItemPolicy policy)
+    public override CacheItem? AddOrGetExisting(CacheItem value, CacheItemPolicy policy)
     {
         var oldData = AddOrGetExisting(value.Key, value.Value, policy, value.RegionName);
-        CacheItem returnItem = null;
+        CacheItem? returnItem = null;
 
         if (oldData != null)
             returnItem = new CacheItem(value.Key)
@@ -865,7 +862,7 @@ public class FileCache : ObjectCache
                 Value = oldData,
                 RegionName = value.RegionName
             };
-        return returnItem!;
+        return returnItem;
     }
 
     /// <summary>
@@ -876,8 +873,8 @@ public class FileCache : ObjectCache
     /// <param name="absoluteExpiration"></param>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    public override object AddOrGetExisting(string key, object value, DateTimeOffset absoluteExpiration,
-        string regionName = null)
+    public override object? AddOrGetExisting(string key, object value, DateTimeOffset absoluteExpiration,
+        string? regionName = null)
     {
         var policy = new CacheItemPolicy
         {
@@ -894,7 +891,7 @@ public class FileCache : ObjectCache
     /// <param name="key"></param>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    public override bool Contains(string key, string regionName = null)
+    public override bool Contains(string key, string? regionName = null)
     {
         var path = CacheManager.GetCachePath(key, regionName);
         return File.Exists(path);
@@ -909,7 +906,7 @@ public class FileCache : ObjectCache
     /// <param name="regionName"></param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public override CacheEntryChangeMonitor CreateCacheEntryChangeMonitor(IEnumerable<string> keys, string regionName = null)
+    public override CacheEntryChangeMonitor CreateCacheEntryChangeMonitor(IEnumerable<string> keys, string? regionName = null)
     {
         throw new NotImplementedException();
     }
@@ -927,7 +924,7 @@ public class FileCache : ObjectCache
     /// <param name="key"></param>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    public override object Get(string key, string regionName = null)
+    public override object? Get(string key, string? regionName = null)
     {
         var payload = CacheManager.ReadFile(PayloadReadMode, key, regionName);
         CacheManager.GetCachePath(key, regionName);
@@ -986,7 +983,7 @@ public class FileCache : ObjectCache
     /// <param name="key"></param>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    public override CacheItem GetCacheItem(string key, string regionName = null)
+    public override CacheItem GetCacheItem(string key, string? regionName = null)
     {
         var value = Get(key, regionName);
         var item = new CacheItem(key)
@@ -1004,7 +1001,7 @@ public class FileCache : ObjectCache
     /// </summary>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    public override long GetCount(string regionName = null)
+    public override long GetCount(string? regionName = null)
     {
         regionName ??= string.Empty;
         var path = Path.Combine(CacheDir, CacheSubFolder, regionName);
@@ -1019,14 +1016,14 @@ public class FileCache : ObjectCache
     /// </summary>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    public IEnumerator<KeyValuePair<string, object>> GetEnumerator(string regionName = null)
+    public IEnumerator<KeyValuePair<string, object?>> GetEnumerator(string? regionName = null)
     {
         //AC: This seems inefficient.  Wouldn't it be better to do this using a cursor?
-        var enumerator = new List<KeyValuePair<string, object>>();
+        var enumerator = new List<KeyValuePair<string, object?>>();
 
         var keys = CacheManager.GetKeys(regionName);
         foreach (var key in keys) 
-            enumerator.Add(new KeyValuePair<string, object>(key, Get(key, regionName)));
+            enumerator.Add(new KeyValuePair<string, object?>(key, Get(key, regionName)));
         // ReSharper disable once NotDisposedResourceIsReturned
         return enumerator.GetEnumerator();
     }
@@ -1035,7 +1032,7 @@ public class FileCache : ObjectCache
     ///     Will return an enumerator with all cache items listed in the root file path ONLY
     /// </summary>
     /// <returns></returns>
-    protected override IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+    protected override IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
     {
         return GetEnumerator();
     }
@@ -1048,9 +1045,9 @@ public class FileCache : ObjectCache
     /// <param name="keys"></param>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    public override IDictionary<string, object> GetValues(IEnumerable<string> keys, string regionName = null)
+    public override IDictionary<string, object?> GetValues(IEnumerable<string> keys, string? regionName = null)
     {
-        var values = new Dictionary<string, object>();
+        var values = new Dictionary<string, object?>();
         foreach (var key in keys) values[key] = Get(key, regionName);
         return values;
     }
@@ -1070,9 +1067,9 @@ public class FileCache : ObjectCache
     /// <param name="key"></param>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    public override object Remove(string key, string regionName = null)
+    public override object? Remove(string key, string? regionName = null)
     {
-        object valueToDelete = null;
+        object? valueToDelete = null;
 
         if (!Contains(key, regionName)) return null;
         // Because of the possibility of multiple threads accessing this, it's possible that
@@ -1110,7 +1107,7 @@ public class FileCache : ObjectCache
     /// <param name="value"></param>
     /// <param name="policy"></param>
     /// <param name="regionName"></param>
-    public override void Set(string key, object value, CacheItemPolicy policy, string regionName = null)
+    public override void Set(string key, object? value, CacheItemPolicy policy, string? regionName = null)
     {
         Add(key, value, policy, regionName);
     }
@@ -1132,7 +1129,7 @@ public class FileCache : ObjectCache
     /// <param name="value"></param>
     /// <param name="absoluteExpiration"></param>
     /// <param name="regionName"></param>
-    public override void Set(string key, object value, DateTimeOffset absoluteExpiration, string regionName = null)
+    public override void Set(string key, object value, DateTimeOffset absoluteExpiration, string? regionName = null)
     {
         Add(key, value, absoluteExpiration, regionName);
     }
@@ -1142,7 +1139,7 @@ public class FileCache : ObjectCache
     /// </summary>
     /// <param name="key"></param>
     /// <returns></returns>
-    public override object this[string key]
+    public override object? this[string key]
     {
         get => Get(key, DefaultRegion);
         set => Set(key, value, DefaultPolicy, DefaultRegion);

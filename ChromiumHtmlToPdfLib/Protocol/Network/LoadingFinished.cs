@@ -33,7 +33,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Network;
 internal class LoadingFinished : Base
 {
     #region Properties
-    [JsonProperty("params")] public LoadingFinishedParams Params { get; set; }
+    [JsonProperty("params")] public LoadingFinishedParams Params { get; set; } = null!;
     #endregion
 
     #region FromJson
@@ -44,7 +44,7 @@ internal class LoadingFinished : Base
     /// <returns></returns>
     public new static LoadingFinished FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<LoadingFinished>(json, LoadingFinishedConverter.Settings);
+        return JsonConvert.DeserializeObject<LoadingFinished>(json, LoadingFinishedConverter.Settings)!;
     }
     #endregion
 }
@@ -52,7 +52,7 @@ internal class LoadingFinished : Base
 internal class LoadingFinishedParams
 {
     #region Properties
-    [JsonProperty("requestId")] public string RequestId { get; set; }
+    [JsonProperty("requestId")] public string? RequestId { get; set; }
 
     [JsonProperty("timestamp")] public double Timestamp { get; set; }
 

@@ -38,7 +38,7 @@ internal class Page
     ///     The result
     /// </summary>
     [JsonProperty("result")]
-    public PageResult Result { get; set; }
+    public PageResult Result { get; set; } = null!;
     #endregion
 
     #region FromJson
@@ -49,7 +49,7 @@ internal class Page
     /// <returns></returns>
     public static Page FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<Page>(json);
+        return JsonConvert.DeserializeObject<Page>(json)!;
     }
     #endregion
 }
@@ -60,6 +60,6 @@ internal class Page
 internal class PageResult
 {
     #region Propertie
-    [JsonProperty("targetId")] public string TargetId { get; set; }
+    [JsonProperty("targetId")] public string? TargetId { get; set; }
     #endregion
 }

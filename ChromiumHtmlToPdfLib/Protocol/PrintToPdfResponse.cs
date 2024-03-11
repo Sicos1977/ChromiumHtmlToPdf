@@ -39,7 +39,7 @@ internal class PrintToPdfResponse
     ///     <see cref="PrintToPdfResult" />
     /// </summary>
     [JsonProperty("result")]
-    public PrintToPdfResult Result { get; set; }
+    public PrintToPdfResult Result { get; set; } = null!;
 
     /// <summary>
     ///     Returns <see cref="PrintToPdfResult.Data" /> as array of bytes
@@ -55,7 +55,7 @@ internal class PrintToPdfResponse
     /// <returns></returns>
     public static PrintToPdfResponse FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<PrintToPdfResponse>(json);
+        return JsonConvert.DeserializeObject<PrintToPdfResponse>(json)!;
     }
     #endregion
 }
@@ -70,12 +70,12 @@ internal class PrintToPdfResult
     ///     The PDF as base64 string
     /// </summary>
     [JsonProperty("data")]
-    public string Data { get; set; }
+    public string Data { get; set; } = null!;
 
     /// <summary>
     ///     Returns a stream handle number
     /// </summary>
     [JsonProperty("stream")]
-    public string Stream { get; set; }
+    public string? Stream { get; set; }
     #endregion
 }

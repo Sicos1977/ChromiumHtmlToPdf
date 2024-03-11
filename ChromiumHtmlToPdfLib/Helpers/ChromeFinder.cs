@@ -85,7 +85,7 @@ internal static class ChromeFinder
     ///     Tries to find Chrome
     /// </summary>
     /// <returns></returns>
-    internal static string Find()
+    internal static string? Find()
     {
         // For Windows we first check the registry. This is the safest
         // method and also considers non-default installation locations.
@@ -100,7 +100,7 @@ internal static class ChromeFinder
             if (key != null)
             {
                 // ReSharper disable once AssignNullToNotNullAttribute
-                var path = Path.Combine(key.ToString(), "chrome.exe");
+                var path = Path.Combine(key.ToString()!, "chrome.exe");
                 if (File.Exists(path))
                     return path;
             }

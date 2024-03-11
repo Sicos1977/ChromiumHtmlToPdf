@@ -103,7 +103,7 @@ public class LimitedConcurrencyLevel : TaskScheduler
 
                         // Get the next item from the queue
                         // ReSharper disable once PossibleNullReferenceException
-                        item = _tasks.First.Value;
+                        item = _tasks.First!.Value;
                         _tasks.RemoveFirst();
                     }
 

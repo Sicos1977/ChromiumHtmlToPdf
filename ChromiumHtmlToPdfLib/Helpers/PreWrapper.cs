@@ -48,12 +48,12 @@ internal class PreWrapper
     /// <summary>
     ///     The temp folder
     /// </summary>
-    private readonly DirectoryInfo _tempDirectory;
+    private readonly DirectoryInfo? _tempDirectory;
 
     /// <summary>
     ///     <see cref="Logger"/>
     /// </summary>
-    private readonly Logger _logger;
+    private readonly Logger? _logger;
     #endregion
 
     #region Properties
@@ -63,7 +63,7 @@ internal class PreWrapper
     /// </summary>
     // ReSharper disable once UnusedAutoPropertyAccessor.Global
     // ReSharper disable once MemberCanBePrivate.Global
-    public string InstanceId { get; set; }
+    public string? InstanceId { get; set; }
 
     /// <summary>
     ///     When set then this option will be used for white space wrapping
@@ -77,20 +77,20 @@ internal class PreWrapper
     ///     When set then this font will be used when &lt;PRE&gt; wrapping.
     ///     Otherwise the default system font will be used.
     /// </summary>
-    public string FontFamily { get; set; }
+    public string? FontFamily { get; set; }
 
     /// <summary>
     ///     When set then this style will be used when &lt;PRE&gt; wrapping.
     ///     Otherwise the default system font style will be used.
     /// </summary>
-    public string FontStyle { get; set; }
+    public string? FontStyle { get; set; }
 
     /// <summary>
     ///     When set then this font size will be used when &lt;PRE&gt; wrapping.
     ///     Otherwise the default system font size will be used.
     /// </summary>
 
-    public string FontSize { get; set; }
+    public string? FontSize { get; set; }
 
     /// <summary>
     ///     Returns the temporary HTML file
@@ -111,7 +111,7 @@ internal class PreWrapper
     /// </summary>
     /// <param name="tempDirectory">When set then this directory will be used for temporary files</param>
     /// <param name="logger"><see cref="Logger"/></param>
-    public PreWrapper(DirectoryInfo tempDirectory, Logger logger)
+    public PreWrapper(DirectoryInfo? tempDirectory, Logger? logger)
     {
         _tempDirectory = tempDirectory;
         _logger = logger;
@@ -125,7 +125,7 @@ internal class PreWrapper
     /// <param name="inputFile">The input file</param>
     /// <param name="encoding">The encoding used in the input file</param>
     /// <returns>The wrapped HTML file</returns>
-    public string WrapFile(string inputFile, Encoding encoding)
+    public string WrapFile(string inputFile, Encoding? encoding)
     {
         var temp = Path.GetFileName(inputFile) ?? string.Empty;
         var title = WebUtility.HtmlEncode(temp);

@@ -6,7 +6,7 @@ namespace ChromiumHtmlToPdfLib.FileCache;
 /// <summary>
 ///     A basic file cache manager that does not use hashing
 /// </summary>
-internal class BasicFileCacheManager : FileCacheManager
+internal class BasicFileCacheManager(string cacheDir, string cacheSubFolder, string policySubFolder) : FileCacheManager(cacheDir, cacheSubFolder, policySubFolder)
 {
     #region GetKeys
     /// <summary>
@@ -14,7 +14,7 @@ internal class BasicFileCacheManager : FileCacheManager
     /// </summary>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    public override IEnumerable<string> GetKeys(string regionName = null)
+    public override IEnumerable<string> GetKeys(string? regionName = null)
     {
         var region = "";
         if (string.IsNullOrEmpty(regionName) == false) region = regionName;
@@ -33,7 +33,7 @@ internal class BasicFileCacheManager : FileCacheManager
     /// <param name="fileName"></param>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    public override string GetCachePath(string fileName, string regionName = null)
+    public override string GetCachePath(string fileName, string? regionName = null)
     {
         regionName ??= string.Empty;
         var directory = Path.Combine(CacheDir, CacheSubFolder, regionName);
@@ -50,7 +50,7 @@ internal class BasicFileCacheManager : FileCacheManager
     /// <param name="key"></param>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    public override string GetPolicyPath(string key, string regionName = null)
+    public override string GetPolicyPath(string key, string? regionName = null)
     {
         regionName ??= string.Empty;
         var directory = Path.Combine(CacheDir, PolicySubFolder, regionName);

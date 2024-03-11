@@ -38,7 +38,7 @@ internal class Expression : MessageBase
     ///     <see cref="ExpressionResult" />
     /// </summary>
     [JsonProperty("result")]
-    public ExpressionResult Result { get; set; }
+    public ExpressionResult? Result { get; set; }
     #endregion
 
     #region FromJson
@@ -49,7 +49,7 @@ internal class Expression : MessageBase
     /// <returns></returns>
     public new static Expression FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<Expression>(json);
+        return JsonConvert.DeserializeObject<Expression>(json)!;
     }
     #endregion
 }
@@ -64,13 +64,13 @@ internal class ExpressionResult
     ///     Returns an object when an exception occurs when Chromium evaluated the given expression
     /// </summary>
     [JsonProperty("exceptionDetails")]
-    public ExpressionExceptionDetails ExceptionDetails { get; set; }
+    public ExpressionExceptionDetails? ExceptionDetails { get; set; }
 
     /// <summary>
     ///     Returns the results for the given expression
     /// </summary>
     [JsonProperty("result")]
-    public ExpressionInnerResult InnerResult { get; set; }
+    public ExpressionInnerResult? InnerResult { get; set; }
     #endregion
 }
 
@@ -90,7 +90,7 @@ internal class ExpressionExceptionDetails
     ///     <see cref="ExpressionInnerResult" />
     /// </summary>
     [JsonProperty("exception")]
-    public ExpressionInnerResult Exception { get; set; }
+    public ExpressionInnerResult? Exception { get; set; }
 
     /// <summary>
     ///     The exception id
@@ -108,13 +108,13 @@ internal class ExpressionExceptionDetails
     ///     The script <see cref="MessageBase.Id" />
     /// </summary>
     [JsonProperty("scriptId")]
-    public string ScriptId { get; set; }
+    public string? ScriptId { get; set; }
 
     /// <summary>
     ///     The text
     /// </summary>
     [JsonProperty("text")]
-    public string Text { get; set; }
+    public string? Text { get; set; }
     #endregion
 }
 
@@ -124,16 +124,16 @@ internal class ExpressionExceptionDetails
 internal class ExpressionInnerResult
 {
     #region Properties
-    [JsonProperty("className")] public string ClassName { get; set; }
+    [JsonProperty("className")] public string? ClassName { get; set; }
 
-    [JsonProperty("description")] public string Description { get; set; }
+    [JsonProperty("description")] public string? Description { get; set; }
 
-    [JsonProperty("objectId")] public string ObjectId { get; set; }
+    [JsonProperty("objectId")] public string? ObjectId { get; set; }
 
-    [JsonProperty("subtype")] public string Subtype { get; set; }
+    [JsonProperty("subtype")] public string? Subtype { get; set; }
 
-    [JsonProperty("type")] public string Type { get; set; }
+    [JsonProperty("type")] public string? Type { get; set; }
 
-    [JsonProperty("value")] public string Value { get; set; }
+    [JsonProperty("value")] public string? Value { get; set; }
     #endregion
 }

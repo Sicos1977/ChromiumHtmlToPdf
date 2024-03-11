@@ -39,7 +39,7 @@ internal class Message : MessageBase
     ///     The method executed by Chrome
     /// </summary>
     [JsonProperty("method")]
-    public string Method { get; set; }
+    public string? Method { get; set; }
 
     /// <summary>
     ///     The parameters that we want to feed into Chromium
@@ -79,7 +79,7 @@ internal class Message : MessageBase
     /// <returns></returns>
     public new static Message FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<Message>(json);
+        return JsonConvert.DeserializeObject<Message>(json)!;
     }
     #endregion
 }

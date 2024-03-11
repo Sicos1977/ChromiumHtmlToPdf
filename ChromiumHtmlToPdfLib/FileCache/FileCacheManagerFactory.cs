@@ -2,20 +2,18 @@
 
 internal class FileCacheManagerFactory
 {
-    internal static FileCacheManager Create(FileCacheManagers type)
+    internal static FileCacheManager Create(FileCacheManagers type, string cacheDir, string cacheSubFolder, string policySubFolder)
     {
         FileCacheManager instance;
 
         switch (type)
         {
-            case FileCacheManagers.Basic:
-                instance = new BasicFileCacheManager();
-                break;
             case FileCacheManagers.Hashed:
-                instance = new HashedFileCacheManager();
+                instance = new HashedFileCacheManager(cacheDir, cacheSubFolder, policySubFolder);
                 break;
+            case FileCacheManagers.Basic:
             default:
-                instance = new BasicFileCacheManager();
+            instance = new BasicFileCacheManager(cacheDir, cacheSubFolder, policySubFolder);
                 break;
         }
 

@@ -33,7 +33,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Network;
 internal class LoadingFailed : Base
 {
     #region Properties
-    [JsonProperty("params")] public LoadingFailedParams Params { get; set; }
+    [JsonProperty("params")] public LoadingFailedParams Params { get; set; } = null!;
     #endregion
 
     #region FromJson
@@ -44,7 +44,7 @@ internal class LoadingFailed : Base
     /// <returns></returns>
     public new static LoadingFailed FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<LoadingFailed>(json, LoadingFailedConverter.Settings);
+        return JsonConvert.DeserializeObject<LoadingFailed>(json, LoadingFailedConverter.Settings)!;
     }
     #endregion
 }
@@ -52,13 +52,13 @@ internal class LoadingFailed : Base
 internal class LoadingFailedParams
 {
     #region Properties
-    [JsonProperty("requestId")] public string RequestId { get; set; }
+    [JsonProperty("requestId")] public string? RequestId { get; set; }
 
     [JsonProperty("timestamp")] public double Timestamp { get; set; }
 
-    [JsonProperty("type")] public string Type { get; set; }
+    [JsonProperty("type")] public string? Type { get; set; }
 
-    [JsonProperty("errorText")] public string ErrorText { get; set; }
+    [JsonProperty("errorText")] public string? ErrorText { get; set; }
 
     [JsonProperty("canceled")] public bool Canceled { get; set; }
     #endregion

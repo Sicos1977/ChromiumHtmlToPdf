@@ -38,7 +38,7 @@ internal class Base
     ///     The method executed by Chromium
     /// </summary>
     [JsonProperty("method")]
-    public string Method { get; set; }
+    public string? Method { get; set; }
     #endregion
 
     #region FromJson
@@ -49,7 +49,7 @@ internal class Base
     /// <returns></returns>
     public static Base FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<Base>(json);
+        return JsonConvert.DeserializeObject<Base>(json)!;
     }
     #endregion
 }

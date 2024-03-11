@@ -31,10 +31,10 @@ internal class PriorityQueue<T> where T : IComparable<T>
     /// <param name="comparer">
     ///     The comparer to use.  The default comparer will make the smallest item the root of the heap.
     /// </param>
-    public PriorityQueue(IComparer<T> comparer = null)
+    public PriorityQueue(IComparer<T>? comparer = null)
     {
         _items = [];
-        if (comparer == null) _comparer = new GenericComparer<T>();
+        _comparer = comparer ?? new GenericComparer<T>();
     }
 
     /// <summary>
@@ -42,7 +42,7 @@ internal class PriorityQueue<T> where T : IComparable<T>
     /// </summary>
     /// <param name="unsorted">The unsorted list of items</param>
     /// <param name="comparer">The comparer to use.  The default comparer will make the smallest item the root of the heap.</param>
-    public PriorityQueue(List<T> unsorted, IComparer<T> comparer = null) : this(comparer)
+    public PriorityQueue(List<T> unsorted, IComparer<T>? comparer = null) : this(comparer)
     {
         foreach (var t in unsorted)
             _items.Add(t);
@@ -198,9 +198,12 @@ internal class PriorityQueue<T> where T : IComparable<T>
     #region GenericComparer
     private class GenericComparer<TInner> : IComparer<TInner> where TInner : IComparable<TInner>
     {
-        public int Compare(TInner x, TInner y)
+        public int Compare(TInner? x, TInner? y)
         {
-            // ReSharper disable once PossibleNullReferenceException
+            if (x == null && y == null) return 0;
+            if (x == null) return -1;
+            if (y == null) return 1;
+
             return x.CompareTo(y);
         }
     }

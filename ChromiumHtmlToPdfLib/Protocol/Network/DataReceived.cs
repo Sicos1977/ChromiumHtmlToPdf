@@ -33,9 +33,9 @@ namespace ChromiumHtmlToPdfLib.Protocol.Network;
 internal class DataReceived
 {
     #region Properties
-    [JsonProperty("method")] public string Method { get; set; }
+    [JsonProperty("method")] public string? Method { get; set; }
 
-    [JsonProperty("params")] public DataReceivedParams Params { get; set; }
+    [JsonProperty("params")] public DataReceivedParams Params { get; set; } = null!;
     #endregion
 
     #region FromJson
@@ -46,7 +46,7 @@ internal class DataReceived
     /// <returns></returns>
     public static DataReceived FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<DataReceived>(json, DataReceivedConverter.Settings);
+        return JsonConvert.DeserializeObject<DataReceived>(json, DataReceivedConverter.Settings)!;
     }
     #endregion
 }
@@ -54,7 +54,7 @@ internal class DataReceived
 internal class DataReceivedParams
 {
     #region Properties
-    [JsonProperty("requestId")] public string RequestId { get; set; }
+    [JsonProperty("requestId")] public string? RequestId { get; set; }
 
     [JsonProperty("timestamp")] public double Timestamp { get; set; }
 

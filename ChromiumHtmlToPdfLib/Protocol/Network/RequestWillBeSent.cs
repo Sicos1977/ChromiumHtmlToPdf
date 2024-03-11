@@ -33,7 +33,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Network;
 internal class RequestWillBeSent : Base
 {
     #region Properties
-    [JsonProperty("params")] public RequestWillBeSentParams Params { get; set; }
+    [JsonProperty("params")] public RequestWillBeSentParams Params { get; set; } = null!;
     #endregion
 
     #region FromJson
@@ -44,7 +44,7 @@ internal class RequestWillBeSent : Base
     /// <returns></returns>
     public new static RequestWillBeSent FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<RequestWillBeSent>(json, RequestWillBeSentConverter.Settings);
+        return JsonConvert.DeserializeObject<RequestWillBeSent>(json, RequestWillBeSentConverter.Settings)!;
     }
     #endregion
 }
@@ -52,23 +52,23 @@ internal class RequestWillBeSent : Base
 internal class RequestWillBeSentParams
 {
     #region Properties
-    [JsonProperty("requestId")] public string RequestId { get; set; }
+    [JsonProperty("requestId")] public string? RequestId { get; set; }
 
-    [JsonProperty("loaderId")] public string LoaderId { get; set; }
+    [JsonProperty("loaderId")] public string? LoaderId { get; set; }
 
-    [JsonProperty("documentURL")] public string DocumentUrl { get; set; }
+    [JsonProperty("documentURL")] public string? DocumentUrl { get; set; }
 
-    [JsonProperty("request")] public RequestWillBeSentRequest Request { get; set; }
+    [JsonProperty("request")] public RequestWillBeSentRequest Request { get; set; } = null!;
 
     [JsonProperty("timestamp")] public double Timestamp { get; set; }
 
     [JsonProperty("wallTime")] public double WallTime { get; set; }
 
-    [JsonProperty("initiator")] public WillBeSentInitiator Initiator { get; set; }
+    [JsonProperty("initiator")] public WillBeSentInitiator? Initiator { get; set; }
 
-    [JsonProperty("type")] public string Type { get; set; }
+    [JsonProperty("type")] public string? Type { get; set; }
 
-    [JsonProperty("frameId")] public string FrameId { get; set; }
+    [JsonProperty("frameId")] public string? FrameId { get; set; }
 
     [JsonProperty("hasUserGesture")] public bool HasUserGesture { get; set; }
     #endregion
@@ -77,24 +77,24 @@ internal class RequestWillBeSentParams
 internal class WillBeSentInitiator
 {
     #region Properties
-    [JsonProperty("type")] public string Type { get; set; }
+    [JsonProperty("type")] public string? Type { get; set; }
     #endregion
 }
 
 internal class RequestWillBeSentRequest
 {
     #region Properties
-    [JsonProperty("url")] public string Url { get; set; }
+    [JsonProperty("url")] public string? Url { get; set; }
 
-    [JsonProperty("method")] public string Method { get; set; }
+    [JsonProperty("method")] public string? Method { get; set; }
 
-    [JsonProperty("headers")] public RequestWillBeSentHeaders Headers { get; set; }
+    [JsonProperty("headers")] public RequestWillBeSentHeaders? Headers { get; set; }
 
-    [JsonProperty("mixedContentType")] public string MixedContentType { get; set; }
+    [JsonProperty("mixedContentType")] public string? MixedContentType { get; set; }
 
-    [JsonProperty("initialPriority")] public string InitialPriority { get; set; }
+    [JsonProperty("initialPriority")] public string? InitialPriority { get; set; }
 
-    [JsonProperty("referrerPolicy")] public string ReferrerPolicy { get; set; }
+    [JsonProperty("referrerPolicy")] public string? ReferrerPolicy { get; set; }
     #endregion
 }
 

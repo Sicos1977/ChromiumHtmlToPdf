@@ -38,7 +38,7 @@ internal class Error : MessageBase
     ///     <see cref="InnerError" />
     /// </summary>
     [JsonProperty("error")]
-    public ErrorInnerError InnerError { get; set; }
+    public ErrorInnerError InnerError { get; set; } = null!;
     #endregion
 
     #region FromJson
@@ -49,7 +49,7 @@ internal class Error : MessageBase
     /// <returns></returns>
     public new static Error FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<Error>(json);
+        return JsonConvert.DeserializeObject<Error>(json)!;
     }
     #endregion
 }
@@ -70,6 +70,6 @@ internal class ErrorInnerError
     ///     The error message
     /// </summary>
     [JsonProperty("message")]
-    public string Message { get; set; }
+    public string? Message { get; set; }
     #endregion
 }

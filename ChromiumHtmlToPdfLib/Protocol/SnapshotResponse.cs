@@ -45,7 +45,7 @@ internal class SnapshotResponse
     ///     The snapshot result
     /// </summary>
     [JsonProperty("result")]
-    public SnapshotResult Result { get; set; }
+    public SnapshotResult Result { get; set; } = null!;
 
     /// <summary>
     ///     Returns <see cref="SnapshotResult.Data" /> as array of bytes
@@ -61,7 +61,7 @@ internal class SnapshotResponse
     /// <returns></returns>
     public static SnapshotResponse FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<SnapshotResponse>(json);
+        return JsonConvert.DeserializeObject<SnapshotResponse>(json)!;
     }
     #endregion
 }
@@ -72,6 +72,6 @@ internal class SnapshotResponse
 internal class SnapshotResult
 {
     #region Properties
-    [JsonProperty("data")] public string Data { get; set; }
+    [JsonProperty("data")] public string Data { get; set; } = null!;
     #endregion
 }

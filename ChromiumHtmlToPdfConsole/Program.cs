@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -23,33 +24,23 @@ static class Program
     /// <summary>
     ///     When set then logging is written to this stream
     /// </summary>
-    private static Stream _logger;
+    private static Stream? _logger;
 
     /// <summary>
     ///     <see cref="LimitedConcurrencyLevel" />
     /// </summary>
-    private static TaskFactory _taskFactory;
-
-    /// <summary>
-    /// A list with <see cref="ConversionItem"/>'s to process
-    /// </summary>
-    private static ConcurrentQueue<ConversionItem> _itemsToConvert;
-
-    /// <summary>
-    /// A list with converted <see cref="ConversionItem"/>'s
-    /// </summary>
-    private static ConcurrentQueue<ConversionItem> _itemsConverted;
+    private static TaskFactory? _taskFactory;
 
     /// <summary>
     ///     Used to keep track of all the worker tasks we are starting
     /// </summary>
-    private static List<Task> _workerTasks;
+    private static List<Task>? _workerTasks;
     #endregion
 
     #region Main
     public static void Main(string[] args)
     {
-        Options options = null;
+        Options? options = null;
 
         try
         {
@@ -75,8 +66,8 @@ static class Program
 
                 if (options.InputIsList)
                 {
-                    _itemsToConvert = new ConcurrentQueue<ConversionItem>();
-                    _itemsConverted = new ConcurrentQueue<ConversionItem>();
+                    var itemsToConvert = new ConcurrentQueue<ConversionItem>();
+                    var itemsConverted = new ConcurrentQueue<ConversionItem>();
 
                     WriteToLog($"Reading input file '{options.Input}'");
                     var lines = File.ReadAllLines(options.Input);
@@ -101,12 +92,12 @@ static class Program
 
                         outputFile = Path.ChangeExtension(outputFile, ".pdf");
 
-                        _itemsToConvert.Enqueue(new ConversionItem(inputUri,
+                        itemsToConvert.Enqueue(new ConversionItem(inputUri,
                             // ReSharper disable once AssignNullToNotNullAttribute
                             Path.Combine(outputPath, outputFile)));
                     }
 
-                    WriteToLog($"{_itemsToConvert.Count} items read");
+                    WriteToLog($"{itemsToConvert.Count} items read");
 
                     if (options.UseMultiThreading)
                     {
@@ -117,7 +108,7 @@ static class Program
                         {
                             var i1 = i;
                             _workerTasks.Add(_taskFactory.StartNew(() =>
-                                ConvertWithTask(options, (i1 + 1).ToString())));
+                                ConvertWithTask(itemsToConvert, itemsConverted, options, (i1 + 1).ToString())));
                         }
 
                         WriteToLog("Started");
@@ -125,11 +116,11 @@ static class Program
                         Task.WaitAll(_workerTasks.ToArray());
                     }
                     else
-                        ConvertWithTask(options, null).GetAwaiter().GetResult();
+                        ConvertWithTask(itemsToConvert, itemsConverted, options, null).GetAwaiter().GetResult();
 
                     // Write conversion information to output file
                     using var output = File.OpenWrite(options.Output);
-                    foreach (var itemConverted in _itemsConverted)
+                    foreach (var itemConverted in itemsConverted)
                     {
                         var bytes = new UTF8Encoding(true).GetBytes(itemConverted.OutputLine);
                         output.Write(bytes, 0, bytes.Length);
@@ -157,9 +148,9 @@ static class Program
     /// </summary>
     /// <param name="args"></param>
     /// <param name="options"><see cref="Options"/></param>
-    private static void ParseCommandlineParameters(IEnumerable<string> args, out Options options)
+    private static void ParseCommandlineParameters(IEnumerable<string> args, out Options? options)
     {
-        Options tempOptions = null;
+        Options? tempOptions = null;
 
         var errors = false;
         var parser = new Parser(settings =>
@@ -246,6 +237,7 @@ static class Program
     /// </summary>
     /// <param name="options"><see cref="Options"/></param>
     /// <returns>Maximum concurrency level</returns>
+    [MemberNotNull(nameof(_taskFactory))]
     private static int SetMaxConcurrencyLevel(Options options)
     {
         var maxConcurrencyLevel = Environment.ProcessorCount;
@@ -286,7 +278,11 @@ static class Program
         if (!string.IsNullOrWhiteSpace(options.ProxyServer))
         {
             converter.SetProxyServer(options.ProxyServer);
-            converter.SetProxyBypassList(options.ProxyByPassList);
+
+            if (!string.IsNullOrWhiteSpace(options.ProxyByPassList))
+            {
+                converter.SetProxyBypassList(options.ProxyByPassList);
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(options.ProxyPacUrl))
@@ -398,11 +394,11 @@ static class Program
     #region ConvertWithTask
     /// <summary>
     /// This function is started from a <see cref="Task"/> and processes <see cref="ConversionItem"/>'s
-    /// that are in the <see cref="_itemsToConvert"/> queue
+    /// that are in the <paramref name="itemsToConvert"/> queue
     /// </summary>
     /// <param name="options"></param>
     /// <param name="instanceId"></param>
-    private static async Task ConvertWithTask(Options options, string instanceId)
+    private static async Task ConvertWithTask(ConcurrentQueue<ConversionItem> itemsToConvert, ConcurrentQueue<ConversionItem> itemsConverted, Options options, string? instanceId)
     {
         var pageSettings = GetPageSettings(options);
 
@@ -419,9 +415,9 @@ static class Program
 
             SetConverterSettings(converter, options);
 
-            while (!_itemsToConvert.IsEmpty)
+            while (!itemsToConvert.IsEmpty)
             {
-                if (!_itemsToConvert.TryDequeue(out var itemToConvert)) continue;
+                if (!itemsToConvert.TryDequeue(out var itemToConvert)) continue;
                 try
                 {
                     await converter.ConvertToPdfAsync(itemToConvert.InputUri, itemToConvert.OutputFile, pageSettings,
@@ -435,7 +431,7 @@ static class Program
                     itemToConvert.SetStatus(ConversionItemStatus.Failed, exception);
                 }
 
-                _itemsConverted.Enqueue(itemToConvert);
+                itemsConverted.Enqueue(itemToConvert);
             }
         }
     }

@@ -50,7 +50,7 @@ public class SerializableCacheItemPolicy
     /// <summary>
     ///     The cache key that this particular policy refers to
     /// </summary>
-    public string Key { get; set; }
+    public string? Key { get; set; }
     #endregion
 
     #region Constructors
@@ -86,7 +86,7 @@ public class SerializableCacheItemPolicy
         writer.Write(AbsoluteExpiration.DateTime.ToBinary());
         writer.Write(AbsoluteExpiration.Offset.TotalMilliseconds);
         writer.Write(SlidingExpiration.TotalMilliseconds);
-        writer.Write(Key);
+        writer.Write(Key ?? string.Empty);
     }
     #endregion
 

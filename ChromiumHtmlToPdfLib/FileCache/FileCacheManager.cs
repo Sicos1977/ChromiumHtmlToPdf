@@ -12,7 +12,7 @@ namespace ChromiumHtmlToPdfLib.FileCache;
 /// <summary>
 ///     An abstract class that provides the basic functionality for a file cache manager
 /// </summary>
-public abstract class FileCacheManager
+public abstract class FileCacheManager(string cacheDir, string cacheSubFolder, string policySubFolder)
 {
     #region Consts
     /// <summary>
@@ -25,22 +25,22 @@ public abstract class FileCacheManager
     /// <summary>
     ///     Returns or sets the directory where the cache will be stored
     /// </summary>
-    public string CacheDir { get; set; }
+    public string CacheDir => cacheDir;
 
     /// <summary>
     ///     Returns or sets the subfolder where the cache will be stored
     /// </summary>
-    public string CacheSubFolder { get; set; }
+    public string CacheSubFolder => cacheSubFolder;
 
     /// <summary>
     ///     Returns or sets the subfolder where the cache policies will be stored
     /// </summary>
-    public string PolicySubFolder { get; set; }
+    public string PolicySubFolder => policySubFolder;
 
     /// <summary>
     ///     Returns or sets the serialization binder
     /// </summary>
-    public SerializationBinder Binder { get; set; }
+    public SerializationBinder? Binder { get; set; }
 
     /// <summary>
     ///     Used to determine how long the FileCache will wait for a file to become
@@ -90,9 +90,9 @@ public abstract class FileCacheManager
     /// <param name="fileName"></param>
     /// <param name="objectBinder"></param>
     /// <returns></returns>
-    protected virtual object DeserializePayloadData(string fileName, SerializationBinder objectBinder = null)
+    protected virtual object? DeserializePayloadData(string fileName, SerializationBinder? objectBinder = null)
     {
-        object data;
+        object? data;
         if (!File.Exists(fileName)) return null;
         using var stream = GetStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
         var formatter = new BinaryFormatter();
@@ -156,8 +156,8 @@ public abstract class FileCacheManager
     /// <param name="objectBinder"></param>
     /// <returns></returns>
     // and restore the visibility to protected
-    public virtual FileCachePayload ReadFile(FileCache.PayloadMode mode, string key, string regionName = null,
-        SerializationBinder objectBinder = null)
+    public virtual FileCachePayload ReadFile(FileCache.PayloadMode mode, string key, string? regionName = null,
+        SerializationBinder? objectBinder = null)
     {
         var cachePath = GetCachePath(key, regionName);
         var policyPath = GetPolicyPath(key, regionName);
@@ -184,7 +184,7 @@ public abstract class FileCacheManager
     #endregion
 
     #region LoadRawPayloadData
-    private byte[] LoadRawPayloadData(string fileName)
+    private byte[]? LoadRawPayloadData(string fileName)
     {
         if (!File.Exists(fileName)) return null;
         using var stream = GetStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -208,9 +208,9 @@ public abstract class FileCacheManager
     /// <param name="fileName"></param>
     /// <param name="objectBinder"></param>
     /// <returns></returns>
-    protected virtual object Deserialize(string fileName, SerializationBinder objectBinder = null)
+    protected virtual object? Deserialize(string fileName, SerializationBinder? objectBinder = null)
     {
-        object data;
+        object? data;
         if (!File.Exists(fileName)) return null;
         using var stream = GetStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
         var formatter = new BinaryFormatter();
@@ -242,7 +242,7 @@ public abstract class FileCacheManager
     /// <summary>
     ///     This function serves to centralize file writes within this class
     /// </summary>
-    public virtual long WriteFile(FileCache.PayloadMode mode, string key, FileCachePayload data, string regionName = null, bool policyUpdateOnly = false)
+    public virtual long WriteFile(FileCache.PayloadMode mode, string key, FileCachePayload data, string? regionName = null, bool policyUpdateOnly = false)
     {
         var cachedPolicy = GetPolicyPath(key, regionName);
         var cachedItemPath = GetCachePath(key, regionName);
@@ -262,7 +262,7 @@ public abstract class FileCacheManager
                     using (var stream = GetStream(cachedItemPath, FileMode.Create, FileAccess.Write, FileShare.None))
                     {
                         var formatter = new BinaryFormatter();
-                        formatter.Serialize(stream, data.Payload);
+                        formatter.Serialize(stream, data.Payload!);
                     }
 
                     break;
@@ -289,7 +289,7 @@ public abstract class FileCacheManager
                     break;
 
                 case FileCache.PayloadMode.Filename:
-                    File.Copy((string)data.Payload, cachedItemPath, true);
+                    File.Copy((string)data.Payload!, cachedItemPath, true);
                     break;
             }
 
@@ -322,14 +322,14 @@ public abstract class FileCacheManager
     /// <param name="key"></param>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    public abstract string GetCachePath(string key, string regionName = null);
+    public abstract string GetCachePath(string key, string? regionName = null);
 
     /// <summary>
     ///     Returns a list of keys for a given region.
     /// </summary>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    public abstract IEnumerable<string> GetKeys(string regionName = null);
+    public abstract IEnumerable<string> GetKeys(string? regionName = null);
 
     /// <summary>
     ///     Builds a string that will get the path to the supplied file's policy file
@@ -337,7 +337,7 @@ public abstract class FileCacheManager
     /// <param name="key"></param>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    public abstract string GetPolicyPath(string key, string regionName = null);
+    public abstract string GetPolicyPath(string key, string? regionName = null);
     #endregion
 
     #region GetRegions
@@ -345,7 +345,7 @@ public abstract class FileCacheManager
     ///     Returns a list of regions, including the root region.
     /// </summary>
     /// <returns></returns>
-    public IEnumerable<string> GetRegions()
+    public IEnumerable<string?> GetRegions()
     {
         var directory = Path.Combine(CacheDir, CacheSubFolder);
         var di = new DirectoryInfo(directory);
@@ -528,7 +528,7 @@ public abstract class FileCacheManager
     /// <returns></returns>
     protected FileStream GetStream(string path, FileMode mode, FileAccess access, FileShare share)
     {
-        FileStream stream = null;
+        FileStream? stream = null;
         var interval = new TimeSpan(0, 0, 0, 0, 50);
         var totalTime = new TimeSpan();
         while (stream == null)
@@ -559,7 +559,7 @@ public abstract class FileCacheManager
     /// <param name="key"></param>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    public virtual long DeleteFile(string key, string regionName = null)
+    public virtual long DeleteFile(string key, string? regionName = null)
     {
         long bytesFreed = 0;
 
@@ -585,19 +585,13 @@ public abstract class FileCacheManager
     /// </summary>
     protected class LocalCacheBinder : SerializationBinder
     {
-        /// <summary>
-        ///     Bind the type to a name
-        /// </summary>
-        /// <param name="assemblyName"></param>
-        /// <param name="typeName"></param>
-        /// <returns></returns>
-        public override Type BindToType(string assemblyName, string typeName)
+        /// <inheritdoc />
+        public override Type? BindToType(string assemblyName, string typeName)
         {
             var currentAssembly = Assembly.GetAssembly(typeof(LocalCacheBinder))!.FullName;
-            assemblyName = currentAssembly;
 
             // Get the type using the typeName and assemblyName
-            var typeToDeserialize = Type.GetType($"{typeName}, {assemblyName}");
+            var typeToDeserialize = Type.GetType($"{typeName}, {currentAssembly}");
 
             return typeToDeserialize;
         }

@@ -54,12 +54,12 @@ public class PageSettings : ICloneable
     ///     - date - formatted print date - title - document title - url - document location - pageNumber - current page number
     ///     - totalPages - total pages in the document For example, would generate span containing the title.
     /// </summary>
-    public string HeaderTemplate { get; set; }
+    public string? HeaderTemplate { get; set; }
 
     /// <summary>
     ///     HTML template for the print footer. Should use the same format as the headerTemplate.
     /// </summary>
-    public string FooterTemplate { get; set; }
+    public string? FooterTemplate { get; set; }
 
     /// <summary>
     ///     Print background graphics. Defaults to false.
@@ -104,7 +104,7 @@ public class PageSettings : ICloneable
     /// <summary>
     ///     Paper ranges to print, e.g., '1-5, 8, 11-13'. Defaults to the empty string, which means print all pages.
     /// </summary>
-    public string PageRanges { get; set; }
+    public string? PageRanges { get; set; }
 
     /// <summary>
     ///     Whether to silently ignore invalid but successfully parsed page ranges, such as '3-2'. Defaults to false.

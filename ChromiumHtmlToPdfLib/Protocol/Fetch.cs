@@ -35,9 +35,9 @@ namespace ChromiumHtmlToPdfLib.Protocol;
 internal class Fetch
 {
     #region Properties
-    [JsonProperty("method")] public string Method { get; set; }
+    [JsonProperty("method")] public string? Method { get; set; }
 
-    [JsonProperty("params")] public FetchParams Params { get; set; }
+    [JsonProperty("params")] public FetchParams Params { get; set; } = null!;
     #endregion
 
     #region FromJson
@@ -48,7 +48,7 @@ internal class Fetch
     /// <returns></returns>
     public static Fetch FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<Fetch>(json);
+        return JsonConvert.DeserializeObject<Fetch>(json)!;
     }
     #endregion
 }
@@ -59,15 +59,15 @@ internal class Fetch
 internal class FetchParams
 {
     #region Properties
-    [JsonProperty("requestId")] public string RequestId { get; set; }
+    [JsonProperty("requestId")] public string RequestId { get; set; } = null!;
 
-    [JsonProperty("request")] public FetchRequest Request { get; set; }
+    [JsonProperty("request")] public FetchRequest Request { get; set; } = null!;
 
-    [JsonProperty("frameId")] public string FrameId { get; set; }
+    [JsonProperty("frameId")] public string? FrameId { get; set; }
 
-    [JsonProperty("resourceType")] public string ResourceType { get; set; }
+    [JsonProperty("resourceType")] public string? ResourceType { get; set; }
 
-    [JsonProperty("networkId")] public string NetworkId { get; set; }
+    [JsonProperty("networkId")] public string? NetworkId { get; set; }
     #endregion
 }
 
@@ -77,15 +77,15 @@ internal class FetchParams
 internal class FetchRequest
 {
     #region Properties
-    [JsonProperty("url")] public string Url { get; set; }
+    [JsonProperty("url")] public string Url { get; set; } = null!;
 
-    [JsonProperty("method")] public string Method { get; set; }
+    [JsonProperty("method")] public string? Method { get; set; }
 
-    [JsonProperty("headers")] public FetchHeaders Headers { get; set; }
+    [JsonProperty("headers")] public FetchHeaders? Headers { get; set; }
 
-    [JsonProperty("initialPriority")] public string InitialPriority { get; set; }
+    [JsonProperty("initialPriority")] public string? InitialPriority { get; set; }
 
-    [JsonProperty("referrerPolicy")] public string ReferrerPolicy { get; set; }
+    [JsonProperty("referrerPolicy")] public string? ReferrerPolicy { get; set; }
     #endregion
 }
 
@@ -95,6 +95,6 @@ internal class FetchRequest
 internal class FetchHeaders
 {
     #region Properties
-    [JsonProperty("Accept")] public string Accept { get; set; }
+    [JsonProperty("Accept")] public string? Accept { get; set; }
     #endregion
 }

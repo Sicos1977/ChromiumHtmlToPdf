@@ -17,13 +17,13 @@ internal class Logger
     /// <summary>
     ///     When set then logging is written to this ILogger instance
     /// </summary>
-    public ILogger InternalLogger { get; set; }
+    public ILogger? InternalLogger { get; set; }
     
     /// <summary>
     ///     An unique id that can be used to identify the logging of the converter when
     ///     calling the code from multiple threads and writing all the logging to the same file
     /// </summary>
-    public string InstanceId { get; set; }
+    public string? InstanceId { get; set; }
     #endregion
 
     #region Constructor
@@ -32,7 +32,7 @@ internal class Logger
     /// </summary>
     /// <param name="logger"></param>
     /// <param name="instanceId"></param>
-    internal Logger(ILogger logger, string instanceId)
+    internal Logger(ILogger? logger, string? instanceId)
     {
         InternalLogger = logger;
         InstanceId = instanceId;
@@ -46,20 +46,26 @@ internal class Logger
     /// <param name="message">The message to write</param>
     internal void WriteToLog(string message)
     {
-        lock (LoggerLock)
+        if (InternalLogger == null) return;
+
+        try
         {
-            try
+            if (InstanceId == null)
             {
-                if (InternalLogger == null) return;
-                using (InternalLogger.BeginScope(InstanceId))
+                InternalLogger.LogInformation(message);
+            }
+            else
+            {
+                lock (LoggerLock)
                 {
+                    using var _ = InternalLogger.BeginScope(InstanceId);
                     InternalLogger.LogInformation(message);
                 }
             }
-            catch (ObjectDisposedException)
-            {
-                // Ignore
-            }
+        }
+        catch (ObjectDisposedException)
+        {
+            // Ignore
         }
     }
     #endregion

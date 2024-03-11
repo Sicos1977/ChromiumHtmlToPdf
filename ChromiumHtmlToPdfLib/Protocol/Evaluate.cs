@@ -38,13 +38,13 @@ internal class Evaluate : MessageBase
     ///     The returned result
     /// </summary>
     [JsonProperty("result")]
-    public EvaluateResult Result { get; set; }
+    public EvaluateResult? Result { get; set; }
 
     /// <summary>
     ///     The method that we want to execute in Chromium
     /// </summary>
     [JsonProperty("method")]
-    public string Method { get; set; }
+    public string? Method { get; set; }
     #endregion
 
     #region FromJson
@@ -55,7 +55,7 @@ internal class Evaluate : MessageBase
     /// <returns></returns>
     public new static Evaluate FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<Evaluate>(json);
+        return JsonConvert.DeserializeObject<Evaluate>(json)!;
     }
     #endregion
 }
@@ -67,7 +67,7 @@ internal class EvaluateResult
 {
     #region Propreties
     [JsonProperty("result")] 
-    public EvaluateInnerResult Result { get; set; }
+    public EvaluateInnerResult? Result { get; set; }
     #endregion
 }
 
@@ -78,28 +78,28 @@ internal class EvaluateInnerResult
 {
     #region Properties
     [JsonProperty("type")] 
-    public string Type { get; set; }
+    public string? Type { get; set; }
 
     [JsonProperty("subtype")] 
-    public string SubType { get; set; }
+    public string? SubType { get; set; }
 
     [JsonProperty("className")] 
-    public string ClassName { get; set; }
+    public string? ClassName { get; set; }
 
     [JsonProperty("value")] 
-    public string Value { get; set; }
+    public string? Value { get; set; }
     
     [JsonProperty("unserializableValue")] 
-    public string UnserializableValue { get; set; }
+    public string? UnserializableValue { get; set; }
     
     [JsonProperty("deepSerializedValue")] 
-    public string DeepSerializedValue { get; set; }
+    public string? DeepSerializedValue { get; set; }
     
     [JsonProperty("preview")] 
-    public string Preview { get; set; }
+    public string? Preview { get; set; }
     
     [JsonProperty("customPreview")] 
-    public string CustomPreview { get; set; }
+    public string? CustomPreview { get; set; }
     #endregion
     
     #region ToString

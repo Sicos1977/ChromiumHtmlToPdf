@@ -37,7 +37,7 @@ internal class CaptureScreenshotResponse
     #region Properties
     [JsonProperty("id")] public long Id { get; set; }
 
-    [JsonProperty("result")] public CaptureScreenshotResult Result { get; set; }
+    [JsonProperty("result")] public CaptureScreenshotResult Result { get; set; } = null!;
 
     /// <summary>
     ///     Returns <see cref="PrintToPdfResult.Data" /> as array of bytes
@@ -53,7 +53,7 @@ internal class CaptureScreenshotResponse
     /// <returns></returns>
     public static CaptureScreenshotResponse FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<CaptureScreenshotResponse>(json);
+        return JsonConvert.DeserializeObject<CaptureScreenshotResponse>(json)!;
     }
     #endregion
 }
@@ -64,6 +64,6 @@ internal class CaptureScreenshotResponse
 internal class CaptureScreenshotResult
 {
     #region Properties
-    [JsonProperty("data")] public string Data { get; set; }
+    [JsonProperty("data")] public string Data { get; set; } = null!;
     #endregion
 }

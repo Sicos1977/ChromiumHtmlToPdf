@@ -17,12 +17,12 @@ namespace ChromiumHtmlToPdfLib.FileCache;
 /// <param name="payload"></param>
 /// <param name="policy"></param>
 [Serializable]
-public class FileCachePayload(object payload, SerializableCacheItemPolicy policy)
+public class FileCachePayload(object? payload, SerializableCacheItemPolicy policy)
 {
     /// <summary>
     ///     Returns or sets the payload
     /// </summary>
-    public object Payload { get; set; } = payload;
+    public object? Payload { get; set; } = payload;
 
     /// <summary>
     ///     Returns or sets the policy
@@ -33,7 +33,7 @@ public class FileCachePayload(object payload, SerializableCacheItemPolicy policy
     ///     Creates a new payload with a default policy
     /// </summary>
     /// <param name="payload"></param>
-    public FileCachePayload(object payload) : this(payload, new SerializableCacheItemPolicy
+    public FileCachePayload(object? payload) : this(payload, new SerializableCacheItemPolicy
     {
         AbsoluteExpiration = DateTime.Now.AddYears(10)
     })

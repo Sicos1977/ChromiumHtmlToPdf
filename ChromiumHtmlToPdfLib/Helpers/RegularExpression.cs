@@ -40,7 +40,7 @@ internal static class RegularExpression
     /// <param name="value">The string where to find the match</param>
     /// <param name="matchedPattern"></param>
     /// <returns></returns>
-    public static bool IsRegExMatch(IEnumerable<string> patterns, string value, out string matchedPattern)
+    public static bool IsRegExMatch(IEnumerable<string>? patterns, string value, out string matchedPattern)
     {
         matchedPattern = string.Empty;
 

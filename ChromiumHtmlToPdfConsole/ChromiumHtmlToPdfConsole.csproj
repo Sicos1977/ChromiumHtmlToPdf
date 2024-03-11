@@ -24,6 +24,7 @@
     <RootNamespace>ChromiumHtmlToPdfConsole</RootNamespace>
     <FileVersion>4.2.1.0</FileVersion>
     <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

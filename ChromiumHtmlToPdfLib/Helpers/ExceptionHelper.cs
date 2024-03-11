@@ -40,7 +40,7 @@ public static class ExceptionHelpers
     ///     Returns the last called method
     /// </summary>
     /// <returns></returns>
-    public static string GetCurrentMethodName(Assembly assembly)
+    public static string GetCurrentMethodName(Assembly? assembly)
     {
         if (assembly == null) return string.Empty;
 
@@ -68,7 +68,7 @@ public static class ExceptionHelpers
     /// </summary>
     /// <param name="exception">The exception</param>
     /// <returns></returns>
-    public static string GetInnerException(Exception exception)
+    public static string GetInnerException(Exception? exception)
     {
         var result = string.Empty;
 
