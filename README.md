@@ -292,6 +292,10 @@ On most desktop Linux distributions, the default /dev/shm partition is large eno
 
 If it is not possible to change the partition size than add the flag `--disable-dev-shm-usage` to tell Chrome not to use this parition
 
+```csharp
+converter.AddChromiumArgument("--disable-dev-shm-usage")
+```
+
 Core Team
 =========
     Sicos1977 (Kees van Spelde)
