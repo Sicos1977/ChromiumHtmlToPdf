@@ -23,7 +23,6 @@
     <AssemblyName>ChromiumHtmlToPdfConsole</AssemblyName>
     <RootNamespace>ChromiumHtmlToPdfConsole</RootNamespace>
     <FileVersion>4.2.1.0</FileVersion>
-    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>

@@ -31,7 +31,6 @@ As this feature was added to chromium just recently, looks like it doesn't work 
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
@@ -48,7 +47,6 @@ As this feature was added to chromium just recently, looks like it doesn't work 
 
   <ItemGroup>
     <Folder Include="FileCache\" />
-    <Folder Include="Properties\" />
   </ItemGroup>
 
   <ItemGroup>
