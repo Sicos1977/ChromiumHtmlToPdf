@@ -57,18 +57,18 @@ namespace ChromiumHtmlToPdfLib.Helpers;
 /// <summary>
 ///     This class contains helper methods
 /// </summary>
-internal class DocumentHelper
+internal class DocumentHelper: IDisposable
 {
     #region Fields
     /// <summary>
     ///     <see cref="Loggers.Logger"/>
     /// </summary>
-    private readonly Logger _logger;
+    private readonly Logger? _logger;
 
     /// <summary>
     ///     The temp folder
     /// </summary>
-    private readonly DirectoryInfo _tempDirectory;
+    private readonly DirectoryInfo? _tempDirectory;
 
     /// <summary>
     ///     When <c>true</c> then caching is enabled on the <see cref="WebClient" />
@@ -88,7 +88,7 @@ internal class DocumentHelper
     /// <summary>
     ///     The web proxy to use when downloading
     /// </summary>
-    private readonly IWebProxy _webProxy;
+    private readonly IWebProxy? _webProxy;
 
     /// <summary>
     ///     When set then this timeout is used for loading images, <c>null</c> when no timeout is needed
@@ -98,7 +98,7 @@ internal class DocumentHelper
     /// <summary>
     ///     Used when mediaTimeout is set
     /// </summary>
-    private Stopwatch _stopwatch;
+    private Stopwatch? _stopwatch;
     #endregion
 
     #region Properties
@@ -139,7 +139,7 @@ internal class DocumentHelper
             if (_imageLoadTimeout == 0)
                 return 0;
 
-            var result = _imageLoadTimeout - _stopwatch.ElapsedMilliseconds;
+            var result = _imageLoadTimeout - _stopwatch!.ElapsedMilliseconds;
 
             if (result <= 0)
             {
@@ -164,13 +164,13 @@ internal class DocumentHelper
     /// <param name="imageLoadTimeout">When set then this timeout is used for loading images, <c>null</c> when no timeout is needed</param>
     /// <param name="logger"><see cref="Logger"/></param>
     public DocumentHelper(
-        DirectoryInfo tempDirectory,
+        DirectoryInfo? tempDirectory,
         bool useCache,
         FileSystemInfo cacheDirectory, 
         long cacheSize,
-        IWebProxy webProxy,
+        IWebProxy? webProxy,
         int? imageLoadTimeout,
-        Logger logger)
+        Logger? logger)
     {
         _tempDirectory = tempDirectory;
         _useCache = useCache;
@@ -187,7 +187,7 @@ internal class DocumentHelper
         _logger?.WriteToLog($"Setting image load timeout to '{_imageLoadTimeout}' milliseconds");
     }
 
-    ~DocumentHelper()
+    public void Dispose()
     {
         // Just in case
         _stopwatch?.Stop();
@@ -219,7 +219,7 @@ internal class DocumentHelper
     /// <param name="safeUrls">A list of safe URL's</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns></returns>
-    public async Task<SanitizeHtmlResult> SanitizeHtmlAsync(ConvertUri inputUri, HtmlSanitizer sanitizer, List<string> safeUrls, CancellationToken cancellationToken)
+    public async Task<SanitizeHtmlResult> SanitizeHtmlAsync(ConvertUri inputUri, HtmlSanitizer? sanitizer, List<string> safeUrls, CancellationToken cancellationToken)
     {
 #if (NETSTANDARD2_0)
         using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri).ConfigureAwait(false);
@@ -247,44 +247,44 @@ internal class DocumentHelper
 
         sanitizer ??= new HtmlSanitizer();
 
-        void OnSanitizerOnFilterUrl(object _, FilterUrlEventArgs args)
+        void OnSanitizerOnFilterUrl(object? _, FilterUrlEventArgs args)
         {
             if (args.OriginalUrl == args.SanitizedUrl) return;
             _logger?.WriteToLog($"URL sanitized from '{args.OriginalUrl}' to '{args.SanitizedUrl}'");
             htmlChanged = true;
         }
 
-        void OnSanitizerOnRemovingAtRule(object _, RemovingAtRuleEventArgs args)
+        void OnSanitizerOnRemovingAtRule(object? _, RemovingAtRuleEventArgs args)
         {
             _logger?.WriteToLog($"Removing CSS at-rule '{args.Rule.CssText}' from tag '{args.Tag.TagName}'");
             htmlChanged = true;
         }
 
-        void OnSanitizerOnRemovingAttribute(object _, RemovingAttributeEventArgs args)
+        void OnSanitizerOnRemovingAttribute(object? _, RemovingAttributeEventArgs args)
         {
             _logger?.WriteToLog($"Removing attribute '{args.Attribute.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
             htmlChanged = true;
         }
 
-        void OnSanitizerOnRemovingComment(object _, RemovingCommentEventArgs args)
+        void OnSanitizerOnRemovingComment(object? _, RemovingCommentEventArgs args)
         {
             _logger?.WriteToLog($"Removing comment '{args.Comment.TextContent}'");
             htmlChanged = true;
         }
 
-        void OnSanitizerOnRemovingCssClass(object _, RemovingCssClassEventArgs args)
+        void OnSanitizerOnRemovingCssClass(object? _, RemovingCssClassEventArgs args)
         {
             _logger?.WriteToLog($"Removing CSS class '{args.CssClass}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
             htmlChanged = true;
         }
 
-        void OnSanitizerOnRemovingStyle(object _, RemovingStyleEventArgs args)
+        void OnSanitizerOnRemovingStyle(object? _, RemovingStyleEventArgs args)
         {
             _logger?.WriteToLog($"Removing style '{args.Style.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
             htmlChanged = true;
         }
 
-        void OnSanitizerOnRemovingTag(object _, RemovingTagEventArgs args)
+        void OnSanitizerOnRemovingTag(object? _, RemovingTagEventArgs args)
         {
             _logger?.WriteToLog($"Removing tag '{args.Tag.TagName}', reason '{args.Reason}'");
             htmlChanged = true;
@@ -557,7 +557,7 @@ internal class DocumentHelper
         bool rotate,
         PageSettings pageSettings,
         List<string> safeUrls,
-        List<string> urlBlacklist,
+        List<string>? urlBlacklist,
         CancellationToken cancellationToken)
     {
         using var graphics = Graphics.FromHwnd(IntPtr.Zero);
@@ -571,7 +571,7 @@ internal class DocumentHelper
         var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft - pageSettings.MarginRight) * graphics.DpiX;
         var maxHeight = (pageSettings.PaperHeight - pageSettings.MarginTop - pageSettings.MarginBottom) * graphics.DpiY;
 
-        string localDirectory = null;
+        string? localDirectory = null;
 
         if (inputUri.IsFile)
             localDirectory = Path.GetDirectoryName(inputUri.OriginalString);
@@ -609,9 +609,9 @@ internal class DocumentHelper
                 continue;
             }
 
-            Image image = null;
+            Image? image = null;
 
-            var source = htmlImage.Source.Contains("?") ? htmlImage.Source.Split('?')[0] : htmlImage.Source;
+            var source = htmlImage.Source!.Contains("?") ? htmlImage.Source.Split('?')[0] : htmlImage.Source;
             var isSafeUrl = safeUrls.Contains(source);
             var isAbsoluteUri = source.StartsWith(absoluteUri, StringComparison.InvariantCultureIgnoreCase);
 
@@ -670,7 +670,7 @@ internal class DocumentHelper
                 {
                     if (height == 0 && width == 0)
                     {
-                        ICssStyleDeclaration style = null;
+                        ICssStyleDeclaration? style = null;
 
                         try
                         {
@@ -735,7 +735,7 @@ internal class DocumentHelper
 
         foreach (var unchangedImage in unchangedImages)
         {
-            using var image = await GetImageAsync(unchangedImage.Source, localDirectory).ConfigureAwait(false);
+            using var image = await GetImageAsync(unchangedImage.Source!, localDirectory).ConfigureAwait(false);
             
             if (image == null)
             {
@@ -743,7 +743,7 @@ internal class DocumentHelper
                 continue;
             }
 
-            var extension = Path.GetExtension(unchangedImage.Source.Contains("?")
+            var extension = Path.GetExtension(unchangedImage.Source!.Contains("?")
                 ? unchangedImage.Source.Split('?')[0]
                 : unchangedImage.Source);
             var fileName = GetTempFile(extension);
@@ -814,7 +814,7 @@ internal class DocumentHelper
     /// <param name="imageSource"></param>
     /// <param name="localDirectory"></param>
     /// <returns></returns>
-    private async Task<Image> GetImageAsync(string imageSource, string localDirectory)
+    private async Task<Image?> GetImageAsync(string imageSource, string? localDirectory)
     {
         if (imageSource.StartsWith("data:", StringComparison.InvariantCultureIgnoreCase))
         {
@@ -847,7 +847,7 @@ internal class DocumentHelper
             {
                 var fileName = imageUri.LocalPath;
 
-                if (!File.Exists(fileName))
+                if (!File.Exists(fileName) && localDirectory != null)
                     fileName = Path.Combine(localDirectory, Path.GetFileName(imageUri.LocalPath));
 
                 if (File.Exists(fileName))
@@ -867,6 +867,9 @@ internal class DocumentHelper
 #else
                     await using var webStream = await OpenDownloadStream(imageUri, true).ConfigureAwait(false);
 #endif
+                    if (webStream == null)
+                        return null;
+
                     var extension = Path.GetExtension(imageUri.AbsolutePath);
                     if (extension.ToLowerInvariant() != ".svg") 
                         return Image.FromStream(webStream, true, false);
@@ -965,7 +968,7 @@ internal class DocumentHelper
     /// </summary>
     /// <param name="fileName"></param>
     /// <returns></returns>
-    private Stream OpenFileStream(string fileName)
+    private Stream? OpenFileStream(string fileName)
     {
         try
         {
@@ -988,7 +991,7 @@ internal class DocumentHelper
     /// <param name="sourceUri"></param>
     /// <param name="checkTimeout"></param>
     /// <returns></returns>
-    private async Task<Stream> OpenDownloadStream(Uri sourceUri, bool checkTimeout = false)
+    private async Task<Stream?> OpenDownloadStream(Uri sourceUri, bool checkTimeout = false)
     {
         try
         {
@@ -1007,7 +1010,7 @@ internal class DocumentHelper
 
                 client.Timeout = TimeSpan.FromMilliseconds(timeLeft);
             }
-            else            
+            else
                 _logger?.WriteToLog($"Opening stream to url '{sourceUri}'");
             
             var response = await client.GetAsync(sourceUri).ConfigureAwait(false);

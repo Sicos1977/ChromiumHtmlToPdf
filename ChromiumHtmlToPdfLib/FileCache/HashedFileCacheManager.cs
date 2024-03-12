@@ -10,7 +10,7 @@ namespace ChromiumHtmlToPdfLib.FileCache;
 ///     File-based caching using Md5Hash. Collisions are handled by appending
 ///     numerically ascending identifiers to each hash key (e.g. _1, _2, etc.).
 /// </summary>
-internal class HashedFileCacheManager : FileCacheManager
+internal class HashedFileCacheManager(string cacheDir, string cacheSubFolder, string policySubFolder) : FileCacheManager(cacheDir, cacheSubFolder, policySubFolder)
 {
     #region Fields
     private static readonly MD5 Md5Hash = MD5.Create();
@@ -38,7 +38,7 @@ internal class HashedFileCacheManager : FileCacheManager
     /// <param name="key"></param>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    private string GetFileName(string key, string regionName = null)
+    private string GetFileName(string key, string? regionName = null)
     {
         regionName ??= string.Empty;
 
@@ -47,7 +47,6 @@ internal class HashedFileCacheManager : FileCacheManager
         //the policy.  It also means that deleting a policy file makes the related .dat "invisible" to FC.
         var directory = Path.Combine(CacheDir, PolicySubFolder, regionName);
 
-        
         var hash = ComputeHash(key);
         var hashCounter = 0;
         var fileName = Path.Combine(directory, $"{hash}_{hashCounter}.policy");
@@ -88,7 +87,7 @@ internal class HashedFileCacheManager : FileCacheManager
     /// </summary>
     /// <param name="key"></param>
     /// <param name="regionName"></param>
-    public override string GetCachePath(string key, string regionName = null)
+    public override string GetCachePath(string key, string? regionName = null)
     {
         regionName ??= string.Empty;
         var directory = Path.Combine(CacheDir, CacheSubFolder, regionName);
@@ -103,7 +102,7 @@ internal class HashedFileCacheManager : FileCacheManager
     ///     Returns a list of keys for a given region.
     /// </summary>
     /// <param name="regionName"></param>
-    public override IEnumerable<string> GetKeys(string regionName = null)
+    public override IEnumerable<string> GetKeys(string? regionName = null)
     {
         var region = string.Empty;
         if (string.IsNullOrEmpty(regionName) == false) region = regionName;
@@ -114,7 +113,8 @@ internal class HashedFileCacheManager : FileCacheManager
             try
             {
                 var policy = DeserializePolicyData(file);
-                keys.Add(policy.Key);
+                if (policy.Key != null)
+                    keys.Add(policy.Key);
             }
             catch
             {
@@ -132,7 +132,7 @@ internal class HashedFileCacheManager : FileCacheManager
     /// <param name="key"></param>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    public override string GetPolicyPath(string key, string regionName = null)
+    public override string GetPolicyPath(string key, string? regionName = null)
     {
         regionName ??= string.Empty;
         var directory = Path.Combine(CacheDir, PolicySubFolder, regionName);

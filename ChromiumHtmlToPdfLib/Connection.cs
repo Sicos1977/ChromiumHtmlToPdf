@@ -51,26 +51,26 @@ public class Connection : IDisposable, IAsyncDisposable
     /// <summary>
     ///     Triggered when a connection to the <see cref="_webSocket" /> is closed
     /// </summary>
-    public event EventHandler Closed;
+    public event EventHandler? Closed;
 
     /// <summary>
     ///     Triggered when a new message is received on the <see cref="_webSocket" />
     /// </summary>
-    public event EventHandler<string> MessageReceived;
+    public event EventHandler<string>? MessageReceived;
     #endregion
 
     #region Fields
     /// <summary>
     ///     <see cref="Logger"/>
     /// </summary>
-    private readonly Logger _logger;
+    private readonly Logger? _logger;
 
     private const int ReceiveBufferSize = 8192;
 
     /// <summary>
     ///     <see cref="ReceiveLoop"/>
     /// </summary>
-    private CancellationTokenSource _receiveLoopCts;
+    private readonly CancellationTokenSource _receiveLoopCts;
 
     /// <summary>
     ///     The url of the websocket
@@ -83,14 +83,9 @@ public class Connection : IDisposable, IAsyncDisposable
     private int _messageId;
 
     /// <summary>
-    ///    The response
-    /// </summary>
-    private TaskCompletionSource<string> _response;
-
-    /// <summary>
     ///     The websocket
     /// </summary>
-    private ClientWebSocket _webSocket;
+    private readonly ClientWebSocket _webSocket;
 
     /// <summary>
     ///     Websocket open timeout in milliseconds
@@ -110,7 +105,7 @@ public class Connection : IDisposable, IAsyncDisposable
     /// <param name="url">The url</param>
     /// <param name="timeout">Websocket open timeout in milliseconds</param>
     /// <param name="logger"><see cref="Logger"/></param>
-    internal Connection(string url, int timeout, Logger logger)
+    internal Connection(string url, int timeout, Logger? logger)
     {
         _url = url;
         _timeout = timeout;
@@ -119,27 +114,30 @@ public class Connection : IDisposable, IAsyncDisposable
         _webSocket = new ClientWebSocket();
         _receiveLoopCts = new CancellationTokenSource();
         OpenWebSocketAsync().GetAwaiter().GetResult();
-        Task.Factory.StartNew(ReceiveLoop, _receiveLoopCts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        Task.Factory.StartNew(ReceiveLoop, new ReceiveLoopState(_logger, _webSocket, OnMessageReceived, _receiveLoopCts.Token), _receiveLoopCts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
     }
     #endregion
 
     #region ReceiveLoop
-    private async Task ReceiveLoop()
+    private sealed record ReceiveLoopState(Logger? Logger, ClientWebSocket WebSocket, Action<string> OnMessageReceived, CancellationToken Token);
+
+    private static async Task ReceiveLoop(object? stateData)
     {
-        var loopToken = _receiveLoopCts.Token;
-        MemoryStream outputStream = null;
+        var state = (ReceiveLoopState)stateData!;
+
+        MemoryStream? outputStream = null;
         var buffer = new ArraySegment<byte>(new byte[ReceiveBufferSize]);
 
         try
         {
-            while (!loopToken.IsCancellationRequested)
+            while (!state.Token.IsCancellationRequested)
             {
                 outputStream = new MemoryStream(ReceiveBufferSize);
                 WebSocketReceiveResult receiveResult;
 
                 do
                 {
-                    receiveResult = await _webSocket.ReceiveAsync(buffer, _receiveLoopCts.Token).ConfigureAwait(false);
+                    receiveResult = await state.WebSocket.ReceiveAsync(buffer, state.Token).ConfigureAwait(false);
                     if (receiveResult.MessageType == WebSocketMessageType.Close) continue;
                     if (buffer.Array != null)
                         outputStream.Write(buffer.Array, 0, receiveResult.Count);
@@ -151,7 +149,7 @@ public class Connection : IDisposable, IAsyncDisposable
                 using var reader = new StreamReader(outputStream);
                 var response = await reader.ReadToEndAsync().ConfigureAwait(false);
 
-                WebSocketOnMessageReceived(new MessageReceivedEventArgs(response));
+                WebSocketOnMessageReceived(state.Logger, state.OnMessageReceived, new MessageReceivedEventArgs(response));
             }
         }
         catch (TaskCanceledException)
@@ -160,7 +158,7 @@ public class Connection : IDisposable, IAsyncDisposable
         }
         catch (Exception exception)
         {
-            WebSocketOnError(new ErrorEventArgs(exception));
+            WebSocketOnError(state.Logger, new ErrorEventArgs(exception));
         }
         finally
         {
@@ -188,42 +186,36 @@ public class Connection : IDisposable, IAsyncDisposable
         }
         catch (Exception exception)
         {
-            WebSocketOnError(new ErrorEventArgs(exception));
+            WebSocketOnError(_logger, new ErrorEventArgs(exception));
         }
     }
     #endregion
 
     #region Websocket events
-    private void WebSocketOnMessageReceived(MessageReceivedEventArgs e)
+    private static void WebSocketOnMessageReceived(Logger? logger, Action<string> onMessageReceived, MessageReceivedEventArgs e)
     {
         var response = e.Message;
 
         var error = CheckForError(response);
         
         if (!string.IsNullOrEmpty(error))
-            _logger?.WriteToLog(error);
+            logger?.WriteToLog(error!);
 
         var messageBase = MessageBase.FromJson(response);
+    }
 
-        if (_messageId == messageBase.Id)
-            _response?.SetResult(response);
-
+    private void OnMessageReceived(string response)
+    {
         MessageReceived?.Invoke(this, response);
     }
 
-    private void WebSocketOnError(ErrorEventArgs e)
+    private static void WebSocketOnError(Logger? logger, ErrorEventArgs e)
     {
-        if (_response?.Task.Status != TaskStatus.RanToCompletion)
-            _response?.SetResult(string.Empty);
-
-        _logger?.WriteToLog(ExceptionHelpers.GetInnerException(e.Exception));
+        logger?.WriteToLog(ExceptionHelpers.GetInnerException(e.Exception));
     }
 
     private void WebSocketOnClosed(EventArgs e)
     {
-        if (_response?.Task.Status != TaskStatus.RanToCompletion)
-            _response?.SetResult(string.Empty);
-
         Closed?.Invoke(this, e);
     }
     #endregion
@@ -265,7 +257,7 @@ public class Connection : IDisposable, IAsyncDisposable
         }
         catch (Exception exception)
         {
-            WebSocketOnError(new ErrorEventArgs(exception));
+            WebSocketOnError(_logger, new ErrorEventArgs(exception));
         }
         finally
         {
@@ -286,7 +278,6 @@ public class Connection : IDisposable, IAsyncDisposable
     {
         _messageId += 1;
         message.Id = _messageId;
-        _response = null;
 
         await OpenWebSocketAsync().ConfigureAwait(false);
 
@@ -296,7 +287,7 @@ public class Connection : IDisposable, IAsyncDisposable
         }
         catch (Exception exception)
         {
-            WebSocketOnError(new ErrorEventArgs(exception));
+            WebSocketOnError(_logger, new ErrorEventArgs(exception));
         }
     }
     #endregion
@@ -306,7 +297,7 @@ public class Connection : IDisposable, IAsyncDisposable
     ///     Checks if <paramref name="message" /> contains an error and if so raises an exception
     /// </summary>
     /// <param name="message"></param>
-    private string CheckForError(string message)
+    private static string? CheckForError(string message)
     {
         var error = Error.FromJson(message);
 
@@ -336,8 +327,7 @@ public class Connection : IDisposable, IAsyncDisposable
         if (_disposed)
             return;
 
-        _receiveLoopCts?.Cancel();
-        _receiveLoopCts = null;
+        _receiveLoopCts.Cancel();
 
         _logger?.WriteToLog($"Disposing websocket connection to url '{_url}'");
 
@@ -358,8 +348,7 @@ public class Connection : IDisposable, IAsyncDisposable
             _logger?.WriteToLog("Websocket connection closed");
 
             WebSocketOnClosed(EventArgs.Empty);
-            _webSocket?.Dispose();
-            _webSocket = null;
+            _webSocket.Dispose();
             _logger?.WriteToLog("Web socket connection disposed");
         }
 
@@ -378,7 +367,7 @@ public class Connection : IDisposable, IAsyncDisposable
     #endregion
 
     #region DisposeAsync
-#if (!NETSTANDARD2_0)    
+#if (!NETSTANDARD2_0)
     /// <summary>
     ///     Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
     /// </summary>

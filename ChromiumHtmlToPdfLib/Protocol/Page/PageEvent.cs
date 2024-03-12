@@ -38,7 +38,7 @@ internal class Event : Base
     ///     The parameters used with this <see cref="Base.Method" />
     /// </summary>
     [JsonProperty("params")]
-    public EventParams Params { get; set; }
+    public EventParams? Params { get; set; }
     #endregion
 
     #region FromJson
@@ -49,7 +49,7 @@ internal class Event : Base
     /// <returns></returns>
     public new static Event FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<Event>(json);
+        return JsonConvert.DeserializeObject<Event>(json)!;
     }
     #endregion
 }
@@ -64,7 +64,7 @@ internal class EventParams
     ///     The parameters name
     /// </summary>
     [JsonProperty("name")]
-    public string Name { get; set; }
+    public string? Name { get; set; }
 
     /// <summary>
     ///     The timestamp

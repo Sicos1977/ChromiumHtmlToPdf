@@ -63,17 +63,17 @@ internal class Browser : IDisposable, IAsyncDisposable
     /// <summary>
     ///     A connection to the browser (Chrome or Edge)
     /// </summary>
-    private Connection _browserConnection;
+    private readonly Connection _browserConnection;
 
     /// <summary>
     ///     A connection to a page
     /// </summary>
-    private Connection _pageConnection;
+    private readonly Connection _pageConnection;
 
     /// <summary>
     ///     <see cref="Logger"/>
     /// </summary>
-    private readonly Logger _logger;
+    private readonly Logger? _logger;
 
     /// <summary>
     ///     Keeps track is we already disposed our resources
@@ -88,7 +88,7 @@ internal class Browser : IDisposable, IAsyncDisposable
     /// <param name="browser">The websocket to the browser</param>
     /// <param name="timeout">Websocket open timeout in milliseconds</param>
     /// <param name="logger"><see cref="Logger"/></param>
-    internal Browser(Uri browser, int timeout, Logger logger)
+    internal Browser(Uri browser, int timeout, Logger? logger)
     {
         _logger = logger;
         // Open a websocket to the browser
@@ -171,11 +171,11 @@ internal class Browser : IDisposable, IAsyncDisposable
     internal async Task NavigateToAsync(
         List<string> safeUrls,
         bool useCache,
-        ConvertUri uri = null,
-        string html = null,
-        CountdownTimer countdownTimer = null,
+        ConvertUri? uri = null,
+        string? html = null,
+        CountdownTimer? countdownTimer = null,
         int? mediaLoadTimeout = null,
-        List<string> urlBlacklist = null,
+        List<string>? urlBlacklist = null,
         bool logNetworkTraffic = false,
         bool waitForNetworkIdle = false,
         CancellationToken cancellationToken = default)
@@ -222,7 +222,7 @@ internal class Browser : IDisposable, IAsyncDisposable
 
         var waitForMessage = new SemaphoreSlim(1);
         var messagePump = new ConcurrentQueue<string>();
-        var messageReceived = new EventHandler<string>(delegate(object _, string data)
+        var messageReceived = new EventHandler<string>(delegate(object? _, string data)
         {
             if (string.IsNullOrWhiteSpace(data)) return;
             messagePump.Enqueue(data);
@@ -254,7 +254,7 @@ internal class Browser : IDisposable, IAsyncDisposable
 
                 var pageSetDocumentContent = new Message { Method = "Page.setDocumentContent" };
                 pageSetDocumentContent.AddParameter("frameId", frameResult.Result.FrameTree.Frame.Id);
-                pageSetDocumentContent.AddParameter("html", html);
+                pageSetDocumentContent.AddParameter("html", html!);
                 await _pageConnection.SendAsync(pageSetDocumentContent).ConfigureAwait(false);
                 // When using setDocumentContent a Page.frameNavigated event is never fired so we have to set the waitForNetworkIdle to true our self
                 pageLoadingState = PageLoadingState.WaitForNetworkIdle;
@@ -407,7 +407,7 @@ internal class Browser : IDisposable, IAsyncDisposable
                             default:
                                 var pageNavigateResponse = NavigateResponse.FromJson(data);
                                 if (!string.IsNullOrEmpty(pageNavigateResponse.Result?.ErrorText) &&
-                                    !pageNavigateResponse.Result.ErrorText.Contains("net::ERR_BLOCKED_BY_CLIENT"))
+                                    !pageNavigateResponse.Result!.ErrorText!.Contains("net::ERR_BLOCKED_BY_CLIENT"))
                                 {
                                     navigationError = $"{pageNavigateResponse.Result.ErrorText} occurred when navigating to the page '{uri}'";
                                     pageLoadingState = PageLoadingState.BlockedByClient;
@@ -421,7 +421,7 @@ internal class Browser : IDisposable, IAsyncDisposable
                 }
                 
                 if (mediaLoadTimeoutStopwatch.IsRunning &&
-                    mediaLoadTimeoutStopwatch.ElapsedMilliseconds >= mediaLoadTimeout.Value)
+                    mediaLoadTimeoutStopwatch.ElapsedMilliseconds >= mediaLoadTimeout!.Value)
                 {
                     _logger?.WriteToLog($"Media load timeout of {mediaLoadTimeout.Value} milliseconds reached, stopped loading page");
                     mediaLoadTimeoutStopwatch.Stop();
@@ -475,7 +475,7 @@ internal class Browser : IDisposable, IAsyncDisposable
 
         return;
 
-        void PageConnectionClosed(object o, EventArgs eventArgs)
+        void PageConnectionClosed(object? o, EventArgs eventArgs)
         {
             pageLoadingState = PageLoadingState.Closed;
         }
@@ -573,7 +573,7 @@ internal class Browser : IDisposable, IAsyncDisposable
             errorDescription = evaluateError.Result.ExceptionDetails.Exception.Description;
 
         if (!string.IsNullOrEmpty(errorDescription))
-            throw new ChromiumException(errorDescription);
+            throw new ChromiumException(errorDescription!);
 
         var evaluate = Evaluate.FromJson(result);
         var internalResult = evaluate.Result?.Result?.ToString();
@@ -599,7 +599,7 @@ internal class Browser : IDisposable, IAsyncDisposable
     /// </remarks>
     /// <returns></returns>
     internal async Task<SnapshotResponse> CaptureSnapshotAsync(
-        CountdownTimer countdownTimer = null, 
+        CountdownTimer? countdownTimer = null, 
         CancellationToken cancellationToken = default)
     {
         var message = new Message { Method = "Page.captureSnapshot" };
@@ -633,7 +633,7 @@ internal class Browser : IDisposable, IAsyncDisposable
     /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer" /> reaches zero</exception>
     internal async Task PrintToPdfAsync(Stream outputStream,
         PageSettings pageSettings,
-        CountdownTimer countdownTimer = null,
+        CountdownTimer? countdownTimer = null,
         CancellationToken cancellationToken = default)
     {
         var message = new Message { Method = "Page.printToPDF" };
@@ -650,9 +650,9 @@ internal class Browser : IDisposable, IAsyncDisposable
         message.AddParameter("pageRanges", pageSettings.PageRanges ?? string.Empty);
         message.AddParameter("ignoreInvalidPageRanges", pageSettings.IgnoreInvalidPageRanges);
         if (!string.IsNullOrEmpty(pageSettings.HeaderTemplate))
-            message.AddParameter("headerTemplate", pageSettings.HeaderTemplate);
+            message.AddParameter("headerTemplate", pageSettings.HeaderTemplate!);
         if (!string.IsNullOrEmpty(pageSettings.FooterTemplate))
-            message.AddParameter("footerTemplate", pageSettings.FooterTemplate);
+            message.AddParameter("footerTemplate", pageSettings.FooterTemplate!);
         message.AddParameter("preferCSSPageSize", pageSettings.PreferCSSPageSize);
         message.AddParameter("transferMode", "ReturnAsStream");
         message.AddParameter("generateTaggedPDF", pageSettings.TaggedPDF);
@@ -673,7 +673,7 @@ internal class Browser : IDisposable, IAsyncDisposable
         _logger?.WriteToLog("Resetting output stream to position 0");
         
         message = new Message { Method = "IO.read" };
-        message.AddParameter("handle", printToPdfResponse.Result.Stream);
+        message.AddParameter("handle", printToPdfResponse.Result!.Stream!);
         message.AddParameter("size", 1048576); // Get the pdf in chunks of 1MB
         
         _logger?.WriteToLog($"Reading generated PDF from IO stream with handle id {printToPdfResponse.Result.Stream}");
@@ -700,7 +700,7 @@ internal class Browser : IDisposable, IAsyncDisposable
             _logger?.WriteToLog("Last chunk received");
             _logger?.WriteToLog($"Closing stream with id {printToPdfResponse.Result.Stream}");
             message = new Message { Method = "IO.close" };
-            message.AddParameter("handle", printToPdfResponse.Result.Stream);
+            message.AddParameter("handle", printToPdfResponse.Result.Stream!);
             await _pageConnection.SendForResponseAsync(message, cancellationToken).ConfigureAwait(false);
             _logger?.WriteToLog("Stream closed");
             break;
@@ -718,7 +718,7 @@ internal class Browser : IDisposable, IAsyncDisposable
     /// <exception cref="ConversionException">Raised when Chromium returns an empty string</exception>
     /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer" /> reaches zero</exception>
     internal async Task<CaptureScreenshotResponse> CaptureScreenshotAsync(
-        CountdownTimer countdownTimer = null, 
+        CountdownTimer? countdownTimer = null, 
         CancellationToken cancellationToken = default)
     {
         var message = new Message { Method = "Page.captureScreenshot" };
@@ -759,24 +759,15 @@ internal class Browser : IDisposable, IAsyncDisposable
 
         CloseAsync(CancellationToken.None).GetAwaiter().GetResult();
 
-        if (_pageConnection != null)
-        {
-            _pageConnection.Dispose();
-            _pageConnection = null;
-        }
-
-        if (_browserConnection != null)
-        {
-            _browserConnection.Dispose();
-            _browserConnection = null;
-        }
+        _pageConnection.Dispose();
+        _browserConnection.Dispose();
 
         _disposed = true;
     }
     #endregion
 
     #region DisposeAsync
-#if (!NETSTANDARD2_0)    
+#if (!NETSTANDARD2_0)
     /// <summary>
     ///     Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
     /// </summary>
@@ -787,17 +778,9 @@ internal class Browser : IDisposable, IAsyncDisposable
 
         await CloseAsync(CancellationToken.None).ConfigureAwait(false);
 
-        if (_pageConnection != null)
-        {
-            await _pageConnection.DisposeAsync().ConfigureAwait(false);
-            _pageConnection = null;
-        }
+        await _pageConnection.DisposeAsync().ConfigureAwait(false);
 
-        if (_browserConnection != null)
-        {
-            await _browserConnection.DisposeAsync().ConfigureAwait(false);
-            _browserConnection = null;
-        }
+        await _browserConnection.DisposeAsync().ConfigureAwait(false);
 
         _disposed = true;
     }

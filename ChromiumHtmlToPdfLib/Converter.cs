@@ -27,6 +27,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -89,7 +90,7 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <summary>
     ///     A helper class to share logging between the different classes
     /// </summary>
-    private Logger _logger;
+    private Logger? _logger;
 
     /// <summary>
     ///     Chrome or Edge with it's full path
@@ -99,37 +100,37 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <summary>
     ///     The user to use when starting the Chromium based browser, when blank then it is started under the code running user
     /// </summary>
-    private string _userName;
+    private string? _userName;
 
     /// <summary>
     ///     The password for the <see cref="_userName" />
     /// </summary>
-    private string _password;
+    private string? _password;
 
     /// <summary>
     ///     A proxy server
     /// </summary>
-    private string _proxyServer;
+    private string? _proxyServer;
 
     /// <summary>
     ///     The proxy bypass list
     /// </summary>
-    private string _proxyBypassList;
+    private string? _proxyBypassList;
 
     /// <summary>
     ///     A web proxy
     /// </summary>
-    private WebProxy _webProxy;
+    private WebProxy? _webProxy;
 
     /// <summary>
     ///     The process id under which the Chromium based browser is running
     /// </summary>
-    private Process _chromiumProcess;
+    private Process? _chromiumProcess;
 
     /// <summary>
     ///     Handles the communication with the Chromium based browser dev tools
     /// </summary>
-    private Browser _browser;
+    private Browser? _browser;
 
     /// <summary>
     ///     Keeps track is we already disposed our resources
@@ -139,7 +140,7 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <summary>
     ///     When set then this folder is used for temporary files
     /// </summary>
-    private string _tempDirectory;
+    private string? _tempDirectory;
 
     /// <summary>
     ///     The timeout for a conversion
@@ -155,7 +156,7 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <summary>
     ///     A list with URL's to blacklist
     /// </summary>
-    private List<string> _urlBlacklist;
+    private List<string>? _urlBlacklist;
 
     /// <summary>
     ///     A flag to keep track if a user-data-dir has been set
@@ -165,7 +166,7 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <summary>
     ///     The file that Chromium creates to tell us on what port it is listening with the devtools
     /// </summary>
-    private readonly string _devToolsActivePortFile;
+    private readonly string? _devToolsActivePortFile;
 
     /// <summary>
     ///     When <c>true</c> then caching will be enabled
@@ -175,7 +176,7 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <summary>
     ///     <see cref="SetDiskCache"/>
     /// </summary>
-    private string _cacheDirectory;
+    private string? _cacheDirectory;
 
     /// <summary>
     ///     <see cref="SetDiskCache"/>
@@ -188,9 +189,9 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <summary>
     ///     The instance id
     /// </summary>
-    private string _instanceId;
+    private string? _instanceId;
 
-    private CancellationTokenSource _cancellationTokenSource;
+    private CancellationTokenSource? _cancellationTokenSource;
     #endregion
 
     #region Properties
@@ -233,6 +234,7 @@ public class Converter : IDisposable, IAsyncDisposable
     ///     Returns <c>true</c> when the Chromium based browser is running
     /// </summary>
     /// <returns></returns>
+    [MemberNotNullWhen(true, nameof(_chromiumProcess))]
     public bool IsChromiumRunning
     {
         get
@@ -254,7 +256,7 @@ public class Converter : IDisposable, IAsyncDisposable
     ///     An unique id that can be used to identify the logging of the converter when
     ///     calling the code from multiple threads and writing all the logging to the same file
     /// </summary>
-    public string InstanceId
+    public string? InstanceId
     {
         get => _instanceId;
         set
@@ -329,20 +331,20 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <remarks>
     ///     See https://github.com/mganss/HtmlSanitizer for all the default settings
     /// </remarks>
-    public HtmlSanitizer Sanitizer { get; set; }
+    public HtmlSanitizer? Sanitizer { get; set; }
 
     /// <summary>
     ///     Runs the given javascript after the webpage has been loaded and before it is converted
     ///     to PDF
     /// </summary>
-    public string RunJavascript { get; set; }
+    public string? RunJavascript { get; set; }
 
     /// <summary>
     ///     When set then this directory is used to store temporary files.
     ///     For example files that are made in combination with <see cref="PreWrapExtensions" />
     /// </summary>
     /// <exception cref="DirectoryNotFoundException">Raised when the given directory does not exists</exception>
-    public string TempDirectory
+    public string? TempDirectory
     {
         get => _tempDirectory;
         set
@@ -384,17 +386,17 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <summary>
     ///     The directory used for temporary files (<see cref="GetTempDirectory"/>)
     /// </summary>
-    public DirectoryInfo CurrentTempDirectory { get; internal set; }
+    public DirectoryInfo? CurrentTempDirectory { get; internal set; }
 
     /// <summary>
     ///     The directory used for cached files (<see cref="GetCacheDirectory"/>)
     /// </summary>
-    public DirectoryInfo CurrentCacheDirectory { get; internal set; }
+    public DirectoryInfo? CurrentCacheDirectory { get; internal set; }
 
     /// <summary>
     ///     Returns a <see cref="WebProxy" /> object
     /// </summary>
-    private WebProxy WebProxy
+    private WebProxy? WebProxy
     {
         get
         {
@@ -406,19 +408,19 @@ public class Converter : IDisposable, IAsyncDisposable
                 if (string.IsNullOrWhiteSpace(_proxyServer))
                     return null;
 
-                NetworkCredential networkCredential = null;
+                NetworkCredential? networkCredential = null;
 
-                string[] bypassList = null;
+                string[]? bypassList = null;
 
                 if (_proxyBypassList != null)
                     bypassList = _proxyBypassList.Split(';');
 
                 if (!string.IsNullOrWhiteSpace(_userName))
                 {
-                    string userName = null;
-                    string domain = null;
+                    string? userName = null;
+                    string? domain = null;
 
-                    if (_userName.Contains("\\"))
+                    if (_userName!.Contains("\\"))
                     {
                         domain = _userName.Split('\\')[0];
                         userName = _userName.Split('\\')[1];
@@ -461,7 +463,7 @@ public class Converter : IDisposable, IAsyncDisposable
     ///     The <see cref="System.IO.Stream" /> where to write the page snapshot when <see cref="CaptureSnapshot" />
     ///     is set to <c>true</c>
     /// </summary>
-    public Stream SnapshotStream { get; set; }
+    public Stream? SnapshotStream { get; set; }
 
     /// <summary>
     ///     When enabled network traffic is also logged
@@ -494,8 +496,8 @@ public class Converter : IDisposable, IAsyncDisposable
                     ? new DirectoryInfo(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()))
                     : new DirectoryInfo(Path.Combine(_tempDirectory, Guid.NewGuid().ToString()));
 
-            if (!CurrentTempDirectory.Exists)
-                CurrentTempDirectory.Create();
+            if (!CurrentCacheDirectory.Exists)
+                CurrentCacheDirectory.Create();
 
             return CurrentCacheDirectory;
         }
@@ -566,9 +568,9 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <exception cref="DirectoryNotFoundException">
     ///     Raised when the <paramref name="userProfile" /> directory is given but does not exists
     /// </exception>
-    public Converter(string chromiumExeFileName = null,
-        string userProfile = null,
-        ILogger logger = null,
+    public Converter(string? chromiumExeFileName = null,
+        string? userProfile = null,
+        ILogger? logger = null,
         bool useCache = true,
         Enums.Browser browser = Enums.Browser.Chrome)
     {
@@ -595,7 +597,7 @@ public class Converter : IDisposable, IAsyncDisposable
         if (!File.Exists(chromiumExeFileName))
             throw new FileNotFoundException($"Could not find {BrowserName} in location '{chromiumExeFileName}'");
 
-        _chromiumExeFileName = chromiumExeFileName;
+        _chromiumExeFileName = chromiumExeFileName!;
 
         if (string.IsNullOrWhiteSpace(userProfile)) return;
         var userProfileDirectory = new DirectoryInfo(userProfile);
@@ -643,7 +645,7 @@ public class Converter : IDisposable, IAsyncDisposable
             string userName;
             var domain = string.Empty;
 
-            if (_userName.Contains("\\"))
+            if (_userName!.Contains("\\"))
             {
                 userName = _userName.Split('\\')[1];
                 domain = _userName.Split('\\')[0];
@@ -674,7 +676,7 @@ public class Converter : IDisposable, IAsyncDisposable
                 if (!string.IsNullOrEmpty(_password))
                 {
                     var secureString = new SecureString();
-                    foreach (var c in _password)
+                    foreach (var c in _password!)
                         secureString.AppendChar(c);
 
                     processStartInfo.Password = secureString;
@@ -699,7 +701,7 @@ public class Converter : IDisposable, IAsyncDisposable
         else if (File.Exists(_devToolsActivePortFile))
             File.Delete(_devToolsActivePortFile);
 
-        string chromeException = null;
+        string? chromeException = null;
         _chromiumProcess.StartInfo = processStartInfo;
         _chromiumProcess.Exited += OnChromiumProcessOnExited;
 
@@ -744,13 +746,13 @@ public class Converter : IDisposable, IAsyncDisposable
         _chromiumProcess.Exited -= OnChromiumProcessOnExited;
 
         if (!string.IsNullOrEmpty(chromeException))
-            throw new ChromiumException(chromeException);
+            throw new ChromiumException(chromeException!);
 
         _logger?.WriteToLog($"{BrowserName} started");
         return;
 
         #region Method internal events
-        void OnChromiumProcessOnExited(object o, EventArgs eventArgs)
+        void OnChromiumProcessOnExited(object? o, EventArgs eventArgs)
         {
             try
             {
@@ -771,7 +773,7 @@ public class Converter : IDisposable, IAsyncDisposable
 
         void OnChromiumProcessOnErrorDataReceived(object _, DataReceivedEventArgs args)
         {
-            if (args.Data == null || string.IsNullOrEmpty(args.Data) || args.Data.StartsWith("[")) return;
+            if (string.IsNullOrEmpty(args.Data) || args.Data.StartsWith("[")) return;
 
             _logger?.WriteToLog($"Received Chromium error data: '{args.Data}'");
 
@@ -863,6 +865,7 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <summary>
     ///     Resets the <see cref="DefaultChromiumArguments" /> to their default settings
     /// </summary>
+    [MemberNotNull(nameof(_defaultChromiumArgument))]
     public void ResetChromiumArguments()
     {
         _logger?.WriteToLog("Resetting Chromium arguments to default");
@@ -1126,7 +1129,7 @@ public class Converter : IDisposable, IAsyncDisposable
     ///     Set this parameter before starting Google Chrome or Microsoft Edge. On systems other than
     ///     Windows the password can be left empty because this is only supported on Windows.
     /// </remarks>
-    public void SetUser(string userName, string password = null)
+    public void SetUser(string userName, string? password = null)
     {
         _userName = userName;
         _password = password;
@@ -1258,7 +1261,7 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <param name="fileName"></param>
     /// <param name="url"></param>
     /// <returns></returns>
-    private static bool GetUrlFromFile(string fileName, out string url)
+    private static bool GetUrlFromFile(string fileName, [NotNullWhen(true)] out string? url)
     {
         try
         {
@@ -1289,11 +1292,11 @@ public class Converter : IDisposable, IAsyncDisposable
         object input,
         Stream outputStream,
         PageSettings pageSettings,
-        string waitForWindowStatus = "",
+        string? waitForWindowStatus = null,
         int waitForWindowsStatusTimeout = 60000,
         int? conversionTimeout = null,
         int? mediaLoadTimeout = null,
-        ILogger logger = null,
+        ILogger? logger = null,
         CancellationToken cancellationToken = default)
     {
         if (cancellationToken == default)
@@ -1362,7 +1365,7 @@ public class Converter : IDisposable, IAsyncDisposable
 
                 if (ImageResize || ImageRotate || SanitizeHtml || pageSettings.PaperFormat == PaperFormat.FitPageToContent)
                 {
-                    var documentHelper = new DocumentHelper(GetTempDirectory, _useCache, GetCacheDirectory, _cacheSize, WebProxy, ImageLoadTimeout, _logger);
+                    using var documentHelper = new DocumentHelper(GetTempDirectory, _useCache, GetCacheDirectory, _cacheSize, WebProxy, ImageLoadTimeout, _logger);
 
                     if (SanitizeHtml)
                     {
@@ -1388,7 +1391,7 @@ public class Converter : IDisposable, IAsyncDisposable
                         {
                             _logger?.WriteToLog($"Fitting the page to the content was successful changing input uri '{inputUri}' to '{result.OutputUri}'");
                             inputUri = result.OutputUri;
-                            safeUrls.Add(input.ToString());
+                            safeUrls.Add(input.ToString()!);
                         }
                     }
 
@@ -1417,7 +1420,7 @@ public class Converter : IDisposable, IAsyncDisposable
 
             await StartChromiumHeadlessAsync(cancellationToken).ConfigureAwait(false);
 
-            CountdownTimer countdownTimer = null;
+            CountdownTimer? countdownTimer = null;
 
             if (conversionTimeout.HasValue)
             {
@@ -1433,24 +1436,24 @@ public class Converter : IDisposable, IAsyncDisposable
             if (inputUri != null)
                 _logger?.WriteToLog($"Loading {(inputUri.IsFile ? $"file {inputUri.OriginalString}" : $"url {inputUri}")}");
 
-            await _browser.NavigateToAsync(safeUrls, _useCache, inputUri, html, countdownTimer, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic, WaitForNetworkIdle, cancellationToken).ConfigureAwait(false);
+            await _browser!.NavigateToAsync(safeUrls, _useCache, inputUri, html, countdownTimer, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic, WaitForNetworkIdle, cancellationToken).ConfigureAwait(false);
 
             if (!string.IsNullOrWhiteSpace(waitForWindowStatus))
             {
                 if (conversionTimeout.HasValue)
                 {
                     _logger?.WriteToLog("Conversion timeout paused because we are waiting for a window.status");
-                    countdownTimer.Stop();
+                    countdownTimer!.Stop();
                 }
 
                 _logger?.WriteToLog($"Waiting for window.status '{waitForWindowStatus}' or a timeout of {waitForWindowsStatusTimeout} milliseconds");
-                var match = await _browser.WaitForWindowStatusAsync(waitForWindowStatus, waitForWindowsStatusTimeout, cancellationToken).ConfigureAwait(false);
+                var match = await _browser.WaitForWindowStatusAsync(waitForWindowStatus!, waitForWindowsStatusTimeout, cancellationToken).ConfigureAwait(false);
                 _logger?.WriteToLog(!match ? "Waiting timed out" : $"Window status equaled {waitForWindowStatus}");
 
                 if (conversionTimeout.HasValue)
                 {
                     _logger?.WriteToLog("Conversion timeout started again because we are done waiting for a window.status");
-                    countdownTimer.Start();
+                    countdownTimer!.Start();
                 }
             }
 
@@ -1461,7 +1464,7 @@ public class Converter : IDisposable, IAsyncDisposable
             {
                 _logger?.WriteToLog("Start running javascript");
                 _logger?.WriteToLog($"Javascript code:{Environment.NewLine}{RunJavascript}");
-                await _browser.RunJavascriptAsync(RunJavascript, cancellationToken).ConfigureAwait(false);
+                await _browser.RunJavascriptAsync(RunJavascript!, cancellationToken).ConfigureAwait(false);
                 _logger?.WriteToLog("Done running javascript");
             }
 
@@ -1549,6 +1552,9 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <param name="outputFile"></param>
     private void WriteSnapShot(string outputFile)
     {
+        if (SnapshotStream == null)
+            throw new InvalidOperationException($"{nameof(SnapshotStream)} is not set");
+
         var snapShotOutputFile = Path.ChangeExtension(outputFile, ".mhtml");
 
         using (SnapshotStream)
@@ -1600,11 +1606,11 @@ public class Converter : IDisposable, IAsyncDisposable
         ConvertUri inputUri,
         Stream outputStream,
         PageSettings pageSettings,
-        string waitForWindowStatus = "",
+        string? waitForWindowStatus = null,
         int waitForWindowsStatusTimeout = 60000,
         int? conversionTimeout = null,
         int? mediaLoadTimeout = null,
-        ILogger logger = null)
+        ILogger? logger = null)
     {
         ConvertToPdfAsync(
             inputUri, 
@@ -1656,11 +1662,11 @@ public class Converter : IDisposable, IAsyncDisposable
         ConvertUri inputUri,
         string outputFile,
         PageSettings pageSettings,
-        string waitForWindowStatus = "",
+        string? waitForWindowStatus = null,
         int waitForWindowsStatusTimeout = 60000,
         int? conversionTimeout = null,
         int? mediaLoadTimeout = null,
-        ILogger logger = null)
+        ILogger? logger = null)
     {
         ConvertToPdfAsync(
             inputUri,
@@ -1714,11 +1720,11 @@ public class Converter : IDisposable, IAsyncDisposable
         string html,
         Stream outputStream,
         PageSettings pageSettings,
-        string waitForWindowStatus = "",
+        string? waitForWindowStatus = null,
         int waitForWindowsStatusTimeout = 60000,
         int? conversionTimeout = null,
         int? mediaLoadTimeout = null,
-        ILogger logger = null)
+        ILogger? logger = null)
     {
         ConvertToPdfAsync(
             html,
@@ -1772,11 +1778,11 @@ public class Converter : IDisposable, IAsyncDisposable
         string html,
         string outputFile,
         PageSettings pageSettings,
-        string waitForWindowStatus = "",
+        string? waitForWindowStatus = null,
         int waitForWindowsStatusTimeout = 60000,
         int? conversionTimeout = null,
         int? mediaLoadTimeout = null,
-        ILogger logger = null)
+        ILogger? logger = null)
     {
         ConvertToPdfAsync(
             html,
@@ -1829,11 +1835,11 @@ public class Converter : IDisposable, IAsyncDisposable
         ConvertUri inputUri,
         Stream outputStream,
         PageSettings pageSettings,
-        string waitForWindowStatus = "",
+        string? waitForWindowStatus = null,
         int waitForWindowsStatusTimeout = 60000,
         int? conversionTimeout = null,
         int? mediaLoadTimeout = null,
-        ILogger logger = null,
+        ILogger? logger = null,
         CancellationToken cancellationToken = default)
     {
         await ConvertAsync(
@@ -1889,11 +1895,11 @@ public class Converter : IDisposable, IAsyncDisposable
         ConvertUri inputUri,
         string outputFile,
         PageSettings pageSettings,
-        string waitForWindowStatus = "",
+        string? waitForWindowStatus = null,
         int waitForWindowsStatusTimeout = 60000,
         int? conversionTimeout = null,
         int? mediaLoadTimeout = null,
-        ILogger logger = null,
+        ILogger? logger = null,
         CancellationToken cancellationToken = default)
     {
         CheckIfOutputFolderExists(outputFile);
@@ -1964,11 +1970,11 @@ public class Converter : IDisposable, IAsyncDisposable
         string html,
         Stream outputStream,
         PageSettings pageSettings,
-        string waitForWindowStatus = "",
+        string? waitForWindowStatus = null,
         int waitForWindowsStatusTimeout = 60000,
         int? conversionTimeout = null,
         int? mediaLoadTimeout = null,
-        ILogger logger = null,
+        ILogger? logger = null,
         CancellationToken cancellationToken = default)
     {
         await ConvertAsync(
@@ -2028,11 +2034,11 @@ public class Converter : IDisposable, IAsyncDisposable
         string html,
         string outputFile,
         PageSettings pageSettings,
-        string waitForWindowStatus = "",
+        string? waitForWindowStatus = null,
         int waitForWindowsStatusTimeout = 60000,
         int? conversionTimeout = null,
         int? mediaLoadTimeout = null,
-        ILogger logger = null,
+        ILogger? logger = null,
         CancellationToken cancellationToken = default)
     {
         CheckIfOutputFolderExists(outputFile);
@@ -2101,11 +2107,11 @@ public class Converter : IDisposable, IAsyncDisposable
         ConvertUri inputUri,
         Stream outputStream,
         PageSettings pageSettings,
-        string waitForWindowStatus = "",
+        string? waitForWindowStatus = null,
         int waitForWindowsStatusTimeout = 60000,
         int? conversionTimeout = null,
         int? mediaLoadTimeout = null,
-        ILogger logger = null)
+        ILogger? logger = null)
     {
         ConvertToImageAsync(
             inputUri,
@@ -2159,11 +2165,11 @@ public class Converter : IDisposable, IAsyncDisposable
         string html,
         Stream outputStream,
         PageSettings pageSettings,
-        string waitForWindowStatus = "",
+        string? waitForWindowStatus = null,
         int waitForWindowsStatusTimeout = 60000,
         int? conversionTimeout = null,
         int? mediaLoadTimeout = null,
-        ILogger logger = null)
+        ILogger? logger = null)
     {
         ConvertToImageAsync(
             html,
@@ -2216,11 +2222,11 @@ public class Converter : IDisposable, IAsyncDisposable
         ConvertUri inputUri,
         string outputFile,
         PageSettings pageSettings,
-        string waitForWindowStatus = "",
+        string? waitForWindowStatus = null,
         int waitForWindowsStatusTimeout = 60000,
         int? conversionTimeout = null,
         int? mediaLoadTimeout = null,
-        ILogger logger = null)
+        ILogger? logger = null)
     {
         ConvertToImageAsync(
             inputUri,
@@ -2277,11 +2283,11 @@ public class Converter : IDisposable, IAsyncDisposable
         string html,
         string outputFile,
         PageSettings pageSettings,
-        string waitForWindowStatus = "",
+        string? waitForWindowStatus = null,
         int waitForWindowsStatusTimeout = 60000,
         int? conversionTimeout = null,
         int? mediaLoadTimeout = null,
-        ILogger logger = null)
+        ILogger? logger = null)
     {
         ConvertToImageAsync(
             html,
@@ -2334,11 +2340,11 @@ public class Converter : IDisposable, IAsyncDisposable
         ConvertUri inputUri,
         Stream outputStream,
         PageSettings pageSettings,
-        string waitForWindowStatus = "",
+        string? waitForWindowStatus = null,
         int waitForWindowsStatusTimeout = 60000,
         int? conversionTimeout = null,
         int? mediaLoadTimeout = null,
-        ILogger logger = null,
+        ILogger? logger = null,
         CancellationToken cancellationToken = default)
     {
         await ConvertAsync(
@@ -2396,11 +2402,11 @@ public class Converter : IDisposable, IAsyncDisposable
         string html,
         Stream outputStream,
         PageSettings pageSettings,
-        string waitForWindowStatus = "",
+        string? waitForWindowStatus = null,
         int waitForWindowsStatusTimeout = 60000,
         int? conversionTimeout = null,
         int? mediaLoadTimeout = null,
-        ILogger logger = null,
+        ILogger? logger = null,
         CancellationToken cancellationToken = default)
     {
         await ConvertAsync(
@@ -2457,11 +2463,11 @@ public class Converter : IDisposable, IAsyncDisposable
         ConvertUri inputUri,
         string outputFile,
         PageSettings pageSettings,
-        string waitForWindowStatus = "",
+        string? waitForWindowStatus = null,
         int waitForWindowsStatusTimeout = 60000,
         int? conversionTimeout = null,
         int? mediaLoadTimeout = null,
-        ILogger logger = null,
+        ILogger? logger = null,
         CancellationToken cancellationToken = default)
     {
         CheckIfOutputFolderExists(outputFile);
@@ -2533,11 +2539,11 @@ public class Converter : IDisposable, IAsyncDisposable
         string html,
         string outputFile,
         PageSettings pageSettings,
-        string waitForWindowStatus = "",
+        string? waitForWindowStatus = null,
         int waitForWindowsStatusTimeout = 60000,
         int? conversionTimeout = null,
         int? mediaLoadTimeout = null,
-        ILogger logger = null,
+        ILogger? logger = null,
         CancellationToken cancellationToken = default)
     {
         CheckIfOutputFolderExists(outputFile);
@@ -2684,7 +2690,7 @@ public class Converter : IDisposable, IAsyncDisposable
     }
     #endregion
 
-#if (!NETSTANDARD2_0)    
+#if (!NETSTANDARD2_0)
     #region DisposeAsync
     /// <summary>
     ///     Disposes the running <see cref="_chromiumProcess" />

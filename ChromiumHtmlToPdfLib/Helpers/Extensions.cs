@@ -45,7 +45,7 @@ internal static class Extensions
     ///     <see cref="StringComparison" />
     /// </param>
     /// <returns></returns>
-    public static bool Contains(this List<string> source, string value, StringComparison comparison)
+    public static bool Contains(this List<string>? source, string? value, StringComparison comparison)
     {
         return
             source != null &&

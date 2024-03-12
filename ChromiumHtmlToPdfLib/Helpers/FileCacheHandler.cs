@@ -24,7 +24,7 @@ internal class FileCacheHandler : HttpClientHandler
     /// <summary>
     ///     The cache folder
     /// </summary>
-    private readonly DirectoryInfo _cacheDirectory;
+    private readonly DirectoryInfo? _cacheDirectory;
 
     /// <summary>
     ///     The cache size
@@ -34,12 +34,12 @@ internal class FileCacheHandler : HttpClientHandler
     /// <summary>
     ///     <see cref="Logger"/>
     /// </summary>
-    private readonly Logger _logger;
+    private readonly Logger? _logger;
 
     /// <summary>
     ///     <see cref="FileCache"/>
     /// </summary>
-    private FileCache.FileCache _fileCache;
+    private FileCache.FileCache? _fileCache;
     #endregion
 
     #region Properties
@@ -60,7 +60,7 @@ internal class FileCacheHandler : HttpClientHandler
 
             ChromiumHtmlToPdfLib.FileCache.FileCache.DefaultCacheManager = FileCacheManagers.Hashed;
 
-            _fileCache = new FileCache.FileCache(_cacheDirectory.FullName)
+            _fileCache = new FileCache.FileCache(_cacheDirectory!.FullName)
             {
                 MaxCacheSize = _cacheSize,
                 AccessTimeout = TimeSpan.FromSeconds(10),
@@ -84,7 +84,7 @@ internal class FileCacheHandler : HttpClientHandler
         bool useCache, 
         FileSystemInfo cacheDirectory, 
         long cacheSize,
-        Logger logger)
+        Logger? logger)
     {
         _useCache = useCache;
         
@@ -118,7 +118,7 @@ internal class FileCacheHandler : HttpClientHandler
             return base.SendAsync(request, cancellationToken);
         }
 
-        var key = request.RequestUri.ToString();
+        var key = request.RequestUri!.ToString();
         var item = FileCache.GetCacheItem(key);
 
         if (item is { Value: not null })

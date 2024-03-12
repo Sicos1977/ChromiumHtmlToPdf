@@ -31,7 +31,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Network;
 internal class RequestServedFromCache : Base
 {
     #region Properties
-    [JsonProperty("params")] public RequestServedFromCacheParams Params { get; set; }
+    [JsonProperty("params")] public RequestServedFromCacheParams Params { get; set; } = null!;
     #endregion
 
     #region FromJson
@@ -42,7 +42,7 @@ internal class RequestServedFromCache : Base
     /// <returns></returns>
     public new static RequestServedFromCache FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<RequestServedFromCache>(json);
+        return JsonConvert.DeserializeObject<RequestServedFromCache>(json)!;
     }
     #endregion
 }
@@ -50,6 +50,6 @@ internal class RequestServedFromCache : Base
 internal class RequestServedFromCacheParams
 {
     #region Properties
-    [JsonProperty("requestId")] public string RequestId { get; set; }
+    [JsonProperty("requestId")] public string? RequestId { get; set; }
     #endregion
 }

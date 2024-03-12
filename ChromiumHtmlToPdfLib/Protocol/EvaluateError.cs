@@ -35,13 +35,13 @@ namespace ChromiumHtmlToPdfLib.Protocol;
 internal class EvaluateError : MessageBase
 {
     #region Properties
-    [JsonProperty("result")] public EvaluateErrorResult Result { get; set; }
+    [JsonProperty("result")] public EvaluateErrorResult? Result { get; set; }
     #endregion
 
     #region FromJson
     public new static EvaluateError FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<EvaluateError>(json);
+        return JsonConvert.DeserializeObject<EvaluateError>(json)!;
     }
     #endregion
 }
@@ -52,9 +52,9 @@ internal class EvaluateError : MessageBase
 internal class EvaluateErrorResult
 {
     #region Properties
-    [JsonProperty("result")] public ExceptionClass Result { get; set; }
+    [JsonProperty("result")] public ExceptionClass? Result { get; set; }
 
-    [JsonProperty("exceptionDetails")] public EvaluateErrorExceptionDetails ExceptionDetails { get; set; }
+    [JsonProperty("exceptionDetails")] public EvaluateErrorExceptionDetails? ExceptionDetails { get; set; }
     #endregion
 }
 
@@ -66,7 +66,7 @@ internal class EvaluateErrorExceptionDetails
     #region Properties
     [JsonProperty("exceptionId")] public long ExceptionId { get; set; }
 
-    [JsonProperty("text")] public string Text { get; set; }
+    [JsonProperty("text")] public string? Text { get; set; }
 
     [JsonProperty("lineNumber")] public long LineNumber { get; set; }
 
@@ -76,7 +76,7 @@ internal class EvaluateErrorExceptionDetails
     [JsonConverter(typeof(EvaluateErrorParseStringConverter))]
     public long ScriptId { get; set; }
 
-    [JsonProperty("exception")] public ExceptionClass Exception { get; set; }
+    [JsonProperty("exception")] public ExceptionClass Exception { get; set; } = null!;
     #endregion
 }
 
@@ -86,15 +86,15 @@ internal class EvaluateErrorExceptionDetails
 internal class ExceptionClass
 {
     #region Properties
-    [JsonProperty("type")] public string Type { get; set; }
+    [JsonProperty("type")] public string? Type { get; set; }
 
-    [JsonProperty("subtype")] public string Subtype { get; set; }
+    [JsonProperty("subtype")] public string? Subtype { get; set; }
 
-    [JsonProperty("className")] public string ClassName { get; set; }
+    [JsonProperty("className")] public string? ClassName { get; set; }
 
-    [JsonProperty("description")] public string Description { get; set; }
+    [JsonProperty("description")] public string? Description { get; set; }
 
-    [JsonProperty("objectId")] public string ObjectId { get; set; }
+    [JsonProperty("objectId")] public string? ObjectId { get; set; }
     #endregion
 }
 
@@ -108,7 +108,7 @@ internal class EvaluateErrorParseStringConverter : JsonConverter
     #endregion
 
     #region ReadJson
-    public override object ReadJson(JsonReader reader, Type t, object existingValue, JsonSerializer serializer)
+    public override object? ReadJson(JsonReader reader, Type t, object? existingValue, JsonSerializer serializer)
     {
         if (reader.TokenType == JsonToken.Null) return null;
         var value = serializer.Deserialize<string>(reader);
@@ -119,7 +119,7 @@ internal class EvaluateErrorParseStringConverter : JsonConverter
     #endregion
 
     #region WriteJson
-    public override void WriteJson(JsonWriter writer, object untypedValue, JsonSerializer serializer)
+    public override void WriteJson(JsonWriter writer, object? untypedValue, JsonSerializer serializer)
     {
         if (untypedValue == null)
         {

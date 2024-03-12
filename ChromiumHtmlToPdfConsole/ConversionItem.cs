@@ -47,7 +47,7 @@ internal class ConversionItem
     /// <summary>
     /// The exception when <see cref="Status"/> is <see cref="ConversionItemStatus.Failed"/>
     /// </summary>
-    public Exception Exception { get; private set; }
+    public Exception? Exception { get; private set; }
 
     /// <summary>
     /// Returns this object as a comma separated string
@@ -73,7 +73,7 @@ internal class ConversionItem
     /// </summary>
     /// <param name="status"><see cref="ConversionItemStatus"/></param>
     /// <param name="exception"></param>
-    public void SetStatus(ConversionItemStatus status, Exception exception = null)
+    public void SetStatus(ConversionItemStatus status, Exception? exception = null)
     {
         Status = status;
         Exception = exception;

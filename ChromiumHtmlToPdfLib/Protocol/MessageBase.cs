@@ -49,7 +49,7 @@ internal class MessageBase
     /// <returns></returns>
     public static MessageBase FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<MessageBase>(json);
+        return JsonConvert.DeserializeObject<MessageBase>(json)!;
     }
     #endregion
 

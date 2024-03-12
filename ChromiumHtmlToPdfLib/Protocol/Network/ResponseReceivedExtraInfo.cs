@@ -35,7 +35,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Network;
 internal class ResponseReceivedExtraInfo : Base
 {
     #region Properties
-    [JsonProperty("params")] public ResponseReceivedExtraInfoParams Params { get; set; }
+    [JsonProperty("params")] public ResponseReceivedExtraInfoParams? Params { get; set; }
     #endregion
 
     #region FromJson
@@ -47,7 +47,7 @@ internal class ResponseReceivedExtraInfo : Base
     public new static ResponseReceivedExtraInfo FromJson(string json)
     {
         return JsonConvert.DeserializeObject<ResponseReceivedExtraInfo>(json,
-            ResponseReceivedExtraInfoConverter.Settings);
+            ResponseReceivedExtraInfoConverter.Settings)!;
     }
     #endregion
 }
@@ -55,38 +55,38 @@ internal class ResponseReceivedExtraInfo : Base
 internal class ResponseReceivedExtraInfoParams
 {
     #region Properties
-    [JsonProperty("requestId")] public string RequestId { get; set; }
+    [JsonProperty("requestId")] public string? RequestId { get; set; }
 
-    [JsonProperty("blockedCookies")] public List<object> BlockedCookies { get; set; }
+    [JsonProperty("blockedCookies")] public List<object>? BlockedCookies { get; set; }
 
-    [JsonProperty("headers")] public ResponseReceivedExtraInfoHeaders Headers { get; set; }
+    [JsonProperty("headers")] public ResponseReceivedExtraInfoHeaders? Headers { get; set; }
     #endregion
 }
 
 internal class ResponseReceivedExtraInfoHeaders
 {
     #region Properties
-    [JsonProperty("content-type")] public string ContentType { get; set; }
+    [JsonProperty("content-type")] public string? ContentType { get; set; }
 
     [JsonProperty("content-length")]
     [JsonConverter(typeof(ResponseReceivedExtraInfoParseStringConverter))]
     public long ContentLength { get; set; }
 
-    [JsonProperty("server")] public string Server { get; set; }
+    [JsonProperty("server")] public string? Server { get; set; }
 
-    [JsonProperty("etag")] public string Etag { get; set; }
+    [JsonProperty("etag")] public string? Etag { get; set; }
 
     [JsonProperty("max-age")]
     [JsonConverter(typeof(ResponseReceivedExtraInfoParseStringConverter))]
     public long MaxAge { get; set; }
 
-    [JsonProperty("x-debug")] public string XDebug { get; set; }
+    [JsonProperty("x-debug")] public string? XDebug { get; set; }
 
-    [JsonProperty("cache-control")] public string CacheControl { get; set; }
+    [JsonProperty("cache-control")] public string? CacheControl { get; set; }
 
-    [JsonProperty("expires")] public string Expires { get; set; }
+    [JsonProperty("expires")] public string? Expires { get; set; }
 
-    [JsonProperty("date")] public string Date { get; set; }
+    [JsonProperty("date")] public string? Date { get; set; }
     #endregion
 }
 
@@ -110,7 +110,7 @@ internal class ResponseReceivedExtraInfoParseStringConverter : JsonConverter
         return t == typeof(long) || t == typeof(long?);
     }
 
-    public override object ReadJson(JsonReader reader, Type t, object existingValue, JsonSerializer serializer)
+    public override object? ReadJson(JsonReader reader, Type t, object? existingValue, JsonSerializer serializer)
     {
         if (reader.TokenType == JsonToken.Null) return null;
         var value = serializer.Deserialize<string>(reader);
@@ -121,7 +121,7 @@ internal class ResponseReceivedExtraInfoParseStringConverter : JsonConverter
         throw new Exception("Cannot unmarshal type long");
     }
 
-    public override void WriteJson(JsonWriter writer, object untypedValue, JsonSerializer serializer)
+    public override void WriteJson(JsonWriter writer, object? untypedValue, JsonSerializer serializer)
     {
         if (untypedValue == null)
         {

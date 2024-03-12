@@ -84,7 +84,7 @@ internal static class EdgeFinder
     ///     Tries to find Chrome
     /// </summary>
     /// <returns></returns>
-    internal static string Find()
+    internal static string? Find()
     {
         // For Windows we first check the registry. This is the safest
         // method and also considers non-default installation locations.
@@ -99,7 +99,7 @@ internal static class EdgeFinder
             if (key != null)
             {
                 // ReSharper disable once AssignNullToNotNullAttribute
-                var path = Path.Combine(key.ToString(), "msedge.exe");
+                var path = Path.Combine(key.ToString()!, "msedge.exe");
                 if (File.Exists(path))
                     return path;
             }

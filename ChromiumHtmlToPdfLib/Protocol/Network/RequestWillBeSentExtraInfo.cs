@@ -34,7 +34,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Network;
 internal class RequestWillBeSentExtraInfo : Base
 {
     #region Properties
-    [JsonProperty("params")] public RequestWillBeSentExtraInfoParams Params { get; set; }
+    [JsonProperty("params")] public RequestWillBeSentExtraInfoParams? Params { get; set; }
     #endregion
 
     #region FromJson
@@ -46,7 +46,7 @@ internal class RequestWillBeSentExtraInfo : Base
     public new static RequestWillBeSentExtraInfo FromJson(string json)
     {
         return JsonConvert.DeserializeObject<RequestWillBeSentExtraInfo>(json,
-            RequestWillBeSentExtraInfoConverter.Settings);
+            RequestWillBeSentExtraInfoConverter.Settings)!;
     }
     #endregion
 }
@@ -54,14 +54,14 @@ internal class RequestWillBeSentExtraInfo : Base
 internal class RequestWillBeSentExtraInfoParams
 {
     #region Properties
-    [JsonProperty("requestId")] public string RequestId { get; set; }
+    [JsonProperty("requestId")] public string? RequestId { get; set; }
 
-    [JsonProperty("associatedCookies")] public List<object> AssociatedCookies { get; set; }
+    [JsonProperty("associatedCookies")] public List<object>? AssociatedCookies { get; set; }
 
-    [JsonProperty("headers")] public RequestWillBeSentExtraInfoHeaders Headers { get; set; }
+    [JsonProperty("headers")] public RequestWillBeSentExtraInfoHeaders? Headers { get; set; }
 
     [JsonProperty("clientSecurityState")]
-    public RequestWillBeSentExtraInfoClientSecurityState ClientSecurityState { get; set; }
+    public RequestWillBeSentExtraInfoClientSecurityState? ClientSecurityState { get; set; }
     #endregion
 }
 
@@ -72,37 +72,37 @@ internal class RequestWillBeSentExtraInfoClientSecurityState
     public bool InitiatorIsSecureContext { get; set; }
 
     [JsonProperty("initiatorIPAddressSpace")]
-    public string InitiatorIpAddressSpace { get; set; }
+    public string? InitiatorIpAddressSpace { get; set; }
 
     [JsonProperty("privateNetworkRequestPolicy")]
-    public string PrivateNetworkRequestPolicy { get; set; }
+    public string? PrivateNetworkRequestPolicy { get; set; }
     #endregion
 }
 
 internal class RequestWillBeSentExtraInfoHeaders
 {
     #region Properties
-    [JsonProperty(":method")] public string Method { get; set; }
+    [JsonProperty(":method")] public string? Method { get; set; }
 
-    [JsonProperty(":authority")] public string Authority { get; set; }
+    [JsonProperty(":authority")] public string? Authority { get; set; }
 
-    [JsonProperty(":scheme")] public string Scheme { get; set; }
+    [JsonProperty(":scheme")] public string? Scheme { get; set; }
 
-    [JsonProperty(":path")] public string Path { get; set; }
+    [JsonProperty(":path")] public string? Path { get; set; }
 
-    [JsonProperty("user-agent")] public string UserAgent { get; set; }
+    [JsonProperty("user-agent")] public string? UserAgent { get; set; }
 
-    [JsonProperty("accept")] public string Accept { get; set; }
+    [JsonProperty("accept")] public string? Accept { get; set; }
 
-    [JsonProperty("sec-fetch-site")] public string SecFetchSite { get; set; }
+    [JsonProperty("sec-fetch-site")] public string? SecFetchSite { get; set; }
 
-    [JsonProperty("sec-fetch-mode")] public string SecFetchMode { get; set; }
+    [JsonProperty("sec-fetch-mode")] public string? SecFetchMode { get; set; }
 
-    [JsonProperty("sec-fetch-dest")] public string SecFetchDest { get; set; }
+    [JsonProperty("sec-fetch-dest")] public string? SecFetchDest { get; set; }
 
-    [JsonProperty("accept-encoding")] public string AcceptEncoding { get; set; }
+    [JsonProperty("accept-encoding")] public string? AcceptEncoding { get; set; }
 
-    [JsonProperty("accept-language")] public string AcceptLanguage { get; set; }
+    [JsonProperty("accept-language")] public string? AcceptLanguage { get; set; }
     #endregion
 }
 

@@ -33,13 +33,13 @@ internal class FrameTree
     #region Properties
     [JsonProperty("id")] public int Id { get; set; }
 
-    [JsonProperty("result")] public FrameTreeResponse Result { get; set; }
+    [JsonProperty("result")] public FrameTreeResponse Result { get; set; } = null!;
     #endregion
 
     #region FromJson
     public static FrameTree FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<FrameTree>(json);
+        return JsonConvert.DeserializeObject<FrameTree>(json)!;
     }
     #endregion
 }
@@ -47,24 +47,24 @@ internal class FrameTree
 internal class FrameTreeResponse
 {
     #region Properties
-    [JsonProperty("frameTree")] public FrameResponse FrameTree { get; set; }
+    [JsonProperty("frameTree")] public FrameResponse FrameTree { get; set; } = null!;
     #endregion
 }
 
 internal class FrameResponse
 {
     #region Properties
-    [JsonProperty("frame")] public FrameBody Frame { get; set; }
+    [JsonProperty("frame")] public FrameBody Frame { get; set; } = null!;
     #endregion
 }
 
 internal class FrameBody
 {
     #region Properties
-    [JsonProperty("id")] public string Id { get; set; }
+    [JsonProperty("id")] public string Id { get; set; } = null!;
 
-    [JsonProperty("loaderId")] public string LoaderId { get; set; }
+    [JsonProperty("loaderId")] public string? LoaderId { get; set; }
 
-    [JsonProperty("url")] public string Url { get; set; }
+    [JsonProperty("url")] public string? Url { get; set; }
     #endregion
 }

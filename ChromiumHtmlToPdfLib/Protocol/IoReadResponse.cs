@@ -39,7 +39,7 @@ internal class IoReadResponse : MessageBase
     ///     <see cref="IoReadResponseResult" />
     /// </summary>
     [JsonProperty("result")]
-    public IoReadResponseResult Result { get; set; }
+    public IoReadResponseResult Result { get; set; } = null!;
     #endregion
 
     #region FromJson
@@ -50,7 +50,7 @@ internal class IoReadResponse : MessageBase
     /// <returns></returns>
     public new static IoReadResponse FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<IoReadResponse>(json);
+        return JsonConvert.DeserializeObject<IoReadResponse>(json)!;
     }
     #endregion
 }
@@ -71,7 +71,7 @@ internal class IoReadResponseResult
     ///     Returns the data as a base64 encoded string
     /// </summary>
     [JsonProperty("data")]
-    public string Data { get; set; }
+    public string Data { get; set; } = null!;
 
     /// <summary>
     ///     Returns <see cref="PrintToPdfResult.Data" /> as array of bytes
