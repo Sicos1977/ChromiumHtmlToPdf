@@ -302,7 +302,7 @@ public class Connection : IDisposable, IAsyncDisposable
         var error = Error.FromJson(message);
 
         // ReSharper disable once CompareOfFloatsByEqualityOperator
-        if (error.InnerError != null && error.InnerError.Code != 0 &&
+        if (error.InnerError is { Code: not 0 } &&
             !string.IsNullOrEmpty(error.InnerError.Message))
             return error.InnerError.Message;
 
