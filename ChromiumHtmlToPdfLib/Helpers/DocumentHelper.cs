@@ -186,12 +186,6 @@ internal class DocumentHelper: IDisposable
         _imageLoadTimeout = imageLoadTimeout.Value;
         _logger?.WriteToLog($"Setting image load timeout to '{_imageLoadTimeout}' milliseconds");
     }
-
-    public void Dispose()
-    {
-        // Just in case
-        _stopwatch?.Stop();
-    }
     #endregion
 
     #region ParseValue
@@ -1035,6 +1029,14 @@ internal class DocumentHelper: IDisposable
     {
         var tempFile = Guid.NewGuid() + extension;
         return Path.Combine(_tempDirectory?.FullName ?? Path.GetTempPath(), tempFile);
+    }
+    #endregion
+
+    #region Dispose
+    public void Dispose()
+    {
+        // Just in case
+        _stopwatch?.Stop();
     }
     #endregion
 }

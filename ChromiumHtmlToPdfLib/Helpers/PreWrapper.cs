@@ -58,7 +58,7 @@ internal class PreWrapper
 
     #region Properties
     /// <summary>
-    ///     An unique id that can be used to identify the logging of the converter when
+    ///     A unique id that can be used to identify the logging of the converter when
     ///     calling the code from multiple threads and writing all the logging to the same file
     /// </summary>
     // ReSharper disable once UnusedAutoPropertyAccessor.Global
@@ -75,19 +75,19 @@ internal class PreWrapper
 
     /// <summary>
     ///     When set then this font will be used when &lt;PRE&gt; wrapping.
-    ///     Otherwise the default system font will be used.
+    ///     Otherwise, the default system font will be used.
     /// </summary>
     public string? FontFamily { get; set; }
 
     /// <summary>
     ///     When set then this style will be used when &lt;PRE&gt; wrapping.
-    ///     Otherwise the default system font style will be used.
+    ///     Otherwise, the default system font style will be used.
     /// </summary>
     public string? FontStyle { get; set; }
 
     /// <summary>
     ///     When set then this font size will be used when &lt;PRE&gt; wrapping.
-    ///     Otherwise the default system font size will be used.
+    ///     Otherwise, the default system font size will be used.
     /// </summary>
 
     public string? FontSize { get; set; }
