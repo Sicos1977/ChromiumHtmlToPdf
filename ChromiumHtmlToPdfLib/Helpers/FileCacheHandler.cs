@@ -122,7 +122,7 @@ internal class FileCacheHandler : HttpClientHandler
 
         if (!_cacheDirectory.Exists)
         {
-            _logger?.WriteToLog($"Creating cache directory '{_cacheDirectory.FullName}'");
+            _logger?.Info("Creating cache directory '{path}'", _cacheDirectory.FullName);
             _cacheDirectory.Create();
         }
 
@@ -158,7 +158,7 @@ internal class FileCacheHandler : HttpClientHandler
 
             IsFromCache = true;
 
-            _logger?.WriteToLog("Returned item from cache");
+            _logger?.Info("Returned item from cache");
 
             return Task.FromResult(cachedResponse);
         }
@@ -171,7 +171,7 @@ internal class FileCacheHandler : HttpClientHandler
         response.Content.ReadAsStreamAsync().GetAwaiter().GetResult().CopyTo(memoryStream);
         
         FileCache.Add(key, memoryStream.ToArray(), new CacheItemPolicy { SlidingExpiration = TimeSpan.FromDays(1) });
-        _logger?.WriteToLog("Added item to cache");
+        _logger?.Info("Added item to cache");
 
         response.Content = new StreamContent(new MemoryStream(memoryStream.ToArray()));
 

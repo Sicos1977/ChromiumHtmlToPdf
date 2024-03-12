@@ -44,6 +44,7 @@ using AngleSharp.Html;
 using AngleSharp.Html.Dom;
 using AngleSharp.Io.Network;
 using ChromiumHtmlToPdfLib.Loggers;
+using ChromiumHtmlToPdfLib.Protocol;
 using ChromiumHtmlToPdfLib.Settings;
 using Ganss.Xss;
 using Svg;
@@ -180,11 +181,11 @@ internal class DocumentHelper: IDisposable
         _logger = logger;
 
         if (useCache)
-            _logger?.WriteToLog($"Setting cache directory to '{cacheDirectory.FullName}' with a size of {FileManager.GetFileSizeString(cacheSize, CultureInfo.InvariantCulture)}");
+            _logger?.Info("Setting cache directory to '{path}' with a size of {size}", cacheDirectory.FullName, FileManager.GetFileSizeString(cacheSize, CultureInfo.InvariantCulture));
 
         if (!imageLoadTimeout.HasValue) return;
         _imageLoadTimeout = imageLoadTimeout.Value;
-        _logger?.WriteToLog($"Setting image load timeout to '{_imageLoadTimeout}' milliseconds");
+        _logger?.Info("Setting image load timeout to '{timeout}' milliseconds", _imageLoadTimeout);
     }
     #endregion
 
@@ -233,54 +234,54 @@ internal class DocumentHelper: IDisposable
         }
         catch (Exception exception)
         {
-            _logger?.WriteToLog($"Exception occurred in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
+            _logger?.Error(exception, "Exception occurred in AngleSharp: {exception}", ExceptionHelpers.GetInnerException(exception));
             return new SanitizeHtmlResult(false, inputUri, safeUrls);
         }
         
-        _logger?.WriteToLog("Sanitizing HTML");
+        _logger?.Info("Sanitizing HTML");
 
         sanitizer ??= new HtmlSanitizer();
 
         void OnSanitizerOnFilterUrl(object? _, FilterUrlEventArgs args)
         {
             if (args.OriginalUrl == args.SanitizedUrl) return;
-            _logger?.WriteToLog($"URL sanitized from '{args.OriginalUrl}' to '{args.SanitizedUrl}'");
+            _logger?.Warn("URL sanitized from '{sourceUrl}' to '{sanitizedUrl}'", args.OriginalUrl, args.SanitizedUrl);
             htmlChanged = true;
         }
 
         void OnSanitizerOnRemovingAtRule(object? _, RemovingAtRuleEventArgs args)
         {
-            _logger?.WriteToLog($"Removing CSS at-rule '{args.Rule.CssText}' from tag '{args.Tag.TagName}'");
+            _logger?.Warn("Removing CSS at-rule '{rule}' from tag '{tag}'", args.Rule.CssText, args.Tag.TagName);
             htmlChanged = true;
         }
 
         void OnSanitizerOnRemovingAttribute(object? _, RemovingAttributeEventArgs args)
         {
-            _logger?.WriteToLog($"Removing attribute '{args.Attribute.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+            _logger?.Warn("Removing attribute '{attr}' from tag '{tag}', reason '{reason}'", args.Attribute.Name, args.Tag.TagName, args.Reason);
             htmlChanged = true;
         }
 
         void OnSanitizerOnRemovingComment(object? _, RemovingCommentEventArgs args)
         {
-            _logger?.WriteToLog($"Removing comment '{args.Comment.TextContent}'");
+            _logger?.Info("Removing comment '{comment}'", args.Comment.TextContent);
             htmlChanged = true;
         }
 
         void OnSanitizerOnRemovingCssClass(object? _, RemovingCssClassEventArgs args)
         {
-            _logger?.WriteToLog($"Removing CSS class '{args.CssClass}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+            _logger?.Warn("Removing CSS class '{class}' from tag '{tag}', reason '{reason}'", args.CssClass, args.Tag.TagName, args.Reason);
             htmlChanged = true;
         }
 
         void OnSanitizerOnRemovingStyle(object? _, RemovingStyleEventArgs args)
         {
-            _logger?.WriteToLog($"Removing style '{args.Style.Name}' from tag '{args.Tag.TagName}', reason '{args.Reason}'");
+            _logger?.Warn("Removing style '{style}' from tag '{tag}', reason '{reason}'", args.Style.Name, args.Tag.TagName, args.Reason);
             htmlChanged = true;
         }
 
         void OnSanitizerOnRemovingTag(object? _, RemovingTagEventArgs args)
         {
-            _logger?.WriteToLog($"Removing tag '{args.Tag.TagName}', reason '{args.Reason}'");
+            _logger?.Warn("Removing tag '{tag}', reason '{reason}'", args.Tag.TagName, args.Reason);
             htmlChanged = true;
         }
 
@@ -301,13 +302,13 @@ internal class DocumentHelper: IDisposable
 
             if (!htmlChanged)
             {
-                _logger?.WriteToLog("HTML did not need any sanitization");
+                _logger?.Info("HTML did not need any sanitization");
                 return new SanitizeHtmlResult(false, inputUri, safeUrls);
             }
         }
         catch (Exception exception)
         {
-            _logger?.WriteToLog($"Exception occurred in HtmlSanitizer: {ExceptionHelpers.GetInnerException(exception)}");
+            _logger?.Error(exception, "Exception occurred in HtmlSanitizer: {exception}", ExceptionHelpers.GetInnerException(exception));
             return new SanitizeHtmlResult(false, inputUri, safeUrls);
         }
         finally
@@ -321,12 +322,12 @@ internal class DocumentHelper: IDisposable
             sanitizer.RemovingTag -= OnSanitizerOnRemovingTag;
         }
 
-        _logger?.WriteToLog("HTML sanitized");
+        _logger?.Info("HTML sanitized");
 
         var sanitizedOutputFile = GetTempFile(".htm");
         var outputUri = new ConvertUri(sanitizedOutputFile, inputUri.Encoding);
         var url = outputUri.ToString();
-        _logger?.WriteToLog($"Adding url '{url}' to the safe url list");
+        _logger?.Info("Adding url '{url}' to the safe url list", url);
         safeUrls.Add(url);
 
         try
@@ -349,13 +350,13 @@ internal class DocumentHelper: IDisposable
                     if (src.StartsWith("http://", StringComparison.InvariantCultureIgnoreCase) ||
                         src.StartsWith("https://", StringComparison.InvariantCultureIgnoreCase)) continue;
 
-                    _logger?.WriteToLog($"Updating image source to '{src}' and adding it to the safe url list");
+                    _logger?.Info("Updating image source to '{url}' and adding it to the safe url list", src);
                     safeUrls.Add(src);
                     image.Source = src;
                 }
             }
 
-            _logger?.WriteToLog($"Writing sanitized webpage to '{sanitizedOutputFile}'");
+            _logger?.Info("Writing sanitized webpage to '{path}'", sanitizedOutputFile);
 
 #if (NETSTANDARD2_0)
             using var fileStream = new FileStream(sanitizedOutputFile, FileMode.CreateNew, FileAccess.Write);
@@ -381,12 +382,12 @@ internal class DocumentHelper: IDisposable
                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
             }
 
-            _logger?.WriteToLog("Sanitized webpage written");
+            _logger?.Info("Sanitized webpage written");
             return new SanitizeHtmlResult(true, outputUri, safeUrls);
         }
         catch (Exception exception)
         {
-            _logger?.WriteToLog($"Could not write new html file '{sanitizedOutputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
+            _logger?.Error(exception, "Could not write new html file '{path}', error: {exception}", sanitizedOutputFile, ExceptionHelpers.GetInnerException(exception));
             return new SanitizeHtmlResult(false, inputUri, safeUrls);
         }
     }
@@ -480,7 +481,7 @@ internal class DocumentHelper: IDisposable
         }
         catch (Exception exception)
         {
-            _logger?.WriteToLog($"Exception occurred in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
+            _logger?.Error(exception, "Exception occurred in AngleSharp: {exception}", ExceptionHelpers.GetInnerException(exception));
             return new FitPageToContentResult(false, inputUri);
         }
 
@@ -489,7 +490,7 @@ internal class DocumentHelper: IDisposable
 
         try
         {
-            _logger?.WriteToLog($"Writing changed webpage to '{outputFile}'");
+            _logger?.Info("Writing changed webpage to '{path}'", outputFile);
 
 #if (NETSTANDARD2_0)
             using var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write);
@@ -515,12 +516,12 @@ internal class DocumentHelper: IDisposable
                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
             }
 
-            _logger?.WriteToLog("Changed webpage written");
+            _logger?.Info("Changed webpage written");
             return new FitPageToContentResult(true, outputUri);
         }
         catch (Exception exception)
         {
-            _logger?.WriteToLog($"Could not write new html file '{outputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
+            _logger?.Error(exception, "Could not write new html file '{path}', error: {exception}", outputFile, ExceptionHelpers.GetInnerException(exception));
             return new FitPageToContentResult(false, inputUri);
         }
     }
@@ -561,7 +562,7 @@ internal class DocumentHelper: IDisposable
         await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri).ConfigureAwait(false);
 #endif
         
-        _logger?.WriteToLog($"DPI settings for image, x: '{graphics.DpiX}' and y: '{graphics.DpiY}'");
+        _logger?.Info("DPI settings for image, x: '{dpiX}' and y: '{dpiY}'", graphics.DpiX, graphics.DpiY);
         var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft - pageSettings.MarginRight) * graphics.DpiX;
         var maxHeight = (pageSettings.PaperHeight - pageSettings.MarginTop - pageSettings.MarginBottom) * graphics.DpiY;
 
@@ -584,11 +585,11 @@ internal class DocumentHelper: IDisposable
         }
         catch (Exception exception)
         {
-            _logger?.WriteToLog($"Exception occurred in AngleSharp: {ExceptionHelpers.GetInnerException(exception)}");
+            _logger?.Error(exception, "Exception occurred in AngleSharp: {exception}", ExceptionHelpers.GetInnerException(exception));
             return new ValidateImagesResult(false, inputUri);
         }
 
-        _logger?.WriteToLog("Validating all images if they need to be rotated and if they fit the page");
+        _logger?.Info("Validating all images if they need to be rotated and if they fit the page");
         var unchangedImages = new List<IHtmlImageElement>();
         var absoluteUri = inputUri.AbsoluteUri.Substring(0, inputUri.AbsoluteUri.LastIndexOf('/') + 1);
 
@@ -599,7 +600,7 @@ internal class DocumentHelper: IDisposable
 
             if (string.IsNullOrWhiteSpace(htmlImage.Source))
             {
-                _logger?.WriteToLog($"HTML image tag '{htmlImage.TagName}' has no image source '{htmlImage.Source}'");
+                _logger?.Warn("HTML image tag '{tag}' has no image source '{source}'", htmlImage.TagName, htmlImage.Source);
                 continue;
             }
 
@@ -612,15 +613,15 @@ internal class DocumentHelper: IDisposable
             if (!RegularExpression.IsRegExMatch(urlBlacklist, source, out var matchedPattern) || isAbsoluteUri || isSafeUrl)
             {
                 if (isAbsoluteUri)
-                    _logger?.WriteToLog($"The url '{source}' has been allowed because it start with the absolute uri '{absoluteUri}'");
+                    _logger?.Info("The url '{source}' has been allowed because it start with the absolute uri '{absoluteUri}'", source, absoluteUri);
                 else if (isSafeUrl)
-                    _logger?.WriteToLog($"The url '{source}' has been allowed because it is on the safe url list");
+                    _logger?.Info("The url '{source}' has been allowed because it is on the safe url list", source);
                 else
-                    _logger?.WriteToLog($"The url '{source}' has been allowed because it did not match anything on the url blacklist");
+                    _logger?.Info("The url '{source}' has been allowed because it did not match anything on the url blacklist", source);
             }
             else
             {
-                _logger?.WriteToLog($"The url '{source}' has been blocked by url blacklist pattern '{matchedPattern}'");
+                _logger?.Warn("The url '{source}' has been blocked by url blacklist pattern '{pattern}'", source, matchedPattern);
                 continue;
             }
 
@@ -643,13 +644,13 @@ internal class DocumentHelper: IDisposable
                     {
                         htmlImage.DisplayWidth = image.Width;
                         htmlImage.DisplayHeight = image.Height;
-                        _logger?.WriteToLog($"Image rotated and saved to location '{fileName}'");
+                        _logger?.Info("Image rotated and saved to location '{path}'", fileName);
                         image.Save(fileName);
                         htmlImage.DisplayWidth = image.Width;
                         htmlImage.DisplayHeight = image.Height;
                         htmlImage.SetStyle(string.Empty);
                         var newSrc = new Uri(fileName).ToString();
-                        _logger?.WriteToLog($"Adding url '{newSrc}' to the safe url list");
+                        _logger?.Info("Adding url '{url}' to the safe url list", newSrc);
                         safeUrls.Add(newSrc);
                         htmlImage.Source = newSrc;
                         htmlChanged = true;
@@ -672,7 +673,7 @@ internal class DocumentHelper: IDisposable
                         }
                         catch (Exception exception)
                         {
-                            _logger?.WriteToLog($"Could not get computed style from html image, exception: '{exception.Message}'");
+                            _logger?.Error(exception, "Could not get computed style from html image, exception: '{error}'", exception.Message);
                         }
 
                         if (style != null)
@@ -700,14 +701,14 @@ internal class DocumentHelper: IDisposable
                         
                         var ratio = maxWidth / image.Width;
 
-                        _logger?.WriteToLog($"Rescaling image with current width {image.Width}, height {image.Height} and ratio {ratio}");
+                        _logger?.Info("Rescaling image with current width {width}, height {height} and ratio {ratio}", image.Width, image.Height, ratio);
 
                         var newWidth = (int)(image.Width * ratio);
                         if (newWidth == 0) newWidth = 1;
                         var newHeight = (int)(image.Height * ratio);
                         if (newHeight == 0) newHeight = 1;
 
-                        _logger?.WriteToLog($"Image rescaled to new width {newWidth} and height {newHeight}");
+                        _logger?.Info("Image rescaled to new width {width} and height {height}", newWidth, newHeight);
                         htmlImage.DisplayWidth = newWidth;
                         htmlImage.DisplayHeight = newHeight;
                         htmlImage.SetStyle(string.Empty);
@@ -733,7 +734,7 @@ internal class DocumentHelper: IDisposable
             
             if (image == null)
             {
-                _logger?.WriteToLog($"Could not load unchanged image from location '{unchangedImage.Source}'");
+                _logger?.Warn("Could not load unchanged image from location '{location}'", unchangedImage.Source);
                 continue;
             }
 
@@ -748,11 +749,11 @@ internal class DocumentHelper: IDisposable
                 var newSrc = new Uri(fileName).ToString();
                 safeUrls.Add(newSrc);
                 unchangedImage.Source = newSrc;
-                _logger?.WriteToLog($"Unchanged image saved to location '{fileName}'");
+                _logger?.Info("Unchanged image saved to location '{path}'", fileName);
             }
             catch (Exception exception)
             {
-                _logger?.WriteToLog($"Could not write unchanged image because of an exception: {ExceptionHelpers.GetInnerException(exception)}");
+                _logger?.Error(exception, "Could not write unchanged image because of an exception: {exception}", ExceptionHelpers.GetInnerException(exception));
             }
         }
 
@@ -762,7 +763,7 @@ internal class DocumentHelper: IDisposable
 
         try
         {
-            _logger?.WriteToLog($"Writing changed webpage to '{outputFile}'");
+            _logger?.Info("Writing changed webpage to '{path}'", outputFile);
 
 #if (NETSTANDARD2_0)
             using var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write);
@@ -789,13 +790,13 @@ internal class DocumentHelper: IDisposable
                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
             }
             
-            _logger?.WriteToLog("Changed webpage written");
+            _logger?.Info("Changed webpage written");
 
             return new ValidateImagesResult(true, outputUri);
         }
         catch (Exception exception)
         {
-            _logger?.WriteToLog($"Could not write new html file '{outputFile}', error: {ExceptionHelpers.GetInnerException(exception)}");
+            _logger?.Error(exception, "Could not write new html file '{path}', error: {exception}", outputFile, ExceptionHelpers.GetInnerException(exception));
             return new ValidateImagesResult(false, inputUri);
         }
     }
@@ -812,7 +813,7 @@ internal class DocumentHelper: IDisposable
     {
         if (imageSource.StartsWith("data:", StringComparison.InvariantCultureIgnoreCase))
         {
-            _logger?.WriteToLog("Decoding image from base64 string");
+            _logger?.Info("Decoding image from base64 string");
 
             try
             {
@@ -821,19 +822,19 @@ internal class DocumentHelper: IDisposable
 
                 using var stream = new MemoryStream(binaryData);
                 var image = Image.FromStream(stream);
-                _logger?.WriteToLog("Image decoded");
+                _logger?.Info("Image decoded");
                 return image;
             }
             catch (Exception exception)
             {
-                _logger?.WriteToLog($"Error decoding image: {ExceptionHelpers.GetInnerException(exception)}");
+                _logger?.Error(exception, "Error decoding image: {exception}", ExceptionHelpers.GetInnerException(exception));
                 return null;
             }
         }
 
         try
         {
-            _logger?.WriteToLog($"Getting image from url '{imageSource}'");
+            _logger?.Info("Getting image from url '{url}'", imageSource);
 
             var imageUri = new Uri(imageSource);
 
@@ -873,17 +874,17 @@ internal class DocumentHelper: IDisposable
                 }
 
                 case "file":
-                    _logger?.WriteToLog("Ignoring local file");
+                    _logger?.Warn("Ignoring local file");
                     break;
 
                 default:
-                    _logger?.WriteToLog($"Unsupported scheme {imageUri.Scheme} to get image");
+                    _logger?.Warn("Unsupported scheme {scheme} to get image", imageUri.Scheme);
                     return null;
             }
         }
         catch (Exception exception)
         {
-            _logger?.WriteToLog($"Getting image failed with exception: {ExceptionHelpers.GetInnerException(exception)}");
+            _logger?.Error(exception, "Getting image failed with exception: {exception}", ExceptionHelpers.GetInnerException(exception));
         }
 
         return null;
@@ -909,12 +910,12 @@ internal class DocumentHelper: IDisposable
 
         if (item?.Value == null)
         {
-            _logger?.WriteToLog("Could not get orientation information from exif");
+            _logger?.Info("Could not get orientation information from exif");
             return false;
         }
 
         RotateFlipType rotateFlipType;
-        _logger?.WriteToLog("Checking image rotation");
+        _logger?.Info("Checking image rotation");
 
         switch (item.Value[0])
         {
@@ -948,7 +949,7 @@ internal class DocumentHelper: IDisposable
             return false;
 
         image.RotateFlip(rotateFlipType);
-        _logger?.WriteToLog($"Image rotated with {rotateFlipType}");
+        _logger?.Info("Image rotated with {rotationType}", rotateFlipType);
 
         // Remove Exif orientation tag (if requested)
         if (updateExifData) image.RemovePropertyItem(orientationId);
@@ -966,13 +967,13 @@ internal class DocumentHelper: IDisposable
     {
         try
         {
-            _logger?.WriteToLog($"Opening stream to file '{fileName}'");
+            _logger?.Info("Opening stream to file '{path}'", fileName);
             var result = File.OpenRead(fileName);
             return result;
         }
         catch (Exception exception)
         {
-            _logger?.WriteToLog($"Opening stream failed with exception: {ExceptionHelpers.GetInnerException(exception)}");
+            _logger?.Error(exception, "Opening stream failed with exception: {exception}", ExceptionHelpers.GetInnerException(exception));
             return null;
         }
     }
@@ -994,18 +995,21 @@ internal class DocumentHelper: IDisposable
             if (_stopwatch != null && checkTimeout)
             {
                 var timeLeft = TimeLeft;
-                _logger?.WriteToLog($"Opening stream to url '{sourceUri}'{(_imageLoadTimeout != 0 ? $" with a timeout of {timeLeft} milliseconds" : string.Empty)}");
+                if (_imageLoadTimeout != 0)
+                    _logger?.Info("Opening stream to url '{url}' with a timeout of {timeout} milliseconds", sourceUri, timeLeft);
+                else
+                    _logger?.Info("Opening stream to url '{url}'", sourceUri);
 
                 if (timeLeft == 0)
                 {
-                    _logger?.WriteToLog($"Image load has timed out, skipping opening stream to url '{sourceUri}'");
+                    _logger?.Error("Image load has timed out, skipping opening stream to url '{url}'", sourceUri);
                     return null;
                 }
 
                 client.Timeout = TimeSpan.FromMilliseconds(timeLeft);
             }
             else
-                _logger?.WriteToLog($"Opening stream to url '{sourceUri}'");
+                _logger?.Info("Opening stream to url '{url}'", sourceUri);
             
             var response = await client.GetAsync(sourceUri).ConfigureAwait(false);
             
@@ -1013,7 +1017,7 @@ internal class DocumentHelper: IDisposable
         }
         catch (Exception exception)
         {
-            _logger?.WriteToLog($"Opening stream failed with exception: {ExceptionHelpers.GetInnerException(exception)}");
+            _logger?.Error(exception, "Opening stream failed with exception: {exception}", ExceptionHelpers.GetInnerException(exception));
             return null;
         }
     }

@@ -37,7 +37,7 @@ public class Stream : ILogger, IDisposable
 {
     #region Fields
     private System.IO.Stream? _stream;
-    private string? _instanceId;
+    private readonly IExternalScopeProvider _scopeProvider = new LoggerExternalScopeProvider();
     #endregion
 
     #region Constructors
@@ -61,8 +61,7 @@ public class Stream : ILogger, IDisposable
     public IDisposable? BeginScope<TState>(TState state)
          where TState : notnull
     {
-        _instanceId = state.ToString();
-        return null;
+        return _scopeProvider.Push(state);
     }
     #endregion
 
@@ -91,11 +90,16 @@ public class Stream : ILogger, IDisposable
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
         Func<TState, Exception?, string> formatter)
     {
+        if (_stream == null || !_stream.CanWrite) return;
+
         var message = $"{formatter(state, exception)}";
 
-        if (_stream == null || !_stream.CanWrite) return;
+        string? instanceId = null;
+        // assign state always as ForEachScope enumerates from outer to inner scope
+        _scopeProvider.ForEachScope((state, _) => instanceId = state as string, (object?)null);
+
         var line =
-            $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fff}{(_instanceId != null ? $" - {_instanceId}" : string.Empty)} - {message}{Environment.NewLine}";
+            $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fff}{(instanceId != null ? $" - {instanceId}" : string.Empty)} - {message}{Environment.NewLine}";
         var bytes = Encoding.UTF8.GetBytes(line);
         _stream.Write(bytes, 0, bytes.Length);
         _stream.Flush();

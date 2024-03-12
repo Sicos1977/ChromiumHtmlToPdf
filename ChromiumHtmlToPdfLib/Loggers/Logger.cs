@@ -35,10 +35,6 @@ namespace ChromiumHtmlToPdfLib.Loggers;
 internal class Logger
 {
     #region Fields
-    /// <summary>
-    ///     Used to make the logging thread safe
-    /// </summary>
-    private static readonly object LoggerLock = new();
 
     /// <summary>
     ///     When set then logging is written to this ILogger instance
@@ -65,29 +61,81 @@ internal class Logger
     }
     #endregion
 
-    #region WriteToLog
+    #region Log Methods
     /// <summary>
-    ///     Writes a line to the <see cref="InternalLogger" />
+    ///     Writes a line to the <see cref="InternalLogger" /> with <see cref="LogLevel.Information"/>
     /// </summary>
     /// <param name="message">The message to write</param>
-    internal void WriteToLog(string message)
+    /// <param name="args">Message arguments</param>
+    public void Info(string message, params object?[] args)
     {
         if (InternalLogger == null) return;
 
         try
         {
-            if (InstanceId == null)
-            {
-                InternalLogger.LogInformation(message);
-            }
-            else
-            {
-                lock (LoggerLock)
-                {
-                    using var _ = InternalLogger.BeginScope(InstanceId);
-                    InternalLogger.LogInformation(message);
-                }
-            }
+            using var _ = InstanceId == null ? null : InternalLogger.BeginScope(InstanceId);
+            InternalLogger.LogInformation(message, args);
+        }
+        catch (ObjectDisposedException)
+        {
+            // Ignore
+        }
+    }
+
+    /// <summary>
+    ///     Writes a line to the <see cref="InternalLogger" /> with <see cref="LogLevel.Warning"/>
+    /// </summary>
+    /// <param name="message">The message to write</param>
+    /// <param name="args">Message arguments</param>
+    public void Warn(string message, params object?[] args)
+    {
+        if (InternalLogger == null) return;
+
+        try
+        {
+            using var _ = InstanceId == null ? null : InternalLogger.BeginScope(InstanceId);
+            InternalLogger.LogWarning(message, args);
+        }
+        catch (ObjectDisposedException)
+        {
+            // Ignore
+        }
+    }
+
+    /// <summary>
+    ///     Writes a line to the <see cref="InternalLogger" /> with <see cref="LogLevel.Error"/>
+    /// </summary>
+    /// <param name="message">The message to write</param>
+    /// <param name="args">Message arguments</param>
+    public void Error(string message, params object?[] args)
+    {
+        if (InternalLogger == null) return;
+
+        try
+        {
+            using var _ = InstanceId == null ? null : InternalLogger.BeginScope(InstanceId);
+            InternalLogger.LogError(message, args);
+        }
+        catch (ObjectDisposedException)
+        {
+            // Ignore
+        }
+    }
+
+    /// <summary>
+    ///     Writes a line to the <see cref="InternalLogger" /> with <see cref="LogLevel.Error"/>
+    /// </summary>
+    /// <param name="ex">Exception to attach to log entry</param>
+    /// <param name="message">The message to write</param>
+    /// <param name="args">Message arguments</param>
+    public void Error(Exception ex, string message, params object?[] args)
+    {
+        if (InternalLogger == null) return;
+
+        try
+        {
+            using var _ = InstanceId == null ? null : InternalLogger.BeginScope(InstanceId);
+            InternalLogger.LogError(ex, message, args);
         }
         catch (ObjectDisposedException)
         {

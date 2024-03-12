@@ -1,4 +1,13 @@
-﻿[*.cs]
+﻿
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+end_of_line = crlf
+
+[*.cs]
 
 # IDE0055: Fix formatting
 dotnet_diagnostic.IDE0055.severity = none

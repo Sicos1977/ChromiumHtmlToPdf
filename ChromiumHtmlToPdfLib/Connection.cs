@@ -110,7 +110,7 @@ public class Connection : IDisposable, IAsyncDisposable
         _url = url;
         _timeout = timeout;
         _logger = logger;
-        _logger?.WriteToLog($"Creating new websocket connection to url '{url}'");
+        _logger?.Info("Creating new websocket connection to url '{url}'", url);
         _webSocket = new ClientWebSocket();
         _receiveLoopCts = new CancellationTokenSource();
         OpenWebSocketAsync().GetAwaiter().GetResult();
@@ -156,6 +156,10 @@ public class Connection : IDisposable, IAsyncDisposable
         {
             // Ignore
         }
+        catch (OperationCanceledException)
+        {
+            // Ignore
+        }
         catch (Exception exception)
         {
             WebSocketOnError(state.Logger, new ErrorEventArgs(exception));
@@ -177,12 +181,12 @@ public class Connection : IDisposable, IAsyncDisposable
     {
         if (_webSocket.State is WebSocketState.Open or WebSocketState.Connecting) return;
 
-        _logger?.WriteToLog($"Opening websocket connection with a timeout of {_timeout} milliseconds");
+        _logger?.Info("Opening websocket connection with a timeout of {timeout} milliseconds", _timeout);
 
         try
         {
             await _webSocket.ConnectAsync(new Uri(_url), new CancellationTokenSource(_timeout).Token).ConfigureAwait(false);
-            _logger?.WriteToLog("Websocket opened");
+            _logger?.Info("Websocket opened");
         }
         catch (Exception exception)
         {
@@ -199,7 +203,7 @@ public class Connection : IDisposable, IAsyncDisposable
         var error = CheckForError(response);
         
         if (!string.IsNullOrEmpty(error))
-            logger?.WriteToLog(error!);
+            logger?.Error("{error}", error);
 
         onMessageReceived(response);
     }
@@ -211,7 +215,7 @@ public class Connection : IDisposable, IAsyncDisposable
 
     private static void WebSocketOnError(Logger? logger, ErrorEventArgs e)
     {
-        logger?.WriteToLog(ExceptionHelpers.GetInnerException(e.Exception));
+        logger?.Error(e.Exception, "{exception}", ExceptionHelpers.GetInnerException(e.Exception));
     }
 
     private void WebSocketOnClosed(EventArgs e)
@@ -329,11 +333,11 @@ public class Connection : IDisposable, IAsyncDisposable
 
         _receiveLoopCts.Cancel();
 
-        _logger?.WriteToLog($"Disposing websocket connection to url '{_url}'");
+        _logger?.Info("Disposing websocket connection to url '{url}'", _url);
 
         if (_webSocket.State == WebSocketState.Open)
         {
-            _logger?.WriteToLog("Closing web socket");
+            _logger?.Info("Closing web socket");
 
             try
             {
@@ -342,14 +346,14 @@ public class Connection : IDisposable, IAsyncDisposable
             }
             catch (Exception exception)
             {
-                _logger?.WriteToLog($"An error occurred while closing the web socket, error: '{ExceptionHelpers.GetInnerException(exception)}'");
+                _logger?.Error("An error occurred while closing the web socket, error: '{error}'", ExceptionHelpers.GetInnerException(exception));
             }
 
-            _logger?.WriteToLog("Websocket connection closed");
+            _logger?.Info("Websocket connection closed");
 
             WebSocketOnClosed(EventArgs.Empty);
             _webSocket.Dispose();
-            _logger?.WriteToLog("Web socket connection disposed");
+            _logger?.Info("Web socket connection disposed");
         }
 
         _disposed = true;

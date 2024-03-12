@@ -7,6 +7,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChromiumHtmlToPdfLib", "Chr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChromiumHtmlToPdfConsole", "ChromiumHtmlToPdfConsole\ChromiumHtmlToPdfConsole.csproj", "{0ECDC06A-D578-4F2C-A742-A5EFD5EA2C6F}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3B2D53A2-692C-4A5A-89D8-3ABC3F8EE848}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
