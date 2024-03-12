@@ -201,7 +201,7 @@ public class Connection : IDisposable, IAsyncDisposable
         if (!string.IsNullOrEmpty(error))
             logger?.WriteToLog(error!);
 
-        var messageBase = MessageBase.FromJson(response);
+        onMessageReceived(response);
     }
 
     private void OnMessageReceived(string response)
