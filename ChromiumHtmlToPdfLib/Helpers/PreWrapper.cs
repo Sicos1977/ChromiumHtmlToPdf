@@ -131,20 +131,20 @@ internal class PreWrapper
         var title = WebUtility.HtmlEncode(temp);
         var tempFile = GetTempFile;
 
-        _logger?.WriteToLog($"Reading text file '{inputFile}'");
+        _logger?.Info("Reading text file '{path}'", inputFile);
 
         if (encoding == null)
         {
             using var fileStream = File.OpenRead(inputFile);
-            _logger?.WriteToLog("Trying to detect encoding");
+            _logger?.Info("Trying to detect encoding");
             var result = CharsetDetector.DetectFromStream(fileStream);
             encoding = result.Detected.Encoding;
-            _logger?.WriteToLog(result.Detected.StatusLog);
+            _logger?.Info("{statusLog}", result.Detected.StatusLog);
         }
 
         var streamReader = new StreamReader(inputFile, encoding);
 
-        _logger?.WriteToLog($"File is '{streamReader.CurrentEncoding.WebName}' encoded");
+        _logger?.Info("File is '{encoding}' encoded", streamReader.CurrentEncoding.WebName);
 
         var writeEncoding = new UnicodeEncoding(!BitConverter.IsLittleEndian, true);
 
@@ -182,7 +182,7 @@ internal class PreWrapper
             writer.WriteLine("</html>");
         }
 
-        _logger?.WriteToLog($"File pre wrapped and written to temporary file '{tempFile}'");
+        _logger?.Info("File pre wrapped and written to temporary file '{path}'", tempFile);
 
         return tempFile;
     }
