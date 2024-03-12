@@ -144,7 +144,7 @@ static class Program
 
     #region ParseCommandlineParameters
     /// <summary>
-    /// Parses the commandline parameters and returns these as an <paramref name="options"/>object
+    /// Parses the commandline parameters and returns these as a <paramref name="options"/>object
     /// </summary>
     /// <param name="args"></param>
     /// <param name="options"><see cref="Options"/></param>
@@ -280,9 +280,7 @@ static class Program
             converter.SetProxyServer(options.ProxyServer);
 
             if (!string.IsNullOrWhiteSpace(options.ProxyByPassList))
-            {
                 converter.SetProxyBypassList(options.ProxyByPassList);
-            }
         }
 
         if (!string.IsNullOrWhiteSpace(options.ProxyPacUrl))
@@ -396,8 +394,10 @@ static class Program
     /// This function is started from a <see cref="Task"/> and processes <see cref="ConversionItem"/>'s
     /// that are in the <paramref name="itemsToConvert"/> queue
     /// </summary>
+    /// <param name="itemsConverted"></param>
     /// <param name="options"></param>
     /// <param name="instanceId"></param>
+    /// <param name="itemsToConvert"></param>
     private static async Task ConvertWithTask(ConcurrentQueue<ConversionItem> itemsToConvert, ConcurrentQueue<ConversionItem> itemsConverted, Options options, string? instanceId)
     {
         var pageSettings = GetPageSettings(options);
@@ -408,10 +408,8 @@ static class Program
 
         using (logger)
         {
-            await using var converter = new Converter(options.ChromiumLocation, options.ChromiumUserProfile, logger)
-            {
-                InstanceId = instanceId
-            };
+            await using var converter = new Converter(options.ChromiumLocation, options.ChromiumUserProfile, logger);
+            converter.InstanceId = instanceId;
 
             SetConverterSettings(converter, options);
 
