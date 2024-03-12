@@ -294,7 +294,7 @@ public class Connection : IDisposable, IAsyncDisposable
 
     #region CheckForError
     /// <summary>
-    ///     Checks if <paramref name="message" /> contains an error and if returns this error, <c>null</c> otherwise
+    ///     Checks if <paramref name="message" /> contains an error and if so returns this error, <c>null</c> otherwise
     /// </summary>
     /// <param name="message"></param>
     private static string? CheckForError(string message)
