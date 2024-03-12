@@ -154,7 +154,7 @@ internal class Browser : IDisposable, IAsyncDisposable
     /// <param name="html"></param>
     /// <param name="countdownTimer">
     ///     If a <see cref="CountdownTimer" /> is set then
-    ///     the method will raise an <see cref="ConversionTimedOutException" /> if the
+    ///     the method will raise a <see cref="ConversionTimedOutException" /> if the
     ///     <see cref="CountdownTimer" /> reaches zero before finishing navigation
     /// </param>
     /// <param name="mediaLoadTimeout">
@@ -256,7 +256,7 @@ internal class Browser : IDisposable, IAsyncDisposable
                 pageSetDocumentContent.AddParameter("frameId", frameResult.Result.FrameTree.Frame.Id);
                 pageSetDocumentContent.AddParameter("html", html!);
                 await _pageConnection.SendAsync(pageSetDocumentContent).ConfigureAwait(false);
-                // When using setDocumentContent a Page.frameNavigated event is never fired so we have to set the waitForNetworkIdle to true our self
+                // When using setDocumentContent a Page.frameNavigated event is never fired, so we have to set the waitForNetworkIdle to true our self
                 pageLoadingState = PageLoadingState.WaitForNetworkIdle;
                 _logger?.WriteToLog("Document content set");
             }
@@ -486,7 +486,7 @@ internal class Browser : IDisposable, IAsyncDisposable
     /// <summary>
     ///     Waits until the javascript window.status is returning the given <paramref name="status" />
     /// </summary>
-    /// <param name="status">The case insensitive status</param>
+    /// <param name="status">The case-insensitive status</param>
     /// <param name="timeout">Continue after reaching the set timeout in milliseconds</param>
     /// <returns><c>true</c> when window status matched, <c>false</c> when timing out</returns>
     /// <exception cref="ChromiumException">Raised when an error is returned by Chromium</exception>
@@ -500,7 +500,7 @@ internal class Browser : IDisposable, IAsyncDisposable
     /// <summary>
     ///     Waits until the javascript window.status is returning the given <paramref name="status" />
     /// </summary>
-    /// <param name="status">The case insensitive status</param>
+    /// <param name="status">The case-insensitive status</param>
     /// <param name="timeout">Continue after reaching the set timeout in milliseconds</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns><c>true</c> when window status matched, <c>false</c> when timing out</returns>
@@ -590,7 +590,7 @@ internal class Browser : IDisposable, IAsyncDisposable
     /// </summary>
     /// <param name="countdownTimer">
     ///     If a <see cref="CountdownTimer" /> is set then
-    ///     the method will raise an <see cref="ConversionTimedOutException" /> in the
+    ///     the method will raise a <see cref="ConversionTimedOutException" /> in the
     ///     <see cref="CountdownTimer" /> reaches zero before finishing the printing to pdf
     /// </param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
@@ -622,7 +622,7 @@ internal class Browser : IDisposable, IAsyncDisposable
     /// </param>
     /// <param name="countdownTimer">
     ///     If a <see cref="CountdownTimer" /> is set then
-    ///     the method will raise an <see cref="ConversionTimedOutException" /> in the
+    ///     the method will raise a <see cref="ConversionTimedOutException" /> in the
     ///     <see cref="CountdownTimer" /> reaches zero before finishing the printing to pdf
     /// </param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
@@ -664,7 +664,7 @@ internal class Browser : IDisposable, IAsyncDisposable
 
         var printToPdfResponse = PrintToPdfResponse.FromJson(result);
 
-        if (string.IsNullOrEmpty(printToPdfResponse.Result?.Stream))
+        if (string.IsNullOrEmpty(printToPdfResponse.Result.Stream))
             throw new ConversionException($"Conversion failed ... did not get the expected response from Chromium, response '{result}'");
 
         if (!outputStream.CanWrite)
@@ -673,7 +673,7 @@ internal class Browser : IDisposable, IAsyncDisposable
         _logger?.WriteToLog("Resetting output stream to position 0");
         
         message = new Message { Method = "IO.read" };
-        message.AddParameter("handle", printToPdfResponse.Result!.Stream!);
+        message.AddParameter("handle", printToPdfResponse.Result.Stream!);
         message.AddParameter("size", 1048576); // Get the pdf in chunks of 1MB
         
         _logger?.WriteToLog($"Reading generated PDF from IO stream with handle id {printToPdfResponse.Result.Stream}");
@@ -728,7 +728,7 @@ internal class Browser : IDisposable, IAsyncDisposable
 
         var captureScreenshotResponse = CaptureScreenshotResponse.FromJson(result);
 
-        if (string.IsNullOrEmpty(captureScreenshotResponse.Result?.Data))
+        if (string.IsNullOrEmpty(captureScreenshotResponse.Result.Data))
             throw new ConversionException("Screenshot capture failed");
 
         return captureScreenshotResponse;
