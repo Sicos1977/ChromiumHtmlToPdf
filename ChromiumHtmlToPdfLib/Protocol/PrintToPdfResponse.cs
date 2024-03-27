@@ -35,16 +35,25 @@ namespace ChromiumHtmlToPdfLib.Protocol;
 internal class PrintToPdfResponse
 {
     #region Properties
+    [JsonProperty("id")]
+    public int Id { get; set; }
+
     /// <summary>
     ///     <see cref="PrintToPdfResult" />
     /// </summary>
     [JsonProperty("result")]
-    public PrintToPdfResult Result { get; set; } = null!;
+    public PrintToPdfResult? Result { get; set; }
+
+    /// <summary>
+    ///     <see cref="PrintToPdfErrorResult" />
+    /// </summary>
+    [JsonProperty("error")]
+    public PrintToPdfErrorResult? Error { get; set; }
 
     /// <summary>
     ///     Returns <see cref="PrintToPdfResult.Data" /> as array of bytes
     /// </summary>
-    public byte[] Bytes => Convert.FromBase64String(Result.Data);
+    public byte[]? Bytes => Result != null ? Convert.FromBase64String(Result.Data) : null;
     #endregion
 
     #region FromJson
@@ -77,5 +86,25 @@ internal class PrintToPdfResult
     /// </summary>
     [JsonProperty("stream")]
     public string? Stream { get; set; }
+    #endregion
+}
+
+/// <summary>
+///     Error result returned from the <see cref="Converter" /> ConvertToPdf  method
+/// </summary>
+internal class PrintToPdfErrorResult
+{
+    #region Properties
+    /// <summary>
+    ///     Error code
+    /// </summary>
+    [JsonProperty("code")]
+    public int Code { get; set; }
+
+    /// <summary>
+    ///     Error message
+    /// </summary>
+    [JsonProperty("message")]
+    public string? Message { get; set; }
     #endregion
 }
