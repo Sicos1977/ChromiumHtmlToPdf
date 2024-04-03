@@ -695,7 +695,7 @@ internal class Browser : IDisposable, IAsyncDisposable
 
         var printToPdfResponse = PrintToPdfResponse.FromJson(result);
 
-        if (string.IsNullOrEmpty(printToPdfResponse.Result.Stream))
+        if (printToPdfResponse.Error != null || string.IsNullOrEmpty(printToPdfResponse.Result?.Stream))
             throw new ConversionException($"Conversion failed ... did not get the expected response from Chromium, response '{result}'");
 
         if (!outputStream.CanWrite)
@@ -704,7 +704,7 @@ internal class Browser : IDisposable, IAsyncDisposable
         _logger?.Info("Resetting output stream to position 0");
         
         message = new Message { Method = "IO.read" };
-        message.AddParameter("handle", printToPdfResponse.Result.Stream!);
+        message.AddParameter("handle", printToPdfResponse.Result!.Stream!);
         message.AddParameter("size", 1048576); // Get the pdf in chunks of 1MB
         
         _logger?.Info("Reading generated PDF from IO stream with handle id {stream}", printToPdfResponse.Result.Stream);

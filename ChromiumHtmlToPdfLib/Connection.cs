@@ -93,6 +93,11 @@ public class Connection : IDisposable, IAsyncDisposable
     private readonly int _timeout;
 
     /// <summary>
+    /// Task to await for <see cref="ReceiveLoop"/> completion.
+    /// </summary>
+    private readonly Task<Task> _receiveTask;
+
+    /// <summary>
     ///     Keeps track is we already disposed our resources
     /// </summary>
     private bool _disposed;
@@ -114,7 +119,7 @@ public class Connection : IDisposable, IAsyncDisposable
         _webSocket = new ClientWebSocket();
         _receiveLoopCts = new CancellationTokenSource();
         OpenWebSocketAsync().GetAwaiter().GetResult();
-        Task.Factory.StartNew(ReceiveLoop, new ReceiveLoopState(_logger, _webSocket, OnMessageReceived, _receiveLoopCts.Token), _receiveLoopCts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        _receiveTask = Task.Factory.StartNew(ReceiveLoop, new ReceiveLoopState(_logger, _webSocket, OnMessageReceived, _receiveLoopCts.Token), _receiveLoopCts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
     }
     #endregion
 
@@ -157,6 +162,10 @@ public class Connection : IDisposable, IAsyncDisposable
             // Ignore
         }
         catch (OperationCanceledException)
+        {
+            // Ignore
+        }
+        catch (WebSocketException wsex) when (wsex.Message == "The remote party closed the WebSocket connection without completing the close handshake.")
         {
             // Ignore
         }
@@ -333,6 +342,8 @@ public class Connection : IDisposable, IAsyncDisposable
 
         _receiveLoopCts.Cancel();
 
+        await (await _receiveTask.ConfigureAwait(false)).ConfigureAwait(false);
+
         _logger?.Info("Disposing websocket connection to url '{url}'", _url);
 
         if (_webSocket.State == WebSocketState.Open)
@@ -346,7 +357,7 @@ public class Connection : IDisposable, IAsyncDisposable
             }
             catch (Exception exception)
             {
-                _logger?.Error("An error occurred while closing the web socket, error: '{error}'", ExceptionHelpers.GetInnerException(exception));
+                _logger?.Error(exception, "An error occurred while closing the web socket, error: '{error}'", ExceptionHelpers.GetInnerException(exception));
             }
 
             _logger?.Info("Websocket connection closed");
