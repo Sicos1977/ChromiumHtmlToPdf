@@ -2,18 +2,12 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
-    <Version>4.2.3</Version>
+    <Version>4.2.4</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>ChromiumHtmlToPdf is a 100% managed C# library that can be used to convert HTML to PDF or PNG format with the use of Google Chrome or Microsoft Edge</Description>
     <Copyright>(C)2017-2024 Kees van Spelde</Copyright>
-    <PackageReleaseNotes>Adds option to enable outlines (bookmarks) generation from &lt;h1-6&gt; header tags (same feature exists in wkhtmltopdf).
-
-As this feature was added to chromium just recently, looks like it doesn't work yet in all scenarios and require following configuration:
-
-- Converter.UseOldHeadlessMode must be true
-- Page.printToPDF parameter generateDocumentOutline must be true
-- Page.printToPDF parameter generateTaggedPDF must be true (as tagged data used for outlines generation). This is enabled by default, but I've added configuration for it to PageSettings anyways
-(nor Converter.UseOldHeadlessMode=false nor --generate-pdf-document-outline works with Chromium 122 when used with Page.printToPDF currently)</PackageReleaseNotes>
+    <PackageReleaseNotes>- Handle PDF printing errors
+- Nuget package updates</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/Sicos1977/ChromiumHtmlToPdf</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Sicos1977/ChromiumHtmlToPdf</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -26,8 +20,8 @@ As this feature was added to chromium just recently, looks like it doesn't work 
     <Company>Magic-Sessions</Company>
     <SignAssembly>False</SignAssembly>
     <AssemblyOriginatorKeyFile>ChromiumHtmlToPdf.snk</AssemblyOriginatorKeyFile>
-    <AssemblyVersion>4.2.3.0</AssemblyVersion>
-    <FileVersion>4.2.3.0</FileVersion>
+    <AssemblyVersion>4.2.4.0</AssemblyVersion>
+    <FileVersion>4.2.4.0</FileVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
