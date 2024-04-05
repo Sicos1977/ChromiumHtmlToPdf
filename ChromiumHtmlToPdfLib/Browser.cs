@@ -689,6 +689,8 @@ internal class Browser : IDisposable, IAsyncDisposable
         message.AddParameter("generateTaggedPDF", pageSettings.TaggedPDF);
         message.AddParameter("generateDocumentOutline", pageSettings.GenerateOutline);
 
+        _logger?.Info("Sending PDF request to Chromium");
+
         var result = countdownTimer == null
             ? await _pageConnection.SendForResponseAsync(message, cancellationToken).ConfigureAwait(false)
             : await _pageConnection.SendForResponseAsync(message, new CancellationTokenSource(countdownTimer.MillisecondsLeft).Token).ConfigureAwait(false);

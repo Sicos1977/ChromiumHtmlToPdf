@@ -348,7 +348,7 @@ static class Program
         var stopWatch = Stopwatch.StartNew();
         var pageSettings = GetPageSettings(options);
 
-        using var converter = new Converter(options.ChromiumLocation, options.ChromiumUserProfile, _logger);
+        using var converter = new Converter(options.ChromiumLocation, options.ChromiumUserProfile, _logger, browser: Browser.Edge);
         SetConverterSettings(converter, options);
 
         converter.ConvertToPdf(CheckInput(options),
