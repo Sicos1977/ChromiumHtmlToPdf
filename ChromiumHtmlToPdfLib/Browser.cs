@@ -692,15 +692,16 @@ internal class Browser : IDisposable, IAsyncDisposable
             ? await _pageConnection.SendForResponseAsync(message, cancellationToken).ConfigureAwait(false)
             : await _pageConnection.SendForResponseAsync(message, new CancellationTokenSource(countdownTimer.MillisecondsLeft).Token).ConfigureAwait(false);
 
-        System.IO.File.AppendAllText(@"e:\logs\converter\test.log", $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fff} - {result}{Environment.NewLine}");
-
         if (string.IsNullOrEmpty(result))
             throw new ConversionException("Conversion failed ... did not get the expected response from Chromium");
 
         var printToPdfResponse = PrintToPdfResponse.FromJson(result);
 
         if (printToPdfResponse.Error != null || string.IsNullOrEmpty(printToPdfResponse.Result?.Stream))
-            throw new ConversionException($"Conversion failed ... did not get the expected response from Chromium, response '{result}'");
+        {
+            var errorMessage = printToPdfResponse.Error?.Message ?? result;
+            throw new ConversionException($"Conversion failed ... did not get the expected response from Chromium, response '{errorMessage}'");
+        }
 
         if (!outputStream.CanWrite)
             throw new ConversionException("The output stream is not writable, please provide a writable stream");
