@@ -144,13 +144,6 @@ public class Options
     public string? PageRanges { get; set; }
 
     /// <summary>
-    ///     Whether to silently ignore invalid but successfully parsed page ranges, such as '3-2'. Defaults to false.
-    /// </summary>
-    [Option("ignore-invalid-pageranges", Default = false, Required = false,
-        HelpText = "Whether to silently ignore invalid but successfully parsed page ranges, such as '3-2'")]
-    public bool IgnoreInvalidPageRanges { get; set; }
-
-    /// <summary>
     ///     The location for Chrome or Edge, when not set then the registry is accessed to get the needed information
     /// </summary>
     [Option("chromium-location", Required = false,

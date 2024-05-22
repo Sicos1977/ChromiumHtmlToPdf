@@ -225,7 +225,6 @@ static class Program
         pageSettings.MarginLeft = options.MarginLeft;
         pageSettings.MarginRight = options.MarginRight;
         pageSettings.PageRanges = options.PageRanges;
-        pageSettings.IgnoreInvalidPageRanges = options.IgnoreInvalidPageRanges;
 
         return pageSettings;
     }

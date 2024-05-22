@@ -2,12 +2,13 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
-    <Version>4.2.4</Version>
+    <Version>4.2.5</Version>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>ChromiumHtmlToPdf is a 100% managed C# library that can be used to convert HTML to PDF or PNG format with the use of Google Chrome or Microsoft Edge</Description>
     <Copyright>(C)2017-2024 Kees van Spelde</Copyright>
-    <PackageReleaseNotes>- Handle PDF printing errors
-- Nuget package updates</PackageReleaseNotes>
+    <PackageReleaseNotes>- Add timeout when waiting for a response from Chromium (prevent hanging when an answer never comes)
+- Add method to the Convert class (GetChromiumLocation) to get the location of the Cromium based browser
+- Removed parameter that ignored invalid paga ranges (this does not exists anymore)</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/Sicos1977/ChromiumHtmlToPdf</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Sicos1977/ChromiumHtmlToPdf</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -20,8 +21,8 @@
     <Company>Magic-Sessions</Company>
     <SignAssembly>False</SignAssembly>
     <AssemblyOriginatorKeyFile>ChromiumHtmlToPdf.snk</AssemblyOriginatorKeyFile>
-    <AssemblyVersion>4.2.4.0</AssemblyVersion>
-    <FileVersion>4.2.4.0</FileVersion>
+    <AssemblyVersion>4.2.5.0</AssemblyVersion>
+    <FileVersion>4.2.5.0</FileVersion>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
     <PackageReadmeFile>README.md</PackageReadmeFile>
