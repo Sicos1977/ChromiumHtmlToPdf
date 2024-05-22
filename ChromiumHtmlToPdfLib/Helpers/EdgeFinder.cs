@@ -27,6 +27,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 
@@ -136,15 +137,7 @@ internal static class EdgeFinder
 
         GetApplicationDirectories(directories);
 
-        foreach (var exeName in exeNames)
-        foreach (var directory in directories)
-        {
-            var path = Path.Combine(directory, exeName);
-            if (File.Exists(path))
-                return path;
-        }
-
-        return null;
+        return (from exeName in exeNames from directory in directories select Path.Combine(directory, exeName)).FirstOrDefault(File.Exists);
     }
     #endregion
 }

@@ -793,6 +793,22 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     }
     #endregion
 
+    /// <summary>
+    ///     Returns the location of the Chromium based browser or <c>null</c> when not found
+    /// </summary>
+    /// <param name="browser"><see cref="Enums.Browser"/></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public static string? GetChromiumLocation(Enums.Browser browser)
+    {
+        return browser switch
+        {
+            Enums.Browser.Chrome => ChromeFinder.Find(),
+            Enums.Browser.Edge => EdgeFinder.Find(),
+            _ => throw new ArgumentOutOfRangeException(nameof(browser), browser, null)
+        };
+    }
+
     #region ReadDevToolsActiveFileAsync
     /// <summary>
     ///     Tries to read the content of the DevToolsActiveFile
