@@ -165,7 +165,7 @@ public class Connection : IDisposable, IAsyncDisposable
         {
             // Ignore
         }
-        catch (WebSocketException wsex) when (wsex.Message == "The remote party closed the WebSocket connection without completing the close handshake.")
+        catch (WebSocketException webSocketException) when (webSocketException.Message == "The remote party closed the WebSocket connection without completing the close handshake.")
         {
             // Ignore
         }
@@ -265,8 +265,8 @@ public class Connection : IDisposable, IAsyncDisposable
 
             await _webSocket.SendAsync(MessageToBytes(message), WebSocketMessageType.Text, true, cancellationToken).ConfigureAwait(false);
 
-            var response = tcs.Task.Result;
-            return response;
+            tcs.Task.Wait(cancellationToken);
+            return cancellationToken.IsCancellationRequested ? tcs.Task.Result : string.Empty;
         }
         catch (Exception exception)
         {
