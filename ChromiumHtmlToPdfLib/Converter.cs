@@ -703,7 +703,7 @@ public class Converter : IDisposable, IAsyncDisposable
             processStartInfo.RedirectStandardError = true;
         }
         else if (File.Exists(_devToolsActivePortFile))
-            File.Delete(_devToolsActivePortFile);
+            File.Delete(_devToolsActivePortFile!);
 
         string? chromeException = null;
         _chromiumProcess.StartInfo = processStartInfo;
@@ -821,7 +821,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
                 try
                 {
 #if (NETSTANDARD2_0)
-                    return File.ReadAllLines(_devToolsActivePortFile);
+                    return File.ReadAllLines(_devToolsActivePortFile!);
 #else
                     return await File.ReadAllLinesAsync(_devToolsActivePortFile, cancellationToken).ConfigureAwait(false);
 #endif
@@ -876,7 +876,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     {
         _logger?.Info("Resetting Chromium arguments to default");
 
-        _defaultChromiumArgument = new List<string>();
+        _defaultChromiumArgument = [];
         
         AddChromiumArgument("--headless=new");                          // Use the new headless mode
         AddChromiumArgument("--block-new-web-contents");                // All pop-ups and calls to window.open will fail.
