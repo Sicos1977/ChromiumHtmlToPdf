@@ -107,11 +107,6 @@ public class PageSettings : ICloneable
     public string? PageRanges { get; set; }
 
     /// <summary>
-    ///     Whether to silently ignore invalid but successfully parsed page ranges, such as '3-2'. Defaults to false.
-    /// </summary>
-    public bool IgnoreInvalidPageRanges { get; set; }
-
-    /// <summary>
     ///     Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled
     ///     to fit the paper size.
     /// </summary>
@@ -126,11 +121,11 @@ public class PageSettings : ICloneable
     /// <summary>
     ///     Generate tagged PDF. Defaults to true.
     /// </summary>
-    public bool TaggedPDF { get; set; } = true;
+    public bool TaggedPdf { get; set; } = true;
 
     /// <summary>
     ///     Generate outline bookmarks from header tags (H1-H6). Defaults to false.
-    ///     Requires both <see cref="Converter.UseOldHeadlessMode"/> and <see cref="TaggedPDF"/> set to <c>true</c>.
+    ///     Requires both <see cref="Converter.UseOldHeadlessMode"/> and <see cref="TaggedPdf"/> set to <c>true</c>.
     /// </summary>
     public bool GenerateOutline { get; set; }
     #endregion
@@ -178,7 +173,7 @@ public class PageSettings : ICloneable
         MarginLeft = 0.4;
         MarginRight = 0.4;
         PageRanges = string.Empty;
-        TaggedPDF = true;
+        TaggedPdf = true;
         GenerateOutline = false;
     }
     #endregion
@@ -283,9 +278,8 @@ public class PageSettings : ICloneable
             MarginLeft = MarginLeft,
             MarginRight = MarginRight,
             PageRanges = PageRanges,
-            IgnoreInvalidPageRanges = IgnoreInvalidPageRanges,
             PreferCSSPageSize = PreferCSSPageSize,
-            TaggedPDF = TaggedPDF,
+            TaggedPdf = TaggedPdf,
             GenerateOutline = GenerateOutline
         };
     }

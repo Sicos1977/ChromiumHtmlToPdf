@@ -266,7 +266,7 @@ public class Connection : IDisposable, IAsyncDisposable
             await _webSocket.SendAsync(MessageToBytes(message), WebSocketMessageType.Text, true, cancellationToken).ConfigureAwait(false);
 
             tcs.Task.Wait(cancellationToken);
-            return cancellationToken.IsCancellationRequested ? tcs.Task.Result : string.Empty;
+            return cancellationToken.IsCancellationRequested ? string.Empty : tcs.Task.Result;
         }
         catch (Exception exception)
         {

@@ -679,14 +679,11 @@ internal class Browser : IDisposable, IAsyncDisposable
         message.AddParameter("marginLeft", pageSettings.MarginLeft);
         message.AddParameter("marginRight", pageSettings.MarginRight);
         message.AddParameter("pageRanges", pageSettings.PageRanges ?? string.Empty);
-        message.AddParameter("ignoreInvalidPageRanges", pageSettings.IgnoreInvalidPageRanges);
-        if (!string.IsNullOrEmpty(pageSettings.HeaderTemplate))
-            message.AddParameter("headerTemplate", pageSettings.HeaderTemplate!);
-        if (!string.IsNullOrEmpty(pageSettings.FooterTemplate))
-            message.AddParameter("footerTemplate", pageSettings.FooterTemplate!);
+        if (!string.IsNullOrEmpty(pageSettings.HeaderTemplate)) message.AddParameter("headerTemplate", pageSettings.HeaderTemplate!);
+        if (!string.IsNullOrEmpty(pageSettings.FooterTemplate)) message.AddParameter("footerTemplate", pageSettings.FooterTemplate!);
         message.AddParameter("preferCSSPageSize", pageSettings.PreferCSSPageSize);
         message.AddParameter("transferMode", "ReturnAsStream");
-        message.AddParameter("generateTaggedPDF", pageSettings.TaggedPDF);
+        message.AddParameter("generateTaggedPDF", pageSettings.TaggedPdf);
         message.AddParameter("generateDocumentOutline", pageSettings.GenerateOutline);
 
         _logger?.Info("Sending PDF request to Chromium");
@@ -694,6 +691,11 @@ internal class Browser : IDisposable, IAsyncDisposable
         var result = countdownTimer == null
             ? await _pageConnection.SendForResponseAsync(message, cancellationToken).ConfigureAwait(false)
             : await _pageConnection.SendForResponseAsync(message, new CancellationTokenSource(countdownTimer.MillisecondsLeft).Token).ConfigureAwait(false);
+
+        System.IO.File.AppendAllText(@"e:\logs\converter\test.log", $"{DateTime.Now:yyyy-MM-ddTHH:mm:ss.fff} - {result}{Environment.NewLine}");
+
+        if (string.IsNullOrEmpty(result))
+            throw new ConversionException("Conversion failed ... did not get the expected response from Chromium");
 
         var printToPdfResponse = PrintToPdfResponse.FromJson(result);
 

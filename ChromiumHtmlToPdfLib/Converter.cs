@@ -793,6 +793,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     }
     #endregion
 
+    #region GetChromiumLocation
     /// <summary>
     ///     Returns the location of the Chromium based browser or <c>null</c> when not found
     /// </summary>
@@ -808,6 +809,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
             _ => throw new ArgumentOutOfRangeException(nameof(browser), browser, null)
         };
     }
+    #endregion
 
     #region ReadDevToolsActiveFileAsync
     /// <summary>
