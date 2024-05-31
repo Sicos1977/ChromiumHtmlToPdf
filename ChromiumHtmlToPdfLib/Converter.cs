@@ -192,6 +192,11 @@ public class Converter : IDisposable, IAsyncDisposable
     private string? _instanceId;
 
     private CancellationTokenSource? _cancellationTokenSource;
+
+    /// <summary>
+    ///     <see cref="DoNotDeleteTempDirectory"/>
+    /// </summary>
+    private bool _doNotDeleteTempDirectory;
     #endregion
 
     #region Properties
@@ -353,6 +358,7 @@ public class Converter : IDisposable, IAsyncDisposable
                 throw new DirectoryNotFoundException($"The directory '{value}' does not exists");
 
             _tempDirectory = value;
+            _logger?.Info($"Temp directory set to '{value}'");
             CurrentCacheDirectory = null;
         }
     }
@@ -369,7 +375,10 @@ public class Converter : IDisposable, IAsyncDisposable
                 : new DirectoryInfo(Path.Combine(_tempDirectory, Guid.NewGuid().ToString()));
 
             if (!CurrentTempDirectory.Exists)
+            {
+                _logger?.Info($"Creating temp directory '{CurrentTempDirectory.FullName}'");
                 CurrentTempDirectory.Create();
+            }
 
             return CurrentTempDirectory;
         }
@@ -381,7 +390,15 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <remarks>
     ///     For debugging purposes
     /// </remarks>
-    public bool DoNotDeleteTempDirectory { get; set; }
+    public bool DoNotDeleteTempDirectory
+    {
+        get => _doNotDeleteTempDirectory;
+        set
+        {
+            _logger?.Info($"Setting DoNotDeleteTempDirectory to '{value}'");
+            _doNotDeleteTempDirectory = value;
+        }
+    }
 
     /// <summary>
     ///     The directory used for temporary files (<see cref="GetTempDirectory"/>)
@@ -464,7 +481,7 @@ public class Converter : IDisposable, IAsyncDisposable
     public bool CaptureSnapshot { get; set; }
 
     /// <summary>
-    ///     The <see cref="System.IO.Stream" /> where to write the page snapshot when <see cref="CaptureSnapshot" />
+    ///     The <see cref="Stream" /> where to write the page snapshot when <see cref="CaptureSnapshot" />
     ///     is set to <c>true</c>
     /// </summary>
     public Stream? SnapshotStream { get; set; }
@@ -543,6 +560,18 @@ public class Converter : IDisposable, IAsyncDisposable
             }
         }
     }
+
+    /// <summary>
+    ///     Enables Chromium logging;<br/>
+    ///     - The output will be saved to the file <b>chrome_debug.log</b> in Chrome's user data directory<br/>
+    ///     - Logs are overwritten each time you restart chrome<br/>
+    /// </summary>
+    /// <remarks>
+    ///     If the environment variable CHROME_LOG_FILE is set, Chrome will write its debug log to its specified location.<br/>
+    ///     Example: Setting CHROME_LOG_FILE to "chrome_debug.log" will cause the log file to be written to the Chrome process's<br/>
+    ///     current working directory while setting it to "D:\chrome_debug.log" will write the log to the root of your computer's D: drive.
+    /// </remarks>
+    public bool EnableChromiumLogging { get; set; }
     #endregion
 
     #region Constructor
@@ -916,6 +945,13 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
         AddChromiumArgument("--noerrdialogs");                          // Suppresses all error dialogs when present.
         AddChromiumArgument("--run-all-compositor-stages-before-draw"); 
         AddChromiumArgument("--remote-debugging-port", "0");            // With a value of 0, Chrome will automatically select a useable port and will set navigator.webdriver to true.
+
+        if (EnableChromiumLogging)
+        {
+            _logger?.Info("Enabling Chromium logging");
+            AddChromiumArgument("--enable-logging");
+            AddChromiumArgument("--v=1");
+        }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
@@ -1474,7 +1510,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
                 }
 
                 _logger?.Info("Waiting for window.status '{status}' or a timeout of {timeout} milliseconds", waitForWindowStatus, waitForWindowsStatusTimeout);
-                var match = await _browser.WaitForWindowStatusAsync(waitForWindowStatus!, waitForWindowsStatusTimeout, cancellationToken).ConfigureAwait(false);
+                var match = await _browser.WaitForWindowStatusAsync(waitForWindowStatus, waitForWindowsStatusTimeout, cancellationToken).ConfigureAwait(false);
                 if (!match)
                     _logger?.Info("Waiting timed out");
                 else

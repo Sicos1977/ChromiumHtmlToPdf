@@ -44,7 +44,6 @@ using AngleSharp.Html;
 using AngleSharp.Html.Dom;
 using AngleSharp.Io.Network;
 using ChromiumHtmlToPdfLib.Loggers;
-using ChromiumHtmlToPdfLib.Protocol;
 using ChromiumHtmlToPdfLib.Settings;
 using Ganss.Xss;
 using Svg;
