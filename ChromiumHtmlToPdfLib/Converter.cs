@@ -796,7 +796,7 @@ Process id: {processId}
 Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArguments), _chromiumProcess.Id, _chromiumProcess.ExitTime);
 
                 var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromiumProcess.ExitCode));
-                chromeException = $"{BrowserName} exited unexpectedly{(!string.IsNullOrWhiteSpace(exception) ? ", {exception}" : string.Empty)}";
+                chromeException = $"{BrowserName} exited unexpectedly{(!string.IsNullOrWhiteSpace(exception) ? $", {exception}" : string.Empty)}";
                 _cancellationTokenSource?.Cancel();
             }
             finally
