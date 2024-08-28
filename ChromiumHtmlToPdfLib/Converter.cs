@@ -1,4 +1,4 @@
-﻿//
+//
 // Converter.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
@@ -555,7 +555,7 @@ public class Converter : IDisposable, IAsyncDisposable
             for (var i = 0; i < _defaultChromiumArgument.Count; i++)
             {
                 if (!_defaultChromiumArgument[i].StartsWith("--headless")) continue;
-                _defaultChromiumArgument[i] = value ? "--headless" : "--headless=new";
+                _defaultChromiumArgument[i] = value ? "--headless=old" : "--headless=new";
                 return;
             }
         }
