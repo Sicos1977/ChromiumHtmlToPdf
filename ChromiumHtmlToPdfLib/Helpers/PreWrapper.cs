@@ -138,8 +138,16 @@ internal class PreWrapper
             using var fileStream = File.OpenRead(inputFile);
             _logger?.Info("Trying to detect encoding");
             var result = CharsetDetector.DetectFromStream(fileStream);
-            encoding = result.Detected.Encoding;
-            _logger?.Info("{statusLog}", result.Detected.StatusLog);
+            if (result.Detected.Encoding != null)
+            {
+                encoding = result.Detected.Encoding;
+                _logger?.Info("{statusLog}", result.Detected.StatusLog);
+            }
+            else
+            {
+                encoding = Encoding.UTF8;
+                _logger?.Info("Could not detect encoding, falling back to UTF-8");
+            }
         }
 
         var streamReader = new StreamReader(inputFile, encoding);
