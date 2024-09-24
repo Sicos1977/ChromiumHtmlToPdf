@@ -723,60 +723,65 @@ public class Converter : IDisposable, IAsyncDisposable
 
         using var chromiumWaitSignal = new SemaphoreSlim(0, 1);
 
-        if (!_userProfileSet)
-        {
-            _chromiumProcess.ErrorDataReceived += OnChromiumProcessOnErrorDataReceived;
-
-            _chromiumProcess.EnableRaisingEvents = true;
-            processStartInfo.UseShellExecute = false;
-            processStartInfo.RedirectStandardError = true;
-        }
-        else if (File.Exists(_devToolsActivePortFile))
-            File.Delete(_devToolsActivePortFile!);
-
         string? chromeException = null;
-        _chromiumProcess.StartInfo = processStartInfo;
-        _chromiumProcess.Exited += OnChromiumProcessOnExited;
-
         try
         {
-            _chromiumProcess.Start();
-        }
-        catch (Exception exception)
-        {
-            _logger?.Error(exception, "Could not start the {browser} process due to the following reason: {exception}", BrowserName, ExceptionHelpers.GetInnerException(exception));
-            throw;
-        }
+            if (!_userProfileSet)
+            {
+                _chromiumProcess.ErrorDataReceived += OnChromiumProcessOnErrorDataReceived;
 
-        _logger?.Info("{browser} process started", BrowserName);
+                _chromiumProcess.EnableRaisingEvents = true;
+                processStartInfo.UseShellExecute = false;
+                processStartInfo.RedirectStandardError = true;
+            }
+            else if (File.Exists(_devToolsActivePortFile))
+                File.Delete(_devToolsActivePortFile!);
 
-        if (!_userProfileSet)
-            _chromiumProcess.BeginErrorReadLine();
-        else
-        {
-            var lines = await ReadDevToolsActiveFileAsync(cancellationToken).ConfigureAwait(false);
-            var uri = new Uri($"ws://127.0.0.1:{lines[0]}{lines[1]}");
-            // DevToolsActivePort
-            ConnectToDevProtocol(uri, "dev tools active port file");
-            chromiumWaitSignal.Release();
-        }
-        
-        if (_conversionTimeout.HasValue)
-        {
-            var result = await chromiumWaitSignal.WaitAsync(_conversionTimeout.Value, cancellationToken).ConfigureAwait(false);
-            if (!result)
-                throw new ChromiumException($"A timeout of '{_conversionTimeout.Value}' milliseconds exceeded, could not make a connection to the Chromium dev tools");
-        }
-        else
-        {
-            var result = await chromiumWaitSignal.WaitAsync(30000, cancellationToken).ConfigureAwait(false);
-            if (!result)
-                throw new ChromiumException("A timeout of 30 seconds exceeded, could not make a connection to the Chromium dev tools");
-        }
+            _chromiumProcess.StartInfo = processStartInfo;
+            _chromiumProcess.Exited += OnChromiumProcessOnExited;
 
-        // Remove events because we don't need them anymore
-        _chromiumProcess.ErrorDataReceived -= OnChromiumProcessOnErrorDataReceived;
-        _chromiumProcess.Exited -= OnChromiumProcessOnExited;
+            try
+            {
+                _chromiumProcess.Start();
+            }
+            catch (Exception exception)
+            {
+                _logger?.Error(exception, "Could not start the {browser} process due to the following reason: {exception}", BrowserName, ExceptionHelpers.GetInnerException(exception));
+                throw;
+            }
+
+            _logger?.Info("{browser} process started", BrowserName);
+
+            if (!_userProfileSet)
+                _chromiumProcess.BeginErrorReadLine();
+            else
+            {
+                var lines = await ReadDevToolsActiveFileAsync(cancellationToken).ConfigureAwait(false);
+                var uri = new Uri($"ws://127.0.0.1:{lines[0]}{lines[1]}");
+                // DevToolsActivePort
+                ConnectToDevProtocol(uri, "dev tools active port file");
+                chromiumWaitSignal.Release();
+            }
+
+            if (_conversionTimeout.HasValue)
+            {
+                var result = await chromiumWaitSignal.WaitAsync(_conversionTimeout.Value, cancellationToken).ConfigureAwait(false);
+                if (!result)
+                    throw new ChromiumException($"A timeout of '{_conversionTimeout.Value}' milliseconds exceeded, could not make a connection to the Chromium dev tools");
+            }
+            else
+            {
+                var result = await chromiumWaitSignal.WaitAsync(30000, cancellationToken).ConfigureAwait(false);
+                if (!result)
+                    throw new ChromiumException("A timeout of 30 seconds exceeded, could not make a connection to the Chromium dev tools");
+            }
+        }
+        finally
+        {
+            // Remove events because we don't need them anymore
+            _chromiumProcess.ErrorDataReceived -= OnChromiumProcessOnErrorDataReceived;
+            _chromiumProcess.Exited -= OnChromiumProcessOnExited;
+        }
 
         if (!string.IsNullOrEmpty(chromeException))
             throw new ChromiumException(chromeException!);
