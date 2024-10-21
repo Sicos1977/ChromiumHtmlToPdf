@@ -191,8 +191,6 @@ public class Converter : IDisposable, IAsyncDisposable
     /// </summary>
     private string? _instanceId;
 
-    private CancellationTokenSource? _cancellationTokenSource;
-
     /// <summary>
     ///     <see cref="DoNotDeleteTempDirectory"/>
     /// </summary>
@@ -269,7 +267,7 @@ public class Converter : IDisposable, IAsyncDisposable
             _instanceId = value;
             if (_logger != null)
                 _logger.InstanceId = value;
-        } 
+        }
     }
 
     /// <summary>
@@ -759,7 +757,7 @@ public class Converter : IDisposable, IAsyncDisposable
                 var lines = await ReadDevToolsActiveFileAsync(cancellationToken).ConfigureAwait(false);
                 var uri = new Uri($"ws://127.0.0.1:{lines[0]}{lines[1]}");
                 // DevToolsActivePort
-                ConnectToDevProtocol(uri, "dev tools active port file");
+                await ConnectToDevProtocol(uri, "dev tools active port file", cancellationToken).ConfigureAwait(false);
                 chromiumWaitSignal.Release();
             }
 
@@ -802,7 +800,6 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
 
                 var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromiumProcess.ExitCode));
                 chromeException = $"{BrowserName} exited unexpectedly{(!string.IsNullOrWhiteSpace(exception) ? $", {exception}" : string.Empty)}";
-                _cancellationTokenSource?.Cancel();
             }
             finally
             {
@@ -816,10 +813,6 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
             if (string.IsNullOrEmpty(args.Data) || args.Data.StartsWith("[")) return;
 
             _logger?.Error("Received Chromium error data: '{error}'", args.Data);
-
-            if (!args.Data.StartsWith("DevTools listening on")) return;
-            var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
-            ConnectToDevProtocol(uri, "data received from error stream");
             // ReSharper disable once AccessToDisposedClosure
             chromiumWaitSignal.Release();
         }
@@ -896,10 +889,11 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// </summary>
     /// <param name="uri">The uri to connect to</param>
     /// <param name="readUriFrom">From where we did get the uri</param>
-    private void ConnectToDevProtocol(Uri uri, string readUriFrom)
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+    private async Task ConnectToDevProtocol(Uri uri, string readUriFrom, CancellationToken cancellationToken)
     {
         _logger?.Info("Connecting to dev protocol on uri '{uri}', got uri from {readUriFrom}", uri, readUriFrom);
-        _browser = new Browser(uri, WebSocketTimeout, _logger);
+        _browser = await Browser.Create(uri, WebSocketTimeout, _logger, cancellationToken).ConfigureAwait(false);
         _logger?.Info("Connected to dev protocol");
     }
     #endregion
@@ -907,7 +901,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     #region CheckIfOutputFolderExists
     /// <summary>
     ///     Checks if the path to the given <paramref name="outputFile" /> exists.
-    ///     An <see cref="DirectoryNotFoundException" /> is thrown when the path is not valid
+    ///     A <see cref="DirectoryNotFoundException" /> is thrown when the path is not valid
     /// </summary>
     /// <param name="outputFile"></param>
     /// <exception cref="DirectoryNotFoundException"></exception>
@@ -929,7 +923,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
         _logger?.Info("Resetting Chromium arguments to default");
 
         _defaultChromiumArgument = [];
-        
+
         AddChromiumArgument("--headless=new");                          // Use the new headless mode
         AddChromiumArgument("--block-new-web-contents");                // All pop-ups and calls to window.open will fail.
         AddChromiumArgument("--hide-scrollbars");                       // Hide scrollbars from screenshots
@@ -948,7 +942,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
         AddChromiumArgument("--enable-automation");
         AddChromiumArgument("--no-pings");                              // Disable sending hyperlink auditing pings
         AddChromiumArgument("--noerrdialogs");                          // Suppresses all error dialogs when present.
-        AddChromiumArgument("--run-all-compositor-stages-before-draw"); 
+        AddChromiumArgument("--run-all-compositor-stages-before-draw");
         AddChromiumArgument("--remote-debugging-port", "0");            // With a value of 0, Chrome will automatically select a useable port and will set navigator.webdriver to true.
 
         if (EnableChromiumLogging)
@@ -981,7 +975,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
 
         if (argument.StartsWith("--headless"))
             throw new ArgumentException("Can't remove '--headless' argument, this argument is always needed");
-        
+
         switch (argument)
         {
             case "--no-first-run":
@@ -1357,16 +1351,13 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
         object input,
         Stream outputStream,
         PageSettings pageSettings,
-        string? waitForWindowStatus = null,
-        int waitForWindowsStatusTimeout = 60000,
-        int? conversionTimeout = null,
-        int? mediaLoadTimeout = null,
-        ILogger? logger = null,
-        CancellationToken cancellationToken = default)
+        string? waitForWindowStatus,
+        int waitForWindowsStatusTimeout,
+        int? conversionTimeout,
+        int? mediaLoadTimeout,
+        ILogger? logger,
+        CancellationToken cancellationToken)
     {
-        if (cancellationToken == default)
-            _cancellationTokenSource = new CancellationTokenSource();
-
         if (_logger == null)
             _logger = new Logger(logger, InstanceId);
         else if (logger != null)
@@ -1485,17 +1476,12 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
 
             await StartChromiumHeadlessAsync(cancellationToken).ConfigureAwait(false);
 
-            CountdownTimer? countdownTimer = null;
-
-            if (conversionTimeout.HasValue)
+            if (conversionTimeout != null)
             {
                 if (conversionTimeout <= 1)
-                    throw new ArgumentOutOfRangeException($"The value for {nameof(countdownTimer)} has to be a value equal to 1 or greater");
+                    throw new ArgumentOutOfRangeException($"The value for {nameof(conversionTimeout)} has to be a value equal to 1 or greater");
 
                 _logger?.Info("Conversion timeout set to {timeout} milliseconds", conversionTimeout.Value);
-
-                countdownTimer = new CountdownTimer(conversionTimeout.Value);
-                countdownTimer.Start();
             }
 
             if (inputUri != null)
@@ -1504,85 +1490,89 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
                 else
                     _logger?.Info("Loading url {url}", inputUri);
 
-            await _browser!.NavigateToAsync(safeUrls, _useCache, inputUri, html, countdownTimer, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic, WaitForNetworkIdle, cancellationToken).ConfigureAwait(false);
+            await _browser!.NavigateToAsync(safeUrls, _useCache, inputUri, html, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic, WaitForNetworkIdle, cancellationToken).ConfigureAwait(false);
 
             if (!string.IsNullOrWhiteSpace(waitForWindowStatus))
             {
-                if (conversionTimeout.HasValue)
-                {
-                    _logger?.Info("Conversion timeout paused because we are waiting for a window.status");
-                    countdownTimer!.Stop();
-                }
-
                 _logger?.Info("Waiting for window.status '{status}' or a timeout of {timeout} milliseconds", waitForWindowStatus, waitForWindowsStatusTimeout);
                 var match = await _browser.WaitForWindowStatusAsync(waitForWindowStatus, waitForWindowsStatusTimeout, cancellationToken).ConfigureAwait(false);
                 if (!match)
                     _logger?.Info("Waiting timed out");
                 else
                     _logger?.Info("Window status equaled {status}", waitForWindowStatus);
-
-                if (conversionTimeout.HasValue)
-                {
-                    _logger?.Info("Conversion timeout started again because we are done waiting for a window.status");
-                    countdownTimer!.Start();
-                }
             }
 
             if (inputUri != null)
                 _logger?.Info($"{(inputUri.IsFile ? "File" : "Url")} loaded");
 
-            if (!string.IsNullOrWhiteSpace(RunJavascript))
+            using var timeoutCts = conversionTimeout == null ? null : new CancellationTokenSource(conversionTimeout.Value);
+            using var linkedCts = timeoutCts == null ? null : CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+            cancellationToken = linkedCts?.Token ?? cancellationToken;
+
+            try
             {
-                _logger?.Info("Start running javascript");
-                _logger?.Info($"Javascript code:{Environment.NewLine}{{code}}", RunJavascript);
-                await _browser.RunJavascriptAsync(RunJavascript!, cancellationToken).ConfigureAwait(false);
-                _logger?.Info("Done running javascript");
-            }
-
-            if (CaptureSnapshot)
-            {
-                if (SnapshotStream == null)
-                    throw new ConversionException("The property CaptureSnapshot has been set to true but there is no stream assigned to the SnapshotStream");
-
-                _logger?.Info("Taking snapshot of the page");
-
-                var snapshot = await _browser.CaptureSnapshotAsync(countdownTimer, cancellationToken).ConfigureAwait(false);
-                using var memoryStream = new MemoryStream(snapshot.Bytes);
-                memoryStream.Position = 0;
-
-#if (NETSTANDARD2_0)
-                await memoryStream.CopyToAsync(SnapshotStream).ConfigureAwait(false);
-#else
-                await memoryStream.CopyToAsync(SnapshotStream, cancellationToken).ConfigureAwait(false);
-#endif
-
-                _logger?.Info("Taken");
-            }
-
-            switch (outputFormat)
-            {
-                case OutputFormat.Pdf:
-                    _logger?.Info("Converting to PDF");
-                    await _browser.PrintToPdfAsync(outputStream, pageSettings, countdownTimer, cancellationToken).ConfigureAwait(false);
-
-                    break;
-
-                case OutputFormat.Image:
+                if (!string.IsNullOrWhiteSpace(RunJavascript))
                 {
-                    _logger?.Info("Converting to image");
+                    _logger?.Info("Start running javascript");
+                    _logger?.Info($"Javascript code:{Environment.NewLine}{{code}}", RunJavascript);
+                    await _browser.RunJavascriptAsync(RunJavascript!, cancellationToken).ConfigureAwait(false);
+                    _logger?.Info("Done running javascript");
+                }
 
-                    var snapshot = await _browser.CaptureScreenshotAsync(countdownTimer, cancellationToken).ConfigureAwait(false);
+                if (CaptureSnapshot)
+                {
+                    if (SnapshotStream == null)
+                        throw new ConversionException("The property CaptureSnapshot has been set to true but there is no stream assigned to the SnapshotStream");
+
+                    _logger?.Info("Taking snapshot of the page");
+
+                    var snapshot = await _browser.CaptureSnapshotAsync(cancellationToken).ConfigureAwait(false);
                     using var memoryStream = new MemoryStream(snapshot.Bytes);
                     memoryStream.Position = 0;
 
 #if (NETSTANDARD2_0)
-                    await memoryStream.CopyToAsync(outputStream).ConfigureAwait(false);
+                await memoryStream.CopyToAsync(SnapshotStream).ConfigureAwait(false);
 #else
-                    await memoryStream.CopyToAsync(outputStream, cancellationToken).ConfigureAwait(false);
+                    await memoryStream.CopyToAsync(SnapshotStream, cancellationToken).ConfigureAwait(false);
 #endif
 
-                    break;
+                    _logger?.Info("Taken");
                 }
+
+                switch (outputFormat)
+                {
+                    case OutputFormat.Pdf:
+                        _logger?.Info("Converting to PDF");
+                        await _browser.PrintToPdfAsync(outputStream, pageSettings, cancellationToken).ConfigureAwait(false);
+
+                        break;
+
+                    case OutputFormat.Image:
+                        {
+                            _logger?.Info("Converting to image");
+
+                            var snapshot = await _browser.CaptureScreenshotAsync(cancellationToken).ConfigureAwait(false);
+                            using var memoryStream = new MemoryStream(snapshot.Bytes);
+                            memoryStream.Position = 0;
+
+#if (NETSTANDARD2_0)
+                    await memoryStream.CopyToAsync(outputStream).ConfigureAwait(false);
+#else
+                            await memoryStream.CopyToAsync(outputStream, cancellationToken).ConfigureAwait(false);
+#endif
+
+                            break;
+                        }
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                if (timeoutCts?.Token.IsCancellationRequested == true)
+                {
+                    throw new ConversionTimedOutException($"The {nameof(ConvertAsync)} method timed out");
+                }
+
+                throw;
             }
 
             _logger?.Info("Converted");
@@ -1654,7 +1644,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// </param>
     /// <param name="waitForWindowsStatusTimeout"></param>
     /// <param name="conversionTimeout">
-    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     A conversion timeout in milliseconds, if the conversion fails
     ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
     /// </param>
     /// <param name="mediaLoadTimeout">
@@ -1684,16 +1674,16 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
         ILogger? logger = null)
     {
         ConvertToPdfAsync(
-            inputUri, 
-            outputStream, 
-            pageSettings, 
-            waitForWindowStatus, 
+            inputUri,
+            outputStream,
+            pageSettings,
+            waitForWindowStatus,
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
             logger).GetAwaiter().GetResult();
     }
-    
+
     /// <summary>
     ///     Converts the given <paramref name="inputUri" /> to PDF
     /// </summary>
@@ -1708,7 +1698,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// </param>
     /// <param name="waitForWindowsStatusTimeout"></param>
     /// <param name="conversionTimeout">
-    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     A conversion timeout in milliseconds, if the conversion fails
     ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
     /// </param>
     /// <param name="mediaLoadTimeout">
@@ -1764,7 +1754,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// </param>
     /// <param name="waitForWindowsStatusTimeout"></param>
     /// <param name="conversionTimeout">
-    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     A conversion timeout in milliseconds, if the conversion fails
     ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
     /// </param>
     /// <param name="mediaLoadTimeout">
@@ -1807,7 +1797,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
             mediaLoadTimeout,
             logger).GetAwaiter().GetResult();
     }
-    
+
     /// <summary>
     ///     Converts the given <paramref name="html" /> to PDF
     /// </summary>
@@ -1822,7 +1812,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// </param>
     /// <param name="waitForWindowsStatusTimeout"></param>
     /// <param name="conversionTimeout">
-    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     A conversion timeout in milliseconds, if the conversion fails
     ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
     /// </param>
     /// <param name="mediaLoadTimeout">
@@ -1882,7 +1872,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// </param>
     /// <param name="waitForWindowsStatusTimeout"></param>
     /// <param name="conversionTimeout">
-    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     A conversion timeout in milliseconds, if the conversion fails
     ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
     /// </param>
     /// <param name="mediaLoadTimeout">
@@ -1922,7 +1912,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger, 
+            logger,
             cancellationToken).ConfigureAwait(false);
     }
 
@@ -1940,7 +1930,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// </param>
     /// <param name="waitForWindowsStatusTimeout"></param>
     /// <param name="conversionTimeout">
-    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     A conversion timeout in milliseconds, if the conversion fails
     ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
     /// </param>
     /// <param name="mediaLoadTimeout">
@@ -1979,7 +1969,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
             SnapshotStream = new MemoryStream();
 
         using var memoryStream = new MemoryStream();
-        
+
         await ConvertToPdfAsync(inputUri, memoryStream, pageSettings, waitForWindowStatus, waitForWindowsStatusTimeout,
             conversionTimeout, mediaLoadTimeout, logger, cancellationToken).ConfigureAwait(false);
 
@@ -2013,7 +2003,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// </param>
     /// <param name="waitForWindowsStatusTimeout"></param>
     /// <param name="conversionTimeout">
-    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     A conversion timeout in milliseconds, if the conversion fails
     ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
     /// </param>
     /// <param name="mediaLoadTimeout">
@@ -2075,7 +2065,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// </param>
     /// <param name="waitForWindowsStatusTimeout"></param>
     /// <param name="conversionTimeout">
-    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     A conversion timeout in milliseconds, if the conversion fails
     ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
     /// </param>
     /// <param name="mediaLoadTimeout">
@@ -2155,7 +2145,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// </param>
     /// <param name="waitForWindowsStatusTimeout"></param>
     /// <param name="conversionTimeout">
-    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     A conversion timeout in milliseconds, if the conversion fails
     ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
     /// </param>
     /// <param name="mediaLoadTimeout">
@@ -2209,7 +2199,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// </param>
     /// <param name="waitForWindowsStatusTimeout"></param>
     /// <param name="conversionTimeout">
-    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     A conversion timeout in milliseconds, if the conversion fails
     ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
     /// </param>
     /// <param name="mediaLoadTimeout">
@@ -2267,7 +2257,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// </param>
     /// <param name="waitForWindowsStatusTimeout"></param>
     /// <param name="conversionTimeout">
-    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     A conversion timeout in milliseconds, if the conversion fails
     ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
     /// </param>
     /// <param name="mediaLoadTimeout">
@@ -2324,7 +2314,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// </param>
     /// <param name="waitForWindowsStatusTimeout"></param>
     /// <param name="conversionTimeout">
-    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     A conversion timeout in milliseconds, if the conversion fails
     ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
     /// </param>
     /// <param name="mediaLoadTimeout">
@@ -2387,7 +2377,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// </param>
     /// <param name="waitForWindowsStatusTimeout"></param>
     /// <param name="conversionTimeout">
-    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     A conversion timeout in milliseconds, if the conversion fails
     ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
     /// </param>
     /// <param name="mediaLoadTimeout">
@@ -2427,7 +2417,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger, 
+            logger,
             cancellationToken).ConfigureAwait(false);
     }
 
@@ -2445,7 +2435,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// </param>
     /// <param name="waitForWindowsStatusTimeout"></param>
     /// <param name="conversionTimeout">
-    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     A conversion timeout in milliseconds, if the conversion fails
     ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
     /// </param>
     /// <param name="mediaLoadTimeout">
@@ -2489,7 +2479,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
             waitForWindowsStatusTimeout,
             conversionTimeout,
             mediaLoadTimeout,
-            logger, 
+            logger,
             cancellationToken).ConfigureAwait(false);
     }
 
@@ -2507,7 +2497,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// </param>
     /// <param name="waitForWindowsStatusTimeout"></param>
     /// <param name="conversionTimeout">
-    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     A conversion timeout in milliseconds, if the conversion fails
     ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
     /// </param>
     /// <param name="mediaLoadTimeout">
@@ -2547,7 +2537,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
             SnapshotStream = new MemoryStream();
 
         using var memoryStream = new MemoryStream();
-        
+
         await ConvertToImageAsync(inputUri, memoryStream, pageSettings, waitForWindowStatus,
             waitForWindowsStatusTimeout, conversionTimeout, mediaLoadTimeout, logger, cancellationToken).ConfigureAwait(false);
 
@@ -2580,7 +2570,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// </param>
     /// <param name="waitForWindowsStatusTimeout"></param>
     /// <param name="conversionTimeout">
-    ///     An conversion timeout in milliseconds, if the conversion fails
+    ///     A conversion timeout in milliseconds, if the conversion fails
     ///     to finished in the set amount of time then an <see cref="ConversionTimedOutException" /> is raised
     /// </param>
     /// <param name="mediaLoadTimeout">
@@ -2623,7 +2613,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
             SnapshotStream = new MemoryStream();
 
         using var memoryStream = new MemoryStream();
-        
+
         await ConvertToImageAsync(html, memoryStream, pageSettings, waitForWindowStatus,
             waitForWindowsStatusTimeout, conversionTimeout, mediaLoadTimeout, logger, cancellationToken).ConfigureAwait(false);
 
@@ -2687,7 +2677,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
         catch (Exception exception)
         {
             if (!exception.Message.Contains("is not running"))
-                _logger?.Error(exception, "{error}", exception.Message);
+                _logger?.Error(exception, "Failed to kill pocess: {error}", exception.Message);
         }
     }
     #endregion

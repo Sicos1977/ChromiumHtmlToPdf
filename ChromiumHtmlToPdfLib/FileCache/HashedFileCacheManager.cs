@@ -38,7 +38,7 @@ internal class HashedFileCacheManager(string cacheDir, string cacheSubFolder, st
     /// <param name="key"></param>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    private string GetFileName(string key, string? regionName = null)
+    private string GetFileName(string key, string? regionName)
     {
         regionName ??= string.Empty;
 
@@ -87,7 +87,7 @@ internal class HashedFileCacheManager(string cacheDir, string cacheSubFolder, st
     /// </summary>
     /// <param name="key"></param>
     /// <param name="regionName"></param>
-    public override string GetCachePath(string key, string? regionName = null)
+    public override string GetCachePath(string key, string? regionName)
     {
         regionName ??= string.Empty;
         var directory = Path.Combine(CacheDir, CacheSubFolder, regionName);
@@ -102,7 +102,7 @@ internal class HashedFileCacheManager(string cacheDir, string cacheSubFolder, st
     ///     Returns a list of keys for a given region.
     /// </summary>
     /// <param name="regionName"></param>
-    public override IEnumerable<string> GetKeys(string? regionName = null)
+    public override IEnumerable<string> GetKeys(string? regionName)
     {
         var region = string.Empty;
         if (string.IsNullOrEmpty(regionName) == false) region = regionName;
@@ -132,7 +132,7 @@ internal class HashedFileCacheManager(string cacheDir, string cacheSubFolder, st
     /// <param name="key"></param>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    public override string GetPolicyPath(string key, string? regionName = null)
+    public override string GetPolicyPath(string key, string? regionName)
     {
         regionName ??= string.Empty;
         var directory = Path.Combine(CacheDir, PolicySubFolder, regionName);

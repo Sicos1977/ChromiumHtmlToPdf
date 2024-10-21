@@ -54,7 +54,7 @@ namespace ChromiumHtmlToPdfLib;
 ///     See https://chromedevtools.github.io/devtools-protocol/
 /// </remarks>
 #if (NETSTANDARD2_0)
-public class Browser : IDisposable
+internal class Browser : IDisposable
 #else
 internal class Browser : IDisposable, IAsyncDisposable
 #endif
@@ -85,24 +85,39 @@ internal class Browser : IDisposable, IAsyncDisposable
     /// <summary>
     ///     Makes this object and sets the Chromium remote debugging url
     /// </summary>
+    /// <param name="logger"><see cref="Logger"/></param>
+    /// <param name="browserConnection">The websocket connection to the browser</param>
+    /// <param name="pageConnection">The websocket connection to devtools page</param>
+    private Browser(Logger? logger, Connection browserConnection, Connection pageConnection)
+    {
+        _logger = logger;
+        _browserConnection = browserConnection;
+        _pageConnection = pageConnection;
+    }
+
+    /// <summary>
+    ///     Makes this object and sets the Chromium remote debugging url
+    /// </summary>
     /// <param name="browser">The websocket to the browser</param>
     /// <param name="timeout">Websocket open timeout in milliseconds</param>
     /// <param name="logger"><see cref="Logger"/></param>
-    internal Browser(Uri browser, int timeout, Logger? logger)
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+    public static async Task<Browser> Create(Uri browser, int timeout, Logger? logger, CancellationToken cancellationToken)
     {
-        _logger = logger;
         // Open a websocket to the browser
-        _browserConnection = new Connection(browser.ToString(), timeout, logger);
+        var browserConnection = await Connection.Create(browser.ToString(), timeout, logger, cancellationToken).ConfigureAwait(false);
 
         var message = new Message { Method = "Target.createTarget" };
         message.Parameters.Add("url", "about:blank");
 
-        var result = _browserConnection.SendForResponseAsync(message).GetAwaiter().GetResult();
+        var result = await browserConnection.SendForResponseAsync(message, cancellationToken).ConfigureAwait(false);
         var page = Page.FromJson(result);
         var pageUrl = $"{browser.Scheme}://{browser.Host}:{browser.Port}/devtools/page/{page.Result.TargetId}";
 
         // Open a websocket to the page
-        _pageConnection = new Connection(pageUrl, timeout, logger);
+        var pageConnection = await Connection.Create(pageUrl, timeout, logger, cancellationToken).ConfigureAwait(false);
+
+        return new Browser(logger, browserConnection, pageConnection);
     }
     #endregion
 
@@ -117,7 +132,7 @@ internal class Browser : IDisposable, IAsyncDisposable
         ///     The page is loading
         /// </summary>
         Loading,
-        
+
         /// <summary>
         ///     Waiting for the network to be idle
         /// </summary>
@@ -152,11 +167,6 @@ internal class Browser : IDisposable, IAsyncDisposable
     /// <param name="useCache">When <c>true</c> then caching will be enabled</param>
     /// <param name="uri"></param>
     /// <param name="html"></param>
-    /// <param name="countdownTimer">
-    ///     If a <see cref="CountdownTimer" /> is set then
-    ///     the method will raise a <see cref="ConversionTimedOutException" /> if the
-    ///     <see cref="CountdownTimer" /> reaches zero before finishing navigation
-    /// </param>
     /// <param name="mediaLoadTimeout">
     ///     When set a timeout will be started after the DomContentLoaded
     ///     event has fired. After a timeout the NavigateTo method will exit as if the page
@@ -167,18 +177,16 @@ internal class Browser : IDisposable, IAsyncDisposable
     /// <param name="waitForNetworkIdle">When enabled the method will wait for the network to be idle</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <exception cref="ChromiumException">Raised when an error is returned by Chromium</exception>
-    /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer" /> reaches zero</exception>
-    internal async Task NavigateToAsync(
+    public async Task NavigateToAsync(
         List<string> safeUrls,
         bool useCache,
-        ConvertUri? uri = null,
-        string? html = null,
-        CountdownTimer? countdownTimer = null,
-        int? mediaLoadTimeout = null,
-        List<string>? urlBlacklist = null,
-        bool logNetworkTraffic = false,
-        bool waitForNetworkIdle = false,
-        CancellationToken cancellationToken = default)
+        ConvertUri? uri,
+        string? html,
+        int? mediaLoadTimeout,
+        List<string>? urlBlacklist,
+        bool logNetworkTraffic,
+        bool waitForNetworkIdle,
+        CancellationToken cancellationToken)
     {
         var navigationError = string.Empty;
         var navigationErrorTemplate = string.Empty;
@@ -243,7 +251,7 @@ internal class Browser : IDisposable, IAsyncDisposable
                 var pageNavigateMessage = new Message { Method = "Page.navigate" };
                 pageNavigateMessage.AddParameter("url", uri.ToString());
                 _logger?.Info("Navigating to url '{uri}'", uri);
-                await _pageConnection.SendAsync(pageNavigateMessage).ConfigureAwait(false);
+                await _pageConnection.SendAsync(pageNavigateMessage, cancellationToken).ConfigureAwait(false);
             }
             else if (!string.IsNullOrWhiteSpace(html))
             {
@@ -257,7 +265,7 @@ internal class Browser : IDisposable, IAsyncDisposable
                 var pageSetDocumentContent = new Message { Method = "Page.setDocumentContent" };
                 pageSetDocumentContent.AddParameter("frameId", frameResult.Result.FrameTree.Frame.Id);
                 pageSetDocumentContent.AddParameter("html", html);
-                await _pageConnection.SendAsync(pageSetDocumentContent).ConfigureAwait(false);
+                await _pageConnection.SendAsync(pageSetDocumentContent, cancellationToken).ConfigureAwait(false);
                 // When using setDocumentContent a Page.frameNavigated event is never fired, so we have to set the waitForNetworkIdle to true our self
                 pageLoadingState = PageLoadingState.WaitForNetworkIdle;
                 _logger?.Info("Document content set");
@@ -267,7 +275,7 @@ internal class Browser : IDisposable, IAsyncDisposable
 
             var mediaLoadTimeoutStopwatch = new Stopwatch();
 
-            while (pageLoadingState != PageLoadingState.MediaLoadTimeout && 
+            while (pageLoadingState != PageLoadingState.MediaLoadTimeout &&
                    pageLoadingState != PageLoadingState.BlockedByClient &&
                    // ReSharper disable once ConditionIsAlwaysTrueOrFalse
                    pageLoadingState != PageLoadingState.Closed &&
@@ -449,7 +457,7 @@ internal class Browser : IDisposable, IAsyncDisposable
                         break;
                     }
                 }
-                
+
                 if (mediaLoadTimeoutStopwatch.IsRunning &&
                     mediaLoadTimeoutStopwatch.ElapsedMilliseconds >= mediaLoadTimeout!.Value)
                 {
@@ -458,8 +466,7 @@ internal class Browser : IDisposable, IAsyncDisposable
                     pageLoadingState = PageLoadingState.MediaLoadTimeout;
                 }
 
-                if (countdownTimer is { MillisecondsLeft: 0 })
-                        throw new ConversionTimedOutException($"The {nameof(NavigateToAsync)} method timed out");
+                cancellationToken.ThrowIfCancellationRequested();
             }
 
             if (pageLoadingState == PageLoadingState.MediaLoadTimeout)
@@ -512,20 +519,6 @@ internal class Browser : IDisposable, IAsyncDisposable
     }
     #endregion
 
-    #region WaitForWindowStatus
-    /// <summary>
-    ///     Waits until the javascript window.status is returning the given <paramref name="status" />
-    /// </summary>
-    /// <param name="status">The case-insensitive status</param>
-    /// <param name="timeout">Continue after reaching the set timeout in milliseconds</param>
-    /// <returns><c>true</c> when window status matched, <c>false</c> when timing out</returns>
-    /// <exception cref="ChromiumException">Raised when an error is returned by Chromium</exception>
-    public bool WaitForWindowStatus(string status, int timeout = 60000)
-    {
-        return WaitForWindowStatusAsync(status, timeout).ConfigureAwait(false).GetAwaiter().GetResult();
-    }
-    #endregion
-
     #region WaitForWindowStatusAsync
     /// <summary>
     ///     Waits until the javascript window.status is returning the given <paramref name="status" />
@@ -535,7 +528,7 @@ internal class Browser : IDisposable, IAsyncDisposable
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns><c>true</c> when window status matched, <c>false</c> when timing out</returns>
     /// <exception cref="ChromiumException">Raised when an error is returned by Chromium</exception>
-    public async Task<bool> WaitForWindowStatusAsync(string status, int timeout = 60000, CancellationToken cancellationToken = default)
+    public async Task<bool> WaitForWindowStatusAsync(string status, int timeout, CancellationToken cancellationToken)
     {
         var message = new Message { Method = "Runtime.evaluate" };
         message.AddParameter("expression", "window.status;");
@@ -560,24 +553,12 @@ internal class Browser : IDisposable, IAsyncDisposable
 
             await Task.Delay(10, cancellationToken).ConfigureAwait(false);
 
-            if (stopWatch.ElapsedMilliseconds >= timeout) 
+            if (stopWatch.ElapsedMilliseconds >= timeout)
                 break;
         }
 
         stopWatch.Stop();
         return match;
-    }
-    #endregion
-
-    #region RunJavascript
-    /// <summary>
-    ///     Runs the given javascript after the page has been fully loaded
-    /// </summary>
-    /// <param name="script">The javascript to run</param>
-    /// <exception cref="ChromiumException">Raised when an error is returned by Chromium</exception>
-    public void RunJavascript(string script)
-    {
-        RunJavascriptAsync(script).GetAwaiter().GetResult();
     }
     #endregion
 
@@ -588,7 +569,7 @@ internal class Browser : IDisposable, IAsyncDisposable
     /// <param name="script">The javascript to run</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <exception cref="ChromiumException">Raised when an error is returned by Chromium</exception>
-    public async Task RunJavascriptAsync(string script, CancellationToken cancellationToken = default)
+    public async Task RunJavascriptAsync(string script, CancellationToken cancellationToken)
     {
         var message = new Message { Method = "Runtime.evaluate" };
         message.AddParameter("expression", script);
@@ -619,25 +600,16 @@ internal class Browser : IDisposable, IAsyncDisposable
     /// <summary>
     ///     Instructs Chromium to capture a snapshot from the loaded page
     /// </summary>
-    /// <param name="countdownTimer">
-    ///     If a <see cref="CountdownTimer" /> is set then
-    ///     the method will raise a <see cref="ConversionTimedOutException" /> in the
-    ///     <see cref="CountdownTimer" /> reaches zero before finishing the printing to pdf
-    /// </param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <remarks>
     ///     See https://chromedevtools.github.io/devtools-protocol/tot/Page#method-captureSnapshot
     /// </remarks>
     /// <returns></returns>
-    internal async Task<SnapshotResponse> CaptureSnapshotAsync(
-        CountdownTimer? countdownTimer = null, 
-        CancellationToken cancellationToken = default)
+    public async Task<SnapshotResponse> CaptureSnapshotAsync(CancellationToken cancellationToken)
     {
         var message = new Message { Method = "Page.captureSnapshot" };
 
-        var result = countdownTimer == null
-            ? await _pageConnection.SendForResponseAsync(message, cancellationToken).ConfigureAwait(false)
-            : await _pageConnection.SendForResponseAsync(message, new CancellationTokenSource(countdownTimer.MillisecondsLeft).Token).ConfigureAwait(false);
+        var result = await _pageConnection.SendForResponseAsync(message, cancellationToken).ConfigureAwait(false);
 
         return SnapshotResponse.FromJson(result);
     }
@@ -651,21 +623,12 @@ internal class Browser : IDisposable, IAsyncDisposable
     /// <param name="pageSettings">
     ///     <see cref="PageSettings" />
     /// </param>
-    /// <param name="countdownTimer">
-    ///     If a <see cref="CountdownTimer" /> is set then
-    ///     the method will raise a <see cref="ConversionTimedOutException" /> in the
-    ///     <see cref="CountdownTimer" /> reaches zero before finishing the printing to pdf
-    /// </param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <remarks>
     ///     See https://chromedevtools.github.io/devtools-protocol/tot/Page/#method-printToPDF
     /// </remarks>
     /// <exception cref="ConversionException">Raised when Chromium returns an empty string</exception>
-    /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer" /> reaches zero</exception>
-    internal async Task PrintToPdfAsync(Stream outputStream,
-        PageSettings pageSettings,
-        CountdownTimer? countdownTimer = null,
-        CancellationToken cancellationToken = default)
+    public async Task PrintToPdfAsync(Stream outputStream, PageSettings pageSettings, CancellationToken cancellationToken)
     {
         var message = new Message { Method = "Page.printToPDF" };
         message.AddParameter("landscape", pageSettings.Landscape);
@@ -688,9 +651,7 @@ internal class Browser : IDisposable, IAsyncDisposable
 
         _logger?.Info("Sending PDF request to Chromium");
 
-        var result = countdownTimer == null
-            ? await _pageConnection.SendForResponseAsync(message, cancellationToken).ConfigureAwait(false)
-            : await _pageConnection.SendForResponseAsync(message, new CancellationTokenSource(countdownTimer.MillisecondsLeft).Token).ConfigureAwait(false);
+        var result = await _pageConnection.SendForResponseAsync(message, cancellationToken).ConfigureAwait(false);
 
         if (string.IsNullOrEmpty(result))
             throw new ConversionException("Conversion failed ... did not get the expected response from Chromium");
@@ -707,19 +668,17 @@ internal class Browser : IDisposable, IAsyncDisposable
             throw new ConversionException("The output stream is not writable, please provide a writable stream");
 
         _logger?.Info("Resetting output stream to position 0");
-        
+
         message = new Message { Method = "IO.read" };
         message.AddParameter("handle", printToPdfResponse.Result!.Stream!);
         message.AddParameter("size", 1048576); // Get the pdf in chunks of 1MB
-        
+
         _logger?.Info("Reading generated PDF from IO stream with handle id {stream}", printToPdfResponse.Result.Stream);
         outputStream.Position = 0;
 
         while (true)
         {
-            result = countdownTimer == null
-                ? await _pageConnection.SendForResponseAsync(message, cancellationToken).ConfigureAwait(false)
-                : await _pageConnection.SendForResponseAsync(message, new CancellationTokenSource(countdownTimer.MillisecondsLeft).Token).ConfigureAwait(false);
+            result = await _pageConnection.SendForResponseAsync(message, cancellationToken).ConfigureAwait(false);
 
             var ioReadResponse = IoReadResponse.FromJson(result);
             var bytes = ioReadResponse.Result.Bytes;
@@ -748,19 +707,13 @@ internal class Browser : IDisposable, IAsyncDisposable
     /// <summary>
     ///     Instructs Chromium to take a screenshot from the page
     /// </summary>
-    /// <param name="countdownTimer"></param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns></returns>
     /// <exception cref="ConversionException">Raised when Chromium returns an empty string</exception>
-    /// <exception cref="ConversionTimedOutException">Raised when <paramref name="countdownTimer" /> reaches zero</exception>
-    internal async Task<CaptureScreenshotResponse> CaptureScreenshotAsync(
-        CountdownTimer? countdownTimer = null, 
-        CancellationToken cancellationToken = default)
+    public async Task<CaptureScreenshotResponse> CaptureScreenshotAsync(CancellationToken cancellationToken)
     {
         var message = new Message { Method = "Page.captureScreenshot" };
-        var result = countdownTimer == null
-            ? await _pageConnection.SendForResponseAsync(message, cancellationToken).ConfigureAwait(false)
-            : await _pageConnection.SendForResponseAsync(message, new CancellationTokenSource(countdownTimer.MillisecondsLeft).Token).ConfigureAwait(false);
+        var result = await _pageConnection.SendForResponseAsync(message, cancellationToken).ConfigureAwait(false);
 
         var captureScreenshotResponse = CaptureScreenshotResponse.FromJson(result);
 
@@ -777,7 +730,7 @@ internal class Browser : IDisposable, IAsyncDisposable
     /// </summary>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns></returns>
-    internal async Task CloseAsync(CancellationToken cancellationToken)
+    private async Task CloseAsync(CancellationToken cancellationToken)
     {
         var message = new Message { Method = "Browser.close" };
         await _browserConnection.SendForResponseAsync(message, cancellationToken).ConfigureAwait(false);

@@ -93,7 +93,7 @@ internal class FileCacheHandler : HttpClientHandler
                 AccessTimeout = TimeSpan.FromSeconds(10),
                 DefaultPolicy = new CacheItemPolicy { SlidingExpiration = TimeSpan.FromDays(1) },
             };
-            
+
             return _fileCache;
         }
     }
@@ -108,15 +108,15 @@ internal class FileCacheHandler : HttpClientHandler
     /// <param name="cacheSize">The cache size when <paramref name="useCache"/> is set to <c>true</c>, otherwise <c>null</c></param>
     /// <param name="logger"><see cref="Logger"/></param>
     internal FileCacheHandler(
-        bool useCache, 
-        FileSystemInfo cacheDirectory, 
+        bool useCache,
+        FileSystemInfo cacheDirectory,
         long cacheSize,
         Logger? logger)
     {
         _useCache = useCache;
-        
+
         if (!useCache) return;
-        
+
         _cacheDirectory = new DirectoryInfo(Path.Combine(cacheDirectory.FullName, "DocumentHelper"));
         _logger = logger;
 
@@ -137,12 +137,12 @@ internal class FileCacheHandler : HttpClientHandler
     /// <param name="request"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         if (!_useCache)
         {
             IsFromCache = false;
-            return base.SendAsync(request, cancellationToken);
+            return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
         var key = request.RequestUri!.ToString();
@@ -160,22 +160,27 @@ internal class FileCacheHandler : HttpClientHandler
 
             _logger?.Info("Returned item from cache");
 
-            return Task.FromResult(cachedResponse);
+            return cachedResponse;
         }
 
         IsFromCache = false;
-        
+
         var response = base.SendAsync(request, cancellationToken).Result;
         var memoryStream = new MemoryStream();
-        
-        response.Content.ReadAsStreamAsync().GetAwaiter().GetResult().CopyTo(memoryStream);
-        
+
+        var contentStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+#if (NETSTANDARD2_0)
+        await contentStream.CopyToAsync(memoryStream).ConfigureAwait(false);
+#else
+        await contentStream.CopyToAsync(memoryStream, cancellationToken).ConfigureAwait(false);
+#endif
+
         FileCache.Add(key, memoryStream.ToArray(), new CacheItemPolicy { SlidingExpiration = TimeSpan.FromDays(1) });
         _logger?.Info("Added item to cache");
 
         response.Content = new StreamContent(new MemoryStream(memoryStream.ToArray()));
 
-        return Task.FromResult(response);
+        return response;
     }
     #endregion
 }

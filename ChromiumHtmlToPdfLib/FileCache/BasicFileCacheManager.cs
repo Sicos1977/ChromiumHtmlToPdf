@@ -14,7 +14,7 @@ internal class BasicFileCacheManager(string cacheDir, string cacheSubFolder, str
     /// </summary>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    public override IEnumerable<string> GetKeys(string? regionName = null)
+    public override IEnumerable<string> GetKeys(string? regionName)
     {
         var region = "";
         if (string.IsNullOrEmpty(regionName) == false) region = regionName;
@@ -33,7 +33,7 @@ internal class BasicFileCacheManager(string cacheDir, string cacheSubFolder, str
     /// <param name="fileName"></param>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    public override string GetCachePath(string fileName, string? regionName = null)
+    public override string GetCachePath(string fileName, string? regionName)
     {
         regionName ??= string.Empty;
         var directory = Path.Combine(CacheDir, CacheSubFolder, regionName);
@@ -50,7 +50,7 @@ internal class BasicFileCacheManager(string cacheDir, string cacheSubFolder, str
     /// <param name="key"></param>
     /// <param name="regionName"></param>
     /// <returns></returns>
-    public override string GetPolicyPath(string key, string? regionName = null)
+    public override string GetPolicyPath(string key, string? regionName)
     {
         regionName ??= string.Empty;
         var directory = Path.Combine(CacheDir, PolicySubFolder, regionName);

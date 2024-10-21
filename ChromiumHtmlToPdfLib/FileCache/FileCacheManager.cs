@@ -548,7 +548,7 @@ public abstract class FileCacheManager(string cacheDir, string cacheSubFolder, s
             }
 
         return stream;
-    }    
+    }
     #endregion
 
     #region DeleteFile

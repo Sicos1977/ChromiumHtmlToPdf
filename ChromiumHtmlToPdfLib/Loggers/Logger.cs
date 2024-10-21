@@ -40,7 +40,7 @@ internal class Logger
     ///     When set then logging is written to this ILogger instance
     /// </summary>
     public ILogger? InternalLogger { get; set; }
-    
+
     /// <summary>
     ///     A unique id that can be used to identify the logging of the converter when
     ///     calling the code from multiple threads and writing all the logging to the same file

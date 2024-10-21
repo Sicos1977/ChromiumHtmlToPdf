@@ -166,7 +166,7 @@ internal class DocumentHelper: IDisposable
     public DocumentHelper(
         DirectoryInfo? tempDirectory,
         bool useCache,
-        FileSystemInfo cacheDirectory, 
+        FileSystemInfo cacheDirectory,
         long cacheSize,
         IWebProxy? webProxy,
         int? imageLoadTimeout,
@@ -216,9 +216,9 @@ internal class DocumentHelper: IDisposable
     public async Task<SanitizeHtmlResult> SanitizeHtmlAsync(ConvertUri inputUri, HtmlSanitizer? sanitizer, List<string> safeUrls, CancellationToken cancellationToken)
     {
 #if (NETSTANDARD2_0)
-        using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri).ConfigureAwait(false);
+        using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri, false, cancellationToken).ConfigureAwait(false);
 #else
-        await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri).ConfigureAwait(false);
+        await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri, false, cancellationToken).ConfigureAwait(false);
 #endif
         var htmlChanged = false;
         var context = BrowsingContext.New(Config);
@@ -236,7 +236,7 @@ internal class DocumentHelper: IDisposable
             _logger?.Error(exception, "Exception occurred in AngleSharp: {exception}", ExceptionHelpers.GetInnerException(exception));
             return new SanitizeHtmlResult(false, inputUri, safeUrls);
         }
-        
+
         _logger?.Info("Sanitizing HTML");
 
         sanitizer ??= new HtmlSanitizer();
@@ -413,9 +413,9 @@ internal class DocumentHelper: IDisposable
     public async Task<FitPageToContentResult> FitPageToContentAsync(ConvertUri inputUri, CancellationToken cancellationToken)
     {
 #if (NETSTANDARD2_0)
-        using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri).ConfigureAwait(false);
+        using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri, false, cancellationToken).ConfigureAwait(false);
 #else
-        await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri).ConfigureAwait(false);
+        await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri, false, cancellationToken).ConfigureAwait(false);
 #endif
 
         using var context = BrowsingContext.New(Config);
@@ -431,7 +431,7 @@ internal class DocumentHelper: IDisposable
 
             if (document is not Document htmlElementDocument)
                 throw new InvalidCastException("Could not cast document to Document");
-            
+
             var styleElement = new HtmlElement(htmlElementDocument, "style")
             {
                 InnerHtml = "html, body " + Environment.NewLine +
@@ -495,7 +495,7 @@ internal class DocumentHelper: IDisposable
             using var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write);
 #else
             await using var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write);
-#endif            
+#endif
             if (inputUri.Encoding != null)
             {
 #if (NETSTANDARD2_0)
@@ -556,11 +556,11 @@ internal class DocumentHelper: IDisposable
     {
         using var graphics = Graphics.FromHwnd(IntPtr.Zero);
 #if (NETSTANDARD2_0)
-        using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri).ConfigureAwait(false);
+        using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri, false, cancellationToken).ConfigureAwait(false);
 #else
-        await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri).ConfigureAwait(false);
+        await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri, false, cancellationToken).ConfigureAwait(false);
 #endif
-        
+
         _logger?.Info("DPI settings for image, x: '{dpiX}' and y: '{dpiY}'", graphics.DpiX, graphics.DpiY);
         var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft - pageSettings.MarginRight) * graphics.DpiX;
         var maxHeight = (pageSettings.PaperHeight - pageSettings.MarginTop - pageSettings.MarginBottom) * graphics.DpiY;
@@ -635,11 +635,11 @@ internal class DocumentHelper: IDisposable
 
                 if (rotate)
                 {
-                    image = await GetImageAsync(htmlImage.Source, localDirectory).ConfigureAwait(false);
+                    image = await GetImageAsync(htmlImage.Source, localDirectory, cancellationToken).ConfigureAwait(false);
 
                     if (image == null) continue;
 
-                    if (RotateImageByExifOrientationData(image))
+                    if (RotateImageByExifOrientationData(image, true))
                     {
                         htmlImage.DisplayWidth = image.Width;
                         htmlImage.DisplayHeight = image.Height;
@@ -685,7 +685,7 @@ internal class DocumentHelper: IDisposable
                     // If we don't know the image size then get if from the image itself
                     if (width <= 0 || height <= 0)
                     {
-                        image ??= await GetImageAsync(htmlImage.Source, localDirectory).ConfigureAwait(false);
+                        image ??= await GetImageAsync(htmlImage.Source, localDirectory, cancellationToken).ConfigureAwait(false);
                         if (image == null) continue;
                         width = image.Width;
                         height = image.Height;
@@ -695,9 +695,9 @@ internal class DocumentHelper: IDisposable
                     {
                         // If we did not load the image already then load it
 
-                        image ??= await GetImageAsync(htmlImage.Source, localDirectory).ConfigureAwait(false);
+                        image ??= await GetImageAsync(htmlImage.Source, localDirectory, cancellationToken).ConfigureAwait(false);
                         if (image == null) continue;
-                        
+
                         var ratio = maxWidth / image.Width;
 
                         _logger?.Info("Rescaling image with current width {width}, height {height} and ratio {ratio}", image.Width, image.Height, ratio);
@@ -729,8 +729,8 @@ internal class DocumentHelper: IDisposable
 
         foreach (var unchangedImage in unchangedImages)
         {
-            using var image = await GetImageAsync(unchangedImage.Source!, localDirectory).ConfigureAwait(false);
-            
+            using var image = await GetImageAsync(unchangedImage.Source!, localDirectory, cancellationToken).ConfigureAwait(false);
+
             if (image == null)
             {
                 _logger?.Warn("Could not load unchanged image from location '{location}'", unchangedImage.Source);
@@ -768,8 +768,8 @@ internal class DocumentHelper: IDisposable
             using var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write);
 #else
             await using var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write);
-#endif      
-            
+#endif
+
             if (inputUri.Encoding != null)
             {
 #if (NETSTANDARD2_0)
@@ -788,7 +788,7 @@ internal class DocumentHelper: IDisposable
 #endif
                 document.ToHtml(textWriter, new HtmlMarkupFormatter());
             }
-            
+
             _logger?.Info("Changed webpage written");
 
             return new ValidateImagesResult(true, outputUri);
@@ -807,8 +807,9 @@ internal class DocumentHelper: IDisposable
     /// </summary>
     /// <param name="imageSource"></param>
     /// <param name="localDirectory"></param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns></returns>
-    private async Task<Image?> GetImageAsync(string imageSource, string? localDirectory)
+    private async Task<Image?> GetImageAsync(string imageSource, string? localDirectory, CancellationToken cancellationToken)
     {
         if (imageSource.StartsWith("data:", StringComparison.InvariantCultureIgnoreCase))
         {
@@ -857,17 +858,17 @@ internal class DocumentHelper: IDisposable
                 case "http":
                 {
 #if (NETSTANDARD2_0)
-                    using var webStream = await OpenDownloadStream(imageUri, true).ConfigureAwait(false);
+                    using var webStream = await OpenDownloadStream(imageUri, true, cancellationToken).ConfigureAwait(false);
 #else
-                    await using var webStream = await OpenDownloadStream(imageUri, true).ConfigureAwait(false);
+                    await using var webStream = await OpenDownloadStream(imageUri, true, cancellationToken).ConfigureAwait(false);
 #endif
                     if (webStream == null)
                         return null;
 
                     var extension = Path.GetExtension(imageUri.AbsolutePath);
-                    if (extension.ToLowerInvariant() != ".svg") 
+                    if (extension.ToLowerInvariant() != ".svg")
                         return Image.FromStream(webStream, true, false);
-                    
+
                     var svgDocument = SvgDocument.Open<SvgDocument>(webStream);
                     return svgDocument.Draw();
                 }
@@ -900,7 +901,7 @@ internal class DocumentHelper: IDisposable
     ///     (default is <c>false</c>)
     /// </param>
     /// <returns>Returns <c>true</c> when the image is rotated</returns>
-    private bool RotateImageByExifOrientationData(Image image, bool updateExifData = true)
+    private bool RotateImageByExifOrientationData(Image image, bool updateExifData)
     {
         const int orientationId = 0x0112;
         if (!((IList)image.PropertyIdList).Contains(orientationId)) return false;
@@ -984,8 +985,9 @@ internal class DocumentHelper: IDisposable
     /// </summary>
     /// <param name="sourceUri"></param>
     /// <param name="checkTimeout"></param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns></returns>
-    private async Task<Stream?> OpenDownloadStream(Uri sourceUri, bool checkTimeout = false)
+    private async Task<Stream?> OpenDownloadStream(Uri sourceUri, bool checkTimeout, CancellationToken cancellationToken)
     {
         try
         {
@@ -1009,9 +1011,9 @@ internal class DocumentHelper: IDisposable
             }
             else
                 _logger?.Info("Opening stream to url '{url}'", sourceUri);
-            
-            var response = await client.GetAsync(sourceUri).ConfigureAwait(false);
-            
+
+            var response = await client.GetAsync(sourceUri, cancellationToken).ConfigureAwait(false);
+
             return await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
         }
         catch (Exception exception)

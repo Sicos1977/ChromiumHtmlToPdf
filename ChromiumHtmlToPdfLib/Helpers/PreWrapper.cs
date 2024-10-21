@@ -141,7 +141,7 @@ internal class PreWrapper
             if (result.Detected.Encoding != null)
             {
                 encoding = result.Detected.Encoding;
-                _logger?.Info("{statusLog}", result.Detected.StatusLog);
+                _logger?.Info("Encoding detection status log: {statusLog}", result.Detected.StatusLog);
             }
             else
             {
