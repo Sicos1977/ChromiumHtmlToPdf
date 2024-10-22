@@ -13,7 +13,7 @@ public class MessageReceivedEventArgs : EventArgs
     public string Message { get; }
 
     /// <summary>
-    ///     Raised when a massage is received
+    ///     Raised when a message is received
     /// </summary>
     /// <param name="message"></param>
     public MessageReceivedEventArgs(string message)

@@ -30,7 +30,7 @@ using System.Runtime.Serialization;
 namespace ChromiumHtmlToPdfLib.Exceptions;
 
 /// <summary>
-///     Raised when an error is returned when navigation to a page in Chrome
+///     Raised when an error is returned when navigation to a page in Chromium
 /// </summary>
 [Serializable]
 public class ChromiumNavigationException : Exception

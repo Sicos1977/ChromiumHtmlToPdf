@@ -64,7 +64,7 @@ public static class ExceptionHelpers
 
     #region GetInnerException
     /// <summary>
-    ///     Returns the full exception with it's inner exceptions as a string
+    ///     Returns the full exception with its inner exceptions as a string
     /// </summary>
     /// <param name="exception">The exception</param>
     /// <returns></returns>

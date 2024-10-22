@@ -88,7 +88,7 @@ internal static class ChromeFinder
     /// <returns></returns>
     internal static string? Find()
     {
-        // For Windows we first check the registry. This is the safest
+        // For Windows, we first check the registry. This is the safest
         // method and also considers non-default installation locations.
         // Note that Chrome x64 currently (February 2019) also gets installed
         // in Program Files (x86) and uses the same registry key!

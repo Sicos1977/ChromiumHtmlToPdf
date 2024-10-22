@@ -27,12 +27,12 @@
 namespace ChromiumHtmlToPdfLib.Enums;
 
 /// <summary>
-///     The paper formats to use when converting to PDF
+///     The browser to use when converting to PDF
 /// </summary>
 public enum Browser
 {
     /// <summary>
-    ///     Use Google Chrome to as headless browser
+    ///     Use Google Chrome as headless browser
     /// </summary>
     Chrome,
 

@@ -29,7 +29,7 @@
 namespace ChromiumHtmlToPdfLib.Enums;
 
 /// <summary>
-/// The default Window sizes
+///     The default Window sizes
 /// </summary>
 public enum WindowSize
 {
