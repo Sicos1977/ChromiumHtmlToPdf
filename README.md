@@ -41,7 +41,7 @@ The easiest way to install ChromiumHtmlToPdf is via NuGet (Yes I know the nuget 
 
 In Visual Studio's Package Manager Console, simply enter the following command:
 
-    Install-Package ChromeHtmlToPdf 
+    Install-Package ChromeHtmlToPdf
 
 ### Converting a file or url from code
 
@@ -133,7 +133,7 @@ google-chrome --no-sandbox --user-data-dir
 Pre compiled binaries
 =====================
 
-You can find pre compiled binaries for Windows, Linux and macOS over here 
+You can find pre compiled binaries for Windows, Linux and macOS over here
 
 Latest version (.net 6)
 ---------------
@@ -141,7 +141,7 @@ https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/4.2.1/ChromiumH
 
 .NET 6.0 for the console app
 ---------------------------------
-The console app needs .NET 6 to run, you can download this framework from here 
+The console app needs .NET 6 to run, you can download this framework from here
 
 https://dotnet.microsoft.com/en-us/download/dotnet/6.0
 
@@ -161,7 +161,7 @@ https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/2.0.11/ChromeHt
 
 .NET Core 3.1 for the console app (end of life)
 ---------------------------------
-The console app needs .NET Core 3.1 to run, you can download this framework from here 
+The console app needs .NET Core 3.1 to run, you can download this framework from here
 
 https://dotnet.microsoft.com/en-us/download/dotnet/3.1
 
@@ -181,7 +181,7 @@ Logging
 
 From version 2.5.0 ChromiumHtmlToPdfLib uses the Microsoft ILogger interface (https://docs.microsoft.com/en-us/dotnet/api/microsoft.extensions.logging.ilogger?view=dotnet-plat-ext-5.0). You can use any logging library that uses this interface.
 
-ChromiumHtmlToPdfLib has some build in loggers that can be found in the ```ChromiumHtmlToPdfLib.Logger``` namespace. 
+ChromiumHtmlToPdfLib has some build in loggers that can be found in the ```ChromiumHtmlToPdfLib.Logger``` namespace.
 
 For example
 
@@ -194,7 +194,7 @@ var logger = !string.IsNullOrWhiteSpace(<some logfile>)
 Setting a common Google Chrome or Microsoft Edge cache directory
 ================================================================
 
-You can not share a cache directory between a Google Chrome or Microsoft Edge instances because the first instance that is using the cache directory will lock it for its own use. The most efficient way to make optimal use of a cache directory is to create one for each instance that you are running. 
+You can not share a cache directory between a Google Chrome or Microsoft Edge instances because the first instance that is using the cache directory will lock it for its own use. The most efficient way to make optimal use of a cache directory is to create one for each instance that you are running.
 
 I'm using Google Chrome from a WCF service and used the class below to make optimal use of cache directories. The class will create an instance id that I use to create a cache directory for each running Chrome instance. When the instance shuts down the instance id is put back in a stack so that the next executing instance can use this directory again.
 

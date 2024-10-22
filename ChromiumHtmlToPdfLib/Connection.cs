@@ -75,7 +75,7 @@ public class Connection : IDisposable, IAsyncDisposable
     /// <summary>
     ///     The url of the websocket
     /// </summary>
-    private readonly string _url;
+    private readonly Uri _url;
 
     /// <summary>
     ///     The current message id
@@ -88,14 +88,14 @@ public class Connection : IDisposable, IAsyncDisposable
     private readonly ClientWebSocket _webSocket;
 
     /// <summary>
-    ///     Websocket open timeout in milliseconds
+    ///     Websocket operation timeout in milliseconds
     /// </summary>
     private readonly int _timeout;
 
     /// <summary>
     /// Task to await for <see cref="ReceiveLoop"/> completion.
     /// </summary>
-    private readonly Task<Task> _receiveTask;
+    private Task<Task>? _receiveTask;
 
     /// <summary>
     ///     Keeps track is we already disposed our resources
@@ -110,15 +110,26 @@ public class Connection : IDisposable, IAsyncDisposable
     /// <param name="url">The url</param>
     /// <param name="timeout">Websocket open timeout in milliseconds</param>
     /// <param name="logger"><see cref="Logger"/></param>
-    internal Connection(string url, int timeout, Logger? logger)
+    private Connection(string url, int timeout, Logger? logger)
     {
-        _url = url;
+        _url = new Uri(url);
         _timeout = timeout;
         _logger = logger;
         _logger?.Info("Creating new websocket connection to url '{url}'", url);
         _webSocket = new ClientWebSocket();
         _receiveLoopCts = new CancellationTokenSource();
-        OpenWebSocketAsync().GetAwaiter().GetResult();
+    }
+
+    internal static async Task<Connection> Create(string url, int timeout, Logger? logger, CancellationToken cancellationToken)
+    {
+        var connection = new Connection(url, timeout, logger);
+        await connection.StartAsync(cancellationToken).ConfigureAwait(false);
+        return connection;
+    }
+
+    private async Task StartAsync(CancellationToken cancellationToken)
+    {
+        await OpenWebSocketAsync(cancellationToken).ConfigureAwait(false);
         _receiveTask = Task.Factory.StartNew(ReceiveLoop, new ReceiveLoopState(_logger, _webSocket, OnMessageReceived, _receiveLoopCts.Token), _receiveLoopCts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
     }
     #endregion
@@ -186,21 +197,16 @@ public class Connection : IDisposable, IAsyncDisposable
     #endregion
 
     #region OpenWebSocket
-    private async Task OpenWebSocketAsync()
+    private async Task OpenWebSocketAsync(CancellationToken cancellationToken)
     {
         if (_webSocket.State is WebSocketState.Open or WebSocketState.Connecting) return;
 
         _logger?.Info("Opening websocket connection with a timeout of {timeout} milliseconds", _timeout);
 
-        try
-        {
-            await _webSocket.ConnectAsync(new Uri(_url), new CancellationTokenSource(_timeout).Token).ConfigureAwait(false);
-            _logger?.Info("Websocket opened");
-        }
-        catch (Exception exception)
-        {
-            WebSocketOnError(_logger, new ErrorEventArgs(exception));
-        }
+        using var timeoutCts = new CancellationTokenSource(_timeout);
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+        await _webSocket.ConnectAsync(_url, linkedCts.Token).ConfigureAwait(false);
+        _logger?.Info("Websocket opened");
     }
     #endregion
 
@@ -210,9 +216,9 @@ public class Connection : IDisposable, IAsyncDisposable
         var response = e.Message;
 
         var error = CheckForError(response);
-        
+
         if (!string.IsNullOrEmpty(error))
-            logger?.Error("{error}", error);
+            logger?.Error("Chrome returned error: {error}", error);
 
         onMessageReceived(response);
     }
@@ -224,7 +230,7 @@ public class Connection : IDisposable, IAsyncDisposable
 
     private static void WebSocketOnError(Logger? logger, ErrorEventArgs e)
     {
-        logger?.Error(e.Exception, "{exception}", ExceptionHelpers.GetInnerException(e.Exception));
+        logger?.Error(e.Exception, "WebSocket operation failed with {exception}", ExceptionHelpers.GetInnerException(e.Exception));
     }
 
     private void WebSocketOnClosed(EventArgs e)
@@ -240,19 +246,17 @@ public class Connection : IDisposable, IAsyncDisposable
     /// <param name="message">The message to send</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns>Response given by <see cref="_webSocket" /></returns>
-    internal async Task<string> SendForResponseAsync(Message message, CancellationToken cancellationToken = default)
+    internal async Task<string> SendForResponseAsync(Message message, CancellationToken cancellationToken)
     {
         _messageId += 1;
         message.Id = _messageId;
-
-        await OpenWebSocketAsync().ConfigureAwait(false);
 
         var tcs = new TaskCompletionSource<string>();
 
         var receivedHandler = new EventHandler<string>((_, data) =>
         {
             var messageBase = MessageBase.FromJson(data);
-            if (messageBase.Id == message.Id) 
+            if (messageBase.Id == message.Id)
                 tcs.SetResult(data);
         });
 
@@ -260,10 +264,10 @@ public class Connection : IDisposable, IAsyncDisposable
 
         try
         {
-            if (cancellationToken == default)
-                cancellationToken = new CancellationTokenSource(_timeout).Token;
+            using var timeoutCts = new CancellationTokenSource(_timeout);
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
 
-            await _webSocket.SendAsync(MessageToBytes(message), WebSocketMessageType.Text, true, cancellationToken).ConfigureAwait(false);
+            await _webSocket.SendAsync(MessageToBytes(message), WebSocketMessageType.Text, true, linkedCts.Token).ConfigureAwait(false);
 
             tcs.Task.Wait(cancellationToken);
             return cancellationToken.IsCancellationRequested ? string.Empty : tcs.Task.Result;
@@ -286,17 +290,18 @@ public class Connection : IDisposable, IAsyncDisposable
     ///     Sends a message to the <see cref="_webSocket" /> and awaits no response
     /// </summary>
     /// <param name="message">The message to send</param>
+    /// <param name="cancellationToken">The message to send</param>
     /// <returns></returns>
-    internal async Task SendAsync(Message message)
+    internal async Task SendAsync(Message message, CancellationToken cancellationToken)
     {
         _messageId += 1;
         message.Id = _messageId;
 
-        await OpenWebSocketAsync().ConfigureAwait(false);
-
         try
         {
-            await _webSocket.SendAsync(MessageToBytes(message), WebSocketMessageType.Text, true, new CancellationTokenSource(_timeout).Token).ConfigureAwait(false);
+            using var timeoutCts = new CancellationTokenSource(_timeout);
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+            await _webSocket.SendAsync(MessageToBytes(message), WebSocketMessageType.Text, true, linkedCts.Token).ConfigureAwait(false);
         }
         catch (Exception exception)
         {
@@ -342,7 +347,10 @@ public class Connection : IDisposable, IAsyncDisposable
 
         _receiveLoopCts.Cancel();
 
-        await (await _receiveTask.ConfigureAwait(false)).ConfigureAwait(false);
+        if (_receiveTask != null)
+            await (await _receiveTask.ConfigureAwait(false)).ConfigureAwait(false);
+
+        _receiveLoopCts.Dispose();
 
         _logger?.Info("Disposing websocket connection to url '{url}'", _url);
 
@@ -352,8 +360,8 @@ public class Connection : IDisposable, IAsyncDisposable
 
             try
             {
-                var timeoutToken = new CancellationTokenSource(5000).Token;
-                await _webSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "Done", timeoutToken).ConfigureAwait(false);
+                using var timeoutCts = new CancellationTokenSource(5000);
+                await _webSocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "Done", timeoutCts.Token).ConfigureAwait(false);
             }
             catch (Exception exception)
             {

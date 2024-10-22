@@ -175,8 +175,7 @@ public class FileCache : ObjectCache
     #endregion
 
     #region WriteHelper
-    private void WriteHelper(PayloadMode mode, string key, FileCachePayload data, string? regionName = null,
-        bool policyUpdateOnly = false)
+    private void WriteHelper(PayloadMode mode, string key, FileCachePayload data, string? regionName, bool policyUpdateOnly)
     {
         CurrentCacheSize += CacheManager.WriteFile(mode, key, data, regionName, policyUpdateOnly);
 
@@ -265,7 +264,7 @@ public class FileCache : ObjectCache
     /// <param name="manager"></param>
     public FileCache(FileCacheManagers manager)
     {
-        Init(manager);
+        Init(manager, false, new());
     }
 
     /// <summary>
@@ -388,8 +387,8 @@ public class FileCache : ObjectCache
     [MemberNotNull(nameof(_binder), nameof(CacheDir), nameof(DefaultPolicy), nameof(CacheManager))]
     private void Init(
         FileCacheManagers manager,
-        bool calculateCacheSize = false,
-        TimeSpan cleanInterval = new())
+        bool calculateCacheSize,
+        TimeSpan cleanInterval)
     {
         _name = $"FileCache_{_nameCounter}";
         _nameCounter++;
@@ -527,7 +526,6 @@ public class FileCache : ObjectCache
         CacheResized(this, new FileCacheEventArgs(originalSize - removed, MaxCacheSize));
 
         // return the final size of the cache (or region)
-        
         return originalSize - removed;
     }
     #endregion
@@ -574,7 +572,7 @@ public class FileCache : ObjectCache
                     Remove(key, region); // CT note: Remove will update CurrentCacheSize
                     removed += ci.Length;
                 }
-                catch (Exception) 
+                catch (Exception)
                 {
                     // Skip if the file cannot be accessed
                 }
@@ -596,13 +594,13 @@ public class FileCache : ObjectCache
     ///     specified amount (in bytes).
     /// </summary>
     /// <returns>The amount of data that was actually removed</returns>
-    private long DeleteOldestFiles(long amount, string? regionName = null)
+    private long DeleteOldestFiles(long amount, string? regionName)
     {
         // Verify that we actually need to shrink
         if (amount <= 0) return 0;
 
         //Heap of all CacheReferences
-        var cacheReferences = new PriorityQueue<CacheItemReference>();
+        var cacheReferences = new PriorityQueue<CacheItemReference>(null);
 
         var regions =
             !string.IsNullOrEmpty(regionName)
@@ -838,7 +836,7 @@ public class FileCache : ObjectCache
 
         var cachePolicy = new SerializableCacheItemPolicy(policy);
         var newPayload = new FileCachePayload(value, cachePolicy);
-        WriteHelper(PayloadWriteMode, key, newPayload, regionName);
+        WriteHelper(PayloadWriteMode, key, newPayload, regionName, false);
 
         //As documented in the spec (http://msdn.microsoft.com/en-us/library/dd780602.aspx), return the old
         //cached value or null
@@ -1022,7 +1020,7 @@ public class FileCache : ObjectCache
         var enumerator = new List<KeyValuePair<string, object?>>();
 
         var keys = CacheManager.GetKeys(regionName);
-        foreach (var key in keys) 
+        foreach (var key in keys)
             enumerator.Add(new KeyValuePair<string, object?>(key, Get(key, regionName)));
         // ReSharper disable once NotDisposedResourceIsReturned
         return enumerator.GetEnumerator();

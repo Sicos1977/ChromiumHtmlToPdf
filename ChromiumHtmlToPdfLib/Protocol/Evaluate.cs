@@ -66,7 +66,7 @@ internal class Evaluate : MessageBase
 internal class EvaluateResult
 {
     #region Propreties
-    [JsonProperty("result")] 
+    [JsonProperty("result")]
     public EvaluateInnerResult? Result { get; set; }
     #endregion
 }
@@ -77,31 +77,31 @@ internal class EvaluateResult
 internal class EvaluateInnerResult
 {
     #region Properties
-    [JsonProperty("type")] 
+    [JsonProperty("type")]
     public string? Type { get; set; }
 
-    [JsonProperty("subtype")] 
+    [JsonProperty("subtype")]
     public string? SubType { get; set; }
 
-    [JsonProperty("className")] 
+    [JsonProperty("className")]
     public string? ClassName { get; set; }
 
-    [JsonProperty("value")] 
+    [JsonProperty("value")]
     public string? Value { get; set; }
-    
-    [JsonProperty("unserializableValue")] 
+
+    [JsonProperty("unserializableValue")]
     public string? UnserializableValue { get; set; }
-    
-    [JsonProperty("deepSerializedValue")] 
+
+    [JsonProperty("deepSerializedValue")]
     public string? DeepSerializedValue { get; set; }
-    
-    [JsonProperty("preview")] 
+
+    [JsonProperty("preview")]
     public string? Preview { get; set; }
-    
-    [JsonProperty("customPreview")] 
+
+    [JsonProperty("customPreview")]
     public string? CustomPreview { get; set; }
     #endregion
-    
+
     #region ToString
     /// <summary>
     ///     Returns a string representation of this object
