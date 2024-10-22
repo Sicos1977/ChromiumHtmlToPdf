@@ -31,7 +31,7 @@
   <ItemGroup>
     <PackageReference Include="AngleSharp.Io" Version="0.17.0" />
     <PackageReference Include="HtmlSanitizer" Version="8.1.870" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="PolySharp" Version="1.14.1">
