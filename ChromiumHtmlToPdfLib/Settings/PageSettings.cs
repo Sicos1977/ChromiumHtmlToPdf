@@ -107,7 +107,7 @@ public class PageSettings : ICloneable
     public string? PageRanges { get; set; }
 
     /// <summary>
-    ///     Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled
+    ///     Whether to prefer page size as defined by css. Defaults to false, in which case the content will be scaled
     ///     to fit the paper size.
     /// </summary>
     // ReSharper disable once InconsistentNaming
@@ -132,7 +132,7 @@ public class PageSettings : ICloneable
 
     #region PageSettings
     /// <summary>
-    ///     Makes this object and sets all the settings to it's default values
+    ///     Makes this object and sets all the settings to its default values
     /// </summary>
     /// <remarks>
     ///     Default paper settings are set to <see cref="Enums.PaperFormat.A4" />
@@ -143,7 +143,7 @@ public class PageSettings : ICloneable
     }
 
     /// <summary>
-    ///     Makes this object and sets all the settings to it's default values
+    ///     Makes this object and sets all the settings to its default values
     /// </summary>
     /// <remarks>
     ///     Default paper settings are set to <see cref="Enums.PaperFormat.A4" />

@@ -264,7 +264,7 @@ internal class Browser : IDisposable, IAsyncDisposable
 
                 var pageSetDocumentContent = new Message { Method = "Page.setDocumentContent" };
                 pageSetDocumentContent.AddParameter("frameId", frameResult.Result.FrameTree.Frame.Id);
-                pageSetDocumentContent.AddParameter("html", html);
+                pageSetDocumentContent.AddParameter("html", html!);
                 await _pageConnection.SendAsync(pageSetDocumentContent, cancellationToken).ConfigureAwait(false);
                 // When using setDocumentContent a Page.frameNavigated event is never fired, so we have to set the waitForNetworkIdle to true our self
                 pageLoadingState = PageLoadingState.WaitForNetworkIdle;
@@ -584,7 +584,7 @@ internal class Browser : IDisposable, IAsyncDisposable
             errorDescription = evaluateError.Result.ExceptionDetails.Exception.Description;
 
         if (!string.IsNullOrEmpty(errorDescription))
-            throw new ChromiumException(errorDescription);
+            throw new ChromiumException(errorDescription!);
 
         var evaluate = Evaluate.FromJson(result);
         var internalResult = evaluate.Result?.Result?.ToString();
