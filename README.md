@@ -67,6 +67,24 @@ await converter.ConvertToPdfAsync(new Uri("http://www.google.nl"), @"c:\google.p
 System.Diagnostics.Process.Start(@"c:\google.pdf");
 ```
 
+### Enable extra logging when having weird issues with Chrome or Edge
+
+When Chromium exits unexpectedly it does this most of the time without giving a meaningfull error. 
+When this is the case than try to turn on Chromium Debug logging to get extra information about why it crashes
+
+```c#
+/// <summary>
+///     Enables Chromium logging;<br/>
+///     - The output will be saved to the file <b>chrome_debug.log</b> in Chrome's user data directory<br/>
+///     - Logs are overwritten each time you restart chrome<br/>
+/// </summary>
+/// <remarks>
+///     If the environment variable CHROME_LOG_FILE is set, Chrome will write its debug log to its specified location.<br/>
+///     Example: Setting CHROME_LOG_FILE to "chrome_debug.log" will cause the log file to be written to the Chrome process's<br/>
+///     current working directory while setting it to "D:\chrome_debug.log" will write the log to the root of your computer's D: drive.
+/// </remarks>
+public bool EnableChromiumLogging { get; set; }
+```
 
 ### Converting from Internet Information Services (IIS)
 
