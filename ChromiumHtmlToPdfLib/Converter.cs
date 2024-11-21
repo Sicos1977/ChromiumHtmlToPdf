@@ -751,6 +751,8 @@ public class Converter : IDisposable, IAsyncDisposable
             _logger?.Info("{browser} process started", BrowserName);
 
             if (!_userProfileSet)
+                // connection will be established by OnChromiumProcessOnErrorDataReceived callback
+                // as we cannot call ReadDevToolsActiveFileAsync without profile path set
                 _chromiumProcess.BeginErrorReadLine();
             else
             {
@@ -813,6 +815,12 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
             if (string.IsNullOrEmpty(args.Data) || args.Data.StartsWith("[")) return;
 
             _logger?.Error("Received Chromium error data: '{error}'", args.Data);
+
+            if (!args.Data.StartsWith("DevTools listening on")) return;
+
+            // connect to dev-tools, see comment on BeginErrorReadLine call above
+            var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
+            ConnectToDevProtocol(uri, "data received from error stream", cancellationToken).GetAwaiter().GetResult();
             // ReSharper disable once AccessToDisposedClosure
             chromiumWaitSignal.Release();
         }
@@ -1476,6 +1484,9 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
 
             await StartChromiumHeadlessAsync(cancellationToken).ConfigureAwait(false);
 
+            if (_browser == null)
+                throw new ConversionException("Failed to establish connection with browser instance");
+
             if (conversionTimeout != null)
             {
                 if (conversionTimeout <= 1)
@@ -1490,7 +1501,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
                 else
                     _logger?.Info("Loading url {url}", inputUri);
 
-            await _browser!.NavigateToAsync(safeUrls, _useCache, inputUri, html, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic, WaitForNetworkIdle, cancellationToken).ConfigureAwait(false);
+            await _browser.NavigateToAsync(safeUrls, _useCache, inputUri, html, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic, WaitForNetworkIdle, cancellationToken).ConfigureAwait(false);
 
             if (!string.IsNullOrWhiteSpace(waitForWindowStatus))
             {
