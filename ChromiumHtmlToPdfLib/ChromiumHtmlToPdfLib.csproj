@@ -6,8 +6,10 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>ChromiumHtmlToPdf is a 100% managed C# library that can be used to convert HTML to PDF or PNG format with the use of Google Chrome or Microsoft Edge</Description>
     <Copyright>(C)2017-2024 Kees van Spelde</Copyright>
-    <PackageReleaseNotes>- Merged pull request from MaceWindu that has async code fixes
-- Updated nuget packages</PackageReleaseNotes>
+    <PackageReleaseNotes>- Updated nuget packages
+- Fix object refenrece error when trying to detect encoding
+- Fix NRE when converter called without explicit profile path
+- Fix WebSocket connection failure handling + multiple async code fixes</PackageReleaseNotes>
     <PackageProjectUrl>https://github.com/Sicos1977/ChromiumHtmlToPdf</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Sicos1977/ChromiumHtmlToPdf</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
