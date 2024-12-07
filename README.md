@@ -166,157 +166,66 @@ https://dotnet.microsoft.com/en-us/download/dotnet/8.0
 Documentation
 -------------
 
-ChromiumHtmlToPdfConsole 4.2.11+b6548498d186a75170b4db0f59b2f4755c3da251
-(C)2017-2024 Kees van Spelde
-
-ERROR(S):
-  Required option 'input' is missing.
-  Required option 'output' is missing.
-  Required option 'browser' is missing.
 Example usage:
     ChromiumHtmlToPdf --input https://www.google.nl --output c:\google.pdf
 
-  --input                             Required. The input content, url or file
-  --input-is-list                     Tells this app that --input is a list of
-                                      input urls and/or files. Use the --output
-                                      parameter to give a location where to
-                                      write information about the converted
-                                      files, e.g. c:\myconvertedfiles.Use a |
-                                      sign to supply an output file, e.g.
-                                      inputfile.html|myoutputfile.pdf. When no
-                                      outputfileis given then the input file is
-                                      used as the outputfile where the extension
-                                      is replaced with .pdf
-  --output                            Required. The output file
-  --browser                           Required. The browser to use (chrome
-                                      (default) or edge
-  --landscape                         (Default: false) Paper orientation
-  --display-headerfooter              (Default: false) Display header and footer
-  --print-background                  (Default: false) Print background graphics
-  --scale                             (Default: 1) Scale of the webpage
-                                      rendering
-  --paper-format                      (Default: Letter) Paper format to use,
-                                      when set then this will override
-                                      --paper-width and --paper-height Valid
-                                      values: Letter, Legal, Tabloid, Ledger,
-                                      A0, A1, A2, A3, A4, A5, A6,
-                                      FitPageToContent
-  --paper-width                       (Default: 8,5) Paper width in inches
-  --paper-height                      (Default: 11) Paper height in inches
-  --no-margins                        Tells this app that the parameter
-                                      '--no-margins' needs to be set on Chromium
-  --window-size                       (Default: HD_1366_768) Window size to use,
-                                      when set then this will override
-                                      --window-width and --window-height Valid
-                                      values: SVGA, WSVGA, XGA, XGAPLUS,
-                                      WXGA_5_3, WXGA_16_10, SXGA, HD_1360_768,
-                                      HD_1366_768, OTHER_1536_864, HD_PLUS,
-                                      WSXGA_PLUS, FHD, WUXGA, OTHER_2560_1070,
-                                      WQHD, OTHER_3440_1440, _4K_UHD
-  --window-width                      (Default: 1366) Window width in pixels
-  --window-height                     (Default: 768) Window height in pixels
-  --user-agent                        Let Chromium know that we want to use the
-                                      given user-agent string instead of the
-                                      default one
-  --margin-top                        (Default: 0,4) Top margin in inches
-  --margin-bottom                     (Default: 0,4) Top margin in inches
-  --margin-left                       (Default: 0,4) Left margin in inches
-  --margin-right                      (Default: 0,4) Right margin in inches
-  --pageranges                        Paper ranges to print, e.g., '1-5, 8,
-                                      11-13'
-  --chromium-location                 The location for Chrome or Edge, when not
-                                      set then this tool first looks inside the
-                                      folder where it is executed from if it can
-                                      find Chromium (portable) otherwise the
-                                      registry is accessed to get the needed
-                                      information
-  --chromium-userprofile              The location where Chromium can store it's
-                                      user profile
-  --proxy-server                      This tells Chromium to use a custom proxy
-                                      configuration
-  --proxy-bypass-list                 This tells Chromium to bypass any
-                                      specified proxy for the given
-                                      semi-colon-separated list of hosts. This
-                                      flag must be used (or rather, only has an
-                                      effect) in tandem with --proxy-server. For
-                                      example
-                                      "*.google.com;*foo.com;127.0.0.1:8080"
-  --proxy-pac-url                     This tells Chromium to use the PAC file at
-                                      the specified URL. For example
-                                      "http://wpad/windows.pac"
-  --user                              Run Chrome or Edge under this user. This
-                                      option is used in combination with
-                                      --password
-  --password                          The password needed for --user
-  --tempfolder                        A folder where this tool can put temporary
-                                      files
-  --multi-threading                   (Default: false) Use multi threading when
-                                      converting. Only useful if the parameter
-                                      --input-is-list is used
-  --max-concurrency-level             (Default: 0) Limits the concurrency level
-                                      when doing multi threading conversions.
-                                      This parameter is only used when
-                                      --input-is-list and --multi-threading is
-                                      set to true. When not set then the system
-                                      decides about how many threads will be
-                                      used
-  --wait-for-window-status            Wait for the javascript window.status to
-                                      equal the given string before starting PDF
-                                      conversion
-  --wait-for-window-status-timeout    (Default: 60000) The timeout when waiting
-                                      for the parameter
-                                      --wait-for-windows-status
-  --timeout                           The timeout in milliseconds before this
-                                      application aborts the conversion
-  --media-load-timeout                The time to wait in milliseconds for media
-                                      (stylesheets, images and sub frames) to
-                                      load after the dom content has been
-                                      loaded. When the timeout is exceeded the
-                                      tool will start the conversion.
-  --pre-wrap-file-extensions          The files to wrap in a HTML file with a
-                                      <PRE> tag
-  --encoding                          The encoding that is used for the --input
-                                      file
-  --image-resize                      (Default: false) Resize images so that
-                                      they fit the width of the page
-  --image-rotate                      (Default: false) Rotate images according
-                                      to the EXIF orientation information
-  --image-load-timeout                (Default: 30000) The timeout in
-                                      milliseconds before this application
-                                      aborts the downloading of images when the
-                                      option --ImageResize and/or --ImageRotate
-                                      is being used
-  --sanitize-html                     (Default: false) When set this will remove
-                                      all HTML that can lead to XSS attacks
-  --logfile                           When set then the logging gets written to
-                                      this file instead of the console
-                                      (Wildcards {PID}, {DATE}, {TIME})
-  --run-javascript                    Runs the given javascript after the
-                                      webpage has been loaded and before it is
-                                      converted to PDF
-  --url-blacklist                     This tells Chromium to blacklist certain
-                                      urls by blocking them. For example
-                                      "*.google.com;*foo.com;"
-  --snapshot                          This will capture a snapshot of the
-                                      webpage (before it is converted to PDF)
-                                      and save this to disk with the same name
-                                      (but different extension .mhtml) that is
-                                      selected for the --output parameter, e.g.
-                                      --output test.pdf --> test.mhtml
-  --log-network-traffic               When enabled network traffic is also
-                                      logged
-  --disk-cache-disabled               (Default: false) When set to true then we
-                                      won't use a disk cache
-  --disk-cache-directory              When set then Chrome or Edge uses this
-                                      directory for caching
-  --disk-cache-size                   The size for the '--disk-cache-directory'
-                                      in megabytes
-  --web-socket-timeout                The web socket timeout in milliseconds
-  --use-old-headless-mode             When true then the old headless mode will
-                                      be used
-  --wait-for-network-idle             Wait until the network is idle
-  --help                              Display this help screen.
-  --version                           Display version information.
+| **Option**                       | **Description**                                                                                                                                                                                                                                                       |
+|----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--input`                        | Required. The input content, URL, or file.                                                                                                                                                                                                                            |
+| `--input-is-list`                | Indicates `--input` is a list of URLs/files. Use `--output` for the location of converted files. Use `|` to specify an output file (e.g., `inputfile.html|myoutputfile.pdf`). Defaults to input file name if no output file is provided.                              |
+| `--output`                       | Required. The output file.                                                                                                                                                                                                                                           |
+| `--browser`                      | Required. Specifies the browser to use (default: Chrome or Edge).                                                                                                                                                                                                   |
+| `--landscape`                    | (Default: false) Sets paper orientation to landscape.                                                                                                                                                                                                               |
+| `--display-headerfooter`         | (Default: false) Displays header and footer.                                                                                                                                                                                                                        |
+| `--print-background`             | (Default: false) Prints background graphics.                                                                                                                                                                                                                        |
+| `--scale`                        | (Default: 1) Specifies the webpage rendering scale.                                                                                                                                                                                                                 |
+| `--paper-format`                 | (Default: Letter) Specifies paper format, overriding `--paper-width` and `--paper-height`. Valid values: Letter, Legal, Tabloid, Ledger, A0-A6, FitPageToContent.                                                                                                 |
+| `--paper-width`                  | (Default: 8.5) Sets paper width in inches.                                                                                                                                                                                                                          |
+| `--paper-height`                 | (Default: 11) Sets paper height in inches.                                                                                                                                                                                                                          |
+| `--no-margins`                   | Removes margins by enabling Chromium's `--no-margins` parameter.                                                                                                                                                                                                    |
+| `--window-size`                  | (Default: HD_1366_768) Specifies window size, overriding `--window-width` and `--window-height`. Valid values: SVGA, WSVGA, XGA, WXGA, FHD, 4K_UHD, etc.                                                                                                           |
+| `--window-width`                 | (Default: 1366) Specifies window width in pixels.                                                                                                                                                                                                                   |
+| `--window-height`                | (Default: 768) Specifies window height in pixels.                                                                                                                                                                                                                   |
+| `--user-agent`                   | Overrides default user-agent string for Chromium.                                                                                                                                                                                                                   |
+| `--margin-top`                   | (Default: 0.4) Top margin in inches.                                                                                                                                                                                                                                |
+| `--margin-bottom`                | (Default: 0.4) Bottom margin in inches.                                                                                                                                                                                                                             |
+| `--margin-left`                  | (Default: 0.4) Left margin in inches.                                                                                                                                                                                                                               |
+| `--margin-right`                 | (Default: 0.4) Right margin in inches.                                                                                                                                                                                                                              |
+| `--pageranges`                   | Specifies pages to print (e.g., '1-5, 8, 11-13').                                                                                                                                                                                                                   |
+| `--chromium-location`            | Specifies Chrome/Edge location. Defaults to executable folder or registry.                                                                                                                                                                                          |
+| `--chromium-userprofile`         | Specifies location for Chromium user profile.                                                                                                                                                                                                                       |
+| `--proxy-server`                 | Configures Chromium to use a custom proxy server.                                                                                                                                                                                                                   |
+| `--proxy-bypass-list`            | Specifies hosts to bypass proxy. Requires `--proxy-server`. Format: `*.google.com;*foo.com;127.0.0.1:8080`.                                                                                                                                                          |
+| `--proxy-pac-url`                | Specifies PAC file URL for proxy (e.g., `http://wpad/windows.pac`).                                                                                                                                                                                                  |
+| `--user`                         | Runs browser under a specific user (used with `--password`).                                                                                                                                                                                                        |
+| `--password`                     | Specifies password for `--user`.                                                                                                                                                                                                                                    |
+| `--tempfolder`                   | Specifies folder for temporary files.                                                                                                                                                                                                                               |
+| `--multi-threading`              | (Default: false) Enables multi-threading (requires `--input-is-list`).                                                                                                                                                                                              |
+| `--max-concurrency-level`        | (Default: 0) Limits concurrency level for multi-threading.                                                                                                                                                                                                          |
+| `--wait-for-window-status`       | Waits for `window.status` to match a string before conversion.                                                                                                                                                                                                      |
+| `--wait-for-window-status-timeout`| (Default: 60000) Timeout for `--wait-for-window-status`.                                                                                                                                                                                                            |
+| `--timeout`                      | Specifies timeout (ms) before aborting conversion.                                                                                                                                                                                                                  |
+| `--media-load-timeout`           | Specifies timeout (ms) for media load after DOM content is loaded.                                                                                                                                                                                                  |
+| `--pre-wrap-file-extensions`     | Wraps files in HTML `<PRE>` tags.                                                                                                                                                                                                                                   |
+| `--encoding`                     | Specifies encoding for `--input` file.                                                                                                                                                                                                                              |
+| `--image-resize`                 | (Default: false) Resizes images to fit page width.                                                                                                                                                                                                                  |
+| `--image-rotate`                 | (Default: false) Rotates images per EXIF data.                                                                                                                                                                                                                      |
+| `--image-load-timeout`           | (Default: 30000) Timeout for downloading images.                                                                                                                                                                                                                    |
+| `--sanitize-html`                | (Default: false) Removes HTML elements that could lead to XSS.                                                                                                                                                                                                     |
+| `--logfile`                      | Specifies log file (wildcards: `{PID}`, `{DATE}`, `{TIME}`).                                                                                                                                                                                                        |
+| `--run-javascript`               | Runs JavaScript after loading webpage but before PDF conversion.                                                                                                                                                                                                   |
+| `--url-blacklist`                | Blocks specified URLs (e.g., `*.google.com;*foo.com`).                                                                                                                                                                                                              |
+| `--snapshot`                     | Saves webpage snapshot as `.mhtml` alongside `.pdf`.                                                                                                                                                                                                                |
+| `--log-network-traffic`          | Enables logging of network traffic.                                                                                                                                                                                                                               |
+| `--disk-cache-disabled`          | (Default: false) Disables disk cache.                                                                                                                                                                                                                              |
+| `--disk-cache-directory`         | Specifies directory for disk cache.                                                                                                                                                                                                                                |
+| `--disk-cache-size`              | Specifies size of disk cache (MB).                                                                                                                                                                                                                                 |
+| `--web-socket-timeout`           | Specifies WebSocket timeout (ms).                                                                                                                                                                                                                                 |
+| `--use-old-headless-mode`        | Enables old headless mode.                                                                                                                                                                                                                                        |
+| `--wait-for-network-idle`        | Waits until network is idle before conversion.                                                                                                                                                                                                                      |
+| `--help`                         | Displays help information.                                                                                                                                                                                                                                         |
+| `--version`                      | Displays version information.                                                                                                                                                                                                                                     |
+
 
 Older versions (.net core 3.1 - end of life)
 --------------
