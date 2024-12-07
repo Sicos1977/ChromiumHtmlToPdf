@@ -37,6 +37,12 @@ public class Options
     public string Output { get; set; } = null!;
 
     /// <summary>
+    ///     The browser to use (chrome (default) or edge
+    /// </summary>
+    [Option("browser", Required = true, HelpText = "The browser to use (chrome (default) or edge")]
+    public string Browser { get; set; } = null!;
+
+    /// <summary>
     ///     Paper orientation. Defaults to false.
     /// </summary>
     [Option("landscape", Default = false, Required = false, HelpText = "Paper orientation")]

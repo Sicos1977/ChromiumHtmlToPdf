@@ -347,7 +347,25 @@ static class Program
         var stopWatch = Stopwatch.StartNew();
         var pageSettings = GetPageSettings(options);
 
-        using var converter = new Converter(options.ChromiumLocation, options.ChromiumUserProfile, _logger, browser: Browser.Edge);
+        Browser browser;
+        switch (options.Browser)
+        {
+            case "edge":
+                browser = Browser.Edge;
+                WriteToLog("Using Edge browser");
+                break;
+            case "chrome":
+                browser = Browser.Edge;
+                WriteToLog("Using Chrome browser");
+                break;
+
+            default:
+                browser = Browser.Edge;
+                WriteToLog("No browser has been giving, trying to find Chrome browser. Use the --browser option if you want to use another browser");
+                break;
+        }
+
+        using var converter = new Converter(options.ChromiumLocation, options.ChromiumUserProfile, _logger, browser: browser);
         SetConverterSettings(converter, options);
 
         converter.ConvertToPdf(CheckInput(options),
