@@ -348,7 +348,7 @@ static class Program
         var pageSettings = GetPageSettings(options);
 
         Browser browser;
-        switch (options.Browser)
+        switch (options.Browser.ToLowerInvariant())
         {
             case "edge":
                 browser = Browser.Edge;
