@@ -195,7 +195,7 @@ public class Options
     public string? ProxyPacUrl { get; set; }
 
     /// <summary>
-    ///     Run Chrome or Edge under this user. This option is used in combination with --password"
+    ///     Run Chrome or Edge under this user. This option is used in combination with "--password"
     /// </summary>
     [Option("user", Required = false,
         HelpText = "Run Chrome or Edge under this user. This option is used in combination with --password")]
@@ -262,7 +262,7 @@ public class Options
     public int? MediaLoadTimeout { get; set; }
 
     /// <summary>
-    ///     The files to wrap in a HTML file with a &lt;PRE&gt; tag
+    ///     The files to wrap in an HTML file with a &lt;PRE&gt; tag
     /// </summary> 
     [Option("pre-wrap-file-extensions", Required = false,
         HelpText = "The files to wrap in a HTML file with a <PRE> tag")]
@@ -384,12 +384,19 @@ public class Options
     public bool UseOldHeadlessMode { get; set; }
 
     /// <summary>
-    ///     Bij default we wait for the Page.loadEventFired to determine that the page is loaded.
+    ///     By default, we wait for the Page.loadEventFired to determine that the page is loaded.
     ///     In most cases this works fine but when you have a page that is loading a lot of interactive
     ///     resources this can sometimes result in a blank page. To prevent this you can set this to <c>true</c>
     ///     but your page will load slower
     /// </summary>
     [Option("wait-for-network-idle", Required = false, HelpText = "Wait until the network is idle")]
     public bool WaitForNetworkIdle { get; set; }
+
+    /// <summary>
+    ///     By default, we detect if we are running Windows or Linux and use a sandbox when running on Windows.<br/>
+    ///     When still don't want to use a sandbox on Windows then set this to <c>true</c>
+    /// </summary>
+    [Option("no-sandbox", Required = false, HelpText = "Never use a sandbox")]
+    public bool NoSandbox { get; set; }
     #endregion
 }

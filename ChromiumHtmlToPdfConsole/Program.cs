@@ -324,6 +324,9 @@ static class Program
 
         converter.UseOldHeadlessMode = options.UseOldHeadlessMode;
         converter.WaitForNetworkIdle = options.WaitForNetworkIdle;
+
+        if (options.NoSandbox)
+            converter.AddChromiumArgument("--no-sandbox");
     }
     #endregion
 
