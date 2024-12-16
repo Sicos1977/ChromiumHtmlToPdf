@@ -225,6 +225,7 @@ Example usage:
 | `--wait-for-network-idle`        | Waits until network is idle before conversion.                                                                                                                                                                                                                      |
 | `--help`                         | Displays help information.                                                                                                                                                                                                                                         |
 | `--version`                      | Displays version information.                                                                                                                                                                                                                                     |
+| `--no-sandbox`                   | Never use a sandbox.                                                                                                                                                                                                                                     |
 
 
 Older versions (.net core 3.1 - end of life)
