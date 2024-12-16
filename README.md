@@ -226,6 +226,7 @@ Example usage:
 | `--help`                         | Displays help information.                                                                                                                                                                                                                                         |
 | `--version`                      | Displays version information.                                                                                                                                                                                                                                     |
 | `--no-sandbox`                   | Never use a sandbox.                                                                                                                                                                                                                                     |
+| `-enable-chromium-logging`       | Enables Chromium logging; The output will be saved to the file chrome_debug.log in Chrome's user data directory. Logs are overwritten each time you restart Chromium.                                                                                                                                                                                                                                     |
 
 
 Older versions (.net core 3.1 - end of life)
