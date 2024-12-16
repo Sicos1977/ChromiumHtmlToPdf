@@ -93,7 +93,7 @@ public class Converter : IDisposable, IAsyncDisposable
     private Logger? _logger;
 
     /// <summary>
-    ///     Chrome or Edge with it's full path
+    ///     Chrome or Edge with its full path
     /// </summary>
     private readonly string _chromiumExeFileName;
 
@@ -256,7 +256,7 @@ public class Converter : IDisposable, IAsyncDisposable
     public IReadOnlyCollection<string> DefaultChromiumArguments => _defaultChromiumArgument.AsReadOnly();
 
     /// <summary>
-    ///     An unique id that can be used to identify the logging of the converter when
+    ///     A unique id that can be used to identify the logging of the converter when
     ///     calling the code from multiple threads and writing all the logging to the same file
     /// </summary>
     public string? InstanceId
@@ -283,7 +283,7 @@ public class Converter : IDisposable, IAsyncDisposable
     ///     </code>
     /// </example>
     /// <remarks>
-    ///     The extensions are used case insensitive
+    ///     The extensions are used case-insensitive
     /// </remarks>
     public List<string> PreWrapExtensions
     {
@@ -346,7 +346,7 @@ public class Converter : IDisposable, IAsyncDisposable
     ///     When set then this directory is used to store temporary files.
     ///     For example files that are made in combination with <see cref="PreWrapExtensions" />
     /// </summary>
-    /// <exception cref="DirectoryNotFoundException">Raised when the given directory does not exists</exception>
+    /// <exception cref="DirectoryNotFoundException">Raised when the given directory does not exist</exception>
     public string? TempDirectory
     {
         get => _tempDirectory;
@@ -539,7 +539,7 @@ public class Converter : IDisposable, IAsyncDisposable
     public bool WaitForNetworkIdle { get; set; }
 
     /// <summary>
-    ///     By default the Chromium based browser is started with the <c>--headless=new</c> argument.
+    ///     By default, the Chromium based browser is started with the <c>--headless=new</c> argument.
     ///     If you don't want this then set this property to <c>true</c>
     /// </summary>
     /// <remarks>
@@ -578,7 +578,7 @@ public class Converter : IDisposable, IAsyncDisposable
     /// </summary>
     /// <param name="chromiumExeFileName">
     ///     When set then this has to be the full path to the Google Chrome
-    ///     or Microsoft Edge executable. When not set then then the converter tries to find Chrome.exe or
+    ///     or Microsoft Edge executable. When not set then the converter tries to find Chrome.exe or
     ///     msEdge.exe by first looking in the path where this library exists. After that it tries to find
     ///     it by looking into the registry
     /// </param>
@@ -597,7 +597,7 @@ public class Converter : IDisposable, IAsyncDisposable
     /// </param>
     /// <exception cref="FileNotFoundException">Raised when <paramref name="chromiumExeFileName" /> does not exists</exception>
     /// <exception cref="DirectoryNotFoundException">
-    ///     Raised when the <paramref name="userProfile" /> directory is given but does not exists
+    ///     Raised when the <paramref name="userProfile" /> directory is given but does not exist
     /// </exception>
     public Converter(string? chromiumExeFileName = null,
         string? userProfile = null,
@@ -951,7 +951,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
         AddChromiumArgument("--no-pings");                              // Disable sending hyperlink auditing pings
         AddChromiumArgument("--noerrdialogs");                          // Suppresses all error dialogs when present.
         AddChromiumArgument("--run-all-compositor-stages-before-draw");
-        AddChromiumArgument("--remote-debugging-port", "0");            // With a value of 0, Chrome will automatically select a useable port and will set navigator.webdriver to true.
+        AddChromiumArgument("--remote-debugging-port", "0");            // With a value of 0, Chrome will automatically select a usable port and will set navigator.webdriver to true.
 
         if (EnableChromiumLogging)
         {
@@ -1157,7 +1157,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// <param name="size">The maximum size in megabytes for the cache directory, <c>null</c> to let Chromium decide</param>
     /// <remarks>
     ///     You can not share a cache folder between multiple instances that are running at the same time because a Google
-    ///     Chrome or Microsoft Edge instance locks the cache for it self. If you want to use caching in a multi threaded
+    ///     Chrome or Microsoft Edge instance locks the cache for itself. If you want to use caching in a multithreaded
     ///     environment then assign a unique cache folder to each running Google Chrome or Microsoft Edge instance
     /// </remarks>
     public void SetDiskCache(string directory, long? size)
@@ -1190,7 +1190,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     ///     Sets the user under which Chromium wil run. This is useful if you are on a server and
     ///     the user under which the code runs doesn't have access to the internet.
     /// </summary>
-    /// <param name="userName">The username with or without a domain name (e.g DOMAIN\USERNAME)</param>
+    /// <param name="userName">The username with or without a domain name (e.g. DOMAIN\USERNAME)</param>
     /// <param name="password">The password for the <paramref name="userName" /></param>
     /// <remarks>
     ///     Set this parameter before starting Google Chrome or Microsoft Edge. On systems other than
@@ -1214,7 +1214,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// <param name="width">The width</param>
     /// <param name="height">The height</param>
     /// <exception cref="ArgumentOutOfRangeException">
-    ///     Raised when <paramref name="width" /> or <paramref name="height" /> is smaller then or zero
+    ///     Raised when <paramref name="width" /> or <paramref name="height" /> is smaller than or zero
     /// </exception>
     public void SetWindowSize(int width, int height)
     {
@@ -1619,7 +1619,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
 
     #region WriteSnapShot
     /// <summary>
-    ///     Writes the snap shot to the given <paramref name="outputFile" />
+    ///     Writes the snapshot to the given <paramref name="outputFile" />
     /// </summary>
     /// <param name="outputFile"></param>
     private void WriteSnapShot(string outputFile)
@@ -1728,7 +1728,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// <remarks>
     ///     When the property <see cref="CaptureSnapshot" /> has been set then the snapshot is saved to the
     ///     property <see cref="SnapshotStream" /> and after that automatic saved to the <paramref name="outputFile" />
-    ///     (the extension will automatic be replaced with .mhtml)
+    ///     (the extension will automatically be replaced with .mhtml)
     /// </remarks>
     public void ConvertToPdf(
         ConvertUri inputUri,
@@ -1961,7 +1961,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// <remarks>
     ///     When the property <see cref="CaptureSnapshot" /> has been set then the snapshot is saved to the
     ///     property <see cref="SnapshotStream" /> and after that automatic saved to the <paramref name="outputFile" />
-    ///     (the extension will automatic be replaced with .mhtml)
+    ///     (the extension will automatically be replaced with .mhtml)
     /// </remarks>
     public async Task ConvertToPdfAsync(
         ConvertUri inputUri,
@@ -2096,7 +2096,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// <remarks>
     ///     When the property <see cref="CaptureSnapshot" /> has been set then the snapshot is saved to the
     ///     property <see cref="SnapshotStream" /> and after that automatic saved to the <paramref name="outputFile" />
-    ///     (the extension will automatic be replaced with .mhtml)<br />
+    ///     (the extension will automatically be replaced with .mhtml)<br />
     ///     Warning: At the moment this method does not support the properties <see cref="ImageResize" />,
     ///     <see cref="ImageRotate" /> and <see cref="SanitizeHtml" /><br />
     ///     Warning: At the moment this method does not support <see cref="PageSettings.PaperFormat" /> ==
@@ -2288,7 +2288,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// <remarks>
     ///     When the property <see cref="CaptureSnapshot" /> has been set then the snapshot is saved to the
     ///     property <see cref="SnapshotStream" /> and after that automatic saved to the <paramref name="outputFile" />
-    ///     (the extension will automatic be replaced with .mhtml)
+    ///     (the extension will automatically be replaced with .mhtml)
     /// </remarks>
     public void ConvertToImage(
         ConvertUri inputUri,
@@ -2345,7 +2345,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// <remarks>
     ///     When the property <see cref="CaptureSnapshot" /> has been set then the snapshot is saved to the
     ///     property <see cref="SnapshotStream" /> and after that automatic saved to the <paramref name="outputFile" />
-    ///     (the extension will automatic be replaced with .mhtml)<br />
+    ///     (the extension will automatically be replaced with .mhtml)<br />
     ///     Warning: At the moment this method does not support the properties <see cref="ImageResize" />,
     ///     <see cref="ImageRotate" /> and <see cref="SanitizeHtml" /><br />
     ///     Warning: At the moment this method does not support <see cref="PageSettings.PaperFormat" /> ==
@@ -2529,7 +2529,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// <remarks>
     ///     When the property <see cref="CaptureSnapshot" /> has been set then the snapshot is saved to the
     ///     property <see cref="SnapshotStream" /> and after that automatic saved to the <paramref name="outputFile" />
-    ///     (the extension will automatic be replaced with .mhtml)
+    ///     (the extension will automatically be replaced with .mhtml)
     /// </remarks>
     public async Task ConvertToImageAsync(
         ConvertUri inputUri,
@@ -2601,7 +2601,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// <remarks>
     ///     When the property <see cref="CaptureSnapshot" /> has been set then the snapshot is saved to the
     ///     property <see cref="SnapshotStream" /> and after that automatic saved to the <paramref name="outputFile" />
-    ///     (the extension will automatic be replaced with .mhtml)<br />
+    ///     (the extension will automatically be replaced with .mhtml)<br />
     ///     Warning: At the moment this method does not support the properties <see cref="ImageResize" />,
     ///     <see cref="ImageRotate" /> and <see cref="SanitizeHtml" /><br />
     ///     Warning: At the moment this method does not support <see cref="PageSettings.PaperFormat" /> ==
@@ -2688,7 +2688,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
         catch (Exception exception)
         {
             if (!exception.Message.Contains("is not running"))
-                _logger?.Error(exception, "Failed to kill pocess: {error}", exception.Message);
+                _logger?.Error(exception, "Failed to kill process: {error}", exception.Message);
         }
     }
     #endregion

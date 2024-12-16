@@ -398,5 +398,18 @@ public class Options
     /// </summary>
     [Option("no-sandbox", Required = false, HelpText = "Never use a sandbox")]
     public bool NoSandbox { get; set; }
+
+    /// <summary>
+    ///     Enables Chromium logging;<br/>
+    ///     - The output will be saved to the file <b>chrome_debug.log</b> in Chrome's user data directory<br/>
+    ///     - Logs are overwritten each time you restart chrome<br/>
+    /// </summary>
+    /// <remarks>
+    ///     If the environment variable CHROME_LOG_FILE is set, Chrome will write its debug log to its specified location.<br/>
+    ///     Example: Setting CHROME_LOG_FILE to "chrome_debug.log" will cause the log file to be written to the Chrome process's<br/>
+    ///     current working directory while setting it to "D:\chrome_debug.log" will write the log to the root of your computer's D: drive.
+    /// </remarks>
+    [Option("enable-chromium-logging", Required = false, HelpText = "Enables Chromium logging; The output will be saved to the file chrome_debug.log in Chrome's user data directory. Logs are overwritten each time you restart Chromium")]
+    public bool EnableChromiumLogging { get; set; }
     #endregion
 }

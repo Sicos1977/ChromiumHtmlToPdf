@@ -327,6 +327,9 @@ static class Program
 
         if (options.NoSandbox)
             converter.AddChromiumArgument("--no-sandbox");
+
+        if (options.EnableChromiumLogging)
+            converter.EnableChromiumLogging = true;
     }
     #endregion
 
