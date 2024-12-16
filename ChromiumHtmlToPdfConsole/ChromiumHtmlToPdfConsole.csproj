@@ -4,8 +4,8 @@
     <TargetFramework>net8.0</TargetFramework>
     <StartupObject>ChromiumHtmlToPdfConsole.Program</StartupObject>
     <ApplicationIcon />
-    <AssemblyVersion>4.2.1.0</AssemblyVersion>
-    <Version>4.2.1</Version>
+    <AssemblyVersion>4.2.11.0</AssemblyVersion>
+    <Version>4.2.11</Version>
     <Company>Magic-Sessions</Company>
     <Authors>Kees van Spelde</Authors>
     <Copyright>(C)2017-2024 Kees van Spelde</Copyright>
@@ -22,9 +22,10 @@
     <PackageId />
     <AssemblyName>ChromiumHtmlToPdfConsole</AssemblyName>
     <RootNamespace>ChromiumHtmlToPdfConsole</RootNamespace>
-    <FileVersion>4.2.1.0</FileVersion>
+    <FileVersion>4.2.11.0</FileVersion>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
+    <PackAsTool>True</PackAsTool>
   </PropertyGroup>
   <ItemGroup>
     <Folder Include="Properties\" />

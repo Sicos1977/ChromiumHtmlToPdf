@@ -354,13 +354,14 @@ static class Program
                 browser = Browser.Edge;
                 WriteToLog("Using Edge browser");
                 break;
+
             case "chrome":
-                browser = Browser.Edge;
+                browser = Browser.Chrome;
                 WriteToLog("Using Chrome browser");
                 break;
 
             default:
-                browser = Browser.Edge;
+                browser = Browser.Chrome;
                 WriteToLog("No browser has been giving, trying to find Chrome browser. Use the --browser option if you want to use another browser");
                 break;
         }
