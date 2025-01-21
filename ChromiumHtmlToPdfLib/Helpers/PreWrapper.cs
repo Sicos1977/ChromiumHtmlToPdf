@@ -30,7 +30,6 @@ using System.Net;
 using System.Text;
 using System.Web;
 using ChromiumHtmlToPdfLib.Loggers;
-using UtfUnknown;
 using File = System.IO.File;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Global
@@ -135,18 +134,29 @@ internal class PreWrapper
 
         if (encoding == null)
         {
-            using var fileStream = File.OpenRead(inputFile);
-            _logger?.Info("Trying to detect encoding");
-            var result = CharsetDetector.DetectFromStream(fileStream);
-            if (result.Detected?.Encoding != null)
+            using (var fileStream = File.OpenRead(inputFile))
             {
-                encoding = result.Detected.Encoding;
-                _logger?.Info("Encoding detection status log: {statusLog}", result.Detected.StatusLog);
-            }
-            else
-            {
-                encoding = Encoding.UTF8;
-                _logger?.Info("Could not detect encoding, falling back to UTF-8");
+                _logger?.Info("Trying to detect encoding");
+                long len = 1024;
+                if (fileStream.Length < len)
+                    len = fileStream.Length;
+                char[] buf = new char[len];
+
+                using (var sr = new StreamReader(fileStream, true))
+                {
+                    sr.Read(buf, 0, (int)len);
+                    encoding = sr.CurrentEncoding;
+                }
+
+                if (encoding != null)
+                {
+                    _logger?.Info("Encoding detected as: {encoding}", encoding);
+                }
+                else
+                {
+                    encoding = Encoding.UTF8;
+                    _logger?.Info("Could not detect encoding, falling back to UTF-8");
+                }
             }
         }
 
