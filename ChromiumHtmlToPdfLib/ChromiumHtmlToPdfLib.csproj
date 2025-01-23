@@ -34,14 +34,14 @@
   <ItemGroup>
     <PackageReference Include="AngleSharp.Io" Version="0.17.0" />
     <PackageReference Include="HtmlSanitizer" Version="8.1.870" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.1" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="PolySharp" Version="1.15.0">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Svg" Version="3.4.7" />
-    <PackageReference Include="System.Runtime.Caching" Version="9.0.0" />
+    <PackageReference Include="System.Runtime.Caching" Version="9.0.1" />
     <PackageReference Include="UTF.Unknown" Version="2.5.1" />
   </ItemGroup>
 
