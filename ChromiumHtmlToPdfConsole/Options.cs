@@ -37,6 +37,12 @@ public class Options
     public string Output { get; set; } = null!;
 
     /// <summary>
+    ///     The browser to use (chrome (default) or edge
+    /// </summary>
+    [Option("browser", Required = true, HelpText = "The browser to use (chrome (default) or edge")]
+    public string Browser { get; set; } = null!;
+
+    /// <summary>
     ///     Paper orientation. Defaults to false.
     /// </summary>
     [Option("landscape", Default = false, Required = false, HelpText = "Paper orientation")]
@@ -189,7 +195,7 @@ public class Options
     public string? ProxyPacUrl { get; set; }
 
     /// <summary>
-    ///     Run Chrome or Edge under this user. This option is used in combination with --password"
+    ///     Run Chrome or Edge under this user. This option is used in combination with "--password"
     /// </summary>
     [Option("user", Required = false,
         HelpText = "Run Chrome or Edge under this user. This option is used in combination with --password")]
@@ -256,7 +262,7 @@ public class Options
     public int? MediaLoadTimeout { get; set; }
 
     /// <summary>
-    ///     The files to wrap in a HTML file with a &lt;PRE&gt; tag
+    ///     The files to wrap in an HTML file with a &lt;PRE&gt; tag
     /// </summary> 
     [Option("pre-wrap-file-extensions", Required = false,
         HelpText = "The files to wrap in a HTML file with a <PRE> tag")]
@@ -378,12 +384,32 @@ public class Options
     public bool UseOldHeadlessMode { get; set; }
 
     /// <summary>
-    ///     Bij default we wait for the Page.loadEventFired to determine that the page is loaded.
+    ///     By default, we wait for the Page.loadEventFired to determine that the page is loaded.
     ///     In most cases this works fine but when you have a page that is loading a lot of interactive
     ///     resources this can sometimes result in a blank page. To prevent this you can set this to <c>true</c>
     ///     but your page will load slower
     /// </summary>
     [Option("wait-for-network-idle", Required = false, HelpText = "Wait until the network is idle")]
     public bool WaitForNetworkIdle { get; set; }
+
+    /// <summary>
+    ///     By default, we detect if we are running Windows or Linux and use a sandbox when running on Windows.<br/>
+    ///     When still don't want to use a sandbox on Windows then set this to <c>true</c>
+    /// </summary>
+    [Option("no-sandbox", Required = false, HelpText = "Never use a sandbox")]
+    public bool NoSandbox { get; set; }
+
+    /// <summary>
+    ///     Enables Chromium logging;<br/>
+    ///     - The output will be saved to the file <b>chrome_debug.log</b> in Chrome's user data directory<br/>
+    ///     - Logs are overwritten each time you restart chrome<br/>
+    /// </summary>
+    /// <remarks>
+    ///     If the environment variable CHROME_LOG_FILE is set, Chrome will write its debug log to its specified location.<br/>
+    ///     Example: Setting CHROME_LOG_FILE to "chrome_debug.log" will cause the log file to be written to the Chrome process's<br/>
+    ///     current working directory while setting it to "D:\chrome_debug.log" will write the log to the root of your computer's D: drive.
+    /// </remarks>
+    [Option("enable-chromium-logging", Required = false, HelpText = "Enables Chromium logging; The output will be saved to the file chrome_debug.log in Chrome's user data directory. Logs are overwritten each time you restart Chromium")]
+    public bool EnableChromiumLogging { get; set; }
     #endregion
 }
