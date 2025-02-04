@@ -356,7 +356,7 @@ public class Converter : IDisposable, IAsyncDisposable
                 throw new DirectoryNotFoundException($"The directory '{value}' does not exists");
 
             _tempDirectory = value;
-            _logger?.Info($"Temp directory set to '{value}'");
+            _logger?.Info("Temp directory set to '{value}'", value);
             CurrentCacheDirectory = null;
         }
     }
@@ -374,7 +374,7 @@ public class Converter : IDisposable, IAsyncDisposable
 
             if (!CurrentTempDirectory.Exists)
             {
-                _logger?.Info($"Creating temp directory '{CurrentTempDirectory.FullName}'");
+                _logger?.Info("Creating temp directory '{directory}'", CurrentTempDirectory.FullName);
                 CurrentTempDirectory.Create();
             }
 
@@ -393,7 +393,7 @@ public class Converter : IDisposable, IAsyncDisposable
         get => _doNotDeleteTempDirectory;
         set
         {
-            _logger?.Info($"Setting DoNotDeleteTempDirectory to '{value}'");
+            _logger?.Info("Setting DoNotDeleteTempDirectory to '{value}'", value);
             _doNotDeleteTempDirectory = value;
         }
     }
