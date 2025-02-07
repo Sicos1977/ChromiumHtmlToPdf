@@ -322,7 +322,6 @@ static class Program
         if (options.WebSocketTimeout.HasValue)
             converter.WebSocketTimeout = options.WebSocketTimeout.Value;
 
-        converter.UseOldHeadlessMode = options.UseOldHeadlessMode;
         converter.WaitForNetworkIdle = options.WaitForNetworkIdle;
 
         if (options.NoSandbox)

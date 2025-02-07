@@ -404,12 +404,6 @@ public class Options
     public int? WebSocketTimeout { get; set; }
 
     /// <summary>
-    ///     When <c>true</c> then the old headless mode will be used
-    /// </summary>
-    [Option("use-old-headless-mode", Required = false, HelpText = "When true then the old headless mode will be used")]
-    public bool UseOldHeadlessMode { get; set; }
-
-    /// <summary>
     ///     By default, we wait for the Page.loadEventFired to determine that the page is loaded.
     ///     In most cases this works fine but when you have a page that is loading a lot of interactive
     ///     resources this can sometimes result in a blank page. To prevent this you can set this to <c>true</c>
