@@ -911,6 +911,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
 
         _defaultChromiumArgument = [];
 
+        AddChromiumArgument("--headless");                          // Use the new headless mode
         AddChromiumArgument("--block-new-web-contents");                // All pop-ups and calls to window.open will fail.
         AddChromiumArgument("--hide-scrollbars");                       // Hide scrollbars from screenshots
         AddChromiumArgument("--disable-domain-reliability");            // Disables Domain Reliability Monitoring, which tracks whether the browser has difficulty contacting Google-owned sites and uploads reports to Google.
@@ -958,6 +959,9 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     {
         if (string.IsNullOrWhiteSpace(argument))
             throw new ArgumentException("Argument is null, empty or white space");
+
+        if (argument.StartsWith("--headless"))
+            throw new ArgumentException("Can't remove '--headless' argument, this argument is always needed");
 
         switch (argument)
         {
