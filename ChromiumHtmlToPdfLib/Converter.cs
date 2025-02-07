@@ -539,27 +539,6 @@ public class Converter : IDisposable, IAsyncDisposable
     public bool WaitForNetworkIdle { get; set; }
 
     /// <summary>
-    ///     By default, the Chromium based browser is started with the <c>--headless=new</c> argument.
-    ///     If you don't want this then set this property to <c>true</c>
-    /// </summary>
-    /// <remarks>
-    ///     https://developer.chrome.com/articles/new-headless/
-    /// </remarks>
-    public bool UseOldHeadlessMode
-    {
-        get => !_defaultChromiumArgument.Contains("--headless=new");
-        set
-        {
-            for (var i = 0; i < _defaultChromiumArgument.Count; i++)
-            {
-                if (!_defaultChromiumArgument[i].StartsWith("--headless")) continue;
-                _defaultChromiumArgument[i] = value ? "--headless=old" : "--headless=new";
-                return;
-            }
-        }
-    }
-
-    /// <summary>
     ///     Enables Chromium logging;<br/>
     ///     - The output will be saved to the file <b>chrome_debug.log</b> in Chrome's user data directory<br/>
     ///     - Logs are overwritten each time you restart chrome<br/>
@@ -932,7 +911,6 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
 
         _defaultChromiumArgument = [];
 
-        AddChromiumArgument("--headless=new");                          // Use the new headless mode
         AddChromiumArgument("--block-new-web-contents");                // All pop-ups and calls to window.open will fail.
         AddChromiumArgument("--hide-scrollbars");                       // Hide scrollbars from screenshots
         AddChromiumArgument("--disable-domain-reliability");            // Disables Domain Reliability Monitoring, which tracks whether the browser has difficulty contacting Google-owned sites and uploads reports to Google.
@@ -980,9 +958,6 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     {
         if (string.IsNullOrWhiteSpace(argument))
             throw new ArgumentException("Argument is null, empty or white space");
-
-        if (argument.StartsWith("--headless"))
-            throw new ArgumentException("Can't remove '--headless' argument, this argument is always needed");
 
         switch (argument)
         {
@@ -1157,7 +1132,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
     /// <param name="size">The maximum size in megabytes for the cache directory, <c>null</c> to let Chromium decide</param>
     /// <remarks>
     ///     You can not share a cache folder between multiple instances that are running at the same time because a Google
-    ///     Chrome or Microsoft Edge instance locks the cache for itself. If you want to use caching in a multithreaded
+    ///     Chrome or Microsoft Edge instance locks the cache for itself. If you want to use caching in a multi-threaded
     ///     environment then assign a unique cache folder to each running Google Chrome or Microsoft Edge instance
     /// </remarks>
     public void SetDiskCache(string directory, long? size)
@@ -1506,7 +1481,7 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
             if (!string.IsNullOrWhiteSpace(waitForWindowStatus))
             {
                 _logger?.Info("Waiting for window.status '{status}' or a timeout of {timeout} milliseconds", waitForWindowStatus, waitForWindowsStatusTimeout);
-                var match = await _browser.WaitForWindowStatusAsync(waitForWindowStatus, waitForWindowsStatusTimeout, cancellationToken).ConfigureAwait(false);
+                var match = await _browser.WaitForWindowStatusAsync(waitForWindowStatus!, waitForWindowsStatusTimeout, cancellationToken).ConfigureAwait(false);
                 if (!match)
                     _logger?.Info("Waiting timed out");
                 else
