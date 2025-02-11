@@ -431,5 +431,23 @@ public class Options
     /// </remarks>
     [Option("enable-chromium-logging", Required = false, HelpText = "Enables Chromium logging; The output will be saved to the file chrome_debug.log in Chrome's user data directory. Logs are overwritten each time you restart Chromium")]
     public bool EnableChromiumLogging { get; set; }
+
+    /// <summary>
+    ///     Passes --disable-gpu to Chromium. This should be useful on common server hardware.
+    /// </summary>
+    [Option("disable-gpu", Required = false, HelpText = "Disables GPU hardware acceleration.")]
+    public bool DisableGpu { get; set; }
+
+    /// <summary>
+    ///     Passes --ignore-certificate-errors to Chromium. Useful when generating from internal web server.
+    /// </summary>
+    [Option("ignore-certificate-errors", Required = false, HelpText = "Ignores certificate-related errors.")]
+    public bool IgnoreCertificateErrors { get; set; }
+
+    /// <summary>
+    ///     Passes --disable-crash-reporter and --no-crashpad to Chromium.
+    /// </summary>
+    [Option("disable-crash-reporter", Required = false, HelpText = "Passes --disable-crash-reporter and --no-crashpad to Chromium.")]
+    public bool DisableCrashReporter { get; set; }
     #endregion
 }
