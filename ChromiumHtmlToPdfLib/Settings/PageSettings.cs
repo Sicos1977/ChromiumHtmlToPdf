@@ -189,6 +189,8 @@ public class PageSettings : ICloneable
     {
         PaperFormat = paperFormat;
 
+        double mmToInch(double mm) => Math.Round(mm / 25.4, 6);
+
         switch (paperFormat)
         {
             case PaperFormat.Letter:
@@ -212,38 +214,38 @@ public class PageSettings : ICloneable
                 break;
 
             case PaperFormat.A0:
-                PaperWidth = 33.1;
-                PaperHeight = 46.8;
+                PaperWidth = mmToInch(841.0);
+                PaperHeight = mmToInch(1189.0);
                 break;
 
             case PaperFormat.A1:
-                PaperWidth = 23.4;
-                PaperHeight = 33.1;
+                PaperWidth = mmToInch(594.0);
+                PaperHeight = mmToInch(841.0);
                 break;
 
             case PaperFormat.A2:
-                PaperWidth = 16.5;
-                PaperHeight = 23.4;
+                PaperWidth = mmToInch(420.0);
+                PaperHeight = mmToInch(594.0);
                 break;
 
             case PaperFormat.A3:
-                PaperWidth = 11.7;
-                PaperHeight = 16.5;
+                PaperWidth = mmToInch(297.0);
+                PaperHeight = mmToInch(420.0);
                 break;
 
             case PaperFormat.A4:
-                PaperWidth = 8.3;
-                PaperHeight = 11.7;
+                PaperWidth = mmToInch(210.0);
+                PaperHeight = mmToInch(297.0);
                 break;
 
             case PaperFormat.A5:
-                PaperWidth = 5.8;
-                PaperHeight = 8.3;
+                PaperWidth = mmToInch(148.0);
+                PaperHeight = mmToInch(210.0);
                 break;
 
             case PaperFormat.A6:
-                PaperWidth = 4.1;
-                PaperHeight = 5.8;
+                PaperWidth = mmToInch(105.0);
+                PaperHeight = mmToInch(148.0);
                 break;
 
             case PaperFormat.FitPageToContent:
