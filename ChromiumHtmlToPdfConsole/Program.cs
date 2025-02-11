@@ -329,6 +329,18 @@ static class Program
 
         if (options.EnableChromiumLogging)
             converter.EnableChromiumLogging = true;
+
+        if (options.DisableGpu)
+            converter.AddChromiumArgument("--disable-gpu");
+
+        if (options.IgnoreCertificateErrors)
+            converter.AddChromiumArgument("--ignore-certificate-errors");
+
+        if (options.DisableCrashReporter)
+        {
+            converter.AddChromiumArgument("--disable-crash-reporter");
+            converter.AddChromiumArgument("--no-crashpad");
+        }
     }
     #endregion
 
