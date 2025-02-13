@@ -3,7 +3,7 @@
 
 ## What is ChromiumHtmlToPdf?
 
-ChromiumHtmlToPdf is a 100% managed C# .NETStandard 2.0 library and .NET 6 console application (that also works on Linux and macOS) that can be used to convert HTML to PDF format with the use of Google Chromemium (Google Chrome and Microsoft Edge browser)
+ChromiumHtmlToPdf is a 100% managed C# .NETStandard 2.0 library and .NET 8 console application (that also works on Linux and macOS) that can be used to convert HTML to PDF format with the use of Google Chromemium (Google Chrome and Microsoft Edge browser)
 
 From version 4.0 and up the library is now fully async but you can still use it without this if you want.
 
@@ -159,7 +159,7 @@ https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/4.3.2/ChromiumH
 
 .NET 8.0 for the console app
 ---------------------------------
-The console app needs .NET 6 to run, you can download this framework from here
+The console app needs .NET 8 to run, you can download this framework from here
 
 https://dotnet.microsoft.com/en-us/download/dotnet/8.0
 
