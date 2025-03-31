@@ -270,18 +270,18 @@ public class Connection : IDisposable, IAsyncDisposable
             await _webSocket.SendAsync(MessageToBytes(message), WebSocketMessageType.Text, true, linkedCts.Token).ConfigureAwait(false);
 
             tcs.Task.Wait(cancellationToken);
-            return cancellationToken.IsCancellationRequested ? string.Empty : tcs.Task.Result;
+
+            return tcs.Task.Result;
         }
-        catch (Exception exception)
+        catch (Exception exception) when (exception is not (TaskCanceledException or OperationCanceledException))
         {
             WebSocketOnError(_logger, new ErrorEventArgs(exception));
+            throw;
         }
         finally
         {
             MessageReceived -= receivedHandler;
         }
-
-        return string.Empty;
     }
     #endregion
 
