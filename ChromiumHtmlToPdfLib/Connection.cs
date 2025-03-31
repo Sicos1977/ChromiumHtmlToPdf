@@ -273,7 +273,7 @@ public class Connection : IDisposable, IAsyncDisposable
 
             return tcs.Task.Result;
         }
-        catch (Exception exception)
+        catch (Exception exception) when (exception is not (TaskCanceledException or OperationCanceledException))
         {
             WebSocketOnError(_logger, new ErrorEventArgs(exception));
             throw;
