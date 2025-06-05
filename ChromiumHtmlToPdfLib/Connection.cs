@@ -168,19 +168,11 @@ public class Connection : IDisposable, IAsyncDisposable
                 WebSocketOnMessageReceived(state.Logger, state.OnMessageReceived, new MessageReceivedEventArgs(response));
             }
         }
-        catch (TaskCanceledException)
-        {
-            // Ignore
-        }
-        catch (OperationCanceledException)
-        {
-            // Ignore
-        }
         catch (WebSocketException webSocketException) when (webSocketException.Message == "The remote party closed the WebSocket connection without completing the close handshake.")
         {
             // Ignore
         }
-        catch (Exception exception)
+        catch (Exception exception) when (exception is not (TaskCanceledException or OperationCanceledException))
         {
             WebSocketOnError(state.Logger, new ErrorEventArgs(exception));
         }
@@ -303,7 +295,7 @@ public class Connection : IDisposable, IAsyncDisposable
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
             await _webSocket.SendAsync(MessageToBytes(message), WebSocketMessageType.Text, true, linkedCts.Token).ConfigureAwait(false);
         }
-        catch (Exception exception)
+        catch (Exception exception) when (exception is not (TaskCanceledException or OperationCanceledException))
         {
             WebSocketOnError(_logger, new ErrorEventArgs(exception));
         }
