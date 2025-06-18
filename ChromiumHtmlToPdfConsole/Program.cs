@@ -226,8 +226,94 @@ static class Program
         pageSettings.MarginRight = options.MarginRight;
         pageSettings.PageRanges = options.PageRanges;
 
+        const string blankTemplate = "<div></div>";
+
+        if (!string.IsNullOrEmpty(options.HeaderTemplate))
+        {
+            pageSettings.HeaderTemplate = options.HeaderTemplate;
+        }
+        else
+        {
+            var builtTemplate = BuildTemplate(options.HeaderLeft, options.HeaderCenter, options.HeaderRight, options.HeaderFontName, options.HeaderFontSize);
+            if (builtTemplate != null)
+            {
+                pageSettings.HeaderTemplate = builtTemplate;
+            }
+            else if (options.DisplayHeaderFooter)
+            {
+                pageSettings.HeaderTemplate = blankTemplate;
+            }
+        }
+
+        if (!string.IsNullOrEmpty(options.FooterTemplate))
+        {
+            pageSettings.FooterTemplate = options.FooterTemplate;
+        }
+        else
+        {
+            var builtTemplate = BuildTemplate(options.FooterLeft, options.FooterCenter, options.FooterRight, options.FooterFontName, options.FooterFontSize);
+            if (builtTemplate != null)
+            {
+                pageSettings.FooterTemplate = builtTemplate;
+            }
+            else if (options.DisplayHeaderFooter)
+            {
+                pageSettings.FooterTemplate = blankTemplate;
+            }
+        }
+
         return pageSettings;
     }
+    #endregion
+
+    #region BuildTemplate
+    private static string? BuildTemplate(string? left, string? center, string? right, string? fontName, double? fontSize)
+    {
+        if(string.IsNullOrEmpty(left) && string.IsNullOrEmpty(center) && string.IsNullOrEmpty(right))
+        {
+            return null;
+        }
+
+        var style = new StringBuilder();
+        if (!string.IsNullOrEmpty(fontName))
+        {
+            style.Append($"font-family: {fontName}; ");
+        }
+
+        var finalFontSize = fontSize.HasValue ? $"{fontSize.Value}pt" : "9pt";
+
+        style.Append($"font-size: {finalFontSize};");
+
+        var leftHtml = string.IsNullOrEmpty(left) ? "" : left
+            .Replace("[page]", "<span class='pageNumber'></span>")
+            .Replace("[topage]", "<span class='totalPages'></span>")
+            .Replace("[doctitle]", "<span class='title'></span>")
+            .Replace("[date]", "<span class='date'></span>")
+            .Replace("[url]", "<span class='url'></span>");
+
+        var centerHtml = string.IsNullOrEmpty(center) ? "" : center
+            .Replace("[page]", "<span class='pageNumber'></span>")
+            .Replace("[topage]", "<span class='totalPages'></span>")
+            .Replace("[doctitle]", "<span class='title'></span>")
+            .Replace("[date]", "<span class='date'></span>")
+            .Replace("[url]", "<span class='url'></span>");
+
+        var rightHtml = string.IsNullOrEmpty(right) ? "" : right
+            .Replace("[page]", "<span class='pageNumber'></span>")
+            .Replace("[topage]", "<span class='totalPages'></span>")
+            .Replace("[doctitle]", "<span class='title'></span>")
+            .Replace("[date]", "<span class='date'></span>")
+            .Replace("[url]", "<span class='url'></span>");
+
+        var template = new StringBuilder($"<div style='width: 100%; {style}'><table style='width: 100%;'><tbody><tr>");
+        template.Append($"<td style='width: 33%; text-align: left;'>{leftHtml}</td>");
+        template.Append($"<td style='width: 34%; text-align: center;'>{centerHtml}</td>");
+        template.Append($"<td style='width: 33%; text-align: right;'>{rightHtml}</td>");
+        template.Append("</tr></tbody></table></div>");
+
+        return template.ToString();
+    }
+
     #endregion
 
     #region SetMaxConcurrencyLevel

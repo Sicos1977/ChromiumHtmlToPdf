@@ -81,6 +81,51 @@ public class Options
     public bool DisplayHeaderFooter { get; set; }
 
     /// <summary>
+    ///     HTML template for the print header.
+    /// </summary>
+
+    [Option("header-template", Required = false , HelpText = "HTML template for the print header.")]
+    public string? HeaderTemplate { get; set; }
+
+    /// <summary>
+    ///     HTML template for the print header.
+    /// </summary>
+
+    [Option("footer-template", Required = false, HelpText = "HTML template for the print footer.")]
+    public string? FooterTemplate { get; set; }
+
+    [Option("header-left", HelpText = "Text to print in the left corner of the header.")]
+    public string? HeaderLeft { get; set; }
+
+    [Option("header-center", HelpText = "Text to print in the center of the header.")]
+    public string? HeaderCenter { get; set; }
+
+    [Option("header-right", HelpText = "Text to print in the right corner of the header.")]
+    public string? HeaderRight { get; set; }
+
+    [Option("header-font-name", HelpText = "The font name to use for the header.")]
+    public string? HeaderFontName { get; set; }
+
+    [Option("header-font-size", HelpText = "The font size (in pt) to use for the header.")]
+    public double? HeaderFontSize { get; set; }
+
+    [Option("footer-left", HelpText = "Text to print in the left corner of the footer.")]
+    public string? FooterLeft { get; set; }
+
+    [Option("footer-center", HelpText = "Text to print in the center of the footer.")]
+    public string? FooterCenter { get; set; }
+
+    [Option("footer-right", HelpText = "Text to print in the right corner of the footer.")]
+    public string? FooterRight { get; set; }
+
+    [Option("footer-font-name", HelpText = "The font name to use for the footer.")]
+    public string? FooterFontName { get; set; }
+
+    [Option("footer-font-size", HelpText = "The font size (in pt) to use for the footer.")]
+    public double? FooterFontSize { get; set; }
+
+
+    /// <summary>
     ///     Print background graphics. Defaults to false.
     /// </summary>
     [Option("print-background", Required = false, Default = false, HelpText = "Print background graphics")]
