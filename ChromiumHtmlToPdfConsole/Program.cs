@@ -234,7 +234,7 @@ static class Program
         }
         else
         {
-            var builtTemplate = BuildTemplate(options.HeaderLeft, options.HeaderCenter, options.HeaderRight, options.HeaderFontName, options.HeaderFontSize);
+            var builtTemplate = BuildTemplate(options.HeaderLeft, options.HeaderCenter, options.HeaderRight, options.HeaderFontName, options.HeaderFontSize, options.MarginLeft, options.MarginRight);
             if (builtTemplate != null)
             {
                 pageSettings.HeaderTemplate = builtTemplate;
@@ -251,7 +251,7 @@ static class Program
         }
         else
         {
-            var builtTemplate = BuildTemplate(options.FooterLeft, options.FooterCenter, options.FooterRight, options.FooterFontName, options.FooterFontSize);
+            var builtTemplate = BuildTemplate(options.FooterLeft, options.FooterCenter, options.FooterRight, options.FooterFontName, options.FooterFontSize, options.MarginLeft, options.MarginRight);
             if (builtTemplate != null)
             {
                 pageSettings.FooterTemplate = builtTemplate;
@@ -267,14 +267,15 @@ static class Program
     #endregion
 
     #region BuildTemplate
-    private static string? BuildTemplate(string? left, string? center, string? right, string? fontName, double? fontSize)
+    private static string? BuildTemplate(string? left, string? center, string? right, string? fontName, double? fontSize, double marginLeft, double marginRight)
     {
         if(string.IsNullOrEmpty(left) && string.IsNullOrEmpty(center) && string.IsNullOrEmpty(right))
         {
             return null;
         }
 
-        var style = new StringBuilder();
+        var style = new StringBuilder($"width: 100%; box-sizing: border-box; padding-left: {marginLeft}in; padding-right: {marginRight}in;");
+
         if (!string.IsNullOrEmpty(fontName))
         {
             style.Append($"font-family: {fontName}; ");
