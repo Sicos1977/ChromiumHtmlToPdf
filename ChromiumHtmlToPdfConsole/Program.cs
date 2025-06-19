@@ -267,9 +267,20 @@ static class Program
     #endregion
 
     #region BuildTemplate
+    /// <summary>
+    /// Builds the HTML template for a header or a footer.
+    /// </summary>
+    /// <param name="left">The text to display on the left side. Supports special placeholders like [page].</param>
+    /// <param name="center">The text to display in the center. Supports special placeholders like [doctitle].</param>
+    /// <param name="right">The text to display on the right side. Supports special placeholders like [date].</param>
+    /// <param name="fontName">The font family to use for the text.</param>
+    /// <param name="fontSize">The font size (in points) to use for the text.</param>
+    /// <param name="marginLeft">The left margin of the page (in inches), used as padding for the template.</param>
+    /// <param name="marginRight">The right margin of the page (in inches), used as padding for the template.</param>
+    /// <returns>An HTML string for the header/footer template, or <c>null</c> if all text sections are empty.</returns>
     private static string? BuildTemplate(string? left, string? center, string? right, string? fontName, double? fontSize, double marginLeft, double marginRight)
     {
-        if(string.IsNullOrEmpty(left) && string.IsNullOrEmpty(center) && string.IsNullOrEmpty(right))
+        if (string.IsNullOrEmpty(left) && string.IsNullOrEmpty(center) && string.IsNullOrEmpty(right))
         {
             return null;
         }

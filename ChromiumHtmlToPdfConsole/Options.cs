@@ -83,47 +83,74 @@ public class Options
     /// <summary>
     ///     HTML template for the print header.
     /// </summary>
-
     [Option("header-template", Required = false , HelpText = "HTML template for the print header.")]
     public string? HeaderTemplate { get; set; }
 
     /// <summary>
-    ///     HTML template for the print header.
+    ///      HTML template for the print footer.
     /// </summary>
-
     [Option("footer-template", Required = false, HelpText = "HTML template for the print footer.")]
     public string? FooterTemplate { get; set; }
 
+    /// <summary>
+    ///     Text to print in the left corner of the header.
+    /// </summary>
     [Option("header-left", HelpText = "Text to print in the left corner of the header.")]
     public string? HeaderLeft { get; set; }
 
+    /// <summary>
+    ///     Text to print in the center of the header.
+    /// </summary>
     [Option("header-center", HelpText = "Text to print in the center of the header.")]
     public string? HeaderCenter { get; set; }
 
+    /// <summary>
+    ///     Text to print in the right corner of the header.
+    /// </summary>
     [Option("header-right", HelpText = "Text to print in the right corner of the header.")]
     public string? HeaderRight { get; set; }
 
+    /// <summary>
+    ///     The font name to use for the header.
+    /// </summary>
     [Option("header-font-name", HelpText = "The font name to use for the header.")]
     public string? HeaderFontName { get; set; }
 
+    /// <summary>
+    ///     The font size (in pt) to use for the header.
+    /// </summary
     [Option("header-font-size", HelpText = "The font size (in pt) to use for the header.")]
     public double? HeaderFontSize { get; set; }
 
+    /// <summary>
+    ///     Text to print in the left corner of the footer.
+    /// </summary>
     [Option("footer-left", HelpText = "Text to print in the left corner of the footer.")]
     public string? FooterLeft { get; set; }
 
+    /// <summary>
+    ///     Text to print in the center of the footer.
+    /// </summary>
     [Option("footer-center", HelpText = "Text to print in the center of the footer.")]
     public string? FooterCenter { get; set; }
 
+    /// <summary>
+    ///     Text to print in the right corner of the footer.
+    /// </summary>
     [Option("footer-right", HelpText = "Text to print in the right corner of the footer.")]
     public string? FooterRight { get; set; }
 
+    /// <summary>
+    ///     The font name to use for the footer.
+    /// </summary>
     [Option("footer-font-name", HelpText = "The font name to use for the footer.")]
     public string? FooterFontName { get; set; }
 
+    /// <summary>
+    ///     The font size (in pt) to use for the footer.
+    /// </summary>
     [Option("footer-font-size", HelpText = "The font size (in pt) to use for the footer.")]
     public double? FooterFontSize { get; set; }
-
 
     /// <summary>
     ///     Print background graphics. Defaults to false.
@@ -199,7 +226,7 @@ public class Options
     /// <summary>
     ///     Bottom margin in inches. Defaults to 1cm (~0.4 inches).
     /// </summary>
-    [Option("margin-bottom", Default = 0.4, Required = false, HelpText = "Top margin in inches")]
+    [Option("margin-bottom", Default = 0.4, Required = false, HelpText = "Bottom margin in inches")]
     public double MarginBottom { get; set; }
 
     /// <summary>
