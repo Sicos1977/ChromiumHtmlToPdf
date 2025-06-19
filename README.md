@@ -177,6 +177,18 @@ Example usage:
 | `--browser`                      | Required. Specifies the browser to use (default: Chrome or Edge).                                                                                                                                                                                                   |
 | `--landscape`                    | (Default: false) Sets paper orientation to landscape.                                                                                                                                                                                                               |
 | `--display-headerfooter`         | (Default: false) Displays header and footer.                                                                                                                                                                                                                        |
+| `--header-template`              | Specifies a custom HTML template for the header. Overrides all other --header-* options.                                                                                                                                                                            |
+| `--footer-template`              | Specifies a custom HTML template for the footer. Overrides all other --footer-* options.                                                                                                                                                                            |
+| `--header-left`                  | Text to print in the left corner of the header. |
+| `--header-center`                | Text to print in the center of the header. |
+| `--header-right`                 | Text to print in the right corner of the header. |
+| `--header-font-name`             | The font name to use for the header. |
+| `--header-font-size`             | The font size (in pt) to use for the header. |
+| `--footer-left`                  | Text to print in the left corner of the footer. |
+| `--footer-center`                | Text to print in the center of the footer. |
+| `--footer-right`                 | Text to print in the right corner of the footer. |
+| `--footer-font-name`             | The font name to use for the footer. |
+| `--footer-font-size`             | The font size (in pt) to use for the footer. |
 | `--print-background`             | (Default: false) Prints background graphics.                                                                                                                                                                                                                        |
 | `--scale`                        | (Default: 1) Specifies the webpage rendering scale.                                                                                                                                                                                                                 |
 | `--paper-format`                 | (Default: Letter) Specifies paper format, overriding `--paper-width` and `--paper-height`. Valid values: Letter, Legal, Tabloid, Ledger, A0-A6, FitPageToContent.                                                                                                 |
