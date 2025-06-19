@@ -155,7 +155,7 @@ You can find pre compiled binaries for Windows, Linux and macOS over here
 
 Latest version (.net 8)
 ---------------
-https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/4.3.2/ChromiumHtmlToPdf_4_3_2.zip
+https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/4.4.0/ChromiumHtmlToPdf_4_4_0.zip
 
 .NET 8.0 for the console app
 ---------------------------------
@@ -230,6 +230,9 @@ Example usage:
 | `--ignore-certificate-errors`                   | Passes --ignore-certificate-errors to Chromium. Useful when generating from internal web server.                                                                                                                                                                                                                                     |
 | `--disable-crash-reporter`                   | Passes --disable-crash-reporter and --no-crashpad to Chromium.                                                                                                                                                                                                                                     |
 
+Older versions (.net 8)
+--------------
+https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/4.3.2/ChromiumHtmlToPdf_4_3_2.zip
 
 Older versions (.net core 3.1 - end of life)
 --------------
