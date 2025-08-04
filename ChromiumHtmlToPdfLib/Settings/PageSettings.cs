@@ -125,7 +125,7 @@ public class PageSettings : ICloneable
 
     /// <summary>
     ///     Generate outline bookmarks from header tags (H1-H6). Defaults to false.
-    ///     Requires both <see cref="Converter.UseOldHeadlessMode"/> and <see cref="TaggedPdf"/> set to <c>true</c>.
+    ///     Requires <see cref="TaggedPdf"/> set to <c>true</c>.
     /// </summary>
     public bool GenerateOutline { get; set; }
     #endregion
@@ -189,7 +189,7 @@ public class PageSettings : ICloneable
     {
         PaperFormat = paperFormat;
 
-        double mmToInch(double mm) => Math.Round(mm / 25.4, 6);
+        double MmToInch(double mm) => Math.Round(mm / 25.4, 6);
 
         switch (paperFormat)
         {
@@ -214,38 +214,38 @@ public class PageSettings : ICloneable
                 break;
 
             case PaperFormat.A0:
-                PaperWidth = mmToInch(841.0);
-                PaperHeight = mmToInch(1189.0);
+                PaperWidth = MmToInch(841.0);
+                PaperHeight = MmToInch(1189.0);
                 break;
 
             case PaperFormat.A1:
-                PaperWidth = mmToInch(594.0);
-                PaperHeight = mmToInch(841.0);
+                PaperWidth = MmToInch(594.0);
+                PaperHeight = MmToInch(841.0);
                 break;
 
             case PaperFormat.A2:
-                PaperWidth = mmToInch(420.0);
-                PaperHeight = mmToInch(594.0);
+                PaperWidth = MmToInch(420.0);
+                PaperHeight = MmToInch(594.0);
                 break;
 
             case PaperFormat.A3:
-                PaperWidth = mmToInch(297.0);
-                PaperHeight = mmToInch(420.0);
+                PaperWidth = MmToInch(297.0);
+                PaperHeight = MmToInch(420.0);
                 break;
 
             case PaperFormat.A4:
-                PaperWidth = mmToInch(210.0);
-                PaperHeight = mmToInch(297.0);
+                PaperWidth = MmToInch(210.0);
+                PaperHeight = MmToInch(297.0);
                 break;
 
             case PaperFormat.A5:
-                PaperWidth = mmToInch(148.0);
-                PaperHeight = mmToInch(210.0);
+                PaperWidth = MmToInch(148.0);
+                PaperHeight = MmToInch(210.0);
                 break;
 
             case PaperFormat.A6:
-                PaperWidth = mmToInch(105.0);
-                PaperHeight = mmToInch(148.0);
+                PaperWidth = MmToInch(105.0);
+                PaperHeight = MmToInch(148.0);
                 break;
 
             case PaperFormat.FitPageToContent:
