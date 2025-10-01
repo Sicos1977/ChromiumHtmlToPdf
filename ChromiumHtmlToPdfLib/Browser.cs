@@ -635,8 +635,18 @@ internal class Browser : IDisposable, IAsyncDisposable
         message.AddParameter("displayHeaderFooter", pageSettings.DisplayHeaderFooter);
         message.AddParameter("printBackground", pageSettings.PrintBackground);
         message.AddParameter("scale", pageSettings.Scale);
-        message.AddParameter("paperWidth", pageSettings.PaperWidth);
-        message.AddParameter("paperHeight", pageSettings.PaperHeight);
+        
+        // Chrome DevTools Protocol expects portrait dimensions (width < height) and handles rotation internally
+        // when landscape=true. If user provides landscape dimensions with landscape=true, swap them back to portrait.
+        var paperWidth = pageSettings.PaperWidth;
+        var paperHeight = pageSettings.PaperHeight;
+        if (pageSettings.Landscape && paperWidth > paperHeight)
+        {
+            (paperWidth, paperHeight) = (paperHeight, paperWidth);
+        }
+        
+        message.AddParameter("paperWidth", paperWidth);
+        message.AddParameter("paperHeight", paperHeight);
         message.AddParameter("marginTop", pageSettings.MarginTop);
         message.AddParameter("marginBottom", pageSettings.MarginBottom);
         message.AddParameter("marginLeft", pageSettings.MarginLeft);
