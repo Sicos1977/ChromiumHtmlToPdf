@@ -40,6 +40,9 @@ public class PageSettings : ICloneable
     #region Properties
     /// <summary>
     ///     Paper orientation. Defaults to false.
+    ///     When set to true, the page will be rotated 90 degrees.
+    ///     Note: Always use portrait dimensions (width &lt; height) when setting custom paper sizes.
+    ///     The rotation is applied automatically by the browser.
     /// </summary>
     public bool Landscape { get; set; }
 
@@ -73,11 +76,13 @@ public class PageSettings : ICloneable
 
     /// <summary>
     ///     Paper width in inches. Defaults to 8.5 inches.
+    ///     When using custom dimensions with Landscape=true, specify the portrait width (shorter dimension).
     /// </summary>
     public double PaperWidth { get; set; }
 
     /// <summary>
     ///     Paper height in inches. Defaults to 11 inches.
+    ///     When using custom dimensions with Landscape=true, specify the portrait height (longer dimension).
     /// </summary>
     public double PaperHeight { get; set; }
 
