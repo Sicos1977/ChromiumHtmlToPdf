@@ -521,5 +521,12 @@ public class Options
     /// </summary>
     [Option("disable-crash-reporter", Required = false, HelpText = "Passes --disable-crash-reporter and --no-crashpad to Chromium.")]
     public bool DisableCrashReporter { get; set; }
+
+    /// <summary>
+    ///     Request headers to send with the initial request. Format: "Header1:Value1,Header2:Value2"
+    /// </summary>
+    [Option("request-headers", Required = false, 
+        HelpText = "Request headers to send with the initial request. Format: \"Header1:Value1,Header2:Value2\", for example \"Authorization:Bearer token123,X-Custom-Header:CustomValue\"")]
+    public string? RequestHeaders { get; set; }
     #endregion
 }
