@@ -241,6 +241,7 @@ Example usage:
 | `--disable-gpu`                   | Passes --disable-gpu to Chromium. This should be useful on common server hardware.                                                                                                                                                                                                                                     |
 | `--ignore-certificate-errors`                   | Passes --ignore-certificate-errors to Chromium. Useful when generating from internal web server.                                                                                                                                                                                                                                     |
 | `--disable-crash-reporter`                   | Passes --disable-crash-reporter and --no-crashpad to Chromium.                                                                                                                                                                                                                                     |
+| `--request-headers`              | Specifies request headers to send with the initial request. Format: `Header1:Value1,Header2:Value2`. Example: `Authorization:Bearer token123,X-Custom-Header:CustomValue`.                                                                                                                        |
 
 Older versions (.net 8)
 --------------
