@@ -71,9 +71,11 @@ static class Program
 
                     WriteToLog($"Reading input file '{options.Input}'");
                     var lines = File.ReadAllLines(options.Input);
+                    var requestHeaders = ParseRequestHeaders(options.RequestHeaders);
+                    
                     foreach (var line in lines)
                     {
-                        var inputUri = new ConvertUri(line);
+                        var inputUri = new ConvertUri(line, requestHeaders);
                         var outputPath = Path.GetFullPath(options.Output);
 
                         string outputFile;
@@ -504,21 +506,52 @@ static class Program
     /// <returns></returns>
     private static ConvertUri CheckInput(Options options)
     {
+        var requestHeaders = ParseRequestHeaders(options.RequestHeaders);
+
         try
         {
             return !string.IsNullOrWhiteSpace(options.Encoding)
-                ? new ConvertUri(options.Input, options.Encoding)
-                : new ConvertUri(options.Input);
+                ? new ConvertUri(options.Input, options.Encoding, requestHeaders)
+                : new ConvertUri(options.Input, requestHeaders);
         }
         catch (UriFormatException)
         {
             // Check if this is a local file
             var file = new FileInfo(Path.Combine(Directory.GetCurrentDirectory(), options.Input));
             if (file.Exists)
-                return new ConvertUri(file.FullName);
+                return new ConvertUri(file.FullName, requestHeaders);
         }
 
-        return new ConvertUri(options.Input);
+        return new ConvertUri(options.Input, requestHeaders);
+    }
+    #endregion
+
+    #region ParseRequestHeaders
+    /// <summary>
+    ///     Parses the request headers string into a Dictionary
+    /// </summary>
+    /// <param name="requestHeadersString">Headers in format "Header1:Value1,Header2:Value2"</param>
+    /// <returns>Dictionary of headers or null if no headers provided</returns>
+    private static Dictionary<string, string>? ParseRequestHeaders(string? requestHeadersString)
+    {
+        if (string.IsNullOrWhiteSpace(requestHeadersString))
+            return null;
+
+        var headers = new Dictionary<string, string>();
+        var headerPairs = requestHeadersString.Split(',', StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (var pair in headerPairs)
+        {
+            var colonIndex = pair.IndexOf(':');
+            if (colonIndex > 0 && colonIndex < pair.Length - 1)
+            {
+                var key = pair.Substring(0, colonIndex).Trim();
+                var value = pair.Substring(colonIndex + 1).Trim();
+                headers[key] = value;
+            }
+        }
+
+        return headers.Count > 0 ? headers : null;
     }
     #endregion
 
