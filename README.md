@@ -155,7 +155,7 @@ You can find pre compiled binaries for Windows, Linux and macOS over here
 
 Latest version (.net 8)
 ---------------
-[https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/4.4.0/ChromiumHtmlToPdf_4_4_0.zip](https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/4.4.2/ChromiumHtmlToPdf_4_4_2.zip)
+[https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/4.4.0/ChromiumHtmlToPdf_4_4_2.zip](https://github.com/Sicos1977/ChromiumHtmlToPdf/releases/download/4.4.2/ChromiumHtmlToPdf_4_4_2.zip)
 
 .NET 8.0 for the console app
 ---------------------------------
