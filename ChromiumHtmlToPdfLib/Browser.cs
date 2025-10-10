@@ -381,6 +381,22 @@ internal class Browser : IDisposable, IAsyncDisposable
 
                             var fetchContinue = new Message { Method = "Fetch.continueRequest" };
                             fetchContinue.Parameters.Add("requestId", requestId);
+                            
+                            // Propagate request headers to subsequent calls
+                            if (uri?.RequestHeaders?.Count > 0)
+                            {
+                                var headers = new List<Dictionary<string, string>>();
+                                foreach (var header in uri.RequestHeaders)
+                                {
+                                    headers.Add(new Dictionary<string, string>
+                                    {
+                                        { "name", header.Key },
+                                        { "value", header.Value }
+                                    });
+                                }
+                                fetchContinue.Parameters.Add("headers", headers);
+                            }
+                            
                             await _pageConnection.SendForResponseAsync(fetchContinue, cancellationToken).ConfigureAwait(false);
                         }
                         else
