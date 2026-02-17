@@ -29,16 +29,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AngleSharp.Io" Version="0.17.0" />
-    <PackageReference Include="HtmlSanitizer" Version="9.0.886" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.9" />
+    <PackageReference Include="AngleSharp.Io" Version="1.0.0" />
+    <PackageReference Include="HtmlSanitizer" Version="9.0.892" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.3" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="PolySharp" Version="1.15.0">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Svg" Version="3.4.7" />
-    <PackageReference Include="System.Runtime.Caching" Version="9.0.9" />
+    <PackageReference Include="System.Runtime.Caching" Version="10.0.3" />
     <PackageReference Include="UTF.Unknown" Version="2.6.0" />
   </ItemGroup>
 
