@@ -46,10 +46,8 @@ internal static class EdgeFinder
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             const string subDirectory = "Microsoft\\Edge\\Application";
-            directories.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-                subDirectory));
-            directories.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
-                subDirectory));
+            directories.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), subDirectory));
+            directories.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), subDirectory));
         }
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
@@ -76,6 +74,7 @@ internal static class EdgeFinder
         // ReSharper disable once PossibleNullReferenceException
         if (appPath.EndsWith(Path.DirectorySeparatorChar.ToString()))
             return appPath;
+
         return appPath + Path.DirectorySeparatorChar;
     }
     #endregion

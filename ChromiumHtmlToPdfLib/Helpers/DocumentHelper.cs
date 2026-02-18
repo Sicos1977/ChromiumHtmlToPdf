@@ -561,9 +561,10 @@ internal class DocumentHelper: IDisposable
         await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri, false, cancellationToken).ConfigureAwait(false);
 #endif
 
-        _logger?.Info("DPI settings for image, x: '{dpiX}' and y: '{dpiY}'", graphics.DpiX, graphics.DpiY);
+        _logger?.Info("DPI settings for image, X '{dpiX}' and Y '{dpiY}'", graphics.DpiX, graphics.DpiY);
         var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft - pageSettings.MarginRight) * graphics.DpiX;
         var maxHeight = (pageSettings.PaperHeight - pageSettings.MarginTop - pageSettings.MarginBottom) * graphics.DpiY;
+        _logger?.Info("Calculated maximum width '{maxWidth}' and height '{maxHeight}' for image", maxWidth, maxHeight);
 
         string? localDirectory = null;
 
@@ -590,7 +591,7 @@ internal class DocumentHelper: IDisposable
 
         _logger?.Info("Validating all images if they need to be rotated and if they fit the page");
         var unchangedImages = new List<IHtmlImageElement>();
-        var absoluteUri = inputUri.AbsoluteUri.Substring(0, inputUri.AbsoluteUri.LastIndexOf('/') + 1);
+        var absoluteUri = inputUri.AbsoluteUri[..(inputUri.AbsoluteUri.LastIndexOf('/') + 1)];
 
         // ReSharper disable once PossibleInvalidCastExceptionInForeachLoop
         foreach (var htmlImage in document.Images)
@@ -632,6 +633,7 @@ internal class DocumentHelper: IDisposable
                 // The local width and height attributes always go before css width and height
                 var width = htmlImage.DisplayWidth;
                 var height = htmlImage.DisplayHeight;
+                _logger?.Info("Image width '{width}' and height '{height}' set on img tag", width, height);
 
                 if (rotate)
                 {
@@ -656,14 +658,22 @@ internal class DocumentHelper: IDisposable
                         imageChanged = true;
                     }
 
-                    width = image.Width;
-                    height = image.Height;
+                    if (image.Width > width)
+                        _logger?.Info("The image width '{width}' is greater than the original width '{originalWidth}', ignoring the image width and using the original width that is set on the img tag", image.Width, width);
+                    else
+                        width = image.Width;
+
+                    if (image.Height > height)
+                        _logger?.Info("The image height '{height}' is greater than the original height '{originalHeight}', ignoring the image height and using the original height that is set on the img tag", image.Height, height);
+                    else
+                        height = image.Height;
                 }
 
                 if (resize)
                 {
                     if (height == 0 && width == 0)
                     {
+                        _logger?.Info("Could not read image dimensions from the html img tag, trying to get it from the img style attribute", width, height);
                         ICssStyleDeclaration? style = null;
 
                         try
@@ -679,16 +689,19 @@ internal class DocumentHelper: IDisposable
                         {
                             width = ParseValue(style.GetPropertyValue("width"));
                             height = ParseValue(style.GetPropertyValue("height"));
+                            _logger?.Info("Computed style from img tag to width '{width}' and height '{height}'", width, height);
                         }
                     }
 
                     // If we don't know the image size then get if from the image itself
                     if (width <= 0 || height <= 0)
                     {
+                        _logger?.Info("Could not read image dimensions from the html img tag, getting it from the image itself", width, height);
                         image ??= await GetImageAsync(htmlImage.Source, localDirectory, cancellationToken).ConfigureAwait(false);
                         if (image == null) continue;
                         width = image.Width;
                         height = image.Height;
+                        _logger?.Info("Got width '{width}' and height '{height}' from image", width, height);
                     }
 
                     if (width > maxWidth || height > maxHeight)
@@ -700,14 +713,14 @@ internal class DocumentHelper: IDisposable
 
                         var ratio = maxWidth / image.Width;
 
-                        _logger?.Info("Rescaling image with current width {width}, height {height} and ratio {ratio}", image.Width, image.Height, ratio);
+                        _logger?.Info("Rescaling image with current width '{width}', height '{height}' and ratio '{ratio}'", image.Width, image.Height, ratio);
 
                         var newWidth = (int)(image.Width * ratio);
                         if (newWidth == 0) newWidth = 1;
                         var newHeight = (int)(image.Height * ratio);
                         if (newHeight == 0) newHeight = 1;
 
-                        _logger?.Info("Image rescaled to new width {width} and height {height}", newWidth, newHeight);
+                        _logger?.Info("Image rescaled to new width '{width}' and height '{height}'", newWidth, newHeight);
                         htmlImage.DisplayWidth = newWidth;
                         htmlImage.DisplayHeight = newHeight;
                         htmlImage.SetStyle(string.Empty);
