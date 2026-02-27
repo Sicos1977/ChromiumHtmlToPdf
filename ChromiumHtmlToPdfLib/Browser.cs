@@ -225,6 +225,20 @@ internal class Browser : IDisposable, IAsyncDisposable
         _logger?.Info("Enabling page domain notifications");
         await _pageConnection.SendForResponseAsync(new Message { Method = "Page.enable" }, cancellationToken).ConfigureAwait(false);
 
+        // When HTML content is used via Page.setDocumentContent and the converter is reused, Chrome fires
+        // synthetic lifecycle events (including networkIdle) for the already-loaded page when
+        // Page.setLifecycleEventsEnabled is re-enabled. These synthetic events share the same loaderId as
+        // the previous content, and Chrome does not re-fire networkIdle for Page.setDocumentContent when
+        // it considers the frame already idle. Navigating to about:blank first resets the frame to a clean
+        // state with a new loaderId, ensuring Chrome fires fresh lifecycle events for the new content.
+        if (!string.IsNullOrWhiteSpace(html))
+        {
+            _logger?.Info("Navigating to about:blank to reset frame state before setting HTML content");
+            var navigateToBlankMessage = new Message { Method = "Page.navigate" };
+            navigateToBlankMessage.AddParameter("url", "about:blank");
+            await _pageConnection.SendForResponseAsync(navigateToBlankMessage, cancellationToken).ConfigureAwait(false);
+        }
+
         var lifecycleEventEnabledMessage = new Message { Method = "Page.setLifecycleEventsEnabled" };
         lifecycleEventEnabledMessage.AddParameter("enabled", true);
         _logger?.Info("Enabling page lifecycle events");
