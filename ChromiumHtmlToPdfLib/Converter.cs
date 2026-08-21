@@ -723,11 +723,11 @@ public class Converter : IDisposable, IAsyncDisposable
             }
             catch (Exception exception)
             {
-                _logger?.Error(exception, "Could not start the {browser} process due to the following reason: {exception}", BrowserName, ExceptionHelpers.GetInnerException(exception));
+                _logger?.Error(exception, "Could not start the '{browser}' process due to the following reason: '{exception}'", BrowserName, ExceptionHelpers.GetInnerException(exception));
                 throw;
             }
 
-            _logger?.Info("{browser} process started", BrowserName);
+            _logger?.Info("'{browser}' process started", BrowserName);
 
             if (!_userProfileSet)
                 // connection will be established by OnChromiumProcessOnErrorDataReceived callback
@@ -752,7 +752,7 @@ public class Converter : IDisposable, IAsyncDisposable
             {
                 var result = await chromiumWaitSignal.WaitAsync(30000, cancellationToken).ConfigureAwait(false);
                 if (!result)
-                    throw new ChromiumException("A timeout of 30 seconds exceeded, could not make a connection to the Chromium dev tools");
+                    throw new ChromiumException("A timeout of '30' seconds exceeded, could not make a connection to the Chromium dev tools");
             }
         }
         finally
@@ -765,7 +765,7 @@ public class Converter : IDisposable, IAsyncDisposable
         if (!string.IsNullOrEmpty(chromeException))
             throw new ChromiumException(chromeException!);
 
-        _logger?.Info("{browser} started", BrowserName);
+        _logger?.Info("'{browser}' started", BrowserName);
         return;
 
         #region Method internal events
@@ -775,12 +775,10 @@ public class Converter : IDisposable, IAsyncDisposable
             {
                 if (_chromiumProcess == null) return;
 
-                _logger?.Warn(@"{browser} exited unexpectedly, arguments used: {arguments}
-Process id: {processId}
-Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArguments), _chromiumProcess.Id, _chromiumProcess.ExitTime);
+                _logger?.Warn("'{browser}' exited unexpectedly, arguments used: '{arguments}', process id: '{processId}' and process exit time: '{exitTime}'", BrowserName, string.Join(" ", DefaultChromiumArguments), _chromiumProcess.Id, _chromiumProcess.ExitTime);
 
                 var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromiumProcess.ExitCode));
-                chromeException = $"{BrowserName} exited unexpectedly{(!string.IsNullOrWhiteSpace(exception) ? $", {exception}" : string.Empty)}";
+                chromeException = $"'{BrowserName}' exited unexpectedly{(!string.IsNullOrWhiteSpace(exception) ? $", {exception}" : string.Empty)}";
             }
             finally
             {
@@ -1476,15 +1474,15 @@ Process exit time: {exitTime}", BrowserName, string.Join(" ", DefaultChromiumArg
 
             if (inputUri != null)
                 if (inputUri.IsFile)
-                    _logger?.Info("Loading file {path}", inputUri.OriginalString);
+                    _logger?.Info("Loading file '{path}'", inputUri.OriginalString);
                 else
-                    _logger?.Info("Loading url {url}", inputUri);
+                    _logger?.Info("Loading url '{url}'", inputUri);
 
             await _browser.NavigateToAsync(safeUrls, _useCache, inputUri, html, mediaLoadTimeout, _urlBlacklist, LogNetworkTraffic, WaitForNetworkIdle, cancellationToken).ConfigureAwait(false);
 
             if (!string.IsNullOrWhiteSpace(waitForWindowStatus))
             {
-                _logger?.Info("Waiting for window.status '{status}' or a timeout of {timeout} milliseconds", waitForWindowStatus, waitForWindowsStatusTimeout);
+                _logger?.Info("Waiting for window.status '{status}' or a timeout of '{timeout}' milliseconds", waitForWindowStatus, waitForWindowsStatusTimeout);
                 var match = await _browser.WaitForWindowStatusAsync(waitForWindowStatus!, waitForWindowsStatusTimeout, cancellationToken).ConfigureAwait(false);
                 if (!match)
                     _logger?.Info("Waiting timed out");
