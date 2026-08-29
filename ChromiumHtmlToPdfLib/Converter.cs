@@ -24,17 +24,6 @@
 // THE SOFTWARE.
 //
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Runtime.InteropServices;
-using System.Security;
-using System.Threading;
-using System.Threading.Tasks;
 using ChromiumHtmlToPdfLib.Enums;
 using ChromiumHtmlToPdfLib.Exceptions;
 using ChromiumHtmlToPdfLib.Helpers;
@@ -42,6 +31,18 @@ using ChromiumHtmlToPdfLib.Loggers;
 using ChromiumHtmlToPdfLib.Settings;
 using Ganss.Xss;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Linq;
+using System.Management;
+using System.Net;
+using System.Runtime.InteropServices;
+using System.Security;
+using System.Threading;
+using System.Threading.Tasks;
 using File = System.IO.File;
 using Stream = System.IO.Stream;
 
@@ -2648,7 +2649,7 @@ public class Converter : IDisposable, IAsyncDisposable
     }
     #endregion
 
-    #region KillProcessAndChildren
+   #region KillProcessAndChildren
     /// <summary>
     ///     Kill the process with given id and all it's children
     /// </summary>
@@ -2657,10 +2658,54 @@ public class Converter : IDisposable, IAsyncDisposable
     {
         if (processId == 0) return;
 
+        var pids = new List<int> { processId };
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            var query = $"SELECT ProcessId FROM Win32_Process WHERE ParentProcessId = {processId}";
+            using var searcher = new ManagementObjectSearcher(query);
+            using var collection = searcher.Get();
+            foreach (var mo in collection)
+                pids.Add(Convert.ToInt32(mo["ProcessId"]));
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            // Linux and macOS approach using native 'pgrep' command
+            try
+            {
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "pgrep",
+                    Arguments = $"-P {processId}",
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+
+                using var process = Process.Start(psi);
+                if (process != null)
+                {
+                    while (process.StandardOutput.ReadLine() is { } line)
+                    {
+                        if (int.TryParse(line.Trim(), out var pid))
+                            pids.Add(pid);
+                    }
+                    process.WaitForExit();
+                }
+            }
+            catch (Exception exception)
+            {
+                _logger?.Error(exception, "Error retrieving child processes on Unix: {error}", exception.Message);
+            }
+        }
+        
         try
         {
-            var process = Process.GetProcessById(processId);
-            process.Kill();
+            foreach (var process in pids.Select(Process.GetProcessById).Where(process => !process.HasExited))
+            {
+                process.Kill();
+                _logger?.Info("Killed process with id '{processId}'", process.Id);
+            }
         }
         catch (Exception exception)
         {
