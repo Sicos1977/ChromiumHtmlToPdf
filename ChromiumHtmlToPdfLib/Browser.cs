@@ -39,6 +39,7 @@ using ChromiumHtmlToPdfLib.Protocol.Network;
 using ChromiumHtmlToPdfLib.Protocol.Page;
 using ChromiumHtmlToPdfLib.Settings;
 using Base = ChromiumHtmlToPdfLib.Protocol.Network.Base;
+using Console = System.Console;
 using Stream = System.IO.Stream;
 
 // ReSharper disable UnusedMember.Global
@@ -250,7 +251,14 @@ internal class Browser : IDisposable, IAsyncDisposable
         {
             if (string.IsNullOrWhiteSpace(data)) return;
             messagePump.Enqueue(data);
-            waitForMessage.Release();
+            try
+            {
+                waitForMessage.Release();
+            }
+            catch 
+            {
+                // Ignore SemaphoreFullException if the semaphore is already released
+            }
         });
 
         _pageConnection.MessageReceived += messageReceived;

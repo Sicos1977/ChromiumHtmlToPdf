@@ -740,7 +740,15 @@ public class Converter : IDisposable, IAsyncDisposable
                 var uri = new Uri($"ws://127.0.0.1:{lines[0]}{lines[1]}");
                 // DevToolsActivePort
                 await ConnectToDevProtocol(uri, "dev tools active port file", cancellationToken).ConfigureAwait(false);
-                chromiumWaitSignal.Release();
+
+                try
+                {
+                    chromiumWaitSignal.Release();
+                }
+                catch 
+                {
+                    // Ignore 
+                }
             }
 
             if (_conversionTimeout.HasValue)
@@ -783,8 +791,15 @@ public class Converter : IDisposable, IAsyncDisposable
             }
             finally
             {
-                // ReSharper disable once AccessToDisposedClosure
-                chromiumWaitSignal.Release();
+                try
+                {
+                    // ReSharper disable once AccessToDisposedClosure
+                    chromiumWaitSignal.Release();
+                }
+                catch 
+                {
+                    // Ignore 
+                }
             }
         }
 
@@ -799,8 +814,15 @@ public class Converter : IDisposable, IAsyncDisposable
             // connect to dev-tools, see comment on BeginErrorReadLine call above
             var uri = new Uri(args.Data.Replace("DevTools listening on ", string.Empty));
             ConnectToDevProtocol(uri, "data received from error stream", cancellationToken).GetAwaiter().GetResult();
-            // ReSharper disable once AccessToDisposedClosure
-            chromiumWaitSignal.Release();
+            try
+            {
+                // ReSharper disable once AccessToDisposedClosure
+                chromiumWaitSignal.Release();
+            }
+            catch 
+            {
+                // Ignore 
+            }
         }
         #endregion
     }
