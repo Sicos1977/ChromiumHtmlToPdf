@@ -1617,7 +1617,7 @@ public class Converter : IDisposable, IAsyncDisposable
             {
                 if (timeoutCts?.Token.IsCancellationRequested == true)
                 {
-                    throw new ConversionTimedOutException($"The {nameof(ConvertAsync)} method timed out");
+                    throw new ConversionTimedOutException($"The '{nameof(ConvertAsync)}' method timed out");
                 }
 
                 throw;
@@ -1627,7 +1627,7 @@ public class Converter : IDisposable, IAsyncDisposable
         }
         catch (Exception exception)
         {
-            _logger?.Error(exception, "Error: {exception}'", ExceptionHelpers.GetInnerException(exception));
+            _logger?.Error(exception, "Error: '{exception}'", ExceptionHelpers.GetInnerException(exception));
 
             if (exception.Message != "Input string was not in a correct format.")
                 throw;
