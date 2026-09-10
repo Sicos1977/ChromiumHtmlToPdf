@@ -31,15 +31,15 @@
   <ItemGroup>
     <PackageReference Include="AngleSharp.Io" Version="1.1.0" />
     <PackageReference Include="HtmlSanitizer" Version="9.2.1039" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="PolySharp" Version="1.16.0">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Svg" Version="3.4.8" />
-    <PackageReference Include="System.Management" Version="10.0.11" />
-    <PackageReference Include="System.Runtime.Caching" Version="10.0.11" />
+    <PackageReference Include="System.Management" Version="10.0.12" />
+    <PackageReference Include="System.Runtime.Caching" Version="10.0.12" />
     <PackageReference Include="UTF.Unknown" Version="2.7.0" />
   </ItemGroup>
 

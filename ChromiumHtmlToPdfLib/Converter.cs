@@ -223,22 +223,12 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <summary>
     ///     Returns the Chromium based browser process id or <c>null</c> when the browser is not running (anymore)
     /// </summary>
-    public int? ChromiumProcessId
-    {
-        get
-        {
-            if (!IsChromiumRunning)
-                return null;
-
-            return _chromiumProcess.Id;
-        }
-    }
+    public int? ChromiumProcessId => !IsChromiumRunning ? null : _chromiumProcess?.Id;
 
     /// <summary>
     ///     Returns <c>true</c> when the Chromium based browser is running
     /// </summary>
     /// <returns></returns>
-    [MemberNotNullWhen(true, nameof(_chromiumProcess))]
     public bool IsChromiumRunning
     {
         get
@@ -246,8 +236,15 @@ public class Converter : IDisposable, IAsyncDisposable
             if (_chromiumProcess == null)
                 return false;
 
-            _chromiumProcess.Refresh();
-            return !_chromiumProcess.HasExited;
+            try
+            {
+                _chromiumProcess.Refresh();
+                return !_chromiumProcess.HasExited;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 
@@ -266,8 +263,7 @@ public class Converter : IDisposable, IAsyncDisposable
         set
         {
             _instanceId = value;
-            if (_logger != null)
-                _logger.InstanceId = value;
+            _logger?.InstanceId = value;
         }
     }
 
@@ -450,11 +446,9 @@ public class Converter : IDisposable, IAsyncDisposable
                 if (networkCredential != null)
                 {
                     if (!string.IsNullOrEmpty(networkCredential.Domain))
-                        _logger?.Info(
-                            "Setting up web proxy with server '{proxyServer}' and user '{userName}' on domain '{domain}'", _proxyServer, _userName, networkCredential.Domain);
+                        _logger?.Info("Setting up web proxy with server '{proxyServer}' and user '{userName}' on domain '{domain}'", _proxyServer, _userName, networkCredential.Domain);
                     else
-                        _logger?.Info(
-                            "Setting up web proxy with server '{proxyServer}' and user '{userName}'", _proxyServer, _userName);
+                        _logger?.Info("Setting up web proxy with server '{proxyServer}' and user '{userName}'", _proxyServer, _userName);
                     _webProxy = new WebProxy(_proxyServer, true, bypassList, networkCredential);
                 }
                 else
@@ -632,16 +626,18 @@ public class Converter : IDisposable, IAsyncDisposable
     /// <exception cref="ChromiumException"></exception>
     private async Task StartChromiumHeadlessAsync(CancellationToken cancellationToken)
     {
+        if (cancellationToken == CancellationToken.None)
+            cancellationToken = new CancellationTokenSource().Token;
+
         if (IsChromiumRunning)
         {
-            _logger?.Info("{browser} is already running on process id {processId} ... skipped", BrowserName, _chromiumProcess.Id);
+            _logger?.Info("'{browser}' is already running on process id '{processId}' ... skipped", BrowserName, _chromiumProcess!.Id);
             return;
         }
 
         var workingDirectory = Path.GetDirectoryName(_chromiumExeFileName);
 
-        _logger?.Info("Starting {browser} from location '{exePath}' with working directory '{workingDirectory}'", BrowserName, _chromiumExeFileName, workingDirectory);
-        _logger?.Info("\"{exePath}\" {arguments}", _chromiumExeFileName, string.Join(" ", DefaultChromiumArguments));
+        _logger?.Info("Starting '{browser}' from location '{exePath}' with working directory '{workingDirectory}'", BrowserName, _chromiumExeFileName, workingDirectory);
 
         _chromiumProcess = new Process();
         var processStartInfo = new ProcessStartInfo
@@ -668,7 +664,7 @@ public class Converter : IDisposable, IAsyncDisposable
 
             if (!string.IsNullOrWhiteSpace(domain) && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                _logger?.Info("Starting {browser} with username '{userName}' on domain '{domain}'", BrowserName, userName, domain);
+                _logger?.Info("Starting '{browser}' with username '{userName}' on domain '{domain}'", BrowserName, userName, domain);
                 processStartInfo.Domain = domain;
             }
             else
@@ -676,7 +672,7 @@ public class Converter : IDisposable, IAsyncDisposable
                 if (!string.IsNullOrWhiteSpace(domain) && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     _logger?.Warn("Ignoring domain '{domain}' because this is only supported on Windows", domain);
 
-                _logger?.Info("Starting {browser} with username '{userName}'", BrowserName, userName);
+                _logger?.Info("Starting '{browser}' with username '{userName}'", BrowserName, userName);
             }
 
             processStartInfo.UseShellExecute = false;
@@ -701,13 +697,16 @@ public class Converter : IDisposable, IAsyncDisposable
 
         using var chromiumWaitSignal = new SemaphoreSlim(0, 1);
 
+        // Cancelled when the Chromium process exits so that we stop waiting for the
+        // DevToolsActivePort file (which will never be created when the process crashes)
+        using var chromiumExitedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
         string? chromeException = null;
         try
         {
             if (!_userProfileSet)
             {
                 _chromiumProcess.ErrorDataReceived += OnChromiumProcessOnErrorDataReceived;
-
                 _chromiumProcess.EnableRaisingEvents = true;
                 processStartInfo.UseShellExecute = false;
                 processStartInfo.RedirectStandardError = true;
@@ -736,18 +735,27 @@ public class Converter : IDisposable, IAsyncDisposable
                 _chromiumProcess.BeginErrorReadLine();
             else
             {
-                var lines = await ReadDevToolsActiveFileAsync(cancellationToken).ConfigureAwait(false);
-                var uri = new Uri($"ws://127.0.0.1:{lines[0]}{lines[1]}");
-                // DevToolsActivePort
-                await ConnectToDevProtocol(uri, "dev tools active port file", cancellationToken).ConfigureAwait(false);
-
                 try
                 {
-                    chromiumWaitSignal.Release();
+                    var lines = await ReadDevToolsActiveFileAsync(chromiumExitedCts.Token).ConfigureAwait(false);
+                    var uri = new Uri($"ws://127.0.0.1:{lines[0]}{lines[1]}");
+                    // DevToolsActivePort
+                    await ConnectToDevProtocol(uri, "dev tools active port file", cancellationToken).ConfigureAwait(false);
+
+                    try
+                    {
+                        chromiumWaitSignal.Release();
+                    }
+                    catch
+                    {
+                        // Ignore 
+                    }
                 }
-                catch 
+                catch (OperationCanceledException) when (chromiumExitedCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
                 {
-                    // Ignore 
+                    // The Chromium process exited before the DevToolsActivePort file could be read,
+                    // stop waiting. The exit handler has set 'chromeException' which is thrown below
+                    _logger?.Warn("Stopped waiting for the DevToolsActivePort file because the '{browser}' process exited", BrowserName);
                 }
             }
 
@@ -784,13 +792,24 @@ public class Converter : IDisposable, IAsyncDisposable
             {
                 if (_chromiumProcess == null) return;
 
-                _logger?.Warn("'{browser}' exited unexpectedly, arguments used: '{arguments}', process id: '{processId}' and process exit time: '{exitTime}'", BrowserName, string.Join(" ", DefaultChromiumArguments), _chromiumProcess.Id, _chromiumProcess.ExitTime);
+                _logger?.Warn("'{browser}' exited unexpectedly, process id: '{processId}' and process exit time: '{exitTime}'", BrowserName, string.Join(" ", DefaultChromiumArguments), _chromiumProcess.Id, _chromiumProcess.ExitTime.ToString("yyyy-MM-dd HH:mm:ss.fff"));
 
                 var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromiumProcess.ExitCode));
                 chromeException = $"'{BrowserName}' exited unexpectedly{(!string.IsNullOrWhiteSpace(exception) ? $", {exception}" : string.Empty)}";
             }
             finally
             {
+                try
+                {
+                    // Stop any task that is waiting for the DevToolsActivePort file to be created
+                    // ReSharper disable once AccessToDisposedClosure
+                    chromiumExitedCts.Cancel();
+                }
+                catch
+                {
+                    // Ignore 
+                }
+
                 try
                 {
                     // ReSharper disable once AccessToDisposedClosure
@@ -858,7 +877,7 @@ public class Converter : IDisposable, IAsyncDisposable
         var tempTimeout = _conversionTimeout ?? 10000;
         var timeout = tempTimeout;
 
-        _logger?.Info("Waiting until file '{lockFile}' exists with a timeout of {timeout} milliseconds", _devToolsActivePortFile, tempTimeout);
+        _logger?.Info("Waiting until file '{lockFile}' exists with a timeout of '{timeout}' milliseconds", _devToolsActivePortFile, tempTimeout);
 
         while (true)
         {
@@ -1354,6 +1373,24 @@ public class Converter : IDisposable, IAsyncDisposable
     #endregion
 
     #region ConvertAsync
+    /// <summary>
+    ///     Converts the given <paramref name="input" /> to the given <paramref name="outputFormat" /> and writes it to the <paramref name="outputStream" />
+    /// </summary>
+    /// <param name="outputFormat">The format to convert the input to.</param>
+    /// <param name="input">The input to convert.</param>
+    /// <param name="outputStream">The stream to write the converted output to.</param>
+    /// <param name="pageSettings">The settings to use for the page layout.</param>
+    /// <param name="waitForWindowStatus">The window status to wait for before starting the conversion.</param>
+    /// <param name="waitForWindowsStatusTimeout">The timeout for waiting for the window status.</param>
+    /// <param name="conversionTimeout">The timeout for the conversion process.</param>
+    /// <param name="mediaLoadTimeout">The timeout for loading media resources.</param>
+    /// <param name="logger">The logger to use for logging conversion progress and errors.</param>
+    /// <param name="cancellationToken">The cancellation token to cancel the conversion.</param>
+    /// <returns>A task that represents the asynchronous conversion operation.</returns>
+    /// <exception cref="FileNotFoundException"></exception>
+    /// <exception cref="ConversionException"></exception>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    /// <exception cref="ConversionTimedOutException"></exception>
     private async Task ConvertAsync(
         OutputFormat outputFormat,
         object input,
@@ -1510,7 +1547,7 @@ public class Converter : IDisposable, IAsyncDisposable
                 if (!match)
                     _logger?.Info("Waiting timed out");
                 else
-                    _logger?.Info("Window status equaled {status}", waitForWindowStatus);
+                    _logger?.Info("Window status equaled '{status}'", waitForWindowStatus);
             }
 
             if (inputUri != null)
@@ -2747,10 +2784,11 @@ public class Converter : IDisposable, IAsyncDisposable
         if (_disposed)
             return;
 
-        if (_browser != null)
+        if (_browser != null && IsChromiumRunning)
+        {
             try
             {
-                _logger?.Info("Closing {browser} browser gracefully", BrowserName);
+                _logger?.Info("Closing '{browser} browser gracefully", BrowserName);
 #if (NETSTANDARD2_0)
                 _browser.Dispose();
 #else
@@ -2763,27 +2801,28 @@ public class Converter : IDisposable, IAsyncDisposable
                 _logger?.Error(exception, "An error occurred while trying to close {browser} gracefully, error '{exception}'", BrowserName, ExceptionHelpers.GetInnerException(exception));
             }
 
-        var counter = 0;
+            var counter = 0;
 
-        // Give Chrome 2 seconds to close
-        while (counter < 200)
-        {
-            if (!IsChromiumRunning)
+            // Give Chrome 2 seconds to close
+            while (counter < 200)
             {
-                _logger?.Info("{browser} closed gracefully", BrowserName);
-                break;
-            }
+                if (!IsChromiumRunning)
+                {
+                    _logger?.Info("'{browser}' closed gracefully", BrowserName);
+                    break;
+                }
 
-            counter++;
-            Thread.Sleep(10);
+                counter++;
+                Thread.Sleep(10);
+            }
         }
 
         if (IsChromiumRunning)
         {
             // Sometimes Chrome does not close all processes so kill them
-            _logger?.Warn("{browser} did not close gracefully, closing it by killing it's process on id '{processId}'", BrowserName, _chromiumProcess.Id);
-            KillProcessAndChildren(_chromiumProcess.Id);
-            _logger?.Warn("{browser} killed", BrowserName);
+            _logger?.Warn("'{browser}' did not close gracefully, closing it by killing it's process on id '{processId}'", BrowserName, _chromiumProcess!.Id);
+            KillProcessAndChildren(_chromiumProcess!.Id);
+            _logger?.Warn("'{browser}' killed", BrowserName);
 
             _chromiumProcess = null;
         }

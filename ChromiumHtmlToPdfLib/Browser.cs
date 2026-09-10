@@ -39,7 +39,6 @@ using ChromiumHtmlToPdfLib.Protocol.Network;
 using ChromiumHtmlToPdfLib.Protocol.Page;
 using ChromiumHtmlToPdfLib.Settings;
 using Base = ChromiumHtmlToPdfLib.Protocol.Network.Base;
-using Console = System.Console;
 using Stream = System.IO.Stream;
 
 // ReSharper disable UnusedMember.Global

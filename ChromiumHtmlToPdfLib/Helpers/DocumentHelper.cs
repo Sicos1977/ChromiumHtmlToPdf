@@ -986,7 +986,7 @@ internal class DocumentHelper: IDisposable
         }
         catch (Exception exception)
         {
-            _logger?.Error(exception, "Opening stream failed with exception: {exception}", ExceptionHelpers.GetInnerException(exception));
+            _logger?.Error(exception, "Opening stream failed with exception: '{exception}'", ExceptionHelpers.GetInnerException(exception));
             return null;
         }
     }
