@@ -25,10 +25,8 @@
 //
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -46,7 +44,7 @@ using AngleSharp.Io.Network;
 using ChromiumHtmlToPdfLib.Loggers;
 using ChromiumHtmlToPdfLib.Settings;
 using Ganss.Xss;
-using Svg;
+using ImageMagick;
 using File = System.IO.File;
 using Stream = System.IO.Stream;
 
@@ -554,16 +552,18 @@ internal class DocumentHelper: IDisposable
         List<string>? urlBlacklist,
         CancellationToken cancellationToken)
     {
-        using var graphics = Graphics.FromHwnd(IntPtr.Zero);
+        // System.Drawing's Graphics.FromHwnd is Windows-only, use a fixed 96 DPI so that the
+        // calculation stays cross-platform and does not depend on a display being present
+        const double dpi = 96d;
 #if (NETSTANDARD2_0)
         using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri, false, cancellationToken).ConfigureAwait(false);
 #else
         await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri, false, cancellationToken).ConfigureAwait(false);
 #endif
 
-        _logger?.Info("DPI settings for image, X '{dpiX}' and Y '{dpiY}'", graphics.DpiX, graphics.DpiY);
-        var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft - pageSettings.MarginRight) * graphics.DpiX;
-        var maxHeight = (pageSettings.PaperHeight - pageSettings.MarginTop - pageSettings.MarginBottom) * graphics.DpiY;
+        _logger?.Info("Using a fixed DPI of '{dpi}' for image calculations", dpi);
+        var maxWidth = (pageSettings.PaperWidth - pageSettings.MarginLeft - pageSettings.MarginRight) * dpi;
+        var maxHeight = (pageSettings.PaperHeight - pageSettings.MarginTop - pageSettings.MarginBottom) * dpi;
         _logger?.Info("Calculated maximum width '{maxWidth}' and height '{maxHeight}' for image", maxWidth, maxHeight);
 
         string? localDirectory = null;
@@ -604,7 +604,7 @@ internal class DocumentHelper: IDisposable
                 continue;
             }
 
-            Image? image = null;
+            IMagickImage<byte>? image = null;
 
             var source = htmlImage.Source!.Contains("?") ? htmlImage.Source.Split('?')[0] : htmlImage.Source;
             var isSafeUrl = safeUrls.Contains(source);
@@ -641,14 +641,14 @@ internal class DocumentHelper: IDisposable
 
                     if (image == null) continue;
 
-                    if (RotateImageByExifOrientationData(image, true))
+                    if (RotateImageByExifOrientationData(image))
                     {
-                        htmlImage.DisplayWidth = image.Width;
-                        htmlImage.DisplayHeight = image.Height;
+                        htmlImage.DisplayWidth = (int)image.Width;
+                        htmlImage.DisplayHeight = (int)image.Height;
                         _logger?.Info("Image rotated and saved to location '{path}'", fileName);
-                        image.Save(fileName);
-                        htmlImage.DisplayWidth = image.Width;
-                        htmlImage.DisplayHeight = image.Height;
+                        image.Write(fileName);
+                        htmlImage.DisplayWidth = (int)image.Width;
+                        htmlImage.DisplayHeight = (int)image.Height;
                         htmlImage.SetStyle(string.Empty);
                         var newSrc = new Uri(fileName).ToString();
                         _logger?.Info("Adding url '{url}' to the safe url list", newSrc);
@@ -658,15 +658,15 @@ internal class DocumentHelper: IDisposable
                         imageChanged = true;
                     }
 
-                    if (image.Width > width)
+                    if ((int)image.Width > width)
                         _logger?.Info("The image width '{width}' is greater than the original width '{originalWidth}', ignoring the image width and using the original width that is set on the img tag", image.Width, width);
                     else
-                        width = image.Width;
+                        width = (int)image.Width;
 
-                    if (image.Height > height)
+                    if ((int)image.Height > height)
                         _logger?.Info("The image height '{height}' is greater than the original height '{originalHeight}', ignoring the image height and using the original height that is set on the img tag", image.Height, height);
                     else
-                        height = image.Height;
+                        height = (int)image.Height;
                 }
 
                 if (resize)
@@ -699,8 +699,8 @@ internal class DocumentHelper: IDisposable
                         _logger?.Info("Could not read image dimensions from the html img tag, getting it from the image itself", width, height);
                         image ??= await GetImageAsync(htmlImage.Source, localDirectory, cancellationToken).ConfigureAwait(false);
                         if (image == null) continue;
-                        width = image.Width;
-                        height = image.Height;
+                        width = (int)image.Width;
+                        height = (int)image.Height;
                         _logger?.Info("Got width '{width}' and height '{height}' from image", width, height);
                     }
 
@@ -711,13 +711,13 @@ internal class DocumentHelper: IDisposable
                         image ??= await GetImageAsync(htmlImage.Source, localDirectory, cancellationToken).ConfigureAwait(false);
                         if (image == null) continue;
 
-                        var ratio = maxWidth / image.Width;
+                        var ratio = maxWidth / (int)image.Width;
 
                         _logger?.Info("Rescaling image with current width '{width}', height '{height}' and ratio '{ratio}'", image.Width, image.Height, ratio);
 
-                        var newWidth = (int)(image.Width * ratio);
+                        var newWidth = (int)((int)image.Width * ratio);
                         if (newWidth == 0) newWidth = 1;
-                        var newHeight = (int)(image.Height * ratio);
+                        var newHeight = (int)((int)image.Height * ratio);
                         if (newHeight == 0) newHeight = 1;
 
                         _logger?.Info("Image rescaled to new width '{width}' and height '{height}'", newWidth, newHeight);
@@ -757,7 +757,7 @@ internal class DocumentHelper: IDisposable
 
             try
             {
-                image.Save(fileName);
+                image.Write(fileName);
                 var newSrc = new Uri(fileName).ToString();
                 safeUrls.Add(newSrc);
                 unchangedImage.Source = newSrc;
@@ -816,13 +816,13 @@ internal class DocumentHelper: IDisposable
 
     #region GetImageAsync
     /// <summary>
-    ///     Returns the <see cref="Image" /> for the given <paramref name="imageSource" />
+    ///     Returns the <see cref="IMagickImage{TQuantumType}" /> for the given <paramref name="imageSource" />
     /// </summary>
     /// <param name="imageSource"></param>
     /// <param name="localDirectory"></param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns></returns>
-    private async Task<Image?> GetImageAsync(string imageSource, string? localDirectory, CancellationToken cancellationToken)
+    private async Task<IMagickImage<byte>?> GetImageAsync(string imageSource, string? localDirectory, CancellationToken cancellationToken)
     {
         if (imageSource.StartsWith("data:", StringComparison.InvariantCultureIgnoreCase))
         {
@@ -833,8 +833,7 @@ internal class DocumentHelper: IDisposable
                 var base64Data = Regex.Match(imageSource, "data:image/(?<type>.+?),(?<data>.+)").Groups["data"].Value;
                 var binaryData = Convert.FromBase64String(base64Data);
 
-                using var stream = new MemoryStream(binaryData);
-                var image = Image.FromStream(stream);
+                var image = new MagickImage(binaryData);
                 _logger?.Info("Image decoded");
                 return image;
             }
@@ -860,8 +859,8 @@ internal class DocumentHelper: IDisposable
 
                 if (File.Exists(fileName))
                 {
-                    var fileStream = OpenFileStream(fileName);
-                    return fileStream == null ? null : Image.FromStream(fileStream, true, false);
+                    using var fileStream = OpenFileStream(fileName);
+                    return fileStream == null ? null : new MagickImage(fileStream);
                 }
             }
 
@@ -880,10 +879,12 @@ internal class DocumentHelper: IDisposable
 
                     var extension = Path.GetExtension(imageUri.AbsolutePath);
                     if (extension.ToLowerInvariant() != ".svg")
-                        return Image.FromStream(webStream, true, false);
+                        return new MagickImage(webStream);
 
-                    var svgDocument = SvgDocument.Open<SvgDocument>(webStream);
-                    return svgDocument.Draw();
+                    // Magick.NET rasterizes SVG through its built-in delegate, this replaces the
+                    // Windows-only System.Drawing based Svg.NET library
+                    var readSettings = new MagickReadSettings { Format = MagickFormat.Svg };
+                    return new MagickImage(webStream, readSettings);
                 }
 
                 case "file":
@@ -906,66 +907,25 @@ internal class DocumentHelper: IDisposable
 
     #region RotateImageByExifOrientationData
     /// <summary>
-    ///     Rotate the given bitmap according to Exif Orientation data
+    ///     Rotate the given image according to its Exif orientation data
     /// </summary>
-    /// <param name="image">source image</param>
-    /// <param name="updateExifData">
-    ///     Set it to <c>true</c> to update image Exif data after rotation
-    ///     (default is <c>false</c>)
-    /// </param>
+    /// <param name="image">The source image</param>
     /// <returns>Returns <c>true</c> when the image is rotated</returns>
-    private bool RotateImageByExifOrientationData(Image image, bool updateExifData)
+    private bool RotateImageByExifOrientationData(IMagickImage<byte> image)
     {
-        const int orientationId = 0x0112;
-        if (!((IList)image.PropertyIdList).Contains(orientationId)) return false;
+        var orientation = image.Orientation;
 
-        var item = image.GetPropertyItem(orientationId);
-
-        if (item?.Value == null)
+        if (orientation is OrientationType.Undefined or OrientationType.TopLeft)
         {
-            _logger?.Info("Could not get orientation information from exif");
+            _logger?.Info("Image has no Exif orientation data or is already correctly oriented");
             return false;
         }
 
-        RotateFlipType rotateFlipType;
-        _logger?.Info("Checking image rotation");
+        _logger?.Info("Rotating image according to Exif orientation '{orientation}'", orientation);
 
-        switch (item.Value[0])
-        {
-            case 2:
-                rotateFlipType = RotateFlipType.RotateNoneFlipX;
-                break;
-            case 3:
-                rotateFlipType = RotateFlipType.Rotate180FlipNone;
-                break;
-            case 4:
-                rotateFlipType = RotateFlipType.Rotate180FlipX;
-                break;
-            case 5:
-                rotateFlipType = RotateFlipType.Rotate90FlipX;
-                break;
-            case 6:
-                rotateFlipType = RotateFlipType.Rotate90FlipNone;
-                break;
-            case 7:
-                rotateFlipType = RotateFlipType.Rotate270FlipX;
-                break;
-            case 8:
-                rotateFlipType = RotateFlipType.Rotate270FlipNone;
-                break;
-            default:
-                rotateFlipType = RotateFlipType.RotateNoneFlipNone;
-                break;
-        }
-
-        if (rotateFlipType == RotateFlipType.RotateNoneFlipNone)
-            return false;
-
-        image.RotateFlip(rotateFlipType);
-        _logger?.Info("Image rotated with {rotationType}", rotateFlipType);
-
-        // Remove Exif orientation tag (if requested)
-        if (updateExifData) image.RemovePropertyItem(orientationId);
+        // AutoOrient rotates/flips the image based on the Exif orientation and resets
+        // the orientation tag to TopLeft
+        image.AutoOrient();
         return true;
     }
     #endregion
