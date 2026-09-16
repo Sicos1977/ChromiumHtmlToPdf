@@ -125,16 +125,40 @@ internal class ExpressionExceptionDetails
 internal class ExpressionInnerResult
 {
     #region Properties
-    [JsonPropertyName("className")] public string? ClassName { get; set; }
+    /// <summary>
+    ///     Object class (constructor) name. Specified for <c>object</c> type values only
+    /// </summary>
+    [JsonPropertyName("className")] 
+    public string? ClassName { get; set; }
 
-    [JsonPropertyName("description")] public string? Description { get; set; }
+    /// <summary>
+    ///     String representation of the object
+    /// </summary>
+    [JsonPropertyName("description")] 
+    public string? Description { get; set; }
 
-    [JsonPropertyName("objectId")] public string? ObjectId { get; set; }
+    /// <summary>
+    ///     Unique object identifier (for non-primitive values)
+    /// </summary>
+    [JsonPropertyName("objectId")] 
+    public string? ObjectId { get; set; }
 
-    [JsonPropertyName("subtype")] public string? Subtype { get; set; }
+    /// <summary>
+    ///     Object subtype hint. Specified for <c>object</c> type values only
+    /// </summary>
+    [JsonPropertyName("subtype")] 
+    public string? Subtype { get; set; }
 
-    [JsonPropertyName("type")] public string? Type { get; set; }
+    /// <summary>
+    ///     Object type
+    /// </summary>
+    [JsonPropertyName("type")] 
+    public string? Type { get; set; }
 
-    [JsonPropertyName("value")] public string? Value { get; set; }
+    /// <summary>
+    ///     Remote object value in case of primitive values or JSON values (if it was requested)
+    /// </summary>
+    [JsonPropertyName("value")] 
+    public string? Value { get; set; }
     #endregion
 }

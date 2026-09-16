@@ -31,10 +31,17 @@ using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Network;
 
+/// <summary>
+///     The JSON object that is returned from Chromium for the <b>Network.responseReceivedExtraInfo</b> event
+/// </summary>
 internal class ResponseReceivedExtraInfo : Base
 {
     #region Properties
-    [JsonPropertyName("params")] public ResponseReceivedExtraInfoParams? Params { get; set; }
+    /// <summary>
+    ///     The parameters that belong to the <see cref="Base.Method" />
+    /// </summary>
+    [JsonPropertyName("params")] 
+    public ResponseReceivedExtraInfoParams? Params { get; set; }
     #endregion
 
     #region FromJson
@@ -50,41 +57,91 @@ internal class ResponseReceivedExtraInfo : Base
     #endregion
 }
 
+/// <summary>
+///     Part of the <see cref="ResponseReceivedExtraInfo" /> class
+/// </summary>
 internal class ResponseReceivedExtraInfoParams
 {
     #region Properties
+    /// <summary>
+    ///     Request identifier. Used to match this information to another <b>responseReceived</b> event
+    /// </summary>
     [JsonPropertyName("requestId")] public string? RequestId { get; set; }
 
+    /// <summary>
+    ///     A list of cookies which were not stored from the response along with the corresponding reasons for
+    ///     blocking
+    /// </summary>
     [JsonPropertyName("blockedCookies")] public List<object>? BlockedCookies { get; set; }
 
+    /// <summary>
+    ///     Raw response headers as they were received over the wire
+    /// </summary>
     [JsonPropertyName("headers")] public ResponseReceivedExtraInfoHeaders? Headers { get; set; }
     #endregion
 }
 
+/// <summary>
+///     Part of the <see cref="ResponseReceivedExtraInfoParams" /> class
+/// </summary>
 internal class ResponseReceivedExtraInfoHeaders
 {
     #region Properties
-    [JsonPropertyName("content-type")] public string? ContentType { get; set; }
+    /// <summary>
+    ///     The HTTP <b>content-type</b> response header
+    /// </summary>
+    [JsonPropertyName("content-type")] 
+    public string? ContentType { get; set; }
 
+    /// <summary>
+    ///     The HTTP <b>content-length</b> response header
+    /// </summary>
     [JsonPropertyName("content-length")]
     [JsonConverter(typeof(ResponseReceivedExtraInfoParseStringConverter))]
     public long ContentLength { get; set; }
 
-    [JsonPropertyName("server")] public string? Server { get; set; }
+    /// <summary>
+    ///     The HTTP <b>server</b> response header
+    /// </summary>
+    [JsonPropertyName("server")] 
+    public string? Server { get; set; }
 
-    [JsonPropertyName("etag")] public string? Etag { get; set; }
+    /// <summary>
+    ///     The HTTP <b>etag</b> response header
+    /// </summary>
+    [JsonPropertyName("etag")] 
+    public string? Etag { get; set; }
 
+    /// <summary>
+    ///     The <b>max-age</b> directive from the HTTP <b>cache-control</b> response header
+    /// </summary>
     [JsonPropertyName("max-age")]
     [JsonConverter(typeof(ResponseReceivedExtraInfoParseStringConverter))]
     public long MaxAge { get; set; }
 
-    [JsonPropertyName("x-debug")] public string? XDebug { get; set; }
+    /// <summary>
+    ///     The HTTP <b>x-debug</b> response header
+    /// </summary>
+    [JsonPropertyName("x-debug")] 
+    public string? XDebug { get; set; }
 
-    [JsonPropertyName("cache-control")] public string? CacheControl { get; set; }
+    /// <summary>
+    ///     The HTTP <b>cache-control</b> response header
+    /// </summary>
+    [JsonPropertyName("cache-control")] 
+    public string? CacheControl { get; set; }
 
-    [JsonPropertyName("expires")] public string? Expires { get; set; }
+    /// <summary>
+    ///     The HTTP <b>expires</b> response header
+    /// </summary>
+    [JsonPropertyName("expires")] 
+    public string? Expires { get; set; }
 
-    [JsonPropertyName("date")] public string? Date { get; set; }
+    /// <summary>
+    ///     The HTTP <b>date</b> response header
+    /// </summary>
+    [JsonPropertyName("date")] 
+    public string? Date { get; set; }
     #endregion
 }
 
@@ -97,6 +154,7 @@ internal class ResponseReceivedExtraInfoParseStringConverter : JsonConverter<lon
         switch (reader.TokenType)
         {
             case JsonTokenType.Number:
+
                 return reader.GetInt64();
             case JsonTokenType.String:
             {

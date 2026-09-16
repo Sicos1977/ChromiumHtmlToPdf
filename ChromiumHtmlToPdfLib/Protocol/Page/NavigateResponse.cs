@@ -35,6 +35,9 @@ namespace ChromiumHtmlToPdfLib.Protocol.Page;
 internal class NavigateResponse : MessageBase
 {
     #region Properties
+    /// <summary>
+    ///     The result of the <b>Page.navigate</b> command
+    /// </summary>
     [JsonPropertyName("result")] public NavigateResponseResult? Result { get; set; }
     #endregion
 
@@ -57,10 +60,20 @@ internal class NavigateResponse : MessageBase
 internal class NavigateResponseResult
 {
     #region Properties
+    /// <summary>
+    ///     Frame id that has navigated (or failed to navigate)
+    /// </summary>
     [JsonPropertyName("frameId")] public string? FrameId { get; set; }
 
+    /// <summary>
+    ///     Loader identifier. This is omitted in case of same-document navigation,
+    ///     as the previously committed loaderId would not change
+    /// </summary>
     [JsonPropertyName("loaderId")] public string? LoaderId { get; set; }
 
+    /// <summary>
+    ///     User friendly error message, present if and only if navigation has failed
+    /// </summary>
     [JsonPropertyName("errorText")] public string? ErrorText { get; set; }
     #endregion
 }

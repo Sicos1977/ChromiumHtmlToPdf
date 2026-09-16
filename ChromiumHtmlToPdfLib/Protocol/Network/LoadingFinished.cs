@@ -29,9 +29,15 @@ using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Network;
 
+/// <summary>
+///     The JSON object that is returned from Chromium for the <b>Network.loadingFinished</b> event
+/// </summary>
 internal class LoadingFinished : Base
 {
     #region Properties
+    /// <summary>
+    ///     The parameters that belong to the <see cref="Base.Method" />
+    /// </summary>
     [JsonPropertyName("params")] public LoadingFinishedParams Params { get; set; } = null!;
     #endregion
 
@@ -48,15 +54,34 @@ internal class LoadingFinished : Base
     #endregion
 }
 
+/// <summary>
+///     Part of the <see cref="LoadingFinished" /> class
+/// </summary>
 internal class LoadingFinishedParams
 {
     #region Properties
-    [JsonPropertyName("requestId")] public string? RequestId { get; set; }
+    /// <summary>
+    ///     Request identifier
+    /// </summary>
+    [JsonPropertyName("requestId")] 
+    public string? RequestId { get; set; }
 
-    [JsonPropertyName("timestamp")] public double Timestamp { get; set; }
+    /// <summary>
+    ///     Timestamp
+    /// </summary>
+    [JsonPropertyName("timestamp")] 
+    public double Timestamp { get; set; }
 
-    [JsonPropertyName("encodedDataLength")] public long EncodedDataLength { get; set; }
+    /// <summary>
+    ///     Total number of bytes received for this request
+    /// </summary>
+    [JsonPropertyName("encodedDataLength")] 
+    public long EncodedDataLength { get; set; }
 
+    /// <summary>
+    ///     Set when 1) response was blocked by Cross-Origin Read Blocking and also
+    ///     2) this needs to be reported to the DevTools console
+    /// </summary>
     [JsonPropertyName("shouldReportCorbBlocking")]
     public bool ShouldReportCorbBlocking { get; set; }
     #endregion

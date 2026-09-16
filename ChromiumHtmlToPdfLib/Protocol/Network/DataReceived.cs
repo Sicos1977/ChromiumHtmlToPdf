@@ -29,12 +29,23 @@ using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Network;
 
+/// <summary>
+///     The JSON object that is returned from Chromium for the <b>Network.dataReceived</b> event
+/// </summary>
 internal class DataReceived
 {
     #region Properties
-    [JsonPropertyName("method")] public string? Method { get; set; }
+    /// <summary>
+    ///     The method (event) that Chromium sent
+    /// </summary>
+    [JsonPropertyName("method")] 
+    public string? Method { get; set; }
 
-    [JsonPropertyName("params")] public DataReceivedParams Params { get; set; } = null!;
+    /// <summary>
+    ///     The parameters that belong to the <see cref="Method" />
+    /// </summary>
+    [JsonPropertyName("params")]
+    public DataReceivedParams Params { get; set; } = null!;
     #endregion
 
     #region FromJson
@@ -50,15 +61,34 @@ internal class DataReceived
     #endregion
 }
 
+/// <summary>
+///     Part of the <see cref="DataReceived" /> class
+/// </summary>
 internal class DataReceivedParams
 {
     #region Properties
-    [JsonPropertyName("requestId")] public string? RequestId { get; set; }
+    /// <summary>
+    ///     Request identifier
+    /// </summary>
+    [JsonPropertyName("requestId")] 
+    public string? RequestId { get; set; }
 
-    [JsonPropertyName("timestamp")] public double Timestamp { get; set; }
+    /// <summary>
+    ///     Timestamp
+    /// </summary>
+    [JsonPropertyName("timestamp")] 
+    public double Timestamp { get; set; }
 
-    [JsonPropertyName("dataLength")] public long DataLength { get; set; }
+    /// <summary>
+    ///     Data chunk length
+    /// </summary>
+    [JsonPropertyName("dataLength")] 
+    public long DataLength { get; set; }
 
-    [JsonPropertyName("encodedDataLength")] public long EncodedDataLength { get; set; }
+    /// <summary>
+    ///     Actual bytes received (might be less than <see cref="DataLength" /> for compressed encodings)
+    /// </summary>
+    [JsonPropertyName("encodedDataLength")] 
+    public long EncodedDataLength { get; set; }
     #endregion
 }

@@ -39,7 +39,8 @@ internal class Error : MessageBase
     ///     <see cref="InnerError" />
     /// </summary>
     [JsonPropertyName("error")]
-    public ErrorInnerError InnerError { get; set; } = null!;
+    public ErrorInnerError 
+        InnerError { get; set; } = null!;
     #endregion
 
     #region FromJson

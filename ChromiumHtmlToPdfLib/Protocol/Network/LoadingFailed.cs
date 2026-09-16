@@ -29,10 +29,17 @@ using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Network;
 
+/// <summary>
+///     The JSON object that is returned from Chromium for the <b>Network.loadingFailed</b> event
+/// </summary>
 internal class LoadingFailed : Base
 {
     #region Properties
-    [JsonPropertyName("params")] public LoadingFailedParams Params { get; set; } = null!;
+    /// <summary>
+    ///     The parameters that belong to the <see cref="Base.Method" />
+    /// </summary>
+    [JsonPropertyName("params")] 
+    public LoadingFailedParams Params { get; set; } = null!;
     #endregion
 
     #region FromJson
@@ -48,17 +55,40 @@ internal class LoadingFailed : Base
     #endregion
 }
 
+/// <summary>
+///     Part of the <see cref="LoadingFailed" /> class
+/// </summary>
 internal class LoadingFailedParams
 {
     #region Properties
-    [JsonPropertyName("requestId")] public string? RequestId { get; set; }
+    /// <summary>
+    ///     Request identifier
+    /// </summary>
+    [JsonPropertyName("requestId")] 
+    public string? RequestId { get; set; }
 
-    [JsonPropertyName("timestamp")] public double Timestamp { get; set; }
+    /// <summary>
+    ///     Timestamp
+    /// </summary>
+    [JsonPropertyName("timestamp")] 
+    public double Timestamp { get; set; }
 
-    [JsonPropertyName("type")] public string? Type { get; set; }
+    /// <summary>
+    ///     Resource type
+    /// </summary>
+    [JsonPropertyName("type")] 
+    public string? Type { get; set; }
 
-    [JsonPropertyName("errorText")] public string? ErrorText { get; set; }
+    /// <summary>
+    ///     User friendly error message
+    /// </summary>
+    [JsonPropertyName("errorText")] 
+    public string? ErrorText { get; set; }
 
-    [JsonPropertyName("canceled")] public bool Canceled { get; set; }
+    /// <summary>
+    ///     <c>true</c> if loading was canceled
+    /// </summary>
+    [JsonPropertyName("canceled")] 
+    public bool Canceled { get; set; }
     #endregion
 }

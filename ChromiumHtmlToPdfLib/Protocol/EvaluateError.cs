@@ -36,7 +36,11 @@ namespace ChromiumHtmlToPdfLib.Protocol;
 internal class EvaluateError : MessageBase
 {
     #region Properties
-    [JsonPropertyName("result")] public EvaluateErrorResult? Result { get; set; }
+    /// <summary>
+    ///     The result of the evaluation that failed
+    /// </summary>
+    [JsonPropertyName("result")] 
+    public EvaluateErrorResult? Result { get; set; }
     #endregion
 
     #region FromJson
@@ -53,9 +57,17 @@ internal class EvaluateError : MessageBase
 internal class EvaluateErrorResult
 {
     #region Properties
-    [JsonPropertyName("result")] public ExceptionClass? Result { get; set; }
+    /// <summary>
+    ///     The result of the evaluation as a remote object
+    /// </summary>
+    [JsonPropertyName("result")] 
+    public ExceptionClass? Result { get; set; }
 
-    [JsonPropertyName("exceptionDetails")] public EvaluateErrorExceptionDetails? ExceptionDetails { get; set; }
+    /// <summary>
+    ///     Exception details
+    /// </summary>
+    [JsonPropertyName("exceptionDetails")] 
+    public EvaluateErrorExceptionDetails? ExceptionDetails { get; set; }
     #endregion
 }
 
@@ -65,18 +77,36 @@ internal class EvaluateErrorResult
 internal class EvaluateErrorExceptionDetails
 {
     #region Properties
+    /// <summary>
+    ///     Exception id
+    /// </summary>
     [JsonPropertyName("exceptionId")] public long ExceptionId { get; set; }
 
+    /// <summary>
+    ///     Exception text, which in case of an uncaught exception corresponds to the error message
+    /// </summary>
     [JsonPropertyName("text")] public string? Text { get; set; }
 
+    /// <summary>
+    ///     Line number of the exception location (0-based)
+    /// </summary>
     [JsonPropertyName("lineNumber")] public long LineNumber { get; set; }
 
+    /// <summary>
+    ///     Column number of the exception location (0-based)
+    /// </summary>
     [JsonPropertyName("columnNumber")] public long ColumnNumber { get; set; }
 
+    /// <summary>
+    ///     Script id of the exception location
+    /// </summary>
     [JsonPropertyName("scriptId")]
     [JsonConverter(typeof(EvaluateErrorParseStringConverter))]
     public long ScriptId { get; set; }
 
+    /// <summary>
+    ///     Exception object if available
+    /// </summary>
     [JsonPropertyName("exception")] public ExceptionClass Exception { get; set; } = null!;
     #endregion
 }
@@ -87,15 +117,35 @@ internal class EvaluateErrorExceptionDetails
 internal class ExceptionClass
 {
     #region Properties
-    [JsonPropertyName("type")] public string? Type { get; set; }
+    /// <summary>
+    ///     Object type
+    /// </summary>
+    [JsonPropertyName("type")] 
+    public string? Type { get; set; }
 
-    [JsonPropertyName("subtype")] public string? Subtype { get; set; }
+    /// <summary>
+    ///     Object subtype hint. Specified for <c>object</c> type values only
+    /// </summary>
+    [JsonPropertyName("subtype")] 
+    public string? Subtype { get; set; }
 
-    [JsonPropertyName("className")] public string? ClassName { get; set; }
+    /// <summary>
+    ///     Object class (constructor) name. Specified for <c>object</c> type values only
+    /// </summary>
+    [JsonPropertyName("className")] 
+    public string? ClassName { get; set; }
 
-    [JsonPropertyName("description")] public string? Description { get; set; }
+    /// <summary>
+    ///     String representation of the object
+    /// </summary>
+    [JsonPropertyName("description")] 
+    public string? Description { get; set; }
 
-    [JsonPropertyName("objectId")] public string? ObjectId { get; set; }
+    /// <summary>
+    ///     Unique object identifier (for non-primitive values)
+    /// </summary>
+    [JsonPropertyName("objectId")] 
+        public string? ObjectId { get; set; }
     #endregion
 }
 

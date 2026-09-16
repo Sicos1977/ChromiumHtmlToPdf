@@ -29,15 +29,29 @@ using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Page;
 
+/// <summary>
+///     The JSON object that is returned from Chromium for the <b>Page.getFrameTree</b> command
+/// </summary>
 internal class FrameTree
 {
     #region Properties
+    /// <summary>
+    ///     The message id
+    /// </summary>
     [JsonPropertyName("id")] public int Id { get; set; }
 
+    /// <summary>
+    ///     The result containing the frame tree
+    /// </summary>
     [JsonPropertyName("result")] public FrameTreeResponse Result { get; set; } = null!;
     #endregion
 
     #region FromJson
+    /// <summary>
+    ///     Returns this object deserialized from the given <paramref name="json" /> string
+    /// </summary>
+    /// <param name="json"></param>
+    /// <returns></returns>
     public static FrameTree FromJson(string json)
     {
         return JsonSerializer.Deserialize<FrameTree>(json, JsonHelper.SerializerOptions)!;
@@ -45,27 +59,51 @@ internal class FrameTree
     #endregion
 }
 
+/// <summary>
+///     Part of the <see cref="FrameTree" /> class
+/// </summary>
 internal class FrameTreeResponse
 {
     #region Properties
+    /// <summary>
+    ///     Present frame tree structure
+    /// </summary>
     [JsonPropertyName("frameTree")] public FrameResponse FrameTree { get; set; } = null!;
     #endregion
 }
 
+/// <summary>
+///     Part of the <see cref="FrameTreeResponse" /> class
+/// </summary>
 internal class FrameResponse
 {
     #region Properties
+    /// <summary>
+    ///     Frame information for this tree item
+    /// </summary>
     [JsonPropertyName("frame")] public FrameBody Frame { get; set; } = null!;
     #endregion
 }
 
+/// <summary>
+///     Part of the <see cref="FrameResponse" /> class
+/// </summary>
 internal class FrameBody
 {
     #region Properties
+    /// <summary>
+    ///     Frame unique identifier
+    /// </summary>
     [JsonPropertyName("id")] public string Id { get; set; } = null!;
 
+    /// <summary>
+    ///     Identifier of the loader associated with this frame
+    /// </summary>
     [JsonPropertyName("loaderId")] public string? LoaderId { get; set; }
 
+    /// <summary>
+    ///     Frame document's URL without fragment
+    /// </summary>
     [JsonPropertyName("url")] public string? Url { get; set; }
     #endregion
 }

@@ -30,10 +30,17 @@ using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Network;
 
+/// <summary>
+///     The JSON object that is returned from Chromium for the <b>Network.responseReceived</b> event
+/// </summary>
 internal class ResponseReceived : Base
 {
     #region Properties
-    [JsonPropertyName("params")] public ResponseReceivedParams Params { get; set; } = null!;
+    /// <summary>
+    ///     The parameters that belong to the <see cref="Base.Method" />
+    /// </summary>
+    [JsonPropertyName("params")] 
+    public ResponseReceivedParams Params { get; set; } = null!;
     #endregion
 
     #region FromJson
@@ -49,23 +56,53 @@ internal class ResponseReceived : Base
     #endregion
 }
 
+/// <summary>
+///     Part of the <see cref="ResponseReceived" /> class
+/// </summary>
 internal class ResponseReceivedParams
 {
     #region Properties
-    [JsonPropertyName("requestId")] public string? RequestId { get; set; }
+    /// <summary>
+    ///     Request identifier
+    /// </summary>
+    [JsonPropertyName("requestId")] 
+    public string? RequestId { get; set; }
 
-    [JsonPropertyName("loaderId")] public string? LoaderId { get; set; }
+    /// <summary>
+    ///     Loader identifier. Empty string if the request is fetched from worker
+    /// </summary>
+    [JsonPropertyName("loaderId")] 
+    public string? LoaderId { get; set; }
 
-    [JsonPropertyName("timestamp")] public double Timestamp { get; set; }
+    /// <summary>
+    ///     Timestamp
+    /// </summary>
+    [JsonPropertyName("timestamp")] 
+    public double Timestamp { get; set; }
 
-    [JsonPropertyName("type")] public string? Type { get; set; }
+    /// <summary>
+    ///     Resource type
+    /// </summary>
+    [JsonPropertyName("type")] 
+    public string? Type { get; set; }
 
-    [JsonPropertyName("response")] public ResponseReceivedResponse Response { get; set; } = null!;
+    /// <summary>
+    ///     Response data
+    /// </summary>
+    [JsonPropertyName("response")] 
+    public ResponseReceivedResponse Response { get; set; } = null!;
 
-    [JsonPropertyName("frameId")] public string? FrameId { get; set; }
+    /// <summary>
+    ///     Frame identifier
+    /// </summary>
+    [JsonPropertyName("frameId")] 
+    public string? FrameId { get; set; }
     #endregion
 }
 
+/// <summary>
+///     Part of the <see cref="ResponseReceivedParams" /> class
+/// </summary>
 internal class ResponseReceivedResponse
 {
     #region Properties
@@ -168,36 +205,78 @@ internal class ResponseReceivedResponse
     [JsonPropertyName("securityState")]
     public string? SecurityState { get; set; }
 
+    /// <summary>
+    ///     Security details for the request
+    /// </summary>
     [JsonPropertyName("securityDetails")] public ResponseReceiveSecurityDetails? SecurityDetails { get; set; }
     #endregion
 }
 
+/// <summary>
+///     Part of the <see cref="ResponseReceivedResponse" /> class
+/// </summary>
 internal class ResponseReceiveSecurityDetails
 {
     #region Properties
+    /// <summary>
+    ///     Protocol name (e.g. "TLS 1.2" or "QUIC")
+    /// </summary>
     [JsonPropertyName("protocol")] public string? Protocol { get; set; }
 
+    /// <summary>
+    ///     Key Exchange used by the connection, or the empty string if not applicable
+    /// </summary>
     [JsonPropertyName("keyExchange")] public string? KeyExchange { get; set; }
 
+    /// <summary>
+    ///     (EC)DH group used by the connection, if applicable
+    /// </summary>
     [JsonPropertyName("keyExchangeGroup")] public string? KeyExchangeGroup { get; set; }
 
+    /// <summary>
+    ///     Cipher name
+    /// </summary>
     [JsonPropertyName("cipher")] public string? Cipher { get; set; }
 
+    /// <summary>
+    ///     Certificate ID value
+    /// </summary>
     [JsonPropertyName("certificateId")] public long CertificateId { get; set; }
 
+    /// <summary>
+    ///     Certificate subject name
+    /// </summary>
     [JsonPropertyName("subjectName")] public string? SubjectName { get; set; }
 
+    /// <summary>
+    ///     Subject Alternative Name (SAN) DNS names and IP addresses
+    /// </summary>
     [JsonPropertyName("sanList")] public string[]? SanList { get; set; }
 
+    /// <summary>
+    ///     Name of the issuing CA
+    /// </summary>
     [JsonPropertyName("issuer")] public string? Issuer { get; set; }
 
+    /// <summary>
+    ///     Certificate valid from date
+    /// </summary>
     [JsonPropertyName("validFrom")] public long ValidFrom { get; set; }
 
+    /// <summary>
+    ///     Certificate valid to (expiration) date
+    /// </summary>
     [JsonPropertyName("validTo")] public long ValidTo { get; set; }
 
+    /// <summary>
+    ///     List of signed certificate timestamps (SCTs)
+    /// </summary>
     [JsonPropertyName("signedCertificateTimestampList")]
     public object[]? SignedCertificateTimestampList { get; set; }
 
+    /// <summary>
+    ///     Whether the request complied with Certificate Transparency policy
+    /// </summary>
     [JsonPropertyName("certificateTransparencyCompliance")]
     public string? CertificateTransparencyCompliance { get; set; }
     #endregion

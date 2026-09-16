@@ -29,10 +29,17 @@ using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Network;
 
+/// <summary>
+///     The JSON object that is returned from Chromium for the <b>Network.requestServedFromCache</b> event
+/// </summary>
 internal class RequestServedFromCache : Base
 {
     #region Properties
-    [JsonPropertyName("params")] public RequestServedFromCacheParams Params { get; set; } = null!;
+    /// <summary>
+    ///     The parameters that belong to the <see cref="Base.Method" />
+    /// </summary>
+    [JsonPropertyName("params")] 
+    public RequestServedFromCacheParams Params { get; set; } = null!;
     #endregion
 
     #region FromJson
@@ -48,9 +55,16 @@ internal class RequestServedFromCache : Base
     #endregion
 }
 
+/// <summary>
+///     Part of the <see cref="RequestServedFromCache" /> class
+/// </summary>
 internal class RequestServedFromCacheParams
 {
     #region Properties
-    [JsonPropertyName("requestId")] public string? RequestId { get; set; }
+    /// <summary>
+    ///     Request identifier
+    /// </summary>
+    [JsonPropertyName("requestId")] 
+    public string? RequestId { get; set; }
     #endregion
 }

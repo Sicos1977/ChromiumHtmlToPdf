@@ -31,6 +31,7 @@ using System.Text.Json.Serialization;
 namespace ChromiumHtmlToPdfLib.Protocol;
 
 /// <summary>
+///     The JSON structure that is returned from Chromium for a <b>Runtime.evaluate</b> command
 /// </summary>
 internal class Evaluate : MessageBase
 {
@@ -67,6 +68,9 @@ internal class Evaluate : MessageBase
 internal class EvaluateResult
 {
     #region Propreties
+    /// <summary>
+    ///     The result of the evaluation as a remote object
+    /// </summary>
     [JsonPropertyName("result")]
     public EvaluateInnerResult? Result { get; set; }
     #endregion
@@ -78,27 +82,51 @@ internal class EvaluateResult
 internal class EvaluateInnerResult
 {
     #region Properties
+    /// <summary>
+    ///     Object type
+    /// </summary>
     [JsonPropertyName("type")]
     public string? Type { get; set; }
 
+    /// <summary>
+    ///     Object subtype hint. Specified for <c>object</c> type values only
+    /// </summary>
     [JsonPropertyName("subtype")]
     public string? SubType { get; set; }
 
+    /// <summary>
+    ///     Object class (constructor) name. Specified for <c>object</c> type values only
+    /// </summary>
     [JsonPropertyName("className")]
     public string? ClassName { get; set; }
 
+    /// <summary>
+    ///     Remote object value in case of primitive values or JSON values (if it was requested)
+    /// </summary>
     [JsonPropertyName("value")]
     public string? Value { get; set; }
 
+    /// <summary>
+    ///     Primitive value which can not be JSON-stringified does not have <see cref="Value" />, but gets this property
+    /// </summary>
     [JsonPropertyName("unserializableValue")]
     public string? UnserializableValue { get; set; }
 
+    /// <summary>
+    ///     Deep serialized value
+    /// </summary>
     [JsonPropertyName("deepSerializedValue")]
     public string? DeepSerializedValue { get; set; }
 
+    /// <summary>
+    ///     Preview containing abbreviated property values. Specified for <c>object</c> type values only
+    /// </summary>
     [JsonPropertyName("preview")]
     public string? Preview { get; set; }
 
+    /// <summary>
+    ///     The custom preview
+    /// </summary>
     [JsonPropertyName("customPreview")]
     public string? CustomPreview { get; set; }
     #endregion

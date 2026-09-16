@@ -73,6 +73,9 @@ internal class SnapshotResponse
 internal class SnapshotResult
 {
     #region Properties
+    /// <summary>
+    ///     Serialized page data (the captured MHTML snapshot)
+    /// </summary>
     [JsonPropertyName("data")] public string Data { get; set; } = null!;
     #endregion
 }

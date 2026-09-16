@@ -30,10 +30,17 @@ using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Network;
 
+/// <summary>
+///     The JSON object that is returned from Chromium for the <b>Network.requestWillBeSentExtraInfo</b> event
+/// </summary>
 internal class RequestWillBeSentExtraInfo : Base
 {
     #region Properties
-    [JsonPropertyName("params")] public RequestWillBeSentExtraInfoParams? Params { get; set; }
+    /// <summary>
+    ///     The parameters that belong to the <see cref="Base.Method" />
+    /// </summary>
+    [JsonPropertyName("params")] 
+    public RequestWillBeSentExtraInfoParams? Params { get; set; }
     #endregion
 
     #region FromJson
@@ -49,57 +56,136 @@ internal class RequestWillBeSentExtraInfo : Base
     #endregion
 }
 
+/// <summary>
+///     Part of the <see cref="RequestWillBeSentExtraInfo" /> class
+/// </summary>
 internal class RequestWillBeSentExtraInfoParams
 {
     #region Properties
-    [JsonPropertyName("requestId")] public string? RequestId { get; set; }
+    /// <summary>
+    ///     Request identifier. Used to match this information to an existing <b>requestWillBeSent</b> event
+    /// </summary>
+    [JsonPropertyName("requestId")] 
+    public string? RequestId { get; set; }
 
-    [JsonPropertyName("associatedCookies")] public List<object>? AssociatedCookies { get; set; }
+    /// <summary>
+    ///     A list of cookies potentially associated to the requested URL. This includes both cookies sent with
+    ///     the request and the ones not sent; the latter are distinguished by having <c>blockedReason</c> field set
+    /// </summary>
+    [JsonPropertyName("associatedCookies")] 
+    public List<object>? AssociatedCookies { get; set; }
 
-    [JsonPropertyName("headers")] public RequestWillBeSentExtraInfoHeaders? Headers { get; set; }
+    /// <summary>
+    ///     Raw request headers as they will be sent over the wire
+    /// </summary>
+    [JsonPropertyName("headers")] 
+    public RequestWillBeSentExtraInfoHeaders? Headers { get; set; }
 
+    /// <summary>
+    ///     The client security state set for the request
+    /// </summary>
     [JsonPropertyName("clientSecurityState")]
-    public RequestWillBeSentExtraInfoClientSecurityState? ClientSecurityState { get; set; }
+    public RequestWillBeSentExtraInfoClientSecurityState? 
+        ClientSecurityState { get; set; }
     #endregion
 }
 
+/// <summary>
+///     Part of the <see cref="RequestWillBeSentExtraInfoParams" /> class
+/// </summary>
 internal class RequestWillBeSentExtraInfoClientSecurityState
 {
     #region Properties
+    /// <summary>
+    ///     <c>true</c> when the initiator is a secure context
+    /// </summary>
     [JsonPropertyName("initiatorIsSecureContext")]
     public bool InitiatorIsSecureContext { get; set; }
 
+    /// <summary>
+    ///     The IP address space of the initiator
+    /// </summary>
     [JsonPropertyName("initiatorIPAddressSpace")]
     public string? InitiatorIpAddressSpace { get; set; }
 
+    /// <summary>
+    ///     The private network request policy
+    /// </summary>
     [JsonPropertyName("privateNetworkRequestPolicy")]
     public string? PrivateNetworkRequestPolicy { get; set; }
     #endregion
 }
 
+/// <summary>
+///     Part of the <see cref="RequestWillBeSentExtraInfoParams" /> class
+/// </summary>
 internal class RequestWillBeSentExtraInfoHeaders
 {
     #region Properties
-    [JsonPropertyName(":method")] public string? Method { get; set; }
+    /// <summary>
+    ///     The HTTP/2 <b>:method</b> pseudo-header
+    /// </summary>
+    [JsonPropertyName(":method")] 
+    public string? Method { get; set; }
 
-    [JsonPropertyName(":authority")] public string? Authority { get; set; }
+    /// <summary>
+    ///     The HTTP/2 <b>:authority</b> pseudo-header
+    /// </summary>
+    [JsonPropertyName(":authority")] 
+    public string? Authority { get; set; }
 
-    [JsonPropertyName(":scheme")] public string? Scheme { get; set; }
+    /// <summary>
+    ///     The HTTP/2 <b>:scheme</b> pseudo-header
+    /// </summary>
+    [JsonPropertyName(":scheme")] 
+    public string? Scheme { get; set; }
 
-    [JsonPropertyName(":path")] public string? Path { get; set; }
+    /// <summary>
+    ///     The HTTP/2 <b>:path</b> pseudo-header
+    /// </summary>
+    [JsonPropertyName(":path")] 
+    public string? Path { get; set; }
 
-    [JsonPropertyName("user-agent")] public string? UserAgent { get; set; }
+    /// <summary>
+    ///     The HTTP <b>user-agent</b> request header
+    /// </summary>
+    [JsonPropertyName("user-agent")] 
+    public string? UserAgent { get; set; }
 
-    [JsonPropertyName("accept")] public string? Accept { get; set; }
+    /// <summary>
+    ///     The HTTP <b>accept</b> request header
+    /// </summary>
+    [JsonPropertyName("accept")] 
+    public string? Accept { get; set; }
 
-    [JsonPropertyName("sec-fetch-site")] public string? SecFetchSite { get; set; }
+    /// <summary>
+    ///     The HTTP <b>sec-fetch-site</b> request header
+    /// </summary>
+    [JsonPropertyName("sec-fetch-site")] 
+    public string? SecFetchSite { get; set; }
 
-    [JsonPropertyName("sec-fetch-mode")] public string? SecFetchMode { get; set; }
+    /// <summary>
+    ///     The HTTP <b>sec-fetch-mode</b> request header
+    /// </summary>
+    [JsonPropertyName("sec-fetch-mode")] 
+    public string? SecFetchMode { get; set; }
 
-    [JsonPropertyName("sec-fetch-dest")] public string? SecFetchDest { get; set; }
+    /// <summary>
+    ///     The HTTP <b>sec-fetch-dest</b> request header
+    /// </summary>
+    [JsonPropertyName("sec-fetch-dest")] 
+    public string? SecFetchDest { get; set; }
 
-    [JsonPropertyName("accept-encoding")] public string? AcceptEncoding { get; set; }
+    /// <summary>
+    ///     The HTTP <b>accept-encoding</b> request header
+    /// </summary>
+    [JsonPropertyName("accept-encoding")] 
+    public string? AcceptEncoding { get; set; }
 
-    [JsonPropertyName("accept-language")] public string? AcceptLanguage { get; set; }
+    /// <summary>
+    ///     The HTTP <b>accept-language</b> request header
+    /// </summary>
+    [JsonPropertyName("accept-language")] 
+    public string? AcceptLanguage { get; set; }
     #endregion
 }

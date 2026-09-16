@@ -36,6 +36,9 @@ namespace ChromiumHtmlToPdfLib.Protocol;
 internal class PrintToPdfResponse
 {
     #region Properties
+    /// <summary>
+    ///     The message id
+    /// </summary>
     [JsonPropertyName("id")]
     public int Id { get; set; }
 

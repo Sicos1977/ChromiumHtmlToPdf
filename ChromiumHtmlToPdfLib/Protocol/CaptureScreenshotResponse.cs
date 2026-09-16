@@ -36,9 +36,17 @@ namespace ChromiumHtmlToPdfLib.Protocol;
 internal class CaptureScreenshotResponse
 {
     #region Properties
-    [JsonPropertyName("id")] public long Id { get; set; }
+    /// <summary>
+    ///     The message id
+    /// </summary>
+    [JsonPropertyName("id")] 
+    public long Id { get; set; }
 
-    [JsonPropertyName("result")] public CaptureScreenshotResult Result { get; set; } = null!;
+    /// <summary>
+    ///     The result of the <b>Page.captureScreenshot</b> command
+    /// </summary>
+    [JsonPropertyName("result")] 
+    public CaptureScreenshotResult Result { get; set; } = null!;
 
     /// <summary>
     ///     Returns <see cref="PrintToPdfResult.Data" /> as array of bytes
@@ -65,6 +73,9 @@ internal class CaptureScreenshotResponse
 internal class CaptureScreenshotResult
 {
     #region Properties
+    /// <summary>
+    ///     Base64-encoded image data of the captured screenshot
+    /// </summary>
     [JsonPropertyName("data")] public string Data { get; set; } = null!;
     #endregion
 }

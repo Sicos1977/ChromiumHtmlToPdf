@@ -29,10 +29,17 @@ using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Network;
 
+/// <summary>
+///     The JSON object that is returned from Chromium for the <b>Network.requestWillBeSent</b> event
+/// </summary>
 internal class RequestWillBeSent : Base
 {
     #region Properties
-    [JsonPropertyName("params")] public RequestWillBeSentParams Params { get; set; } = null!;
+    /// <summary>
+    ///     The parameters that belong to the <see cref="Base.Method" />
+    /// </summary>
+    [JsonPropertyName("params")] 
+    public RequestWillBeSentParams Params { get; set; } = null!;
     #endregion
 
     #region FromJson
@@ -48,55 +55,135 @@ internal class RequestWillBeSent : Base
     #endregion
 }
 
+/// <summary>
+///     Part of the <see cref="RequestWillBeSent" /> class
+/// </summary>
 internal class RequestWillBeSentParams
 {
     #region Properties
-    [JsonPropertyName("requestId")] public string? RequestId { get; set; }
+    /// <summary>
+    ///     Request identifier
+    /// </summary>
+    [JsonPropertyName("requestId")] 
+    public string? RequestId { get; set; }
 
-    [JsonPropertyName("loaderId")] public string? LoaderId { get; set; }
+    /// <summary>
+    ///     Loader identifier. Empty string if the request is fetched from worker
+    /// </summary>
+    [JsonPropertyName("loaderId")] 
+    public string? LoaderId { get; set; }
 
-    [JsonPropertyName("documentURL")] public string? DocumentUrl { get; set; }
+    /// <summary>
+    ///     URL of the document this request is loaded for
+    /// </summary>
+    [JsonPropertyName("documentURL")] 
+    public string? DocumentUrl { get; set; }
 
-    [JsonPropertyName("request")] public RequestWillBeSentRequest Request { get; set; } = null!;
+    /// <summary>
+    ///     Request data
+    /// </summary>
+    [JsonPropertyName("request")] 
+    public RequestWillBeSentRequest Request { get; set; } = null!;
 
-    [JsonPropertyName("timestamp")] public double Timestamp { get; set; }
+    /// <summary>
+    ///     Timestamp
+    /// </summary>
+    [JsonPropertyName("timestamp")] 
+    public double Timestamp { get; set; }
 
-    [JsonPropertyName("wallTime")] public double WallTime { get; set; }
+    /// <summary>
+    ///     Timestamp (UTC epoch time in seconds)
+    /// </summary>
+    [JsonPropertyName("wallTime")] 
+    public double WallTime { get; set; }
 
-    [JsonPropertyName("initiator")] public WillBeSentInitiator? Initiator { get; set; }
+    /// <summary>
+    ///     Request initiator
+    /// </summary>
+    [JsonPropertyName("initiator")] 
+    public WillBeSentInitiator? Initiator { get; set; }
 
-    [JsonPropertyName("type")] public string? Type { get; set; }
+    /// <summary>
+    ///     Type of this resource
+    /// </summary>
+    [JsonPropertyName("type")] 
+    public string? Type { get; set; }
 
-    [JsonPropertyName("frameId")] public string? FrameId { get; set; }
+    /// <summary>
+    ///     Frame identifier
+    /// </summary>
+    [JsonPropertyName("frameId")] 
+    public string? FrameId { get; set; }
 
-    [JsonPropertyName("hasUserGesture")] public bool HasUserGesture { get; set; }
+    /// <summary>
+    ///     Whether the request is initiated by a user gesture. Defaults to <c>false</c>
+    /// </summary>
+    [JsonPropertyName("hasUserGesture")] 
+    public bool HasUserGesture { get; set; }
     #endregion
 }
 
+/// <summary>
+///     Part of the <see cref="RequestWillBeSentParams" /> class
+/// </summary>
 internal class WillBeSentInitiator
 {
     #region Properties
-    [JsonPropertyName("type")] public string? Type { get; set; }
+    /// <summary>
+    ///     Type of this initiator
+    /// </summary>
+    [JsonPropertyName("type")] 
+    public string? Type { get; set; }
     #endregion
 }
 
+/// <summary>
+///     Part of the <see cref="RequestWillBeSentParams" /> class
+/// </summary>
 internal class RequestWillBeSentRequest
 {
     #region Properties
-    [JsonPropertyName("url")] public string? Url { get; set; }
+    /// <summary>
+    ///     Request URL (without fragment)
+    /// </summary>
+    [JsonPropertyName("url")] 
+    public string? Url { get; set; }
 
-    [JsonPropertyName("method")] public string? Method { get; set; }
+    /// <summary>
+    ///     HTTP request method
+    /// </summary>
+    [JsonPropertyName("method")] 
+    public string? Method { get; set; }
 
-    [JsonPropertyName("headers")] public RequestWillBeSentHeaders? Headers { get; set; }
+    /// <summary>
+    ///     HTTP request headers
+    /// </summary>
+    [JsonPropertyName("headers")] 
+    public RequestWillBeSentHeaders? Headers { get; set; }
 
-    [JsonPropertyName("mixedContentType")] public string? MixedContentType { get; set; }
+    /// <summary>
+    ///     The mixed content type of the request
+    /// </summary>
+    [JsonPropertyName("mixedContentType")] 
+    public string? MixedContentType { get; set; }
 
-    [JsonPropertyName("initialPriority")] public string? InitialPriority { get; set; }
+    /// <summary>
+    ///     Priority of the resource request at the time request is sent
+    /// </summary>
+    [JsonPropertyName("initialPriority")] 
+    public string? InitialPriority { get; set; }
 
-    [JsonPropertyName("referrerPolicy")] public string? ReferrerPolicy { get; set; }
+    /// <summary>
+    ///     The referrer policy of the request, as defined in https://www.w3.org/TR/referrer-policy/
+    /// </summary>
+    [JsonPropertyName("referrerPolicy")] 
+    public string? ReferrerPolicy { get; set; }
     #endregion
 }
 
+/// <summary>
+///     Part of the <see cref="RequestWillBeSentRequest" /> class
+/// </summary>
 // ReSharper disable once ClassNeverInstantiated.Global
 internal class RequestWillBeSentHeaders
 {

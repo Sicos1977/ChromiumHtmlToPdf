@@ -36,9 +36,17 @@ namespace ChromiumHtmlToPdfLib.Protocol;
 internal class Fetch
 {
     #region Properties
-    [JsonPropertyName("method")] public string? Method { get; set; }
+    /// <summary>
+    ///     The method (event) that Chromium sent, e.g. <b>Fetch.requestPaused</b>
+    /// </summary>
+    [JsonPropertyName("method")] 
+    public string? Method { get; set; }
 
-    [JsonPropertyName("params")] public FetchParams Params { get; set; } = null!;
+    /// <summary>
+    ///     The parameters that belong to the <see cref="Method" />
+    /// </summary>
+    [JsonPropertyName("params")] 
+    public FetchParams Params { get; set; } = null!;
     #endregion
 
     #region FromJson
@@ -60,15 +68,35 @@ internal class Fetch
 internal class FetchParams
 {
     #region Properties
-    [JsonPropertyName("requestId")] public string RequestId { get; set; } = null!;
+    /// <summary>
+    ///     Each request the page makes will have a unique id
+    /// </summary>
+    [JsonPropertyName("requestId")] 
+    public string RequestId { get; set; } = null!;
 
-    [JsonPropertyName("request")] public FetchRequest Request { get; set; } = null!;
+    /// <summary>
+    ///     The details of the request
+    /// </summary>
+    [JsonPropertyName("request")] 
+    public FetchRequest Request { get; set; } = null!;
 
-    [JsonPropertyName("frameId")] public string? FrameId { get; set; }
+    /// <summary>
+    ///     The id of the frame that initiated the request
+    /// </summary>
+    [JsonPropertyName("frameId")] 
+    public string? FrameId { get; set; }
 
-    [JsonPropertyName("resourceType")] public string? ResourceType { get; set; }
+    /// <summary>
+    ///     How the requested resource will be used
+    /// </summary>
+    [JsonPropertyName("resourceType")] 
+    public string? ResourceType { get; set; }
 
-    [JsonPropertyName("networkId")] public string? NetworkId { get; set; }
+    /// <summary>
+    ///     The id of the network request that produced this fetch event
+    /// </summary>
+    [JsonPropertyName("networkId")] 
+    public string? NetworkId { get; set; }
     #endregion
 }
 
@@ -78,15 +106,35 @@ internal class FetchParams
 internal class FetchRequest
 {
     #region Properties
-    [JsonPropertyName("url")] public string Url { get; set; } = null!;
+    /// <summary>
+    ///     Request URL (without fragment)
+    /// </summary>
+    [JsonPropertyName("url")] 
+    public string Url { get; set; } = null!;
 
-    [JsonPropertyName("method")] public string? Method { get; set; }
+    /// <summary>
+    ///     HTTP request method
+    /// </summary>
+    [JsonPropertyName("method")] 
+    public string? Method { get; set; }
 
-    [JsonPropertyName("headers")] public FetchHeaders? Headers { get; set; }
+    /// <summary>
+    ///     HTTP request headers
+    /// </summary>
+    [JsonPropertyName("headers")] 
+    public FetchHeaders? Headers { get; set; }
 
-    [JsonPropertyName("initialPriority")] public string? InitialPriority { get; set; }
+    /// <summary>
+    ///     Priority of the resource request at the time request is sent
+    /// </summary>
+    [JsonPropertyName("initialPriority")] 
+    public string? InitialPriority { get; set; }
 
-    [JsonPropertyName("referrerPolicy")] public string? ReferrerPolicy { get; set; }
+    /// <summary>
+    ///     The referrer policy of the request, as defined in https://www.w3.org/TR/referrer-policy/
+    /// </summary>
+    [JsonPropertyName("referrerPolicy")] 
+    public string? ReferrerPolicy { get; set; }
     #endregion
 }
 
@@ -96,6 +144,10 @@ internal class FetchRequest
 internal class FetchHeaders
 {
     #region Properties
-    [JsonPropertyName("Accept")] public string? Accept { get; set; }
+    /// <summary>
+    ///     The HTTP <b>Accept</b> request header
+    /// </summary>
+    [JsonPropertyName("Accept")] 
+    public string? Accept { get; set; }
     #endregion
 }

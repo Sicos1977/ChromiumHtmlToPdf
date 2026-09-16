@@ -71,6 +71,6 @@ internal class EventParams
     ///     The timestamp
     /// </summary>
     [JsonPropertyName("timestamp")]
-    public long Timestamp { get; set; }
+    public double Timestamp { get; set; }
     #endregion
 }

@@ -61,6 +61,9 @@ internal class Page
 internal class PageResult
 {
     #region Propertie
+    /// <summary>
+    ///     The id of the created target (page)
+    /// </summary>
     [JsonPropertyName("targetId")] public string? TargetId { get; set; }
     #endregion
 }
