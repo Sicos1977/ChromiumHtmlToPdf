@@ -1,4 +1,4 @@
-﻿//
+//
 // Base.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
@@ -24,7 +24,8 @@
 // THE SOFTWARE.
 //
 
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Page;
 
@@ -37,7 +38,7 @@ internal class Base
     /// <summary>
     ///     The method executed by Chromium
     /// </summary>
-    [JsonProperty("method")]
+    [JsonPropertyName("method")]
     public string? Method { get; set; }
     #endregion
 
@@ -49,7 +50,7 @@ internal class Base
     /// <returns></returns>
     public static Base FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<Base>(json)!;
+        return JsonSerializer.Deserialize<Base>(json, JsonHelper.SerializerOptions)!;
     }
     #endregion
 }

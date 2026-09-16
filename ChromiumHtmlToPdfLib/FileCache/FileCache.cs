@@ -264,7 +264,7 @@ public class FileCache : ObjectCache
     /// <param name="manager"></param>
     public FileCache(FileCacheManagers manager)
     {
-        Init(manager, false, new());
+        Init(manager, false, TimeSpan.Zero);
     }
 
     /// <summary>
@@ -384,6 +384,12 @@ public class FileCache : ObjectCache
     #endregion
 
     #region Init
+    /// <summary>
+    ///     Initializes the FileCache instance.  This is called by all constructors to avoid code duplication.
+    /// </summary>
+    /// <param name="manager">The cache manager to use</param>
+    /// <param name="calculateCacheSize">If true, calculates the cache's current size upon initialization</param>
+    /// <param name="cleanInterval">The interval of time that must occur between self cleans</param>
     [MemberNotNull(nameof(_binder), nameof(CacheDir), nameof(DefaultPolicy), nameof(CacheManager))]
     private void Init(
         FileCacheManagers manager,
@@ -402,15 +408,15 @@ public class FileCache : ObjectCache
         _binder ??= new FileCacheBinder();
 
         // if it doesn't exist, we need to make it
-        if (!Directory.Exists(CacheDir)) Directory.CreateDirectory(CacheDir!);
+        if (!Directory.Exists(CacheDir)) Directory.CreateDirectory(CacheDir);
 
         // only set the clean interval if the user supplied it
-        if (cleanInterval > new TimeSpan()) _cleanInterval = cleanInterval;
+        if (cleanInterval > TimeSpan.Zero) _cleanInterval = cleanInterval;
 
         //set up cache manager
         CacheManager = FileCacheManagerFactory.Create(manager, CacheDir, CacheSubFolder, PolicySubFolder);
         CacheManager.Binder = _binder;
-        CacheManager.AccessTimeout = new TimeSpan();
+        CacheManager.AccessTimeout = TimeSpan.Zero;
 
         //check to see if cache is in need of immediate cleaning
         if (ShouldClean())
@@ -703,7 +709,7 @@ public class FileCache : ObjectCache
         var totalTime = new TimeSpan(0);
         var interval = new TimeSpan(0, 0, 0, 0, 50);
         var timeToWait = AccessTimeout;
-        if (AccessTimeout == new TimeSpan())
+        if (AccessTimeout == TimeSpan.Zero)
             //if access timeout is not set, make really large wait time
             timeToWait = new TimeSpan(5, 0, 0);
         while (cacheLock == null && timeToWait > totalTime)
@@ -954,7 +960,7 @@ public class FileCache : ObjectCache
             else
             {
                 //does the item have a sliding expiration?
-                if (payload.Policy.SlidingExpiration > new TimeSpan())
+                if (payload.Policy.SlidingExpiration > TimeSpan.Zero)
                 {
                     payload.Policy.AbsoluteExpiration = DateTime.Now.Add(payload.Policy.SlidingExpiration);
                     WriteHelper(PayloadWriteMode, key, payload, regionName, true);
@@ -1077,7 +1083,7 @@ public class FileCache : ObjectCache
             //remove cache entry
             // CT note: calling Get from remove leads to an infinite loop and stack overflow,
             // so I replaced it with a simple CacheManager.ReadFile call. None of the code here actually
-            // uses this object returned, but just in case someone elses outside code does.
+            // uses this object returned, but just in case someone else's outside code does.
             var fcp = CacheManager.ReadFile(PayloadMode.Filename, key, regionName);
             valueToDelete = fcp.Payload;
             var path = CacheManager.GetCachePath(key, regionName);
@@ -1107,7 +1113,7 @@ public class FileCache : ObjectCache
     /// <param name="regionName"></param>
     public override void Set(string key, object? value, CacheItemPolicy policy, string? regionName = null)
     {
-        Add(key, value, policy, regionName);
+        if (value != null) Add(key, value, policy, regionName);
     }
 
     /// <summary>

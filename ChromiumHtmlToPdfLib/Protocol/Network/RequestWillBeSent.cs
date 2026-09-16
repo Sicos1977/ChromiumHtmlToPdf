@@ -1,4 +1,4 @@
-﻿//
+//
 // RequestWillBeSent.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
@@ -24,16 +24,15 @@
 // THE SOFTWARE.
 //
 
-using System.Globalization;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Network;
 
 internal class RequestWillBeSent : Base
 {
     #region Properties
-    [JsonProperty("params")] public RequestWillBeSentParams Params { get; set; } = null!;
+    [JsonPropertyName("params")] public RequestWillBeSentParams Params { get; set; } = null!;
     #endregion
 
     #region FromJson
@@ -44,7 +43,7 @@ internal class RequestWillBeSent : Base
     /// <returns></returns>
     public new static RequestWillBeSent FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<RequestWillBeSent>(json, RequestWillBeSentConverter.Settings)!;
+        return JsonSerializer.Deserialize<RequestWillBeSent>(json, JsonHelper.SerializerOptions)!;
     }
     #endregion
 }
@@ -52,49 +51,49 @@ internal class RequestWillBeSent : Base
 internal class RequestWillBeSentParams
 {
     #region Properties
-    [JsonProperty("requestId")] public string? RequestId { get; set; }
+    [JsonPropertyName("requestId")] public string? RequestId { get; set; }
 
-    [JsonProperty("loaderId")] public string? LoaderId { get; set; }
+    [JsonPropertyName("loaderId")] public string? LoaderId { get; set; }
 
-    [JsonProperty("documentURL")] public string? DocumentUrl { get; set; }
+    [JsonPropertyName("documentURL")] public string? DocumentUrl { get; set; }
 
-    [JsonProperty("request")] public RequestWillBeSentRequest Request { get; set; } = null!;
+    [JsonPropertyName("request")] public RequestWillBeSentRequest Request { get; set; } = null!;
 
-    [JsonProperty("timestamp")] public double Timestamp { get; set; }
+    [JsonPropertyName("timestamp")] public double Timestamp { get; set; }
 
-    [JsonProperty("wallTime")] public double WallTime { get; set; }
+    [JsonPropertyName("wallTime")] public double WallTime { get; set; }
 
-    [JsonProperty("initiator")] public WillBeSentInitiator? Initiator { get; set; }
+    [JsonPropertyName("initiator")] public WillBeSentInitiator? Initiator { get; set; }
 
-    [JsonProperty("type")] public string? Type { get; set; }
+    [JsonPropertyName("type")] public string? Type { get; set; }
 
-    [JsonProperty("frameId")] public string? FrameId { get; set; }
+    [JsonPropertyName("frameId")] public string? FrameId { get; set; }
 
-    [JsonProperty("hasUserGesture")] public bool HasUserGesture { get; set; }
+    [JsonPropertyName("hasUserGesture")] public bool HasUserGesture { get; set; }
     #endregion
 }
 
 internal class WillBeSentInitiator
 {
     #region Properties
-    [JsonProperty("type")] public string? Type { get; set; }
+    [JsonPropertyName("type")] public string? Type { get; set; }
     #endregion
 }
 
 internal class RequestWillBeSentRequest
 {
     #region Properties
-    [JsonProperty("url")] public string? Url { get; set; }
+    [JsonPropertyName("url")] public string? Url { get; set; }
 
-    [JsonProperty("method")] public string? Method { get; set; }
+    [JsonPropertyName("method")] public string? Method { get; set; }
 
-    [JsonProperty("headers")] public RequestWillBeSentHeaders? Headers { get; set; }
+    [JsonPropertyName("headers")] public RequestWillBeSentHeaders? Headers { get; set; }
 
-    [JsonProperty("mixedContentType")] public string? MixedContentType { get; set; }
+    [JsonPropertyName("mixedContentType")] public string? MixedContentType { get; set; }
 
-    [JsonProperty("initialPriority")] public string? InitialPriority { get; set; }
+    [JsonPropertyName("initialPriority")] public string? InitialPriority { get; set; }
 
-    [JsonProperty("referrerPolicy")] public string? ReferrerPolicy { get; set; }
+    [JsonPropertyName("referrerPolicy")] public string? ReferrerPolicy { get; set; }
     #endregion
 }
 
@@ -102,15 +101,3 @@ internal class RequestWillBeSentRequest
 internal class RequestWillBeSentHeaders
 {
 }
-
-#region Static class RequestWillBeSentConverter
-internal static class RequestWillBeSentConverter
-{
-    public static readonly JsonSerializerSettings Settings = new()
-    {
-        MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
-        DateParseHandling = DateParseHandling.None,
-        Converters = { new IsoDateTimeConverter { DateTimeStyles = DateTimeStyles.AssumeUniversal } }
-    };
-}
-#endregion

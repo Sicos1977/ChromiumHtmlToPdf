@@ -1,4 +1,4 @@
-﻿//
+//
 // IoReadResponse.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
@@ -25,7 +25,8 @@
 //
 
 using System;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol;
 
@@ -38,7 +39,7 @@ internal class IoReadResponse : MessageBase
     /// <summary>
     ///     <see cref="IoReadResponseResult" />
     /// </summary>
-    [JsonProperty("result")]
+    [JsonPropertyName("result")]
     public IoReadResponseResult Result { get; set; } = null!;
     #endregion
 
@@ -50,7 +51,7 @@ internal class IoReadResponse : MessageBase
     /// <returns></returns>
     public new static IoReadResponse FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<IoReadResponse>(json)!;
+        return JsonSerializer.Deserialize<IoReadResponse>(json, JsonHelper.SerializerOptions)!;
     }
     #endregion
 }
@@ -64,13 +65,13 @@ internal class IoReadResponseResult
     /// <summary>
     ///     Returns <c>true</c> when <see cref="Data" /> is base64 encoded
     /// </summary>
-    [JsonProperty("base64Encoded")]
+    [JsonPropertyName("base64Encoded")]
     public bool Base64Encoded { get; set; }
 
     /// <summary>
     ///     Returns the data as a base64 encoded string
     /// </summary>
-    [JsonProperty("data")]
+    [JsonPropertyName("data")]
     public string Data { get; set; } = null!;
 
     /// <summary>
@@ -81,7 +82,7 @@ internal class IoReadResponseResult
     /// <summary>
     ///     Returns <c>true</c> when at the end of the file
     /// </summary>
-    [JsonProperty("eof")]
+    [JsonPropertyName("eof")]
     public bool Eof { get; set; }
     #endregion
 }

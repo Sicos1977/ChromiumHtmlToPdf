@@ -1,4 +1,4 @@
-﻿//
+//
 // LoadingFailed.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
@@ -24,16 +24,15 @@
 // THE SOFTWARE.
 //
 
-using System.Globalization;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Network;
 
 internal class LoadingFailed : Base
 {
     #region Properties
-    [JsonProperty("params")] public LoadingFailedParams Params { get; set; } = null!;
+    [JsonPropertyName("params")] public LoadingFailedParams Params { get; set; } = null!;
     #endregion
 
     #region FromJson
@@ -44,7 +43,7 @@ internal class LoadingFailed : Base
     /// <returns></returns>
     public new static LoadingFailed FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<LoadingFailed>(json, LoadingFailedConverter.Settings)!;
+        return JsonSerializer.Deserialize<LoadingFailed>(json, JsonHelper.SerializerOptions)!;
     }
     #endregion
 }
@@ -52,26 +51,14 @@ internal class LoadingFailed : Base
 internal class LoadingFailedParams
 {
     #region Properties
-    [JsonProperty("requestId")] public string? RequestId { get; set; }
+    [JsonPropertyName("requestId")] public string? RequestId { get; set; }
 
-    [JsonProperty("timestamp")] public double Timestamp { get; set; }
+    [JsonPropertyName("timestamp")] public double Timestamp { get; set; }
 
-    [JsonProperty("type")] public string? Type { get; set; }
+    [JsonPropertyName("type")] public string? Type { get; set; }
 
-    [JsonProperty("errorText")] public string? ErrorText { get; set; }
+    [JsonPropertyName("errorText")] public string? ErrorText { get; set; }
 
-    [JsonProperty("canceled")] public bool Canceled { get; set; }
+    [JsonPropertyName("canceled")] public bool Canceled { get; set; }
     #endregion
 }
-
-#region Static class LoadingFailedConverter
-internal static class LoadingFailedConverter
-{
-    public static readonly JsonSerializerSettings Settings = new()
-    {
-        MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
-        DateParseHandling = DateParseHandling.None,
-        Converters = { new IsoDateTimeConverter { DateTimeStyles = DateTimeStyles.AssumeUniversal } }
-    };
-}
-#endregion

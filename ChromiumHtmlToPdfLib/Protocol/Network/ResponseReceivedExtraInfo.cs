@@ -1,4 +1,4 @@
-﻿//
+//
 // ResponseReceivedExtraInfo.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
@@ -26,16 +26,15 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Network;
 
 internal class ResponseReceivedExtraInfo : Base
 {
     #region Properties
-    [JsonProperty("params")] public ResponseReceivedExtraInfoParams? Params { get; set; }
+    [JsonPropertyName("params")] public ResponseReceivedExtraInfoParams? Params { get; set; }
     #endregion
 
     #region FromJson
@@ -46,8 +45,7 @@ internal class ResponseReceivedExtraInfo : Base
     /// <returns></returns>
     public new static ResponseReceivedExtraInfo FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<ResponseReceivedExtraInfo>(json,
-            ResponseReceivedExtraInfoConverter.Settings)!;
+        return JsonSerializer.Deserialize<ResponseReceivedExtraInfo>(json, JsonHelper.SerializerOptions)!;
     }
     #endregion
 }
@@ -55,82 +53,66 @@ internal class ResponseReceivedExtraInfo : Base
 internal class ResponseReceivedExtraInfoParams
 {
     #region Properties
-    [JsonProperty("requestId")] public string? RequestId { get; set; }
+    [JsonPropertyName("requestId")] public string? RequestId { get; set; }
 
-    [JsonProperty("blockedCookies")] public List<object>? BlockedCookies { get; set; }
+    [JsonPropertyName("blockedCookies")] public List<object>? BlockedCookies { get; set; }
 
-    [JsonProperty("headers")] public ResponseReceivedExtraInfoHeaders? Headers { get; set; }
+    [JsonPropertyName("headers")] public ResponseReceivedExtraInfoHeaders? Headers { get; set; }
     #endregion
 }
 
 internal class ResponseReceivedExtraInfoHeaders
 {
     #region Properties
-    [JsonProperty("content-type")] public string? ContentType { get; set; }
+    [JsonPropertyName("content-type")] public string? ContentType { get; set; }
 
-    [JsonProperty("content-length")]
+    [JsonPropertyName("content-length")]
     [JsonConverter(typeof(ResponseReceivedExtraInfoParseStringConverter))]
     public long ContentLength { get; set; }
 
-    [JsonProperty("server")] public string? Server { get; set; }
+    [JsonPropertyName("server")] public string? Server { get; set; }
 
-    [JsonProperty("etag")] public string? Etag { get; set; }
+    [JsonPropertyName("etag")] public string? Etag { get; set; }
 
-    [JsonProperty("max-age")]
+    [JsonPropertyName("max-age")]
     [JsonConverter(typeof(ResponseReceivedExtraInfoParseStringConverter))]
     public long MaxAge { get; set; }
 
-    [JsonProperty("x-debug")] public string? XDebug { get; set; }
+    [JsonPropertyName("x-debug")] public string? XDebug { get; set; }
 
-    [JsonProperty("cache-control")] public string? CacheControl { get; set; }
+    [JsonPropertyName("cache-control")] public string? CacheControl { get; set; }
 
-    [JsonProperty("expires")] public string? Expires { get; set; }
+    [JsonPropertyName("expires")] public string? Expires { get; set; }
 
-    [JsonProperty("date")] public string? Date { get; set; }
+    [JsonPropertyName("date")] public string? Date { get; set; }
     #endregion
 }
 
-#region Static class ResponseReceivedExtraInfoConverter
-internal static class ResponseReceivedExtraInfoConverter
-{
-    public static readonly JsonSerializerSettings Settings = new()
-    {
-        MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
-        DateParseHandling = DateParseHandling.None,
-        Converters = { new IsoDateTimeConverter { DateTimeStyles = DateTimeStyles.AssumeUniversal } }
-    };
-}
-#endregion
 
 #region Class ResponseReceivedExtraInfoParseStringConverter
-internal class ResponseReceivedExtraInfoParseStringConverter : JsonConverter
+internal class ResponseReceivedExtraInfoParseStringConverter : JsonConverter<long>
 {
-    public override bool CanConvert(Type t)
+    public override long Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        return t == typeof(long) || t == typeof(long?);
-    }
-
-    public override object? ReadJson(JsonReader reader, Type t, object? existingValue, JsonSerializer serializer)
-    {
-        if (reader.TokenType == JsonToken.Null) return null;
-        var value = serializer.Deserialize<string>(reader);
-
-        if (long.TryParse(value, out var l))
-            return l;
-
-        throw new Exception("Cannot unmarshal type long");
-    }
-
-    public override void WriteJson(JsonWriter writer, object? untypedValue, JsonSerializer serializer)
-    {
-        if (untypedValue == null)
+        switch (reader.TokenType)
         {
-            serializer.Serialize(writer, null);
-            return;
+            case JsonTokenType.Number:
+                return reader.GetInt64();
+            case JsonTokenType.String:
+            {
+                var value = reader.GetString();
+                if (long.TryParse(value, out var l))
+                    return l;
+                break;
+            }
         }
 
-        var value = (long)untypedValue;
-        serializer.Serialize(writer, value.ToString());
+        throw new JsonException("Cannot unmarshal type long");
+    }
+
+    public override void Write(Utf8JsonWriter writer, long value, JsonSerializerOptions options)
+    {
+        writer.WriteStringValue(value.ToString());
     }
 }
 #endregion

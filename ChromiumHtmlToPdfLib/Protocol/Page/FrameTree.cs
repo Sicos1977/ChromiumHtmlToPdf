@@ -24,22 +24,23 @@
 // THE SOFTWARE.
 //
 
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Page;
 
 internal class FrameTree
 {
     #region Properties
-    [JsonProperty("id")] public int Id { get; set; }
+    [JsonPropertyName("id")] public int Id { get; set; }
 
-    [JsonProperty("result")] public FrameTreeResponse Result { get; set; } = null!;
+    [JsonPropertyName("result")] public FrameTreeResponse Result { get; set; } = null!;
     #endregion
 
     #region FromJson
     public static FrameTree FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<FrameTree>(json)!;
+        return JsonSerializer.Deserialize<FrameTree>(json, JsonHelper.SerializerOptions)!;
     }
     #endregion
 }
@@ -47,24 +48,24 @@ internal class FrameTree
 internal class FrameTreeResponse
 {
     #region Properties
-    [JsonProperty("frameTree")] public FrameResponse FrameTree { get; set; } = null!;
+    [JsonPropertyName("frameTree")] public FrameResponse FrameTree { get; set; } = null!;
     #endregion
 }
 
 internal class FrameResponse
 {
     #region Properties
-    [JsonProperty("frame")] public FrameBody Frame { get; set; } = null!;
+    [JsonPropertyName("frame")] public FrameBody Frame { get; set; } = null!;
     #endregion
 }
 
 internal class FrameBody
 {
     #region Properties
-    [JsonProperty("id")] public string Id { get; set; } = null!;
+    [JsonPropertyName("id")] public string Id { get; set; } = null!;
 
-    [JsonProperty("loaderId")] public string? LoaderId { get; set; }
+    [JsonPropertyName("loaderId")] public string? LoaderId { get; set; }
 
-    [JsonProperty("url")] public string? Url { get; set; }
+    [JsonPropertyName("url")] public string? Url { get; set; }
     #endregion
 }

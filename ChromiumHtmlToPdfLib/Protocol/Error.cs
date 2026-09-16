@@ -1,4 +1,4 @@
-﻿//
+//
 // Error.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
@@ -24,7 +24,8 @@
 // THE SOFTWARE.
 //
 
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol;
 
@@ -37,7 +38,7 @@ internal class Error : MessageBase
     /// <summary>
     ///     <see cref="InnerError" />
     /// </summary>
-    [JsonProperty("error")]
+    [JsonPropertyName("error")]
     public ErrorInnerError InnerError { get; set; } = null!;
     #endregion
 
@@ -49,7 +50,7 @@ internal class Error : MessageBase
     /// <returns></returns>
     public new static Error FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<Error>(json)!;
+        return JsonSerializer.Deserialize<Error>(json, JsonHelper.SerializerOptions)!;
     }
     #endregion
 }
@@ -63,13 +64,13 @@ internal class ErrorInnerError
     /// <summary>
     ///     The error code
     /// </summary>
-    [JsonProperty("code")]
+    [JsonPropertyName("code")]
     public double Code { get; set; }
 
     /// <summary>
     ///     The error message
     /// </summary>
-    [JsonProperty("message")]
+    [JsonPropertyName("message")]
     public string? Message { get; set; }
     #endregion
 }

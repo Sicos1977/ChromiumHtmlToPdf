@@ -1,4 +1,4 @@
-﻿//
+//
 // RequestServedFromCache.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
@@ -24,14 +24,15 @@
 // THE SOFTWARE.
 //
 
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Network;
 
 internal class RequestServedFromCache : Base
 {
     #region Properties
-    [JsonProperty("params")] public RequestServedFromCacheParams Params { get; set; } = null!;
+    [JsonPropertyName("params")] public RequestServedFromCacheParams Params { get; set; } = null!;
     #endregion
 
     #region FromJson
@@ -42,7 +43,7 @@ internal class RequestServedFromCache : Base
     /// <returns></returns>
     public new static RequestServedFromCache FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<RequestServedFromCache>(json)!;
+        return JsonSerializer.Deserialize<RequestServedFromCache>(json, JsonHelper.SerializerOptions)!;
     }
     #endregion
 }
@@ -50,6 +51,6 @@ internal class RequestServedFromCache : Base
 internal class RequestServedFromCacheParams
 {
     #region Properties
-    [JsonProperty("requestId")] public string? RequestId { get; set; }
+    [JsonPropertyName("requestId")] public string? RequestId { get; set; }
     #endregion
 }

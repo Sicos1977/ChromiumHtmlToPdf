@@ -1,4 +1,4 @@
-﻿//
+//
 // PageEvent.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
@@ -24,7 +24,8 @@
 // THE SOFTWARE.
 //
 
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Page;
 
@@ -37,7 +38,7 @@ internal class Event : Base
     /// <summary>
     ///     The parameters used with this <see cref="Base.Method" />
     /// </summary>
-    [JsonProperty("params")]
+    [JsonPropertyName("params")]
     public EventParams? Params { get; set; }
     #endregion
 
@@ -49,7 +50,7 @@ internal class Event : Base
     /// <returns></returns>
     public new static Event FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<Event>(json)!;
+        return JsonSerializer.Deserialize<Event>(json, JsonHelper.SerializerOptions)!;
     }
     #endregion
 }
@@ -63,13 +64,13 @@ internal class EventParams
     /// <summary>
     ///     The parameters name
     /// </summary>
-    [JsonProperty("name")]
+    [JsonPropertyName("name")]
     public string? Name { get; set; }
 
     /// <summary>
     ///     The timestamp
     /// </summary>
-    [JsonProperty("timestamp")]
+    [JsonPropertyName("timestamp")]
     public long Timestamp { get; set; }
     #endregion
 }

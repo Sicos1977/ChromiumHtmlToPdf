@@ -1,4 +1,4 @@
-﻿//
+//
 // ExpressionResponse.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
@@ -24,7 +24,8 @@
 // THE SOFTWARE.
 //
 
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol;
 
@@ -37,7 +38,7 @@ internal class Expression : MessageBase
     /// <summary>
     ///     <see cref="ExpressionResult" />
     /// </summary>
-    [JsonProperty("result")]
+    [JsonPropertyName("result")]
     public ExpressionResult? Result { get; set; }
     #endregion
 
@@ -49,7 +50,7 @@ internal class Expression : MessageBase
     /// <returns></returns>
     public new static Expression FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<Expression>(json)!;
+        return JsonSerializer.Deserialize<Expression>(json, JsonHelper.SerializerOptions)!;
     }
     #endregion
 }
@@ -63,13 +64,13 @@ internal class ExpressionResult
     /// <summary>
     ///     Returns an object when an exception occurs when Chromium evaluated the given expression
     /// </summary>
-    [JsonProperty("exceptionDetails")]
+    [JsonPropertyName("exceptionDetails")]
     public ExpressionExceptionDetails? ExceptionDetails { get; set; }
 
     /// <summary>
     ///     Returns the results for the given expression
     /// </summary>
-    [JsonProperty("result")]
+    [JsonPropertyName("result")]
     public ExpressionInnerResult? InnerResult { get; set; }
     #endregion
 }
@@ -83,37 +84,37 @@ internal class ExpressionExceptionDetails
     /// <summary>
     ///     The column number where the exception occured
     /// </summary>
-    [JsonProperty("columnNumber")]
+    [JsonPropertyName("columnNumber")]
     public long ColumnNumber { get; set; }
 
     /// <summary>
     ///     <see cref="ExpressionInnerResult" />
     /// </summary>
-    [JsonProperty("exception")]
+    [JsonPropertyName("exception")]
     public ExpressionInnerResult? Exception { get; set; }
 
     /// <summary>
     ///     The exception id
     /// </summary>
-    [JsonProperty("exceptionId")]
+    [JsonPropertyName("exceptionId")]
     public long ExceptionId { get; set; }
 
     /// <summary>
     ///     The line number where the exception occured
     /// </summary>
-    [JsonProperty("lineNumber")]
+    [JsonPropertyName("lineNumber")]
     public long LineNumber { get; set; }
 
     /// <summary>
     ///     The script <see cref="MessageBase.Id" />
     /// </summary>
-    [JsonProperty("scriptId")]
+    [JsonPropertyName("scriptId")]
     public string? ScriptId { get; set; }
 
     /// <summary>
     ///     The text
     /// </summary>
-    [JsonProperty("text")]
+    [JsonPropertyName("text")]
     public string? Text { get; set; }
     #endregion
 }
@@ -124,16 +125,16 @@ internal class ExpressionExceptionDetails
 internal class ExpressionInnerResult
 {
     #region Properties
-    [JsonProperty("className")] public string? ClassName { get; set; }
+    [JsonPropertyName("className")] public string? ClassName { get; set; }
 
-    [JsonProperty("description")] public string? Description { get; set; }
+    [JsonPropertyName("description")] public string? Description { get; set; }
 
-    [JsonProperty("objectId")] public string? ObjectId { get; set; }
+    [JsonPropertyName("objectId")] public string? ObjectId { get; set; }
 
-    [JsonProperty("subtype")] public string? Subtype { get; set; }
+    [JsonPropertyName("subtype")] public string? Subtype { get; set; }
 
-    [JsonProperty("type")] public string? Type { get; set; }
+    [JsonPropertyName("type")] public string? Type { get; set; }
 
-    [JsonProperty("value")] public string? Value { get; set; }
+    [JsonPropertyName("value")] public string? Value { get; set; }
     #endregion
 }

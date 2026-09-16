@@ -1,4 +1,4 @@
-﻿//
+//
 // PrintToPdfResponse.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
@@ -25,7 +25,8 @@
 //
 
 using System;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol;
 
@@ -35,19 +36,19 @@ namespace ChromiumHtmlToPdfLib.Protocol;
 internal class PrintToPdfResponse
 {
     #region Properties
-    [JsonProperty("id")]
+    [JsonPropertyName("id")]
     public int Id { get; set; }
 
     /// <summary>
     ///     <see cref="PrintToPdfResult" />
     /// </summary>
-    [JsonProperty("result")]
+    [JsonPropertyName("result")]
     public PrintToPdfResult? Result { get; set; }
 
     /// <summary>
     ///     <see cref="PrintToPdfErrorResult" />
     /// </summary>
-    [JsonProperty("error")]
+    [JsonPropertyName("error")]
     public PrintToPdfErrorResult? Error { get; set; }
 
     /// <summary>
@@ -64,7 +65,7 @@ internal class PrintToPdfResponse
     /// <returns></returns>
     public static PrintToPdfResponse FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<PrintToPdfResponse>(json)!;
+        return JsonSerializer.Deserialize<PrintToPdfResponse>(json, JsonHelper.SerializerOptions)!;
     }
     #endregion
 }
@@ -78,13 +79,13 @@ internal class PrintToPdfResult
     /// <summary>
     ///     The PDF as base64 string
     /// </summary>
-    [JsonProperty("data")]
+    [JsonPropertyName("data")]
     public string Data { get; set; } = null!;
 
     /// <summary>
     ///     Returns a stream handle number
     /// </summary>
-    [JsonProperty("stream")]
+    [JsonPropertyName("stream")]
     public string? Stream { get; set; }
     #endregion
 }
@@ -98,13 +99,13 @@ internal class PrintToPdfErrorResult
     /// <summary>
     ///     Error code
     /// </summary>
-    [JsonProperty("code")]
+    [JsonPropertyName("code")]
     public int Code { get; set; }
 
     /// <summary>
     ///     Error message
     /// </summary>
-    [JsonProperty("message")]
+    [JsonPropertyName("message")]
     public string? Message { get; set; }
     #endregion
 }

@@ -1,4 +1,4 @@
-﻿//
+//
 // CaptureScreenshotResponse.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
@@ -25,7 +25,8 @@
 //
 
 using System;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol;
 
@@ -35,9 +36,9 @@ namespace ChromiumHtmlToPdfLib.Protocol;
 internal class CaptureScreenshotResponse
 {
     #region Properties
-    [JsonProperty("id")] public long Id { get; set; }
+    [JsonPropertyName("id")] public long Id { get; set; }
 
-    [JsonProperty("result")] public CaptureScreenshotResult Result { get; set; } = null!;
+    [JsonPropertyName("result")] public CaptureScreenshotResult Result { get; set; } = null!;
 
     /// <summary>
     ///     Returns <see cref="PrintToPdfResult.Data" /> as array of bytes
@@ -53,7 +54,7 @@ internal class CaptureScreenshotResponse
     /// <returns></returns>
     public static CaptureScreenshotResponse FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<CaptureScreenshotResponse>(json)!;
+        return JsonSerializer.Deserialize<CaptureScreenshotResponse>(json, JsonHelper.SerializerOptions)!;
     }
     #endregion
 }
@@ -64,6 +65,6 @@ internal class CaptureScreenshotResponse
 internal class CaptureScreenshotResult
 {
     #region Properties
-    [JsonProperty("data")] public string Data { get; set; } = null!;
+    [JsonPropertyName("data")] public string Data { get; set; } = null!;
     #endregion
 }

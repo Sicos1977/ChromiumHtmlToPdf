@@ -1,4 +1,4 @@
-﻿//
+//
 // MessageBase.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
@@ -24,7 +24,8 @@
 // THE SOFTWARE.
 //
 
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol;
 
@@ -37,7 +38,7 @@ internal class MessageBase
     /// <summary>
     ///     The message id
     /// </summary>
-    [JsonProperty("id")]
+    [JsonPropertyName("id")]
     public int Id { get; set; }
     #endregion
 
@@ -49,7 +50,7 @@ internal class MessageBase
     /// <returns></returns>
     public static MessageBase FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<MessageBase>(json)!;
+        return JsonSerializer.Deserialize<MessageBase>(json, JsonHelper.SerializerOptions)!;
     }
     #endregion
 
@@ -60,7 +61,8 @@ internal class MessageBase
     /// <returns></returns>
     public string ToJson()
     {
-        return JsonConvert.SerializeObject(this);
+        // Serialize using the runtime type so that derived types (e.g. Message) are fully serialized
+        return JsonSerializer.Serialize(this, GetType(), JsonHelper.SerializerOptions);
     }
     #endregion
 }

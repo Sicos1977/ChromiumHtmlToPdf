@@ -1,4 +1,4 @@
-﻿//
+//
 // Page.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
@@ -24,7 +24,8 @@
 // THE SOFTWARE.
 //
 
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Page;
 
@@ -37,7 +38,7 @@ internal class Page
     /// <summary>
     ///     The result
     /// </summary>
-    [JsonProperty("result")]
+    [JsonPropertyName("result")]
     public PageResult Result { get; set; } = null!;
     #endregion
 
@@ -49,7 +50,7 @@ internal class Page
     /// <returns></returns>
     public static Page FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<Page>(json)!;
+        return JsonSerializer.Deserialize<Page>(json, JsonHelper.SerializerOptions)!;
     }
     #endregion
 }
@@ -60,6 +61,6 @@ internal class Page
 internal class PageResult
 {
     #region Propertie
-    [JsonProperty("targetId")] public string? TargetId { get; set; }
+    [JsonPropertyName("targetId")] public string? TargetId { get; set; }
     #endregion
 }

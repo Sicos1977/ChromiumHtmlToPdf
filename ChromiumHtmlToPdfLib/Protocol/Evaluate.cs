@@ -1,4 +1,4 @@
-﻿//
+//
 // Evaluate.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
@@ -25,7 +25,8 @@
 //
 
 using System.Text;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol;
 
@@ -37,13 +38,13 @@ internal class Evaluate : MessageBase
     /// <summary>
     ///     The returned result
     /// </summary>
-    [JsonProperty("result")]
+    [JsonPropertyName("result")]
     public EvaluateResult? Result { get; set; }
 
     /// <summary>
     ///     The method that we want to execute in Chromium
     /// </summary>
-    [JsonProperty("method")]
+    [JsonPropertyName("method")]
     public string? Method { get; set; }
     #endregion
 
@@ -55,7 +56,7 @@ internal class Evaluate : MessageBase
     /// <returns></returns>
     public new static Evaluate FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<Evaluate>(json)!;
+        return JsonSerializer.Deserialize<Evaluate>(json, JsonHelper.SerializerOptions)!;
     }
     #endregion
 }
@@ -66,7 +67,7 @@ internal class Evaluate : MessageBase
 internal class EvaluateResult
 {
     #region Propreties
-    [JsonProperty("result")]
+    [JsonPropertyName("result")]
     public EvaluateInnerResult? Result { get; set; }
     #endregion
 }
@@ -77,28 +78,28 @@ internal class EvaluateResult
 internal class EvaluateInnerResult
 {
     #region Properties
-    [JsonProperty("type")]
+    [JsonPropertyName("type")]
     public string? Type { get; set; }
 
-    [JsonProperty("subtype")]
+    [JsonPropertyName("subtype")]
     public string? SubType { get; set; }
 
-    [JsonProperty("className")]
+    [JsonPropertyName("className")]
     public string? ClassName { get; set; }
 
-    [JsonProperty("value")]
+    [JsonPropertyName("value")]
     public string? Value { get; set; }
 
-    [JsonProperty("unserializableValue")]
+    [JsonPropertyName("unserializableValue")]
     public string? UnserializableValue { get; set; }
 
-    [JsonProperty("deepSerializedValue")]
+    [JsonPropertyName("deepSerializedValue")]
     public string? DeepSerializedValue { get; set; }
 
-    [JsonProperty("preview")]
+    [JsonPropertyName("preview")]
     public string? Preview { get; set; }
 
-    [JsonProperty("customPreview")]
+    [JsonPropertyName("customPreview")]
     public string? CustomPreview { get; set; }
     #endregion
 

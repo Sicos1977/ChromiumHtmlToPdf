@@ -1,4 +1,4 @@
-﻿//
+//
 // Message.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
@@ -25,7 +25,8 @@
 //
 
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol;
 
@@ -38,13 +39,13 @@ internal class Message : MessageBase
     /// <summary>
     ///     The method executed by Chrome
     /// </summary>
-    [JsonProperty("method")]
+    [JsonPropertyName("method")]
     public string? Method { get; set; }
 
     /// <summary>
     ///     The parameters that we want to feed into Chromium
     /// </summary>
-    [JsonProperty("params")]
+    [JsonPropertyName("params")]
     public Dictionary<string, object> Parameters { get; set; }
     #endregion
 
@@ -79,7 +80,7 @@ internal class Message : MessageBase
     /// <returns></returns>
     public new static Message FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<Message>(json)!;
+        return JsonSerializer.Deserialize<Message>(json, JsonHelper.SerializerOptions)!;
     }
     #endregion
 }

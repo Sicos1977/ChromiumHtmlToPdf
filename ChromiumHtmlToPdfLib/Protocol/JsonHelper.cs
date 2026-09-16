@@ -1,5 +1,5 @@
 //
-// Base.cs
+// JsonHelper.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
 //
@@ -24,41 +24,27 @@
 // THE SOFTWARE.
 //
 
-using System;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
-namespace ChromiumHtmlToPdfLib.Protocol.Network;
+namespace ChromiumHtmlToPdfLib.Protocol;
 
 /// <summary>
-///     The base
+///     Contains a shared, cached <see cref="JsonSerializerOptions" /> that is used to (de)serialize
+///     the Chrome DevTools Protocol messages with <see cref="System.Text.Json" />
 /// </summary>
-internal class Base
+internal static class JsonHelper
 {
-    #region Properties
+    #region Fields
     /// <summary>
-    ///     The method executed by Chromium
+    ///     The shared <see cref="JsonSerializerOptions" /> used for all protocol (de)serialization
     /// </summary>
-    [JsonPropertyName("method")]
-    public string? Method { get; set; }
-    #endregion
-
-    #region FromJson
-    /// <summary>
-    ///     Returns this object deserialized from the given <paramref name="json" /> string
-    /// </summary>
-    /// <param name="json"></param>
-    /// <returns></returns>
-    public static Base FromJson(string json)
+    public static readonly JsonSerializerOptions SerializerOptions = new()
     {
-        try
-        {
-            return JsonSerializer.Deserialize<Base>(json, JsonHelper.SerializerOptions)!;
-        }
-        catch (Exception exception)
-        {
-            throw new Exception($"Could not deserialize json message '{json}'", exception);
-        }
-    }
+        // Chromium sometimes returns properties with a different casing than our models,
+        // so match property names case-insensitively to be safe
+        PropertyNameCaseInsensitive = true,
+        // Do not emit null properties, this keeps the messages we send to Chromium compact
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+    };
     #endregion
 }

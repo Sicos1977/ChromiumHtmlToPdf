@@ -1,4 +1,4 @@
-﻿//
+//
 // SnapshotResponse.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
@@ -25,7 +25,8 @@
 //
 
 using System.Text;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol;
 
@@ -38,13 +39,13 @@ internal class SnapshotResponse
     /// <summary>
     ///     The message id
     /// </summary>
-    [JsonProperty("id")]
+    [JsonPropertyName("id")]
     public long Id { get; set; }
 
     /// <summary>
     ///     The snapshot result
     /// </summary>
-    [JsonProperty("result")]
+    [JsonPropertyName("result")]
     public SnapshotResult Result { get; set; } = null!;
 
     /// <summary>
@@ -61,7 +62,7 @@ internal class SnapshotResponse
     /// <returns></returns>
     public static SnapshotResponse FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<SnapshotResponse>(json)!;
+        return JsonSerializer.Deserialize<SnapshotResponse>(json, JsonHelper.SerializerOptions)!;
     }
     #endregion
 }
@@ -72,6 +73,6 @@ internal class SnapshotResponse
 internal class SnapshotResult
 {
     #region Properties
-    [JsonProperty("data")] public string Data { get; set; } = null!;
+    [JsonPropertyName("data")] public string Data { get; set; } = null!;
     #endregion
 }

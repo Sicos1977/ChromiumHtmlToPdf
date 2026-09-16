@@ -1,4 +1,4 @@
-﻿//
+//
 // NavigateResponse.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
@@ -24,7 +24,8 @@
 // THE SOFTWARE.
 //
 
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Page;
 
@@ -34,7 +35,7 @@ namespace ChromiumHtmlToPdfLib.Protocol.Page;
 internal class NavigateResponse : MessageBase
 {
     #region Properties
-    [JsonProperty("result")] public NavigateResponseResult? Result { get; set; }
+    [JsonPropertyName("result")] public NavigateResponseResult? Result { get; set; }
     #endregion
 
     #region FromJson
@@ -45,7 +46,7 @@ internal class NavigateResponse : MessageBase
     /// <returns></returns>
     public new static NavigateResponse FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<NavigateResponse>(json)!;
+        return JsonSerializer.Deserialize<NavigateResponse>(json, JsonHelper.SerializerOptions)!;
     }
     #endregion
 }
@@ -56,10 +57,10 @@ internal class NavigateResponse : MessageBase
 internal class NavigateResponseResult
 {
     #region Properties
-    [JsonProperty("frameId")] public string? FrameId { get; set; }
+    [JsonPropertyName("frameId")] public string? FrameId { get; set; }
 
-    [JsonProperty("loaderId")] public string? LoaderId { get; set; }
+    [JsonPropertyName("loaderId")] public string? LoaderId { get; set; }
 
-    [JsonProperty("errorText")] public string? ErrorText { get; set; }
+    [JsonPropertyName("errorText")] public string? ErrorText { get; set; }
     #endregion
 }

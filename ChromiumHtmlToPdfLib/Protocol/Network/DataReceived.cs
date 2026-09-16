@@ -1,4 +1,4 @@
-﻿//
+//
 // DataReceived.cs
 //
 // Author: Kees van Spelde <sicos2002@hotmail.com>
@@ -24,18 +24,17 @@
 // THE SOFTWARE.
 //
 
-using System.Globalization;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ChromiumHtmlToPdfLib.Protocol.Network;
 
 internal class DataReceived
 {
     #region Properties
-    [JsonProperty("method")] public string? Method { get; set; }
+    [JsonPropertyName("method")] public string? Method { get; set; }
 
-    [JsonProperty("params")] public DataReceivedParams Params { get; set; } = null!;
+    [JsonPropertyName("params")] public DataReceivedParams Params { get; set; } = null!;
     #endregion
 
     #region FromJson
@@ -46,7 +45,7 @@ internal class DataReceived
     /// <returns></returns>
     public static DataReceived FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<DataReceived>(json, DataReceivedConverter.Settings)!;
+        return JsonSerializer.Deserialize<DataReceived>(json, JsonHelper.SerializerOptions)!;
     }
     #endregion
 }
@@ -54,24 +53,12 @@ internal class DataReceived
 internal class DataReceivedParams
 {
     #region Properties
-    [JsonProperty("requestId")] public string? RequestId { get; set; }
+    [JsonPropertyName("requestId")] public string? RequestId { get; set; }
 
-    [JsonProperty("timestamp")] public double Timestamp { get; set; }
+    [JsonPropertyName("timestamp")] public double Timestamp { get; set; }
 
-    [JsonProperty("dataLength")] public long DataLength { get; set; }
+    [JsonPropertyName("dataLength")] public long DataLength { get; set; }
 
-    [JsonProperty("encodedDataLength")] public long EncodedDataLength { get; set; }
+    [JsonPropertyName("encodedDataLength")] public long EncodedDataLength { get; set; }
     #endregion
 }
-
-#region Static class DataReceivedConverter
-internal static class DataReceivedConverter
-{
-    public static readonly JsonSerializerSettings Settings = new()
-    {
-        MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
-        DateParseHandling = DateParseHandling.None,
-        Converters = { new IsoDateTimeConverter { DateTimeStyles = DateTimeStyles.AssumeUniversal } }
-    };
-}
-#endregion
