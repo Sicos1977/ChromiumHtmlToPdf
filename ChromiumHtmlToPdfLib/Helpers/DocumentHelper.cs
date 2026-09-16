@@ -334,7 +334,7 @@ internal class DocumentHelper: IDisposable
                 //var images = document.DocumentElement.Descendants().OfType<IHtmlImageElement>()
                 //    .Where(x => x.NodeType == NodeType.Element);
 
-                var images = document.DocumentElement.Descendents()
+                var images = document.DocumentElement.Descendants()
                     .Where(x => x.NodeType == NodeType.Element)
                     .OfType<IHtmlImageElement>();
 
@@ -646,7 +646,7 @@ internal class DocumentHelper: IDisposable
                         htmlImage.DisplayWidth = (int)image.Width;
                         htmlImage.DisplayHeight = (int)image.Height;
                         _logger?.Info("Image rotated and saved to location '{path}'", fileName);
-                        image.Write(fileName);
+                        await image.WriteAsync(fileName, cancellationToken).ConfigureAwait(false);
                         htmlImage.DisplayWidth = (int)image.Width;
                         htmlImage.DisplayHeight = (int)image.Height;
                         htmlImage.SetStyle(string.Empty);
@@ -678,7 +678,7 @@ internal class DocumentHelper: IDisposable
 
                         try
                         {
-                            style = context.Current.GetComputedStyle(htmlImage);
+                            if (context.Current != null) style = context.Current.GetComputedStyle(htmlImage);
                         }
                         catch (Exception exception)
                         {
@@ -757,7 +757,7 @@ internal class DocumentHelper: IDisposable
 
             try
             {
-                image.Write(fileName);
+                await image.WriteAsync(fileName, cancellationToken).ConfigureAwait(false);
                 var newSrc = new Uri(fileName).ToString();
                 safeUrls.Add(newSrc);
                 unchangedImage.Source = newSrc;
