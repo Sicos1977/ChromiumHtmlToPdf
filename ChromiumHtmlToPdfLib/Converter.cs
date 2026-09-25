@@ -792,7 +792,7 @@ public class Converter : IDisposable, IAsyncDisposable
             {
                 if (_chromiumProcess == null) return;
 
-                _logger?.Warn("'{browser}' exited unexpectedly, process id: '{processId}' and process exit time: '{exitTime}'", BrowserName, string.Join(" ", DefaultChromiumArguments), _chromiumProcess.Id, _chromiumProcess.ExitTime.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+                _logger?.Warn("'{browser}' exited unexpectedly, process id: '{processId}' and process exit time: '{exitTime}'", BrowserName, _chromiumProcess.Id, _chromiumProcess.ExitTime.ToString("yyyy-MM-dd HH:mm:ss.fff"));
 
                 var exception = ExceptionHelpers.GetInnerException(Marshal.GetExceptionForHR(_chromiumProcess.ExitCode));
                 chromeException = $"'{BrowserName}' exited unexpectedly{(!string.IsNullOrWhiteSpace(exception) ? $", {exception}" : string.Empty)}";
