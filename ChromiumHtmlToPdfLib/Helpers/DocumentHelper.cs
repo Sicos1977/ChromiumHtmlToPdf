@@ -641,21 +641,26 @@ internal class DocumentHelper: IDisposable
 
                     if (image == null) continue;
 
-                    if (RotateImageByExifOrientationData(image))
+                    try
                     {
-                        htmlImage.DisplayWidth = (int)image.Width;
-                        htmlImage.DisplayHeight = (int)image.Height;
-                        _logger?.Info("Image rotated and saved to location '{path}'", fileName);
-                        await image.WriteAsync(fileName, cancellationToken).ConfigureAwait(false);
-                        htmlImage.DisplayWidth = (int)image.Width;
-                        htmlImage.DisplayHeight = (int)image.Height;
-                        htmlImage.SetStyle(string.Empty);
-                        var newSrc = new Uri(fileName).ToString();
-                        _logger?.Info("Adding url '{url}' to the safe url list", newSrc);
-                        safeUrls.Add(newSrc);
-                        htmlImage.Source = newSrc;
-                        htmlChanged = true;
-                        imageChanged = true;
+                        if (RotateImageByExifOrientationData(image))
+                        {
+                            await image.WriteAsync(fileName, cancellationToken).ConfigureAwait(false);
+                            _logger?.Info("Image rotated and saved to location '{path}'", fileName);
+                            htmlImage.DisplayWidth = (int)image.Width;
+                            htmlImage.DisplayHeight = (int)image.Height;
+                            htmlImage.SetStyle(string.Empty);
+                            var newSrc = new Uri(fileName).ToString();
+                            _logger?.Info("Adding url '{url}' to the safe url list", newSrc);
+                            safeUrls.Add(newSrc);
+                            htmlImage.Source = newSrc;
+                            htmlChanged = true;
+                            imageChanged = true;
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        _logger?.Error(exception, "Could not auto rotate image according to the exif information");
                     }
 
                     if ((int)image.Width > width)

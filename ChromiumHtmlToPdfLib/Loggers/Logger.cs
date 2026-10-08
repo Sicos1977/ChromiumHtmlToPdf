@@ -125,17 +125,17 @@ internal class Logger
     /// <summary>
     ///     Writes a line to the <see cref="InternalLogger" /> with <see cref="LogLevel.Error"/>
     /// </summary>
-    /// <param name="ex">Exception to attach to log entry</param>
+    /// <param name="exception">Exception to attach to log entry</param>
     /// <param name="message">The message to write</param>
     /// <param name="args">Message arguments</param>
-    public void Error(Exception ex, string message, params object?[] args)
+    public void Error(Exception exception, string message, params object?[] args)
     {
         if (InternalLogger == null) return;
 
         try
         {
             using var _ = InstanceId == null ? null : InternalLogger.BeginScope(InstanceId);
-            InternalLogger.LogError(ex, message, args);
+            InternalLogger.LogError(exception, message, args);
         }
         catch (ObjectDisposedException)
         {
