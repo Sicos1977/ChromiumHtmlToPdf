@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+  </Folder>
+  <Project Path="ChromiumHtmlToPdfConsole/ChromiumHtmlToPdfConsole.csproj" />
+  <Project Path="ChromiumHtmlToPdfLib/ChromiumHtmlToPdfLib.csproj" />
+</Solution>
