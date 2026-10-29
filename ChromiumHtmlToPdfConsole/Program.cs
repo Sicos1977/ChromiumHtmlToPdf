@@ -407,6 +407,12 @@ static class Program
             converter.SetUrlBlacklist(urlBlacklist);
         }
 
+        if (!string.IsNullOrWhiteSpace(options.LinkBlacklist))
+        {
+            var linkBlacklist = options.LinkBlacklist.Split(';', StringSplitOptions.RemoveEmptyEntries).ToList();
+            converter.SetLinkBlacklist(linkBlacklist);
+        }
+
         converter.CaptureSnapshot = options.Snapshot;
         converter.LogNetworkTraffic = options.LogNetworkTraffic;
 

@@ -139,11 +139,11 @@ internal class DocumentHelper: IDisposable
 
             var result = _imageLoadTimeout - _stopwatch!.ElapsedMilliseconds;
 
-            if (result <= 0)
-            {
-                _stopwatch.Stop();
-                result = 0;
-            }
+            if (result > 0) 
+                return (int)result;
+
+            _stopwatch.Stop();
+            result = 0;
 
             return (int)result;
         }
@@ -390,6 +390,171 @@ internal class DocumentHelper: IDisposable
     }
     #endregion
 
+    #region DisableLinks
+    /// <summary>
+    ///     Makes all or specific <c>&lt;a&gt;</c> anchor tags in the given <paramref name="document" />
+    ///     completely non-clickable and inactive. This works for plain text links, links that are
+    ///     styled as buttons (e.g. Bootstrap/Tailwind) and links that wrap other elements such as
+    ///     images or <c>div</c>'s.
+    /// </summary>
+    /// <remarks>
+    ///     The whole document is walked only once (via a single <c>QuerySelectorAll</c> call) so that
+    ///     this method can be combined with other DOM operations (e.g. <see cref="SanitizeHtmlAsync" />)
+    ///     without iterating over the HTML multiple times.
+    /// </remarks>
+    /// <param name="document">The <see cref="IHtmlDocument" /> to modify</param>
+    /// <param name="linkBlacklist">
+    ///     A list of regular expressions that determine which links need to be disabled (use * as a
+    ///     wildcard). When <c>null</c> or empty then <b>all</b> links are disabled.
+    /// </param>
+    /// <returns><c>true</c> when at least one link has been disabled, otherwise <c>false</c></returns>
+    public bool DisableLinks(IHtmlDocument document, List<string>? linkBlacklist)
+    {
+        const string disableStyle = "pointer-events: none; cursor: default;";
+        var disabledAny = false;
+
+        // Walk the document only once
+        foreach (var anchor in document.QuerySelectorAll("a"))
+        {
+            var href = anchor.GetAttribute("href");
+
+            // When a blacklist is supplied only disable the links that match it,
+            // otherwise disable every link
+            if (linkBlacklist is { Count: > 0 })
+            {
+                string? matchedPattern = null;
+
+                if (href != null && (string.IsNullOrEmpty(href) || !RegularExpression.IsRegExMatch(linkBlacklist, href, out matchedPattern)))
+                    continue;
+
+                _logger?.Info("The link '{href}' has been disabled because it matched link blacklist pattern '{pattern}'", href, matchedPattern);
+            }
+            else
+            {
+                _logger?.Info("The link '{href}' has been disabled", href ?? string.Empty);
+            }
+
+            // Remove the href so the link no longer navigates anywhere
+            anchor.RemoveAttribute("href");
+
+            // Merge the inline CSS so that hover effects and clicks are fully ignored by the browser,
+            // keeping any already present inline styles intact
+            var style = anchor.GetAttribute("style");
+            if (string.IsNullOrWhiteSpace(style))
+            {
+                anchor.SetAttribute("style", disableStyle);
+            }
+            else
+            {
+                var trimmed = style!.TrimEnd();
+                if (!trimmed.EndsWith(";"))
+                    trimmed += ";";
+                anchor.SetAttribute("style", trimmed + " " + disableStyle);
+            }
+
+            // Block keyboard navigation
+            anchor.SetAttribute("tabindex", "-1");
+
+            // Keep accessibility (A11y) intact by signalling that this is no longer an interactive element
+            anchor.SetAttribute("role", "presentation");
+            anchor.SetAttribute("aria-disabled", "true");
+
+            disabledAny = true;
+        }
+
+        return disabledAny;
+    }
+    #endregion
+
+    #region DisableLinksAsync
+    /// <summary>
+    ///     Opens the webpage, disables all or specific links (see <see cref="DisableLinks" />) and,
+    ///     when something changed, writes the modified HTML to a new temporary file.
+    /// </summary>
+    /// <param name="inputUri">The uri of the webpage</param>
+    /// <param name="linkBlacklist">
+    ///     A list of regular expressions that determine which links need to be disabled (use * as a
+    ///     wildcard). When <c>null</c> or empty then <b>all</b> links are disabled.
+    /// </param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
+    /// <returns><see cref="DisableLinksResult"/></returns>
+    public async Task<DisableLinksResult> DisableLinksAsync(ConvertUri inputUri, List<string>? linkBlacklist, CancellationToken cancellationToken)
+    {
+#if (NETSTANDARD2_0)
+        using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri, false, cancellationToken).ConfigureAwait(false);
+#else
+        await using var webpage = inputUri.IsFile ? OpenFileStream(inputUri.OriginalString) : await OpenDownloadStream(inputUri, false, cancellationToken).ConfigureAwait(false);
+#endif
+        using var context = BrowsingContext.New(Config);
+        IDocument document;
+
+        try
+        {
+            // ReSharper disable AccessToDisposedClosure
+            document = inputUri.Encoding != null
+                ? await context.OpenAsync(m => m.Content(webpage).Header("Content-Type", $"text/html; charset={inputUri.Encoding.WebName}").Address(inputUri.ToString()), cancel: cancellationToken).ConfigureAwait(false)
+                : await context.OpenAsync(m => m.Content(webpage).Address(inputUri.ToString()), cancel: cancellationToken).ConfigureAwait(false);
+            // ReSharper restore AccessToDisposedClosure
+
+            if (document is not IHtmlDocument htmlDocument)
+                throw new InvalidCastException("Could not cast document to IHtmlDocument");
+
+            _logger?.Info("Disabling links");
+
+            if (!DisableLinks(htmlDocument, linkBlacklist))
+            {
+                _logger?.Info("No links needed to be disabled");
+                return new DisableLinksResult(false, inputUri);
+            }
+        }
+        catch (Exception exception)
+        {
+            _logger?.Error(exception, "Exception occurred in AngleSharp: '{exception}'", ExceptionHelpers.GetInnerException(exception));
+            return new DisableLinksResult(false, inputUri);
+        }
+
+        var outputFile = GetTempFile(".htm");
+        var outputUri = new ConvertUri(outputFile, inputUri.Encoding);
+
+        try
+        {
+            _logger?.Info("Writing changed webpage to '{path}'", outputFile);
+
+#if (NETSTANDARD2_0)
+            using var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write);
+#else
+            await using var fileStream = new FileStream(outputFile, FileMode.CreateNew, FileAccess.Write);
+#endif
+            if (inputUri.Encoding != null)
+            {
+#if (NETSTANDARD2_0)
+                using var textWriter = new StreamWriter(fileStream, inputUri.Encoding);
+#else
+                await using var textWriter = new StreamWriter(fileStream, inputUri.Encoding);
+#endif
+                document.ToHtml(textWriter, new HtmlMarkupFormatter());
+            }
+            else
+            {
+#if (NETSTANDARD2_0)
+                using var textWriter = new StreamWriter(fileStream);
+#else
+                await using var textWriter = new StreamWriter(fileStream);
+#endif
+                document.ToHtml(textWriter, new HtmlMarkupFormatter());
+            }
+
+            _logger?.Info("Changed webpage written");
+            return new DisableLinksResult(true, outputUri);
+        }
+        catch (Exception exception)
+        {
+            _logger?.Error(exception, "Could not write new html file '{path}', error: {exception}", outputFile, ExceptionHelpers.GetInnerException(exception));
+            return new DisableLinksResult(false, inputUri);
+        }
+    }
+    #endregion
+
     #region ResetTimeout
     internal void ResetTimeout()
     {
@@ -585,7 +750,7 @@ internal class DocumentHelper: IDisposable
         }
         catch (Exception exception)
         {
-            _logger?.Error(exception, "Exception occurred in AngleSharp: {exception}", ExceptionHelpers.GetInnerException(exception));
+            _logger?.Error(exception, "Exception occurred in AngleSharp: '{exception}'", ExceptionHelpers.GetInnerException(exception));
             return new ValidateImagesResult(false, inputUri);
         }
 
@@ -897,13 +1062,13 @@ internal class DocumentHelper: IDisposable
                     break;
 
                 default:
-                    _logger?.Warn("Unsupported scheme {scheme} to get image", imageUri.Scheme);
+                    _logger?.Warn("Unsupported scheme '{scheme}' to get image", imageUri.Scheme);
                     return null;
             }
         }
         catch (Exception exception)
         {
-            _logger?.Error(exception, "Getting image failed with exception: {exception}", ExceptionHelpers.GetInnerException(exception));
+            _logger?.Error(exception, "Getting image failed with exception: '{exception}'", ExceptionHelpers.GetInnerException(exception));
         }
 
         return null;
@@ -920,7 +1085,7 @@ internal class DocumentHelper: IDisposable
     {
         var orientation = image.Orientation;
 
-        if (orientation is OrientationType.Undefined or OrientationType.TopLeft)
+        if (orientation is Orientation.Undefined or Orientation.TopLeft)
         {
             _logger?.Info("Image has no Exif orientation data or is already correctly oriented");
             return false;

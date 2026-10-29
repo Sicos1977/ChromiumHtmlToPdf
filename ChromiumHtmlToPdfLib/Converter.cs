@@ -160,6 +160,11 @@ public class Converter : IDisposable, IAsyncDisposable
     private List<string>? _urlBlacklist;
 
     /// <summary>
+    ///     A list with links to blacklist
+    /// </summary>
+    private List<string>? _linkBlacklist;
+
+    /// <summary>
     ///     A flag to keep track if a user-data-dir has been set
     /// </summary>
     private readonly bool _userProfileSet;
@@ -1340,6 +1345,21 @@ public class Converter : IDisposable, IAsyncDisposable
     }
     #endregion
 
+    #region SetUrlBlacklist
+    /// <summary>
+    ///     Sets one or more link to blacklist when converting a page or file to PDF.
+    ///     Links that are blacklisted will be converted to non-clickable links before converting to PDF.
+    /// </summary>
+    /// <remarks>
+    ///     Use * as a wildcard, e.g. mylinktoblacklist*
+    /// </remarks>
+    /// <param name="urls"></param>
+    public void SetLinkBlacklist(IList<string> urls)
+    {
+        _linkBlacklist = ListToWildCardRegEx(urls);
+    }
+    #endregion
+
     #region GetUrlFromFile
     /// <summary>
     ///     Tries to read the url from a .url file
@@ -1464,9 +1484,21 @@ public class Converter : IDisposable, IAsyncDisposable
                     safeUrls.Add(inputUri.ToString());
                 }
 
-                if (ImageResize || ImageRotate || SanitizeHtml || pageSettings.PaperFormat == PaperFormat.FitPageToContent)
+                if (ImageResize || ImageRotate || SanitizeHtml || _linkBlacklist?.Count > 0 || pageSettings.PaperFormat == PaperFormat.FitPageToContent)
                 {
                     using var documentHelper = new DocumentHelper(GetTempDirectory, _useCache, GetCacheDirectory, _cacheSize, WebProxy, ImageLoadTimeout, _logger);
+
+                    if (_linkBlacklist?.Count > 0)
+                    {
+                        _logger?.Info("A link blacklist is set, disabling all links that match the blacklist");
+                        var result = await documentHelper.DisableLinksAsync(inputUri, _linkBlacklist, cancellationToken).ConfigureAwait(false);
+                        if (result.Success)
+                        {
+                            _logger?.Info("Disabling links was successful changing input uri '{inputUri}' to '{outputUri}'", inputUri, result.OutputUri);
+                            inputUri = result.OutputUri;
+                            safeUrls.Add(inputUri.ToString());
+                        }
+                    }
 
                     if (SanitizeHtml)
                     {

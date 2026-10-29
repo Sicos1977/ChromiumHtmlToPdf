@@ -433,6 +433,17 @@ public class Options
     public string? UrlBlacklist { get; set; }
 
     /// <summary>
+    ///     A semi-colon separated list of links (use * as a wildcard) that need to be made non-clickable
+    ///     in the HTML before it is converted. When left empty then all links are disabled.
+    /// </summary>
+    [Option("link-blacklist", Required = false,
+        HelpText =
+            "This tells Chromium to disable (make non-clickable) certain links in the HTML. " +
+            "For example \"*.google.com;*foo.com;\""
+    )]
+    public string? LinkBlacklist { get; set; }
+
+    /// <summary>
     ///     This will capture a snapshot of the webpage (before it is converted to PDF) and save this to disk with
     ///     the same name (but different extension .mhtml) that is selected for the --output parameter
     /// </summary>
